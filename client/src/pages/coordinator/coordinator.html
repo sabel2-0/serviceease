@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Institutional Client Coordinator Portal | ServiceEase</title>
+    <!-- Tailwind CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <!-- Custom Styles -->
+    <link href="../../styles/main.css" rel="stylesheet">
+    
+    <style>
+        /* Dropdown Menu Styles */
+        .dropdown-toggle .fa-chevron-down {
+            transition: transform 0.3s ease;
+        }
+        
+        .dropdown-menu {
+            overflow: hidden;
+            max-height: 0;
+            transition: max-height 0.3s ease-out, opacity 0.2s ease-out;
+            opacity: 0;
+        }
+        
+        .dropdown-menu:not(.hidden) {
+            max-height: 500px;
+            opacity: 1;
+            transition: max-height 0.5s ease-in, opacity 0.3s ease-in;
+        }
+        
+        .sidenav-item.active {
+            background-color: rgba(31, 41, 55, var(--tw-bg-opacity));
+            color: white;
+            border-left: 3px solid #3b82f6;
+            padding-left: calc(1rem - 3px);
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar Container -->
+        <div id="sidebar-container" class="flex-shrink-0 w-64 bg-gray-900 text-white">
+            <!-- The dynamic sidebar will be loaded here via coordinator-sidenav.js -->
+        </div>
+        
+        <!-- Main Content -->
+        <div class="flex-1 overflow-auto">
+            <!-- Top Navigation -->
+            <header class="bg-white shadow-sm">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="flex justify-between items-center py-4">
+                        <h1 class="text-2xl font-semibold text-gray-900">Coordinator Dashboard</h1>
+                        <div class="flex items-center space-x-4">
+                            <!-- Notification Bell -->
+                            <button id="notifications-button" class="p-2 rounded-full hover:bg-gray-200 relative">
+                                <i class="fas fa-bell text-gray-600"></i>
+                                <span class="notification-badge absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">0</span>
+                            </button>
+                            
+                            <!-- Profile Dropdown -->
+                            <div class="relative">
+                                <button id="profile-menu-button" class="flex items-center space-x-3 focus:outline-none">
+                                    <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white">
+                                        <span id="user-initials">CC</span>
+                                    </div>
+                                    <div class="hidden md:block text-left">
+                                        <span class="block text-sm font-medium text-gray-900">Welcome, <span id="welcome-name">Coordinator</span></span>
+                                        <span class="block text-sm text-gray-500">Institutional Coordinator</span>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Dashboard Content -->
+            <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <!-- Active Service Requests -->
+                    <div class="bg-white rounded-lg shadow p-6 border-t-4 border-blue-500">
+                        <div class="flex items-center">
+                            <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                                <i class="fas fa-clipboard-list text-2xl"></i>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-500">Active Requests</p>
+                                <p id="active-requests-count" class="text-2xl font-semibold text-gray-800">0</p>
+                            </div>
+                        </div>
+                        <a href="#service-requests" class="block mt-4 text-sm font-medium text-blue-600 hover:text-blue-800">
+                            View all requests <i class="fas fa-arrow-right ml-1"></i>
+                        </a>
+                    </div>
+                    
+                    <!-- Pending Approvals -->
+                    <div class="bg-white rounded-lg shadow p-6 border-t-4 border-yellow-500">
+                        <div class="flex items-center">
+                            <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">
+                                <i class="fas fa-chart-line text-2xl"></i>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-500">Service Reports</p>
+                                <p id="report-count" class="text-2xl font-semibold text-gray-800">3</p>
+                            </div>
+                        </div>
+                        <a href="#service-approvals" class="block mt-4 text-sm font-medium text-yellow-600 hover:text-yellow-800">
+                            Review approvals <i class="fas fa-arrow-right ml-1"></i>
+                        </a>
+                    </div>
+                    
+                    <!-- Total Printers -->
+                    <div class="bg-white rounded-lg shadow p-6 border-t-4 border-green-500">
+                        <div class="flex items-center">
+                            <div class="p-3 rounded-full bg-green-100 text-green-600">
+                                <i class="fas fa-print text-2xl"></i>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-500">Managed Printers</p>
+                                <p id="total-printers-count" class="text-2xl font-semibold text-gray-800">0</p>
+                            </div>
+                        </div>
+                        <a href="#printer-management" class="block mt-4 text-sm font-medium text-green-600 hover:text-green-800">
+                            Manage printers <i class="fas fa-arrow-right ml-1"></i>
+                        </a>
+                    </div>
+                    
+                    <!-- Active Users -->
+                    <div class="bg-white rounded-lg shadow p-6 border-t-4 border-purple-500">
+                        <div class="flex items-center">
+                            <div class="p-3 rounded-full bg-purple-100 text-purple-600">
+                                <i class="fas fa-users text-2xl"></i>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-500">Institution Users</p>
+                                <p id="active-users-count" class="text-2xl font-semibold text-gray-800">0</p>
+                            </div>
+                        </div>
+                        <a href="#user-management" class="block mt-4 text-sm font-medium text-purple-600 hover:text-purple-800">
+                            Manage users <i class="fas fa-arrow-right ml-1"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Main Dashboard Sections -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Recent Activity -->
+                    <div class="bg-white rounded-lg shadow col-span-2">
+                        <div class="px-6 py-4 border-b flex justify-between items-center">
+                            <h2 class="text-lg font-semibold text-gray-800">Recent Activity</h2>
+                            <button id="refresh-activity" class="p-2 rounded-full hover:bg-gray-100">
+                                <i class="fas fa-sync-alt text-gray-600"></i>
+                            </button>
+                        </div>
+                        <div id="recent-activity" class="p-6 space-y-4 min-h-[20rem]">
+                            <!-- Activity items will be loaded here -->
+                            <div class="flex items-center justify-center h-full">
+                                <div class="text-center">
+                                    <i class="fas fa-spinner fa-spin text-3xl text-gray-400 mb-3"></i>
+                                    <p class="text-gray-500">Loading activity...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Actions -->
+                    <div class="bg-white rounded-lg shadow">
+                        <div class="px-6 py-4 border-b">
+                            <h2 class="text-lg font-semibold text-gray-800">Quick Actions</h2>
+                        </div>
+                        <div class="p-6 space-y-4">
+                            <a href="#new-service-request" class="block bg-blue-50 hover:bg-blue-100 p-4 rounded-lg transition-colors border border-blue-200">
+                                <div class="flex items-center">
+                                    <div class="bg-blue-100 p-3 rounded-full">
+                                        <i class="fas fa-file-medical text-blue-600"></i>
+                                    </div>
+                                    <div class="ml-4">
+                                        <h3 class="font-medium text-gray-900">New Service Request</h3>
+                                        <p class="text-sm text-gray-600">Submit a new printer service request</p>
+                                    </div>
+                                </div>
+                            </a>
+                            
+                            <a href="#add-printer" class="block bg-green-50 hover:bg-green-100 p-4 rounded-lg transition-colors border border-green-200">
+                                <div class="flex items-center">
+                                    <div class="bg-green-100 p-3 rounded-full">
+                                        <i class="fas fa-print text-green-600"></i>
+                                    </div>
+                                    <div class="ml-4">
+                                        <h3 class="font-medium text-gray-900">Add Printer</h3>
+                                        <p class="text-sm text-gray-600">Register a new printer</p>
+                                    </div>
+                                </div>
+                            </a>
+                            
+                            <a href="#add-user" class="block bg-purple-50 hover:bg-purple-100 p-4 rounded-lg transition-colors border border-purple-200">
+                                <div class="flex items-center">
+                                    <div class="bg-purple-100 p-3 rounded-full">
+                                        <i class="fas fa-user-plus text-purple-600"></i>
+                                    </div>
+                                    <div class="ml-4">
+                                        <h3 class="font-medium text-gray-900">Add User</h3>
+                                        <p class="text-sm text-gray-600">Register a new institutional user</p>
+                                    </div>
+                                </div>
+                            </a>
+                            
+                            <a href="#service-reports" class="block bg-amber-50 hover:bg-amber-100 p-4 rounded-lg transition-colors border border-amber-200">
+                                <div class="flex items-center">
+                                    <div class="bg-amber-100 p-3 rounded-full">
+                                        <i class="fas fa-chart-bar text-amber-600"></i>
+                                    </div>
+                                    <div class="ml-4">
+                                        <h3 class="font-medium text-gray-900">Service Reports</h3>
+                                        <p class="text-sm text-gray-600">View service analytics</p>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Feature Pages (initially hidden) -->
+                <div id="page-container" class="mt-8 hidden">
+                    <!-- Service Requests Page -->
+                    <div id="service-requests-page" class="page-content hidden">
+                        <div class="bg-white rounded-lg shadow">
+                            <div class="px-6 py-4 border-b flex justify-between items-center">
+                                <h2 class="text-lg font-semibold text-gray-800">Service Request Management</h2>
+                                <button id="new-service-request-btn" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+                                    <i class="fas fa-plus mr-2"></i>New Request
+                                </button>
+                            </div>
+                            <div class="p-6">
+                                <!-- Filter Controls -->
+                                <div class="mb-6 flex flex-wrap gap-4">
+                                    <div class="w-full md:w-64">
+                                        <input type="text" id="searchInput" placeholder="Search requests..." class="w-full px-4 py-2 border rounded-md">
+                                    </div>
+                                    <div class="w-full md:w-48">
+                                        <select id="statusFilter" class="w-full px-4 py-2 border rounded-md">
+                                            <option value="">All Statuses</option>
+                                            <option value="new">New</option>
+                                            <option value="in_progress">In Progress</option>
+                                            <option value="completed">Completed</option>
+                                            <option value="issue">Issue</option>
+                                        </select>
+                                    </div>
+                                    <div class="w-full md:w-48">
+                                        <select id="serviceTypeFilter" class="w-full px-4 py-2 border rounded-md">
+                                            <option value="">All Types</option>
+                                            <option value="repair">Repair</option>
+                                            <option value="maintenance">Maintenance</option>
+                                            <option value="installation">Installation</option>
+                                        </select>
+                                    </div>
+                                    <div class="flex-grow text-right">
+                                        <button id="refreshBtn" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-md">
+                                            <i class="fas fa-sync-alt mr-2"></i>Refresh
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Stats Bar -->
+                                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                                    <div class="bg-blue-50 border border-blue-100 rounded-lg p-4">
+                                        <div class="text-center">
+                                            <p class="text-sm text-gray-600">New</p>
+                                            <p id="newRequests" class="text-xl font-bold text-blue-600">0</p>
+                                        </div>
+                                    </div>
+                                    <div class="bg-yellow-50 border border-yellow-100 rounded-lg p-4">
+                                        <div class="text-center">
+                                            <p class="text-sm text-gray-600">In Progress</p>
+                                            <p id="inProgressRequests" class="text-xl font-bold text-yellow-600">0</p>
+                                        </div>
+                                    </div>
+                                    <div class="bg-green-50 border border-green-100 rounded-lg p-4">
+                                        <div class="text-center">
+                                            <p class="text-sm text-gray-600">Completed</p>
+                                            <p id="completedRequests" class="text-xl font-bold text-green-600">0</p>
+                                        </div>
+                                    </div>
+                                    <div class="bg-red-50 border border-red-100 rounded-lg p-4">
+                                        <div class="text-center">
+                                            <p class="text-sm text-gray-600">Issues</p>
+                                            <p id="issueRequests" class="text-xl font-bold text-red-600">0</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Service Request Cards -->
+                                <div id="loadingState" class="py-16 text-center">
+                                    <i class="fas fa-spinner fa-spin text-3xl text-gray-400 mb-3"></i>
+                                    <p class="text-gray-500">Loading service requests...</p>
+                                </div>
+                                
+                                <div id="emptyState" class="py-16 text-center hidden">
+                                    <i class="fas fa-clipboard-list text-5xl text-gray-300 mb-3"></i>
+                                    <p class="text-lg text-gray-500">No service requests found</p>
+                                    <p class="text-gray-400">Try adjusting your filters or create a new request</p>
+                                </div>
+                                
+                                <div id="requestsContainer" class="space-y-4 hidden">
+                                    <!-- Service request cards will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Printer Management Page -->
+                    <div id="printer-management-page" class="page-content hidden">
+                        <div class="bg-white rounded-lg shadow">
+                            <div class="px-6 py-4 border-b flex justify-between items-center">
+                                <h2 class="text-lg font-semibold text-gray-800">Printer Management</h2>
+                                <button id="assignPrinterBtn" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+                                    <i class="fas fa-plus mr-2"></i>Add Printer
+                                </button>
+                            </div>
+                            <div class="p-6">
+                                <div class="mb-6">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Institution</label>
+                                    <select id="institutionSelect" class="w-full md:w-64 px-4 py-2 border rounded-md">
+                                        <option value="">Select a client</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="overflow-x-auto">
+                                    <div class="inline-block min-w-full align-middle">
+                                        <div class="border border-gray-200 rounded-lg overflow-hidden">
+                                            <table class="min-w-full divide-y divide-gray-200">
+                                                <thead class="bg-gray-50">
+                                                    <tr>
+                                                        <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Printer Name</th>
+                                                        <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Model</th>
+                                                        <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Serial Number</th>
+                                                        <th scope="col" class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="printersTbody" class="bg-white divide-y divide-gray-200">
+                                                    <!-- Printer rows will be loaded here -->
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <div id="emptyState" class="py-8 text-center text-gray-500 hidden">
+                                            No printers found
+                                        </div>
+                                        <div class="mt-4 text-sm text-gray-500 flex items-center justify-between">
+                                            <span id="totalCount"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- User Management Page -->
+                    <div id="user-management-page" class="page-content hidden">
+                        <div class="bg-white rounded-lg shadow">
+                            <div class="px-6 py-4 border-b flex justify-between items-center">
+                                <h2 class="text-lg font-semibold text-gray-800">User Management</h2>
+                                <button id="add-user-btn" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+                                    <i class="fas fa-user-plus mr-2"></i>Add User
+                                </button>
+                            </div>
+                            <div class="p-6">
+                                <!-- User Search -->
+                                <div class="mb-6 flex flex-wrap gap-4">
+                                    <div class="w-full md:w-64">
+                                        <input type="text" id="userSearchInput" placeholder="Search users..." class="w-full px-4 py-2 border rounded-md">
+                                    </div>
+                                    <div class="w-full md:w-48">
+                                        <select id="userRoleFilter" class="w-full px-4 py-2 border rounded-md">
+                                            <option value="">All Roles</option>
+                                            <option value="staff">Staff</option>
+                                            <option value="manager">Manager</option>
+                                        </select>
+                                    </div>
+                                    <div class="flex-grow text-right">
+                                        <button id="refreshUsersBtn" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-md">
+                                            <i class="fas fa-sync-alt mr-2"></i>Refresh
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Users Table -->
+                                <div class="overflow-x-auto">
+                                    <div class="inline-block min-w-full align-middle">
+                                        <div class="border border-gray-200 rounded-lg overflow-hidden">
+                                            <table class="min-w-full divide-y divide-gray-200">
+                                                <thead class="bg-gray-50">
+                                                    <tr>
+                                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
+                                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="usersTbody" class="bg-white divide-y divide-gray-200">
+                                                    <!-- User rows will be loaded here -->
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <div id="usersEmptyState" class="py-8 text-center text-gray-500 hidden">
+                                            No users found
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Service Reports Page -->
+                    <div id="service-reports-page" class="page-content hidden">
+                        <div class="bg-white rounded-lg shadow">
+                            <div class="px-6 py-4 border-b">
+                                <h2 class="text-lg font-semibold text-gray-800">Service Analytics & Reports</h2>
+                            </div>
+                            <div class="p-6">
+                                <!-- Report Controls -->
+                                <div class="mb-6 flex flex-wrap gap-4">
+                                    <div class="w-full md:w-64">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Report Type</label>
+                                        <select id="reportType" class="w-full px-4 py-2 border rounded-md">
+                                            <option value="service_summary">Service Summary</option>
+                                            <option value="printer_performance">Printer Performance</option>
+                                            <option value="cost_analysis">Cost Analysis</option>
+                                        </select>
+                                    </div>
+                                    <div class="w-full md:w-64">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+                                        <select id="dateRange" class="w-full px-4 py-2 border rounded-md">
+                                            <option value="last_30">Last 30 Days</option>
+                                            <option value="last_90">Last 90 Days</option>
+                                            <option value="year_to_date">Year to Date</option>
+                                            <option value="custom">Custom Range</option>
+                                        </select>
+                                    </div>
+                                    <div class="flex-grow text-right self-end">
+                                        <button id="generateReport" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                                            <i class="fas fa-chart-bar mr-2"></i>Generate Report
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Report Visualization Area -->
+                                <div id="report-visualization" class="border rounded-lg p-4 bg-gray-50 mb-6 min-h-[20rem]">
+                                    <div class="flex items-center justify-center h-full">
+                                        <div class="text-center">
+                                            <i class="fas fa-chart-pie text-5xl text-gray-300 mb-3"></i>
+                                            <p class="text-gray-500">Select report parameters and generate a report</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Report Export Options -->
+                                <div class="flex justify-end space-x-3">
+                                    <button class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50" disabled>
+                                        <i class="fas fa-file-pdf mr-2"></i>Export as PDF
+                                    </button>
+                                    <button class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50" disabled>
+                                        <i class="fas fa-file-excel mr-2"></i>Export as Excel
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <!-- Service Request Detail Modal -->
+    <div id="requestModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="absolute inset-0 bg-black/40"></div>
+        <div class="relative bg-white rounded-lg shadow-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            <div class="px-6 py-4 border-b flex justify-between items-center sticky top-0 bg-white z-10">
+                <h3 class="text-lg font-semibold text-gray-800">Service Request Details</h3>
+                <button id="closeRequestModal" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="requestModalContent" class="p-6">
+                <!-- Request details will be loaded here -->
+            </div>
+            <div class="px-6 py-4 border-t bg-gray-50 flex justify-end gap-3 sticky bottom-0">
+                <button id="updateStatusBtn" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                    Update Status
+                </button>
+                <button id="closeModalBtn" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Update Modal -->
+    <div id="statusModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="absolute inset-0 bg-black/40"></div>
+        <div class="relative bg-white rounded-lg shadow-lg w-full max-w-md">
+            <div class="px-6 py-4 border-b">
+                <h3 class="text-lg font-semibold text-gray-800">Update Service Status</h3>
+            </div>
+            <div class="p-6">
+                <form id="statusUpdateForm">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">New Status</label>
+                        <select id="newStatus" class="w-full px-4 py-2 border rounded-md">
+                            <option value="in_progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                            <option value="issue">Issue Detected</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                        <textarea id="statusNotes" class="w-full px-4 py-2 border rounded-md h-32" placeholder="Enter additional notes..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="px-6 py-4 border-t bg-gray-50 flex justify-end gap-3">
+                <button id="submitStatusUpdate" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                    Update
+                </button>
+                <button id="cancelStatusUpdate" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add User Modal -->
+    <div id="addUserModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="absolute inset-0 bg-black/40"></div>
+        <div class="relative bg-white rounded-lg shadow-lg w-full max-w-md">
+            <div class="px-6 py-4 border-b">
+                <h3 class="text-lg font-semibold text-gray-800">Add New User</h3>
+            </div>
+            <div class="p-6">
+                <form id="addUserForm">
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+                            <input type="text" id="firstName" class="w-full px-4 py-2 border rounded-md" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+                            <input type="text" id="lastName" class="w-full px-4 py-2 border rounded-md" required>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                        <input type="email" id="userEmail" class="w-full px-4 py-2 border rounded-md" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Role</label>
+                        <select id="userRole" class="w-full px-4 py-2 border rounded-md">
+                            <option value="staff">Staff</option>
+                            <option value="manager">Manager</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Department</label>
+                        <input type="text" id="department" class="w-full px-4 py-2 border rounded-md">
+                    </div>
+                </form>
+            </div>
+            <div class="px-6 py-4 border-t bg-gray-50 flex justify-end gap-3">
+                <button id="submitAddUser" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                    Add User
+                </button>
+                <button id="cancelAddUser" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Notification Center -->
+    <div id="notification-center" class="fixed inset-y-0 right-0 max-w-sm w-full bg-white shadow-lg z-40 transform translate-x-full transition-transform duration-300">
+        <div class="p-6 border-b flex justify-between items-center">
+            <h3 class="text-lg font-semibold text-gray-800">Notifications</h3>
+            <button id="close-notifications" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div id="notification-list" class="p-4 overflow-y-auto h-[calc(100%-4rem)]">
+            <!-- Notifications will be loaded here -->
+            <div class="text-center py-8 text-gray-500">
+                <i class="fas fa-bell-slash text-4xl mb-3"></i>
+                <p>No new notifications</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        // Add debug information to help diagnose loading issues
+        console.log('Current page location:', window.location.href);
+        console.log('Base URL:', window.location.origin);
+        
+        // Error handling for script loading
+        window.addEventListener('error', function(e) {
+            console.error('Script error detected:', e.message, e.filename, e.lineno);
+            
+            // Show fallback sidenav if script loading fails
+            if (e.filename && e.filename.includes('coordinator-sidenav.js')) {
+                console.error('Error loading sidenav script, using fallback');
+                document.getElementById('sidebar-container').classList.add('script-load-error');
+            }
+        }, true);
+    </script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/coordinator-ui.js" type="module"></script>
+    <script src="../../js/coordinator-sidenav.js"></script>
+    <script src="../../js/client-service-management.js"></script>
+    
+    <!-- Fallback script if main script fails -->
+    <script>
+        // Check if sidenav was loaded successfully
+        setTimeout(function() {
+            const sidebarContainer = document.getElementById('sidebar-container');
+            if (sidebarContainer && !sidebarContainer.querySelector('.coordinator-sidenav') && sidebarContainer.children.length === 0) {
+                console.log('Sidenav not found after timeout, using inline fallback');
+                
+                sidebarContainer.innerHTML = `
+                    <div class="h-full flex flex-col p-4">
+                        <div class="bg-red-100 text-red-700 p-4 rounded-lg mb-4">
+                            <h3 class="font-bold">Navigation Loading Error</h3>
+                            <p class="text-sm mt-1">The sidebar navigation couldn't be loaded.</p>
+                            <button onclick="location.reload()" class="mt-2 px-4 py-1 bg-red-600 text-white rounded text-xs">
+                                Reload Page
+                            </button>
+                        </div>
+                        <div class="px-6 py-6 flex items-center border-b border-gray-800">
+                            <div class="w-10 h-10 flex-shrink-0 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
+                                <i class="fas fa-cogs text-white"></i>
+                            </div>
+                            <div class="ml-3">
+                                <h1 class="text-lg font-bold text-white">ServiceEase</h1>
+                                <p class="text-xs text-gray-400">Coordinator Portal</p>
+                            </div>
+                        </div>
+                        <nav class="mt-6 px-4 flex-1">
+                            <a href="#" class="block px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors mb-3">Dashboard</a>
+                            <a href="#service-requests" class="block px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors mb-3">Service Requests</a>
+                            <a href="#printer-management" class="block px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors mb-3">Printer Management</a>
+                            <a href="#user-management" class="block px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors mb-3">User Management</a>
+                        </nav>
+                    </div>
+                `;
+            }
+        }, 2000);
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize user data
+            const user = JSON.parse(localStorage.getItem('user')) || { first_name: 'Coordinator', last_name: 'User' };
+            document.getElementById('welcome-name').textContent = user.first_name;
+            document.getElementById('user-initials').textContent = `${user.first_name?.charAt(0) || 'C'}${user.last_name?.charAt(0) || 'C'}`;
+            
+            // Navigation
+            const navLinks = {
+                '#service-requests': 'service-requests-page',
+                '#printer-management': 'printer-management-page',
+                '#user-management': 'user-management-page',
+                '#service-reports': 'service-reports-page',
+                '#add-printer': 'printer-management-page',
+                '#add-user': 'user-management-page',
+                '#new-service-request': 'service-requests-page'
+            };
+            
+            for (const link in navLinks) {
+                document.querySelectorAll(`a[href="${link}"]`).forEach(el => {
+                    el.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        showPage(navLinks[link]);
+                        
+                        // Special actions for quick links
+                        if (link === '#new-service-request') {
+                            document.getElementById('newRequestModal').classList.remove('hidden');
+                        } else if (link === '#add-printer') {
+                            document.getElementById('assignPrinterBtn').click();
+                        } else if (link === '#add-user') {
+                            document.getElementById('addUserModal').classList.remove('hidden');
+                        }
+                    });
+                });
+            }
+            
+            // Show a specific page
+            function showPage(pageId) {
+                const pageContainer = document.getElementById('page-container');
+                pageContainer.classList.remove('hidden');
+                
+                // Hide all pages
+                document.querySelectorAll('.page-content').forEach(page => {
+                    page.classList.add('hidden');
+                });
+                
+                // Show requested page
+                document.getElementById(pageId).classList.remove('hidden');
+                
+                // Scroll to top
+                window.scrollTo(0, 0);
+            }
+            
+            // Notification Center Toggle
+            document.getElementById('notifications-button').addEventListener('click', () => {
+                const notificationCenter = document.getElementById('notification-center');
+                notificationCenter.classList.toggle('translate-x-full');
+                notificationCenter.classList.toggle('translate-x-0');
+            });
+            
+            document.getElementById('close-notifications').addEventListener('click', () => {
+                document.getElementById('notification-center').classList.add('translate-x-full');
+                document.getElementById('notification-center').classList.remove('translate-x-0');
+            });
+            
+            // Modal Controls
+            document.getElementById('new-service-request-btn')?.addEventListener('click', () => {
+                document.getElementById('newRequestModal').classList.remove('hidden');
+            });
+            
+            document.getElementById('add-user-btn')?.addEventListener('click', () => {
+                document.getElementById('addUserModal').classList.remove('hidden');
+            });
+            
+            // Close all modals when clicking outside
+            document.querySelectorAll('.fixed.inset-0').forEach(modal => {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.classList.add('hidden');
+                    }
+                });
+            });
+            
+            // Cancel buttons for modals
+            document.getElementById('cancelNewRequest')?.addEventListener('click', () => {
+                document.getElementById('newRequestModal').classList.add('hidden');
+            });
+            
+            document.getElementById('cancelAddUser')?.addEventListener('click', () => {
+                document.getElementById('addUserModal').classList.add('hidden');
+            });
+            
+            // Form submissions
+            document.getElementById('submitNewRequest')?.addEventListener('click', async () => {
+                // Form submission logic would go here
+                document.getElementById('newRequestModal').classList.add('hidden');
+                // Show success notification
+                showNotification('Success', 'Service request submitted successfully', 'success');
+            });
+            
+            document.getElementById('submitAddUser')?.addEventListener('click', async () => {
+                // Form submission logic would go here
+                document.getElementById('addUserModal').classList.add('hidden');
+                // Show success notification
+                showNotification('Success', 'New user added successfully', 'success');
+            });
+            
+            // Helper function to show notifications
+            function showNotification(title, message, type = 'info') {
+                const toast = document.createElement('div');
+                const bgColor = type === 'success' ? 'bg-green-100 border-green-500' : 
+                               type === 'error' ? 'bg-red-100 border-red-500' : 
+                               'bg-blue-100 border-blue-500';
+                const textColor = type === 'success' ? 'text-green-700' : 
+                                 type === 'error' ? 'text-red-700' : 
+                                 'text-blue-700';
+                const icon = type === 'success' ? 'fa-check-circle' : 
+                           type === 'error' ? 'fa-exclamation-circle' : 
+                           'fa-info-circle';
+                
+                toast.className = `fixed bottom-4 right-4 ${bgColor} border-l-4 p-4 rounded shadow-lg max-w-md z-50`;
+                toast.innerHTML = `
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas ${icon} ${textColor}"></i>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium ${textColor}">${title}</p>
+                            <p class="text-sm ${textColor} opacity-90">${message}</p>
+                        </div>
+                        <button onclick="this.parentElement.parentElement.remove()" class="ml-4 ${textColor}">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `;
+                document.body.appendChild(toast);
+                setTimeout(() => {
+                    if (document.body.contains(toast)) {
+                        document.body.removeChild(toast);
+                    }
+                }, 5000);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Verification Required | ServiceEase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="../js/auth.js" defer></script>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8">
+        <div class="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-lg">
+            <!-- Header -->
+            <div class="text-center">
+                <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 mb-6">
+                    <i class="fas fa-envelope text-3xl text-blue-600"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-900">Verify Your Email</h2>
+                <p class="mt-2 text-sm text-gray-600">
+                    Please verify your email address to continue using ServiceEase
+                </p>
+            </div>
+
+            <!-- Email Status -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-info-circle text-blue-600"></i>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-blue-800">Verification Required</h3>
+                        <div class="mt-2 text-sm text-blue-700">
+                            <p>We've sent a verification code to your email address. Please check your inbox and enter the code below.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Verification Code Input -->
+            <div class="mt-6">
+                <label for="code" class="block text-sm font-medium text-gray-700 mb-2">Verification Code</label>
+                <div class="flex gap-2 mb-4">
+                    <input type="text" maxlength="1" class="verification-input w-12 h-12 text-center text-2xl border rounded-md" />
+                    <input type="text" maxlength="1" class="verification-input w-12 h-12 text-center text-2xl border rounded-md" />
+                    <input type="text" maxlength="1" class="verification-input w-12 h-12 text-center text-2xl border rounded-md" />
+                    <input type="text" maxlength="1" class="verification-input w-12 h-12 text-center text-2xl border rounded-md" />
+                    <input type="text" maxlength="1" class="verification-input w-12 h-12 text-center text-2xl border rounded-md" />
+                    <input type="text" maxlength="1" class="verification-input w-12 h-12 text-center text-2xl border rounded-md" />
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="space-y-4">
+                <button id="verifyCodeBtn" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Verify Email
+                </button>
+                <button id="resendCodeBtn" class="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Resend Code
+                </button>
+                <button onclick="logout()" class="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Sign Out
+                </button>
+            </div>
+
+            <!-- Help Text -->
+            <div class="text-center text-sm text-gray-500">
+                <p>Didn't receive the code? Check your spam folder or <button id="resendCodeBtn" class="text-blue-600 hover:text-blue-500 font-medium">resend code</button></p>
+                <p class="mt-2">Need help? <a href="mailto:support@serviceease.com" class="font-medium text-blue-600 hover:text-blue-500">Contact Support</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check if user is logged in
+        document.addEventListener('DOMContentLoaded', function() {
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!user) {
+                window.location.href = '/login.html';
+            }
+
+            // Handle verification code input
+            const verificationInputs = document.querySelectorAll('.verification-input');
+            verificationInputs.forEach((input, index) => {
+                input.addEventListener('input', (e) => {
+                    if (e.target.value.length === 1) {
+                        if (index < verificationInputs.length - 1) {
+                            verificationInputs[index + 1].focus();
+                        }
+                    }
+                });
+
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                        verificationInputs[index - 1].focus();
+                    }
+                });
+            });
+
+            // Handle verify button click
+            document.getElementById('verifyCodeBtn').addEventListener('click', async () => {
+                const code = Array.from(verificationInputs)
+                    .map(input => input.value)
+                    .join('');
+
+                try {
+                    const response = await fetch('/api/verify-email', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            userId: user.id,
+                            code: code
+                        })
+                    });
+
+                    const data = await response.json();
+                    if (response.ok) {
+                        // Update user in localStorage
+                        const updatedUser = { ...user, isEmailVerified: true };
+                        localStorage.setItem('user', JSON.stringify(updatedUser));
+                        
+                        // Show success message and redirect
+                        alert('Email verified successfully! Redirecting to dashboard...');
+                        window.location.href = '/home.html';
+                    } else {
+                        alert(data.error || 'Invalid verification code');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Error verifying email. Please try again.');
+                }
+            });
+
+            // Handle resend code button click
+            document.getElementById('resendCodeBtn').addEventListener('click', async () => {
+                try {
+                    const response = await fetch('/api/resend-verification', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            userId: user.id,
+                            email: user.email
+                        })
+                    });
+
+                    const data = await response.json();
+                    if (response.ok) {
+                        alert('Verification code resent! Please check your email.');
+                    } else {
+                        alert(data.error || 'Error resending code');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Error resending verification code. Please try again.');
+                }
+            });
+        });
+
+        function logout() {
+            localStorage.removeItem('user');
+            localStorage.removeItem('isLoggedIn');
+            window.location.href = '/login.html';
+        }
+    </script>
+</body>
+</html>

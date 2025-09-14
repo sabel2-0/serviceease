@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management | Coordinator Portal | ServiceEase</title>
+    <!-- Tailwind CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <!-- Custom Styles -->
+    <link href="../../styles/main.css" rel="stylesheet">
+    
+    <style>
+        /* Dropdown Menu Styles */
+        .dropdown-toggle .fa-chevron-down {
+            transition: transform 0.3s ease;
+        }
+        
+        .dropdown-menu {
+            overflow: hidden;
+            max-height: 0;
+            transition: max-height 0.3s ease-out, opacity 0.2s ease-out;
+            opacity: 0;
+        }
+        
+        .dropdown-menu:not(.hidden) {
+            max-height: 500px;
+            opacity: 1;
+            transition: max-height 0.5s ease-in, opacity 0.3s ease-in;
+        }
+        
+        .sidenav-item.active {
+            background-color: rgba(31, 41, 55, var(--tw-bg-opacity));
+            color: white;
+            border-left: 3px solid #3b82f6;
+            padding-left: calc(1rem - 3px);
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar Container -->
+        <div id="sidebar-container" class="flex-shrink-0 w-64 bg-gray-900 text-white">
+            <!-- The dynamic sidebar will be loaded here via coordinator-sidenav.js -->
+        </div>
+        
+        <!-- Main Content -->
+        <div class="flex-1 overflow-auto">
+            <!-- Top Navigation -->
+            <header class="bg-white shadow-sm">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="flex justify-between items-center py-4">
+                        <h1 class="text-2xl font-semibold text-gray-900">User Management</h1>
+                        <div class="flex items-center space-x-4">
+                            <!-- Notification Bell -->
+                            <button id="notifications-button" class="p-2 rounded-full hover:bg-gray-200 relative">
+                                <i class="fas fa-bell text-gray-600"></i>
+                                <span class="notification-badge absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">0</span>
+                            </button>
+                            
+                            <!-- Profile Dropdown -->
+                            <div class="relative">
+                                <button id="profile-menu-button" class="flex items-center space-x-3 focus:outline-none">
+                                    <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white">
+                                        <span id="user-initials">CC</span>
+                                    </div>
+                                    <div class="hidden md:block text-left">
+                                        <span class="block text-sm font-medium text-gray-900">Welcome, <span id="welcome-name">Coordinator</span></span>
+                                        <span class="block text-sm text-gray-500">Institutional Coordinator</span>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content Area -->
+            <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                <!-- User Management Content -->
+                <div class="bg-white rounded-lg shadow">
+                    <div class="px-6 py-4 border-b flex justify-between items-center">
+                        <h2 class="text-lg font-semibold text-gray-800">User Management</h2>
+                        <button id="add-user-btn" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-user-plus mr-2"></i>Add User
+                        </button>
+                    </div>
+                    <div class="p-6">
+                        <!-- User Search -->
+                        <div class="mb-6 flex flex-wrap gap-4">
+                            <div class="w-full md:w-64">
+                                <input type="text" id="userSearchInput" placeholder="Search users..." class="w-full px-4 py-2 border rounded-md">
+                            </div>
+                            <div class="w-full md:w-48">
+                                <select id="userRoleFilter" class="w-full px-4 py-2 border rounded-md">
+                                    <option value="">All Roles</option>
+                                    <option value="staff">Staff</option>
+                                    <option value="manager">Manager</option>
+                                </select>
+                            </div>
+                            <div class="flex-grow text-right">
+                                <button id="refreshUsersBtn" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-md">
+                                    <i class="fas fa-sync-alt mr-2"></i>Refresh
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Users Table -->
+                        <div class="overflow-x-auto">
+                            <div class="inline-block min-w-full align-middle">
+                                <div class="border border-gray-200 rounded-lg overflow-hidden">
+                                    <table class="min-w-full divide-y divide-gray-200">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="usersTbody" class="bg-white divide-y divide-gray-200">
+                                            <!-- User rows will be loaded here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div id="usersEmptyState" class="py-8 text-center text-gray-500 hidden">
+                                    No users found
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Add User Modal -->
+    <div id="addUserModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="absolute inset-0 bg-black/40"></div>
+        <div class="relative bg-white rounded-lg shadow-lg w-full max-w-md">
+            <div class="px-6 py-4 border-b">
+                <h3 class="text-lg font-semibold text-gray-800">Add New User</h3>
+            </div>
+            <div class="p-6">
+                <form id="addUserForm">
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+                            <input type="text" id="firstName" class="w-full px-4 py-2 border rounded-md" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+                            <input type="text" id="lastName" class="w-full px-4 py-2 border rounded-md" required>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                        <input type="email" id="userEmail" class="w-full px-4 py-2 border rounded-md" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Role</label>
+                        <select id="userRole" class="w-full px-4 py-2 border rounded-md">
+                            <option value="staff">Staff</option>
+                            <option value="manager">Manager</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Department</label>
+                        <input type="text" id="department" class="w-full px-4 py-2 border rounded-md">
+                    </div>
+                </form>
+            </div>
+            <div class="px-6 py-4 border-t bg-gray-50 flex justify-end gap-3">
+                <button id="submitAddUser" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                    Add User
+                </button>
+                <button id="cancelAddUser" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Center -->
+    <div id="notification-center" class="fixed inset-y-0 right-0 max-w-sm w-full bg-white shadow-lg z-40 transform translate-x-full transition-transform duration-300">
+        <div class="p-6 border-b flex justify-between items-center">
+            <h3 class="text-lg font-semibold text-gray-800">Notifications</h3>
+            <button id="close-notifications" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div id="notification-list" class="p-4 overflow-y-auto h-[calc(100%-4rem)]">
+            <!-- Notifications will be loaded here -->
+            <div class="text-center py-8 text-gray-500">
+                <i class="fas fa-bell-slash text-4xl mb-3"></i>
+                <p>No new notifications</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/coordinator-sidenav.js"></script>
+    <script src="../../js/coordinator-navigation.js"></script>
+    <!-- <script src="../../js/coordinator-accounts.js"></script> -->
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize user data
+            const user = JSON.parse(localStorage.getItem('user')) || { first_name: 'Coordinator', last_name: 'User' };
+            document.getElementById('welcome-name').textContent = user.first_name;
+            document.getElementById('user-initials').textContent = `${user.first_name?.charAt(0) || 'C'}${user.last_name?.charAt(0) || 'C'}`;
+            
+            // Set the active sidebar item
+            window.location.hash = '#user-management';
+            
+            // Notification Center Toggle
+            document.getElementById('notifications-button').addEventListener('click', () => {
+                const notificationCenter = document.getElementById('notification-center');
+                notificationCenter.classList.toggle('translate-x-full');
+                notificationCenter.classList.toggle('translate-x-0');
+            });
+            
+            document.getElementById('close-notifications').addEventListener('click', () => {
+                document.getElementById('notification-center').classList.add('translate-x-full');
+                document.getElementById('notification-center').classList.remove('translate-x-0');
+            });
+            
+            // Modal Controls
+            document.getElementById('add-user-btn')?.addEventListener('click', () => {
+                document.getElementById('addUserModal').classList.remove('hidden');
+            });
+            
+            // Close all modals when clicking outside
+            document.querySelectorAll('.fixed.inset-0').forEach(modal => {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.classList.add('hidden');
+                    }
+                });
+            });
+            
+            // Cancel button for modal
+            document.getElementById('cancelAddUser')?.addEventListener('click', () => {
+                document.getElementById('addUserModal').classList.add('hidden');
+            });
+            
+            // Form submission
+            document.getElementById('submitAddUser')?.addEventListener('click', async () => {
+                // Form submission logic would go here
+                document.getElementById('addUserModal').classList.add('hidden');
+                // Show success notification
+                showNotification('Success', 'New user added successfully', 'success');
+            });
+            
+            // Helper function to show notifications
+            function showNotification(title, message, type = 'info') {
+                const toast = document.createElement('div');
+                const bgColor = type === 'success' ? 'bg-green-100 border-green-500' : 
+                               type === 'error' ? 'bg-red-100 border-red-500' : 
+                               'bg-blue-100 border-blue-500';
+                const textColor = type === 'success' ? 'text-green-700' : 
+                                 type === 'error' ? 'text-red-700' : 
+                                 'text-blue-700';
+                const icon = type === 'success' ? 'fa-check-circle' : 
+                           type === 'error' ? 'fa-exclamation-circle' : 
+                           'fa-info-circle';
+                
+                toast.className = `fixed bottom-4 right-4 ${bgColor} border-l-4 p-4 rounded shadow-lg max-w-md z-50`;
+                toast.innerHTML = `
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas ${icon} ${textColor}"></i>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium ${textColor}">${title}</p>
+                            <p class="text-sm ${textColor} opacity-90">${message}</p>
+                        </div>
+                        <button onclick="this.parentElement.parentElement.remove()" class="ml-4 ${textColor}">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `;
+                document.body.appendChild(toast);
+                setTimeout(() => {
+                    if (document.body.contains(toast)) {
+                        document.body.removeChild(toast);
+                    }
+                }, 5000);
+            }
+        });
+    </script>
+</body>
+</html>

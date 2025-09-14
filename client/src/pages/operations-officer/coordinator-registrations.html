@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coordinator Registration Approvals | ServiceEase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
+    <div class="flex h-screen">
+        <!-- Operations Officer Sidebar -->
+        <div id="operations-officer-sidebar"></div>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-auto bg-gradient-to-br from-slate-50 to-white p-8">
+            <div class="mb-8 flex justify-between items-center">
+                <div>
+                    <h2 class="text-3xl font-bold text-gray-900">Coordinator Registrations</h2>
+                    <p class="text-gray-600">Review and approve coordinator registration requests</p>
+                </div>
+            </div>
+
+            <!-- Filters and Search -->
+            <div class="bg-white p-6 rounded-lg shadow mb-6">
+                <div class="flex flex-col md:flex-row md:items-center md:space-x-6">
+                    <div class="flex-1 mb-4 md:mb-0">
+                        <label for="searchInput" class="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                        <div class="relative">
+                            <input id="searchInput" type="text" placeholder="Search by name, email or organization..." 
+                                class="w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50">
+                            <div class="absolute left-3 top-3 text-gray-400">
+                                <i class="fas fa-search"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="w-full md:w-48">
+                        <label for="statusFilter" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                        <select id="statusFilter" class="w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50">
+                            <option value="">All Status</option>
+                            <option value="pending" selected>Pending</option>
+                            <option value="approved">Approved</option>
+                            <option value="rejected">Rejected</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coordinator Requests Table -->
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Coordinator
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Organization
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Submitted On
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Status
+                            </th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Actions
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="coordinatorTableBody" class="bg-white divide-y divide-gray-200">
+                        <!-- Example registration requests -->
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center">
+                                    <div class="h-10 w-10 flex-shrink-0 rounded-full bg-blue-100 flex items-center justify-center">
+                                        <i class="fas fa-user-tie text-blue-600"></i>
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-medium text-gray-900">John Smith</div>
+                                        <div class="text-sm text-gray-500">john.smith@techsolutions.com</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex flex-col">
+                                    <div class="text-sm font-medium text-gray-900">Tech Solutions Inc.</div>
+                                    <div class="text-xs text-blue-600 mt-1">
+                                        <i class="fas fa-phone-alt mr-1"></i> (555) 123-4567
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm text-gray-900">Sept 8, 2025</div>
+                                <div class="text-xs text-gray-500">10:30 AM</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                    Pending
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <div class="flex justify-end space-x-2">
+                                    <button onclick="viewCoordinatorDetails('1')" class="p-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button onclick="approveCoordinator('1')" class="p-2 bg-green-50 text-green-600 hover:bg-green-100 rounded-lg" title="Approve">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                    <button onclick="rejectCoordinator('1')" class="p-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg" title="Reject">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center">
+                                    <div class="h-10 w-10 flex-shrink-0 rounded-full bg-blue-100 flex items-center justify-center">
+                                        <i class="fas fa-user-tie text-blue-600"></i>
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-medium text-gray-900">Sarah Johnson</div>
+                                        <div class="text-sm text-gray-500">sarah@acmeprinters.com</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex flex-col">
+                                    <div class="text-sm font-medium text-gray-900">Acme Printers</div>
+                                    <div class="text-xs text-blue-600 mt-1">
+                                        <i class="fas fa-phone-alt mr-1"></i> (555) 987-6543
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm text-gray-900">Sept 9, 2025</div>
+                                <div class="text-xs text-gray-500">9:15 AM</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                    Pending
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <div class="flex justify-end space-x-2">
+                                    <button onclick="viewCoordinatorDetails('2')" class="p-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button onclick="approveCoordinator('2')" class="p-2 bg-green-50 text-green-600 hover:bg-green-100 rounded-lg" title="Approve">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                    <button onclick="rejectCoordinator('2')" class="p-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg" title="Reject">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- Pagination -->
+                <div class="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-700">
+                                Showing <span class="font-medium">1</span> to <span class="font-medium">10</span> of <span class="font-medium" id="totalResults">12</span> results
+                            </p>
+                        </div>
+                        <div>
+                            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                                <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                    <span class="sr-only">Previous</span>
+                                    <i class="fas fa-chevron-left"></i>
+                                </a>
+                                <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                    1
+                                </a>
+                                <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                    2
+                                </a>
+                                <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                    <span class="sr-only">Next</span>
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- View Coordinator Details Modal -->
+    <div id="detailsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-gray-900">Coordinator Registration Details</h3>
+                <button onclick="closeDetailsModal()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Coordinator Information -->
+                <div>
+                    <h4 class="font-medium text-gray-900 mb-4 border-b pb-2">Personal Information</h4>
+                    <div class="space-y-4">
+                        <div class="flex items-start">
+                            <div class="h-16 w-16 flex-shrink-0 rounded-full bg-blue-100 flex items-center justify-center mr-4">
+                                <i class="fas fa-user-tie text-2xl text-blue-600"></i>
+                            </div>
+                            <div>
+                                <h5 class="text-lg font-medium text-gray-900" id="coordinatorName">John Smith</h5>
+                                <p class="text-gray-600" id="coordinatorEmail">john.smith@techsolutions.com</p>
+                                <p class="text-gray-600" id="coordinatorPhone">(555) 123-4567</p>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <p class="text-sm text-gray-600">Submitted On:</p>
+                            <p class="font-medium text-gray-900" id="submissionDate">September 8, 2025 10:30 AM</p>
+                        </div>
+                        
+                        <div>
+                            <p class="text-sm text-gray-600">ID Verification:</p>
+                            <div class="flex space-x-2 mt-2">
+                                <a href="#" class="px-3 py-2 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 text-sm" id="viewFrontId">
+                                    <i class="fas fa-id-card mr-2"></i> View Front ID
+                                </a>
+                                <a href="#" class="px-3 py-2 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 text-sm" id="viewBackId">
+                                    <i class="fas fa-id-card mr-2"></i> View Back ID
+                                </a>
+                                <a href="#" class="px-3 py-2 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 text-sm" id="viewSelfie">
+                                    <i class="fas fa-camera mr-2"></i> View Selfie
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Organization Information -->
+                <div>
+                    <h4 class="font-medium text-gray-900 mb-4 border-b pb-2">Organization Information</h4>
+                    <div class="space-y-4">
+                        <div>
+                            <p class="text-sm text-gray-600">Organization Name:</p>
+                            <p class="font-medium text-gray-900" id="organizationName">Tech Solutions Inc.</p>
+                        </div>
+                        
+                        <div>
+                            <p class="text-sm text-gray-600">Business Type:</p>
+                            <p class="font-medium text-gray-900" id="businessType">IT Services</p>
+                        </div>
+                        
+                        <div>
+                            <p class="text-sm text-gray-600">Address:</p>
+                            <p class="font-medium text-gray-900" id="organizationAddress">123 Business Ave, Suite 500, Tech City, TC 12345</p>
+                        </div>
+                        
+                        <div>
+                            <p class="text-sm text-gray-600">Business Registration:</p>
+                            <a href="#" class="px-3 py-2 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 text-sm inline-block mt-2" id="viewBusinessReg">
+                                <i class="fas fa-file-alt mr-2"></i> View Registration Document
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Approval Section -->
+            <div class="mt-8 pt-6 border-t">
+                <div>
+                    <label for="approvalNotes" class="block text-sm font-medium text-gray-700 mb-1">Notes (optional):</label>
+                    <textarea id="approvalNotes" rows="3" class="w-full border rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+                
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button onclick="rejectCoordinatorFromModal()" class="px-4 py-2 bg-white border border-red-500 text-red-500 hover:bg-red-50 rounded-md">
+                        Reject Registration
+                    </button>
+                    <button onclick="approveCoordinatorFromModal()" class="px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded-md">
+                        Approve Registration
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loadingState" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 flex items-center space-x-3">
+            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+            <span class="text-gray-700">Processing request...</span>
+        </div>
+    </div>
+
+    <script src="/js/auth.js"></script>
+    <script src="/js/operations-officer-sidebar.js"></script>
+    <script>
+        // View coordinator details
+        function viewCoordinatorDetails(id) {
+            document.getElementById('detailsModal').classList.remove('hidden');
+            // In a real implementation, you would fetch the coordinator data by ID
+        }
+        
+        // Close details modal
+        function closeDetailsModal() {
+            document.getElementById('detailsModal').classList.add('hidden');
+        }
+        
+        // Approve coordinator
+        function approveCoordinator(id) {
+            if (confirm('Are you sure you want to approve this coordinator registration?')) {
+                document.getElementById('loadingState').classList.remove('hidden');
+                
+                // Simulate API call
+                setTimeout(() => {
+                    document.getElementById('loadingState').classList.add('hidden');
+                    alert('Coordinator approved successfully!');
+                    // In a real implementation, you would refresh the data
+                }, 1000);
+            }
+        }
+        
+        // Reject coordinator
+        function rejectCoordinator(id) {
+            if (confirm('Are you sure you want to reject this coordinator registration?')) {
+                document.getElementById('loadingState').classList.remove('hidden');
+                
+                // Simulate API call
+                setTimeout(() => {
+                    document.getElementById('loadingState').classList.add('hidden');
+                    alert('Coordinator rejected successfully!');
+                    // In a real implementation, you would refresh the data
+                }, 1000);
+            }
+        }
+        
+        // Approve coordinator from modal
+        function approveCoordinatorFromModal() {
+            const notes = document.getElementById('approvalNotes').value;
+            
+            if (confirm('Are you sure you want to approve this coordinator registration?')) {
+                document.getElementById('loadingState').classList.remove('hidden');
+                
+                // Simulate API call
+                setTimeout(() => {
+                    document.getElementById('loadingState').classList.add('hidden');
+                    closeDetailsModal();
+                    alert('Coordinator approved successfully!');
+                    // In a real implementation, you would refresh the data
+                }, 1000);
+            }
+        }
+        
+        // Reject coordinator from modal
+        function rejectCoordinatorFromModal() {
+            const notes = document.getElementById('approvalNotes').value;
+            
+            if (!notes.trim()) {
+                alert('Please provide a reason for rejection in the notes field.');
+                return;
+            }
+            
+            if (confirm('Are you sure you want to reject this coordinator registration?')) {
+                document.getElementById('loadingState').classList.remove('hidden');
+                
+                // Simulate API call
+                setTimeout(() => {
+                    document.getElementById('loadingState').classList.add('hidden');
+                    closeDetailsModal();
+                    alert('Coordinator rejected successfully!');
+                    // In a real implementation, you would refresh the data
+                }, 1000);
+            }
+        }
+    </script>
+</body>
+</html>

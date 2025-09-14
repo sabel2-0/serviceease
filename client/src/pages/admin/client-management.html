@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client Management | ServiceEase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(10px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
+    <div class="flex h-screen">
+        <!-- Dynamic Sidebar -->
+        <div id="dynamic-sidebar"></div>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-auto bg-gradient-to-br from-slate-50 to-white">
+            <!-- Header Section -->
+            <div class="bg-white shadow-sm border-b border-slate-200 px-8 py-6">
+                <div class="flex items-center justify-between">
+                    <div class="animate-fade-in">
+                        <h1 class="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
+                            Client Management
+                        </h1>
+                        <p class="text-slate-600 mt-1">Manage and monitor all client accounts</p>
+                    </div>
+                    <div class="flex space-x-4">
+                        <button onclick="openAddClientModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                            <i class="fas fa-plus"></i>
+                            <span>Add New Client</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content Area -->
+            <div class="p-8">
+                <!-- Search and Filter Section -->
+                <div class="bg-white rounded-lg shadow p-6 mb-6">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="col-span-2">
+                            <div class="relative">
+                                <input type="text" id="searchInput" placeholder="Search clients..." 
+                                    class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <select id="statusFilter" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">All Statuses</option>
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                                <option value="pending">Pending</option>
+                            </select>
+                        </div>
+                        <div>
+                            <select id="sortBy" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="name">Sort by Name</option>
+                                <option value="date">Sort by Date Added</option>
+                                <option value="status">Sort by Status</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Clients Table -->
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Institution ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned Technician</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200" id="clientsTableBody">
+                            <!-- Client rows will be populated dynamically -->
+                        </tbody>
+                    </table>
+
+                    <!-- Pagination -->
+                    <div class="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1 flex justify-between sm:hidden">
+                                <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                    Previous
+                                </button>
+                                <button class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                    Next
+                                </button>
+                            </div>
+                            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                                <div>
+                                    <p class="text-sm text-gray-700">
+                                        Showing <span class="font-medium">1</span> to <span class="font-medium">10</span> of <span class="font-medium">20</span> results
+                                    </p>
+                                </div>
+                                <div>
+                                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                                        <button class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                            <span class="sr-only">Previous</span>
+                                            <i class="fas fa-chevron-left"></i>
+                                        </button>
+                                        <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                            1
+                                        </button>
+                                        <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                            2
+                                        </button>
+                                        <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                            3
+                                        </button>
+                                        <button class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                            <span class="sr-only">Next</span>
+                                            <i class="fas fa-chevron-right"></i>
+                                        </button>
+                                    </nav>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Technician Assignment Modal -->
+    <div id="technicianModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4" id="technicianModalTitle">Assign Technician</h3>
+                <div id="technicianModalContent">
+                    <div class="mb-4">
+                        <p class="text-sm text-gray-600 mb-2">Institution:</p>
+                        <div class="bg-gray-50 p-3 rounded-md">
+                            <p class="font-medium text-gray-900" id="selectedInstitutionName">Loading...</p>
+                            <p class="text-sm text-gray-500" id="selectedInstitutionId">Loading...</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Select Technician</label>
+                        <select id="technicianSelect" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" required>
+                            <option value="">Loading technicians...</option>
+                        </select>
+                    </div>
+                    
+                    <div id="currentAssignment" class="hidden mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                        <p class="text-sm font-medium text-blue-900 mb-1">Currently Assigned:</p>
+                        <p class="text-sm text-blue-700" id="currentTechnicianName">-</p>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="closeTechnicianModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
+                        Cancel
+                    </button>
+                    <button type="button" onclick="confirmTechnicianAssignment()" id="assignTechnicianBtn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                        Assign Technician
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Client Modal -->
+    <div id="clientModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4" id="modalTitle">Add New Client</h3>
+                <form id="clientForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Name</label>
+                        <input type="text" id="name" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" placeholder="Enter institution name" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Type</label>
+                        <select id="type" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" required>
+                            <option value="" disabled selected>Select institution type</option>
+                            <option value="public_school">Public School</option>
+                            <option value="private_school">Private School</option>
+                            <option value="private_company">Private Company</option>
+                            <option value="lgu">Local Government Unit</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Address</label>
+                        <textarea id="address" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" placeholder="Enter institution address" required></textarea>
+                    </div>
+                    <div class="flex justify-end space-x-3 mt-5">
+                        <button type="button" onclick="closeClientModal()" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300">
+                            Cancel
+                        </button>
+                        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                            Save Client
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/dynamic-sidebar-loader.js"></script>
+    <script>
+        // Client Management Specific JavaScript
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize the page
+            loadClients();
+
+            // Add event listeners
+            document.getElementById('searchInput').addEventListener('input', filterClients);
+            document.getElementById('statusFilter').addEventListener('change', filterClients);
+            document.getElementById('sortBy').addEventListener('change', sortClients);
+            document.getElementById('clientForm').addEventListener('submit', handleClientSubmit);
+        });
+
+        async function loadClients() {
+            try {
+                const response = await fetch('/api/institutions');
+                const institutions = await response.json();
+                const tableBody = document.getElementById('clientsTableBody');
+                tableBody.innerHTML = '';
+
+                if (institutions.length === 0) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+                                <i class="fas fa-building text-4xl mb-4 opacity-50"></i>
+                                <p class="text-lg">No clients found</p>
+                                <p class="text-sm">Add your first client to get started</p>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                // Load technician assignments for all institutions
+                const assignmentsResponse = await fetch('/api/technician-assignments');
+                const assignments = await assignmentsResponse.json();
+                const assignmentMap = {};
+                assignments.forEach(assignment => {
+                    assignmentMap[assignment.institution_id] = assignment;
+                });
+
+                for (const inst of institutions) {
+                    const assignment = assignmentMap[inst.institution_id];
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-gray-50';
+                    row.innerHTML = `
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-medium text-gray-900">${inst.institution_id}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-10 w-10 bg-gray-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-building text-gray-500"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-gray-900">${inst.name}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm text-gray-900">${formatInstitutionType(inst.type)}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm text-gray-900">${inst.address}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            ${assignment ? `
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-user-cog text-green-600 text-sm"></i>
+                                    </div>
+                                    <div class="ml-3">
+                                        <div class="text-sm font-medium text-gray-900">${assignment.technician_first_name} ${assignment.technician_last_name}</div>
+                                        <div class="text-xs text-gray-500">${assignment.technician_email}</div>
+                                    </div>
+                                </div>
+                            ` : `
+                                <span class="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
+                                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                                    Not Assigned
+                                </span>
+                            `}
+                        </td>
+                        <td class="px-6 py-4 text-sm font-medium">
+                            <div class="flex space-x-3">
+                                ${assignment ? `
+                                    <button onclick="changeTechnician('${inst.institution_id}', ${assignment.id})" class="text-green-600 hover:text-green-900" title="Change Technician">
+                                        <i class="fas fa-user-edit"></i>
+                                    </button>
+                                    <button onclick="removeTechnician('${inst.institution_id}', ${assignment.id})" class="text-orange-600 hover:text-orange-900" title="Remove Assignment">
+                                        <i class="fas fa-user-minus"></i>
+                                    </button>
+                                ` : `
+                                    <button onclick="assignTechnician('${inst.institution_id}')" class="text-blue-600 hover:text-blue-900" title="Assign Technician">
+                                        <i class="fas fa-user-plus"></i>
+                                    </button>
+                                `}
+                                <button onclick="viewClientDetails('${inst.institution_id}')" class="text-blue-600 hover:text-blue-900" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button onclick="editClient('${inst.institution_id}')" class="text-indigo-600 hover:text-indigo-900" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="deleteClient('${inst.institution_id}')" class="text-red-600 hover:text-red-900" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                }
+            } catch (error) {
+                console.error('Error loading clients:', error);
+                const tableBody = document.getElementById('clientsTableBody');
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center text-red-500">
+                            <i class="fas fa-exclamation-triangle text-4xl mb-4"></i>
+                            <p class="text-lg">Error loading clients</p>
+                            <p class="text-sm">Please try refreshing the page</p>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        function formatInstitutionType(type) {
+            const typeMap = {
+                'public_school': 'Public School',
+                'private_school': 'Private School',
+                'private_company': 'Private Company',
+                'lgu': 'Local Government Unit'
+            };
+            return typeMap[type] || type;
+        }
+
+        function filterClients() {
+            // TODO: Implement client filtering
+            console.log('Filtering clients...');
+        }
+
+        function sortClients() {
+            // TODO: Implement client sorting
+            console.log('Sorting clients...');
+        }
+
+        function openAddClientModal() {
+            document.getElementById('clientModal').classList.remove('hidden');
+            document.getElementById('modalTitle').textContent = 'Add New Client';
+            document.getElementById('clientForm').reset();
+            // Clear any edit mode data
+            document.getElementById('clientForm').removeAttribute('data-edit-mode');
+        }
+
+        function closeClientModal() {
+            document.getElementById('clientModal').classList.add('hidden');
+        }
+
+        async function handleClientSubmit(event) {
+            event.preventDefault();
+            
+            const name = document.getElementById('name').value.trim();
+            const type = document.getElementById('type').value;
+            const address = document.getElementById('address').value.trim();
+            
+            // Debug: Log the values to see what we're getting
+            console.log('Form values:', { name, type, address });
+            
+            if (!name || !type || !address) {
+                console.log('Validation failed:', { 
+                    name: !name ? 'missing' : 'ok', 
+                    type: !type ? 'missing' : 'ok', 
+                    address: !address ? 'missing' : 'ok' 
+                });
+                alert('Please fill in all fields');
+                return;
+            }
+            
+            console.log('Validation passed, submitting...');
+            
+            const isEditing = document.getElementById('clientForm').hasAttribute('data-edit-mode');
+            
+            try {
+                let url, method, payload;
+                
+                if (isEditing) {
+                    // For editing, we need the institution_id from the stored edit data
+                    const institutionId = document.getElementById('clientForm').getAttribute('data-edit-id');
+                    url = `/api/institutions/${institutionId}`;
+                    method = 'PUT';
+                    payload = { name, type, address };
+                } else {
+                    // For adding new client, no institution_id needed (auto-generated)
+                    url = '/api/institutions';
+                    method = 'POST';
+                    payload = { name, type, address };
+                }
+                
+                console.log('About to send request:');
+                console.log('URL:', url);
+                console.log('Method:', method);
+                console.log('Payload:', payload);
+                console.log('Payload JSON:', JSON.stringify(payload));
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                const result = await response.json();
+                
+                console.log('API Response Status:', response.status);
+                console.log('API Response:', result);
+                
+                if (!response.ok) {
+                    console.error('API Error Details:', result);
+                    throw new Error(result.error || 'Failed to save institution');
+                }
+                
+                // Show success message
+                alert(isEditing ? 'Client updated successfully!' : 'Client added successfully!');
+                
+                // Close modal and reload data
+            closeClientModal();
+                await loadClients();
+                
+            } catch (error) {
+                console.error('Error saving client:', error);
+                alert(error.message || 'Error saving client. Please try again.');
+            }
+        }
+
+        async function viewClientDetails(clientId) {
+            try {
+                const response = await fetch(`/api/institutions/${clientId}`);
+                const institution = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(institution.error || 'Failed to load client details');
+                }
+                
+                alert(`Client Details:\n\nID: ${institution.institution_id}\nName: ${institution.name}\nType: ${formatInstitutionType(institution.type)}\nAddress: ${institution.address}\nCreated: ${new Date(institution.created_at).toLocaleDateString()}`);
+            } catch (error) {
+                console.error('Error loading client details:', error);
+                alert('Error loading client details. Please try again.');
+            }
+        }
+
+        async function editClient(clientId) {
+            try {
+                const response = await fetch(`/api/institutions/${clientId}`);
+                const institution = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(institution.error || 'Failed to load client details');
+                }
+                
+                // Populate form with existing data (no institution_id field needed)
+                document.getElementById('name').value = institution.name;
+                document.getElementById('type').value = institution.type;
+                document.getElementById('address').value = institution.address;
+                
+                // Set edit mode and store the institution_id for the update API call
+                document.getElementById('clientForm').setAttribute('data-edit-mode', 'true');
+                document.getElementById('clientForm').setAttribute('data-edit-id', institution.institution_id);
+                
+                // Update modal title and show modal
+                document.getElementById('modalTitle').textContent = `Edit Client (${institution.institution_id})`;
+                document.getElementById('clientModal').classList.remove('hidden');
+                
+            } catch (error) {
+                console.error('Error loading client for edit:', error);
+                alert('Error loading client details. Please try again.');
+            }
+        }
+
+        async function deleteClient(clientId) {
+            if (!confirm('Are you sure you want to delete this client? This action cannot be undone.')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/institutions/${clientId}`, {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.error || 'Failed to delete client');
+                }
+                
+                alert('Client deleted successfully!');
+                await loadClients();
+                
+            } catch (error) {
+                console.error('Error deleting client:', error);
+                alert(error.message || 'Error deleting client. Please try again.');
+            }
+        }
+
+        // Technician Assignment Functions
+        let currentInstitutionId = null;
+        let currentAssignmentId = null;
+
+        async function assignTechnician(institutionId) {
+            currentInstitutionId = institutionId;
+            currentAssignmentId = null;
+            
+            try {
+                // Load institution details
+                const instResponse = await fetch(`/api/institutions/${institutionId}`);
+                const institution = await instResponse.json();
+                
+                // Load available technicians
+                const techResponse = await fetch('/api/staff');
+                const staff = await techResponse.json();
+                const technicians = staff.filter(s => s.role === 'technician' && s.status === 'active');
+                
+                // Update modal content
+                document.getElementById('selectedInstitutionName').textContent = institution.name;
+                document.getElementById('selectedInstitutionId').textContent = `ID: ${institution.institution_id}`;
+                document.getElementById('technicianModalTitle').textContent = 'Assign Technician';
+                document.getElementById('assignTechnicianBtn').textContent = 'Assign Technician';
+                document.getElementById('currentAssignment').classList.add('hidden');
+                
+                // Populate technician dropdown
+                const select = document.getElementById('technicianSelect');
+                select.innerHTML = '<option value="">Select a technician...</option>';
+                
+                technicians.forEach(tech => {
+                    const option = document.createElement('option');
+                    option.value = tech.id;
+                    option.textContent = `${tech.first_name} ${tech.last_name} (${tech.email})`;
+                    select.appendChild(option);
+                });
+                
+                if (technicians.length === 0) {
+                    select.innerHTML = '<option value="">No technicians available</option>';
+                }
+                
+                document.getElementById('technicianModal').classList.remove('hidden');
+                
+            } catch (error) {
+                console.error('Error loading assignment modal:', error);
+                alert('Error loading technician assignment modal. Please try again.');
+            }
+        }
+
+        async function changeTechnician(institutionId, assignmentId) {
+            currentInstitutionId = institutionId;
+            currentAssignmentId = assignmentId;
+            
+            try {
+                // Load institution details
+                const instResponse = await fetch(`/api/institutions/${institutionId}`);
+                const institution = await instResponse.json();
+                
+                // Load current assignment
+                const assignResponse = await fetch(`/api/institutions/${institutionId}/technician`);
+                const assignmentData = await assignResponse.json();
+                
+                // Load available technicians
+                const techResponse = await fetch('/api/staff');
+                const staff = await techResponse.json();
+                const technicians = staff.filter(s => s.role === 'technician' && s.status === 'active');
+                
+                // Update modal content
+                document.getElementById('selectedInstitutionName').textContent = institution.name;
+                document.getElementById('selectedInstitutionId').textContent = `ID: ${institution.institution_id}`;
+                document.getElementById('technicianModalTitle').textContent = 'Change Technician Assignment';
+                document.getElementById('assignTechnicianBtn').textContent = 'Update Assignment';
+                
+                // Show current assignment
+                if (assignmentData.assigned) {
+                    document.getElementById('currentAssignment').classList.remove('hidden');
+                    document.getElementById('currentTechnicianName').textContent = 
+                        `${assignmentData.technician.technician_first_name} ${assignmentData.technician.technician_last_name}`;
+                }
+                
+                // Populate technician dropdown
+                const select = document.getElementById('technicianSelect');
+                select.innerHTML = '<option value="">Select a different technician...</option>';
+                
+                technicians.forEach(tech => {
+                    const option = document.createElement('option');
+                    option.value = tech.id;
+                    option.textContent = `${tech.first_name} ${tech.last_name} (${tech.email})`;
+                    
+                    // Pre-select current technician
+                    if (assignmentData.assigned && tech.id === assignmentData.technician.technician_id) {
+                        option.selected = true;
+                    }
+                    
+                    select.appendChild(option);
+                });
+                
+                document.getElementById('technicianModal').classList.remove('hidden');
+                
+            } catch (error) {
+                console.error('Error loading change assignment modal:', error);
+                alert('Error loading technician assignment modal. Please try again.');
+            }
+        }
+
+        async function removeTechnician(institutionId, assignmentId) {
+            if (!confirm('Are you sure you want to remove the technician assignment? Future service requests from this institution will not be auto-assigned.')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/technician-assignments/${assignmentId}`, {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.error || 'Failed to remove assignment');
+                }
+                
+                alert('Technician assignment removed successfully!');
+                await loadClients();
+                
+            } catch (error) {
+                console.error('Error removing technician assignment:', error);
+                alert(error.message || 'Error removing assignment. Please try again.');
+            }
+        }
+
+        async function confirmTechnicianAssignment() {
+            const selectedTechnicianId = document.getElementById('technicianSelect').value;
+            
+            if (!selectedTechnicianId) {
+                alert('Please select a technician');
+                return;
+            }
+            
+            try {
+                const assignBtn = document.getElementById('assignTechnicianBtn');
+                const originalText = assignBtn.textContent;
+                assignBtn.disabled = true;
+                assignBtn.textContent = 'Assigning...';
+                
+                // Get current user (admin) ID from auth storage
+                const currentUser = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
+                if (!currentUser || !currentUser.id) {
+                    throw new Error('You must be logged in to assign a technician.');
+                }
+                const adminId = currentUser.id;
+                
+                const response = await fetch('/api/technician-assignments', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        technician_id: parseInt(selectedTechnicianId),
+                        institution_id: currentInstitutionId,
+                        assigned_by: adminId
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.error || 'Failed to assign technician');
+                }
+                
+                alert('Technician assigned successfully!');
+                closeTechnicianModal();
+                await loadClients();
+                
+            } catch (error) {
+                console.error('Error assigning technician:', error);
+                alert(error.message || 'Error assigning technician. Please try again.');
+            } finally {
+                const assignBtn = document.getElementById('assignTechnicianBtn');
+                assignBtn.disabled = false;
+                assignBtn.textContent = currentAssignmentId ? 'Update Assignment' : 'Assign Technician';
+            }
+        }
+
+        function closeTechnicianModal() {
+            document.getElementById('technicianModal').classList.add('hidden');
+            document.getElementById('technicianSelect').value = '';
+            currentInstitutionId = null;
+            currentAssignmentId = null;
+        }
+    </script>
+</body>
+</html>

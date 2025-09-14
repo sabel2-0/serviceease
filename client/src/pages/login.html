@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | ServiceEase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="../js/auth.js" defer></script>
+    <!-- Common verification alert script -->
+    <script>
+        // Check for verification alert on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const user = JSON.parse(localStorage.getItem('user'));
+            const showAlert = localStorage.getItem('showVerificationAlert');
+            
+            if (user && showAlert === 'true' && !user.isEmailVerified) {
+                // Create the banner
+                const banner = document.createElement('div');
+                banner.className = 'fixed top-0 left-0 right-0 bg-yellow-50 border-b border-yellow-200 p-4';
+                banner.innerHTML = `
+                    <div class="max-w-7xl mx-auto flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-exclamation-circle text-yellow-400"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-yellow-800">
+                                    Please verify your email address to access all features
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex">
+                            <button type="button" onclick="sendVerificationEmail()" class="mr-3 bg-yellow-200 px-3 py-1 rounded-md text-sm font-medium text-yellow-800 hover:bg-yellow-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500">
+                                Verify Now
+                            </button>
+                            <button type="button" onclick="dismissVerificationBanner(this)" class="bg-transparent text-yellow-700 hover:text-yellow-600">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                document.body.prepend(banner);
+            }
+        });
+
+        function dismissVerificationBanner(button) {
+            localStorage.removeItem('showVerificationAlert');
+            button.closest('.fixed').remove();
+        }
+    </script>
+    <style>
+        .bg-image {
+            background-image: url('../images/img-art-left.jpg');
+            background-size: cover;
+            background-position: center;
+        }
+        
+        
+        .error-input {
+            border-color: #ef4444 !important;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gray-100">
+    <div class="min-h-screen flex">
+        <!-- Left side - Image -->
+        <div class="hidden lg:flex lg:w-1/2 bg-image relative">
+          
+        </div>
+
+        <!-- Right side - Login Form -->
+        <div class="w-full lg:w-1/2 flex items-center justify-center p-8">
+            <div class="w-full max-w-md">
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-bold text-gray-900">Sign In</h2>
+                    <p class="mt-2 text-sm text-gray-600">Enter your credentials to access your account</p>
+                </div>
+
+                <!-- Error Message Space (always reserves space) -->
+                <div class="mb-4" style="min-height: 60px;">
+                    <div id="errorMessage" class="hidden p-4 bg-red-50 border border-red-200 rounded-lg">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-exclamation-circle text-red-400"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p id="errorText" class="text-sm text-red-800"></p>
+                            </div>
+                            <div class="ml-auto pl-3">
+                                <div class="-mx-1.5 -my-1.5">
+                                    <button type="button" onclick="hideError()" class="inline-flex bg-red-50 rounded-md p-1.5 text-red-400 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-red-50 focus:ring-red-600">
+                                        <i class="fas fa-times text-sm"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <form id="loginForm" class="space-y-6">
+                    <!-- Email Input -->
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+                        <input type="email" id="email" name="email" required
+                            class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 
+                            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                            transition-all duration-200 ease-in-out"
+                            placeholder="Enter your email">
+                    </div>
+
+                    <!-- Password Input -->
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+                        <div class="relative">
+                            <input type="password" id="password" name="password" required
+                                class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 
+                                focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                                transition-all duration-200 ease-in-out"
+                                placeholder="Enter your password">
+                            <button type="button" onclick="togglePassword('password')"
+                                class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Remember Me and Forgot Password -->
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <input type="checkbox" id="remember" name="remember"
+                                class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            <label for="remember" class="ml-2 block text-sm text-gray-700">Remember me</label>
+                        </div>
+                        <a href="#" class="text-sm font-medium text-blue-600 hover:text-blue-500">Forgot password?</a>
+                    </div>
+
+                    <!-- Login Button -->
+                    <button type="submit"
+                        class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg
+                        text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2
+                        focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 ease-in-out">
+                        <span id="loginBtnText">Sign In</span>
+                    </button>
+
+                    <!-- Register Link -->
+                    <p class="text-center text-sm text-gray-600">
+                        Don't have an account?
+                        <a href="register.html" class="font-medium text-blue-600 hover:text-blue-500">Sign up</a>
+                    </p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Send verification email
+        async function sendVerificationEmail() {
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!user) return;
+
+            try {
+                const response = await fetch('/api/send-verification-email', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        userId: user.id,
+                        email: user.email
+                    })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    alert('Verification email sent! Please check your inbox.');
+                } else {
+                    throw new Error(data.error || 'Failed to send verification email');
+                }
+            } catch (error) {
+                console.error('Error sending verification email:', error);
+                alert('Error sending verification email. Please try again.');
+            }
+        }
+
+        // Toggle password visibility
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            const icon = input.nextElementSibling.querySelector('i');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        // Show error message
+        function showError(message) {
+            const errorMessage = document.getElementById('errorMessage');
+            const errorText = document.getElementById('errorText');
+            errorText.textContent = message;
+            errorMessage.classList.remove('hidden');
+        }
+
+        // Hide error message
+        function hideError() {
+            const errorMessage = document.getElementById('errorMessage');
+            errorMessage.classList.add('hidden');
+        }
+
+        // Handle login form submission
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Hide any existing error messages
+            hideError();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const loginBtn = this.querySelector('button[type="submit"]');
+            const loginBtnText = document.getElementById('loginBtnText');
+            
+            try {
+                // Show loading state
+                loginBtn.disabled = true;
+                loginBtnText.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Signing in...';
+                
+                // Attempt login
+                const result = await loginUser({ email, password });
+                
+                // Login successful - hide any error messages
+                hideError();
+                
+                // Show verification banner if email is not verified
+                if (!result.user.isEmailVerified) {
+                    const banner = document.createElement('div');
+                    banner.className = 'fixed top-0 left-0 right-0 bg-yellow-50 border-b border-yellow-200 p-4';
+                    banner.innerHTML = `
+                        <div class="max-w-7xl mx-auto flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-exclamation-circle text-yellow-400"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm font-medium text-yellow-800">
+                                        Please verify your email address to access all features
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flex">
+                                <button type="button" onclick="sendVerificationEmail()" class="mr-3 bg-yellow-200 px-3 py-1 rounded-md text-sm font-medium text-yellow-800 hover:bg-yellow-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500">
+                                    Verify Now
+                                </button>
+                                <button type="button" onclick="this.parentElement.parentElement.parentElement.remove()" class="bg-transparent text-yellow-700 hover:text-yellow-600">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    document.body.prepend(banner);
+                }
+            } catch (error) {
+                // Show error message with nice UI
+                let errorMessage = 'Login failed. Please check your credentials.';
+                
+                if (error.message.includes('Invalid credentials') || error.message.includes('User not found')) {
+                    errorMessage = 'Invalid email or password. Please try again.';
+                } else if (error.message.includes('network') || error.message.includes('fetch')) {
+                    errorMessage = 'Connection error. Please check your internet connection and try again.';
+                } else if (error.message) {
+                    errorMessage = error.message;
+                }
+                
+                showError(errorMessage);
+                
+                // Reset button state
+                loginBtn.disabled = false;
+                loginBtnText.textContent = 'Sign In';
+                
+                // Highlight input fields with error styling
+                const emailInput = document.getElementById('email');
+                const passwordInput = document.getElementById('password');
+                emailInput.classList.add('error-input');
+                passwordInput.classList.add('error-input');
+                
+                // Remove error styling when user starts typing (but keep error message)
+                const removeErrorStyling = () => {
+                    emailInput.classList.remove('error-input');
+                    passwordInput.classList.remove('error-input');
+                    // Don't hide error message - it will stay until successful login
+                };
+                
+                emailInput.addEventListener('input', removeErrorStyling, { once: true });
+                passwordInput.addEventListener('input', removeErrorStyling, { once: true });
+            }
+        });
+
+        // Initialize form event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is already logged in
+            if (localStorage.getItem('isLoggedIn') === 'true' && localStorage.getItem('user')) {
+                try {
+                    const user = JSON.parse(localStorage.getItem('user'));
+                    // Redirect to the appropriate dashboard based on role
+                    if (user.role === 'admin') {
+                        window.location.href = '/pages/admin/admin.html';
+                    } else if (user.role === 'operations_officer') {
+                        window.location.href = '/pages/admin/admin.html';
+                    } else if (user.role === 'technician') {
+                        window.location.href = '/pages/technician/technician.html';
+                    } else {
+                        window.location.href = '/pages/coordinator/coordinator.html';
+                    }
+                    return;
+                } catch (e) {
+                    console.error('Error parsing user data:', e);
+                    // Clear invalid data
+                    localStorage.removeItem('isLoggedIn');
+                    localStorage.removeItem('user');
+                    localStorage.removeItem('token');
+                }
+            }
+        });
+    </script>
+</body>
+</html>

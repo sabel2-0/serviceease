@@ -1,0 +1,431 @@
+<!-- Coordinator Sidenav Component -->
+<!-- Include Tailwind CSS directly -->
+<script src="https://cdn.tailwindcss.com"></script>
+<div class="coordinator-sidenav h-full bg-gray-900 w-64 min-h-screen shadow-lg flex flex-col overflow-hidden">
+    <!-- Logo and Title -->
+    <div class="px-6 py-8 flex items-center border-b border-gray-800">
+        <div class="w-10 h-10 flex-shrink-0 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
+            <i class="fas fa-cogs text-white"></i>
+        </div>
+        <div class="ml-3">
+            <h1 class="text-lg font-bold text-white">ServiceEase</h1>
+            <p class="text-xs text-gray-400">Coordinator Portal</p>
+        </div>
+    </div>
+    
+    <!-- Navigation Menu -->
+    <nav class="mt-6 px-4 flex-grow overflow-visible">
+        <!-- Dashboard -->
+        <a href="/pages/coordinator/coordinator.html" class="sidenav-item flex items-center px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors mb-1 active">
+            <i class="fas fa-tachometer-alt w-5 h-5 text-center mr-3"></i>
+            <span>Dashboard</span>
+        </a>
+        
+        <!-- Service Management Section -->
+        <div class="mt-6 mb-2 px-4">
+            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Service Management</p>
+        </div>
+        
+        <!-- Service Requests Dropdown -->
+        <div class="nav-dropdown mb-1">
+            <button class="sidenav-item dropdown-toggle flex items-center justify-between w-full px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors">
+                <div class="flex items-center">
+                    <i class="fas fa-clipboard-list w-5 h-5 text-center mr-3"></i>
+                    <span>Service Requests</span>
+                </div>
+                <i class="fas fa-chevron-down text-xs transition-transform"></i>
+            </button>
+            <div class="dropdown-menu pl-7 mt-1 hidden">
+                <a href="/pages/coordinator/service-requests.html" class="sidenav-item flex items-center px-4 py-2 text-gray-400 rounded-lg hover:bg-gray-800 hover:text-white transition-colors mb-1">
+                    <i class="fas fa-list-alt w-4 h-4 text-center mr-3"></i>
+                    <span class="text-sm">Manage Service Requests</span>
+                </a>
+            </div>
+            <!-- Spacer div to maintain layout when dropdown is open -->
+            <div class="dropdown-spacer h-0 opacity-0 py-0"></div>
+        </div>
+        
+        <!-- Printer Management Section -->
+        <div class="mt-6 mb-2 px-4">
+            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Printer Management</p>
+        </div>
+        
+        <!-- Printer Management Dropdown -->
+        <div class="nav-dropdown mb-1">
+            <button class="sidenav-item dropdown-toggle flex items-center justify-between w-full px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors">
+                <div class="flex items-center">
+                    <i class="fas fa-print w-5 h-5 text-center mr-3"></i>
+                    <span>Manage Printers</span>
+                </div>
+                <i class="fas fa-chevron-down text-xs transition-transform"></i>
+            </button>
+            <div class="dropdown-menu pl-7 mt-1 hidden">
+                <a href="/pages/coordinator/coordinator-printers.html" class="sidenav-item flex items-center px-4 py-2 text-gray-400 rounded-lg hover:bg-gray-800 hover:text-white transition-colors mb-1">
+                    <i class="fas fa-list w-4 h-4 text-center mr-3"></i>
+                    <span class="text-sm">Manage Printers</span>
+                </a>
+            </div>
+            <!-- Spacer div to maintain layout when dropdown is open -->
+            <div class="dropdown-spacer h-0 opacity-0 py-0"></div>
+        </div>
+        
+        <!-- User Management Section -->
+        <div class="mt-6 mb-2 px-4">
+            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">User Management</p>
+        </div>
+        
+        <!-- User Management Dropdown -->
+        <div class="nav-dropdown mb-1">
+            <button class="sidenav-item dropdown-toggle flex items-center justify-between w-full px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors">
+                <div class="flex items-center">
+                    <i class="fas fa-users w-5 h-5 text-center mr-3"></i>
+                    <span>User Accounts</span>
+                </div>
+                <i class="fas fa-chevron-down text-xs transition-transform"></i>
+            </button>
+            <div class="dropdown-menu pl-7 mt-1 hidden user-dropdown">
+                <a href="/pages/coordinator/user-management.html" class="sidenav-item flex items-center px-4 py-2 text-gray-400 rounded-lg hover:bg-gray-800 hover:text-white transition-colors mb-1">
+                    <i class="fas fa-user-friends w-4 h-4 text-center mr-3"></i>
+                    <span class="text-sm">Manage Users</span>
+                </a>
+            </div>
+            <!-- Spacer div to maintain layout when dropdown is open -->
+            <div class="dropdown-spacer h-0 opacity-0 py-0"></div>
+        </div>
+        
+        <!-- Settings Section -->
+        <div class="mt-6 mb-2 px-4">
+            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Settings</p>
+        </div>
+        
+        <a href="#account-settings" class="sidenav-item flex items-center px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors mb-1">
+            <i class="fas fa-user-cog w-5 h-5 text-center mr-3"></i>
+            <span>Account Settings</span>
+        </a>
+        
+        <a href="#notifications-settings" class="sidenav-item flex items-center px-4 py-3 text-gray-300 rounded-lg hover:bg-gray-800 hover:text-white transition-colors mb-1">
+            <i class="fas fa-bell w-5 h-5 text-center mr-3"></i>
+            <span>Notifications</span>
+            <span class="notification-badge ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-0.5 min-w-[20px] text-center" id="notifications-badge">0</span>
+        </a>
+    </nav>
+    
+    <!-- Logout Section - Fixed at bottom -->
+    <div class="border-t border-gray-800 p-4 mt-auto">
+        <button id="logout-btn" class="w-full flex items-center px-4 py-3 text-red-400 rounded-lg hover:bg-red-900/30 hover:text-red-300 transition-colors" onclick="handleLogout(event)">
+            <i class="fas fa-sign-out-alt w-5 h-5 text-center mr-3"></i>
+            <span>Logout</span>
+        </button>
+    </div>
+    
+    <script>
+        function handleLogout(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            console.log('Logout button clicked via inline handler');
+            
+            // Clear all user data
+            localStorage.removeItem('user');
+            localStorage.removeItem('isLoggedIn');
+            localStorage.removeItem('token');
+            
+            // Try multiple approaches to redirect
+            try {
+                console.log('Redirecting to login page - approach 1');
+                window.location.href = '/pages/login.html';
+                
+                // If that doesn't work, try absolute URL with protocol
+                setTimeout(function() {
+                    console.log('Redirecting to login page - approach 2');
+                    window.location.href = window.location.origin + '/pages/login.html';
+                }, 200);
+                
+                // If that still doesn't work, try relative path
+                setTimeout(function() {
+                    console.log('Redirecting to login page - approach 3');
+                    window.location.replace('../../pages/login.html');
+                }, 400);
+            } catch (e) {
+                console.error('Error during logout redirect:', e);
+                alert('Error during logout. Please close your browser to log out completely.');
+            }
+        }
+    </script>
+</div>
+
+<script>
+    // Initialize dropdown functionality
+    function initializeDropdowns() {
+        document.querySelectorAll('.dropdown-toggle').forEach(toggle => {
+            toggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Toggle dropdown visibility
+                const dropdownMenu = this.nextElementSibling;
+                const chevron = this.querySelector('.fa-chevron-down');
+                
+                // Close all other dropdowns
+                document.querySelectorAll('.dropdown-menu').forEach(menu => {
+                    if (menu !== dropdownMenu && !menu.classList.contains('hidden')) {
+                        menu.classList.add('hidden');
+                        const otherChevron = menu.previousElementSibling.querySelector('.fa-chevron-down');
+                        if (otherChevron) {
+                            otherChevron.style.transform = '';
+                        }
+                    }
+                });
+                
+                // Toggle this dropdown without causing scroll
+                dropdownMenu.classList.toggle('hidden');
+                
+                // Special handling for dropdowns that might overlap with logout
+                if (dropdownMenu.classList.contains('user-dropdown') && !dropdownMenu.classList.contains('hidden')) {
+                    // Ensure it's above the logout button
+                    dropdownMenu.style.zIndex = '40';
+                }
+                
+                // Rotate chevron icon
+                if (chevron) {
+                    chevron.style.transform = dropdownMenu.classList.contains('hidden') ? '' : 'rotate(180deg)';
+                }
+            });
+        });
+        
+        // Clicking outside closes all dropdowns
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.nav-dropdown')) {
+                document.querySelectorAll('.dropdown-menu').forEach(menu => {
+                    menu.classList.add('hidden');
+                    const chevron = menu.previousElementSibling.querySelector('.fa-chevron-down');
+                    if (chevron) {
+                        chevron.style.transform = '';
+                    }
+                });
+            }
+        });
+    }
+    
+    // Handle sidenav item click
+    document.querySelectorAll('.sidenav-item:not(.dropdown-toggle)').forEach(item => {
+        item.addEventListener('click', function(e) {
+            // Don't apply to dropdown toggles
+            if (item.classList.contains('dropdown-toggle')) {
+                return;
+            }
+            
+            // Remove active class from all items
+            document.querySelectorAll('.sidenav-item').forEach(i => {
+                i.classList.remove('active', 'bg-gray-800', 'text-white');
+                if (!i.classList.contains('dropdown-toggle')) {
+                    i.classList.add('text-gray-300');
+                } else {
+                    // Keep parent dropdowns highlighted if child is active
+                    const dropdownMenu = i.nextElementSibling;
+                    const hasActiveChild = dropdownMenu && Array.from(dropdownMenu.querySelectorAll('.sidenav-item')).some(child => 
+                        child.getAttribute('href') === window.location.hash
+                    );
+                    
+                    if (hasActiveChild) {
+                        i.classList.add('bg-gray-800', 'text-white');
+                        i.classList.remove('text-gray-300');
+                    }
+                }
+            });
+            
+            // Add active class to clicked item
+            this.classList.add('active', 'bg-gray-800', 'text-white');
+            this.classList.remove('text-gray-300');
+            
+            // Special handling for logout
+            if (this.id === 'logout-btn') {
+                e.preventDefault();
+                // Clear all user data from localStorage
+                localStorage.removeItem('user');
+                localStorage.removeItem('isLoggedIn');
+                localStorage.removeItem('token');
+                // Redirect to login page
+                window.location.href = '../../pages/login.html';
+            }
+            
+            // Also activate parent dropdown if this is a dropdown item
+            const dropdownMenu = this.closest('.dropdown-menu');
+            if (dropdownMenu) {
+                const dropdownToggle = dropdownMenu.previousElementSibling;
+                if (dropdownToggle) {
+                    dropdownToggle.classList.add('bg-gray-800', 'text-white');
+                    dropdownToggle.classList.remove('text-gray-300');
+                }
+            }
+        });
+    });
+    
+    // Set notification badge counts - for demo purposes
+    document.addEventListener('DOMContentLoaded', () => {
+        // Initialize dropdowns
+        initializeDropdowns();
+        
+        // Set notification count for notifications
+        document.getElementById('notifications-badge').textContent = Math.floor(Math.random() * 8);
+        
+        // Hide badges with zero count
+        document.querySelectorAll('.notification-badge').forEach(badge => {
+            if (badge.textContent === '0') {
+                badge.classList.add('hidden');
+            }
+        });
+        
+        // Add direct event listener to the logout button
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Logout button clicked - executing direct event handler');
+                
+                // Clear all user data from localStorage
+                localStorage.removeItem('user');
+                localStorage.removeItem('isLoggedIn');
+                localStorage.removeItem('token');
+                
+                // Add a small delay before redirecting to ensure localStorage is cleared
+                setTimeout(function() {
+                    console.log('Redirecting to login page...');
+                    window.location.href = '../../pages/login.html';
+                }, 100);
+            });
+        }
+    });
+    
+    // Export function to update notification badges
+    function updateNotificationBadge(id, count) {
+        const badge = document.getElementById(`${id}-badge`);
+        if (badge) {
+            badge.textContent = count;
+            if (count > 0) {
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+    }
+    
+    // Apply styles to active item based on current URL hash
+    function updateActiveNavItem() {
+        const hash = window.location.hash || '#';
+        
+        // Reset all items
+        document.querySelectorAll('.sidenav-item').forEach(item => {
+            if (!item.classList.contains('dropdown-toggle')) {
+                item.classList.remove('active', 'bg-gray-800', 'text-white');
+                item.classList.add('text-gray-300');
+            }
+        });
+        
+        // Find and activate the item matching the hash
+        document.querySelectorAll('.sidenav-item').forEach(item => {
+            if (item.getAttribute('href') === hash) {
+                item.classList.add('active', 'bg-gray-800', 'text-white');
+                item.classList.remove('text-gray-300');
+                
+                // If this is inside a dropdown, also activate the dropdown
+                const dropdownMenu = item.closest('.dropdown-menu');
+                if (dropdownMenu) {
+                    // Show this dropdown
+                    dropdownMenu.classList.remove('hidden');
+                    
+                    // Style the dropdown toggle
+                    const dropdownToggle = dropdownMenu.previousElementSibling;
+                    if (dropdownToggle) {
+                        dropdownToggle.classList.add('bg-gray-800', 'text-white');
+                        dropdownToggle.classList.remove('text-gray-300');
+                        
+                        // Rotate the chevron
+                        const chevron = dropdownToggle.querySelector('.fa-chevron-down');
+                        if (chevron) {
+                            chevron.style.transform = 'rotate(180deg)';
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Initial update
+    updateActiveNavItem();
+    
+    // Update when hash changes
+    window.addEventListener('hashchange', updateActiveNavItem);
+</script>
+
+<style>
+    /* Add styles for active state */
+    .sidenav-item.active {
+        background-color: rgba(31, 41, 55, var(--tw-bg-opacity));
+        color: rgba(255, 255, 255, var(--tw-text-opacity));
+        border-left: 3px solid #3b82f6; /* Blue accent */
+        padding-left: calc(1rem - 3px); /* Adjust padding to compensate for border */
+    }
+    
+    /* Fix for dropdown menus to prevent scrolling */
+    .dropdown-menu {
+        position: absolute;
+        z-index: 30; /* Higher z-index to appear above logout */
+        transition: all 0.3s ease;
+        max-height: 0;
+        opacity: 0;
+        overflow: hidden;
+        width: calc(100% - 1rem); /* Account for padding */
+        background-color: #111827; /* Match bg-gray-900 */
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border-radius: 0.5rem;
+    }
+    
+    .dropdown-menu:not(.hidden) {
+        max-height: 500px;
+        opacity: 1;
+    }
+    
+    /* Make sure nav takes full height but doesn't overflow */
+    nav.flex-grow {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        overflow: visible !important;
+        position: relative;
+    }
+    
+    /* Prevent sidebar from scrolling when dropdowns are open */
+    .coordinator-sidenav {
+        overflow: hidden;
+    }
+    
+    /* Fix for logout section to stay at bottom */
+    .coordinator-sidenav > div:last-child {
+        position: sticky;
+        bottom: 0;
+        background-color: #111827; /* Match bg-gray-900 */
+        z-index: 20;
+        box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Ensure dropdowns appear properly */
+    .nav-dropdown {
+        position: relative;
+        margin-bottom: 10px; /* Add spacing between dropdown elements */
+    }
+    
+    /* Special handling for user dropdown that might overlap with logout */
+    .user-dropdown {
+        z-index: 40; /* Even higher for user dropdown */
+    }
+    
+    /* Make sure logout button is clearly visible and clickable */
+    #logout-btn {
+        position: relative;
+        z-index: 100;
+        cursor: pointer;
+    }
+</style>
+
+

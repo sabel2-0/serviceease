@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Printer Inventory | ServiceEase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>tailwind.config = { theme: { extend: {} } };</script>
+</head>
+<body class="bg-slate-50 min-h-screen">
+    <div class="flex h-screen">
+        <!-- Dynamic Sidebar -->
+        <div id="dynamic-sidebar"></div>
+
+        <main class="flex-1 overflow-auto bg-gradient-to-br from-slate-50 to-white">
+            <div class="bg-white shadow-sm border-b border-slate-200 px-8 py-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-bold text-slate-900">Printer Inventory</h1>
+                        <p class="text-slate-600 mt-1">Manage printer inventory</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-8 space-y-6">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center justify-between">
+                        <div class="text-slate-700">Create and manage your printers</div>
+                        <button id="openAddPrinter" class="bg-blue-600 text-white px-4 py-2 rounded-md">Add Printer</button>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow">
+                    <div class="p-4 border-b border-slate-200 flex items-center justify-between">
+                        <h3 class="text-lg font-semibold text-slate-900">Printers</h3>
+                        <div class="text-sm text-slate-600">
+                            <label class="mr-2">
+                                <input id="filterAvailable" type="checkbox" class="mr-1"> Only available
+                            </label>
+                            <span id="invCount"></span>
+                        </div>
+                    </div>
+                    <div class="p-4 overflow-x-auto">
+                        <table class="min-w-full text-sm">
+                            <thead class="bg-slate-100 text-slate-700">
+                                <tr>
+                                    <th class="text-left px-3 py-2">Brand</th>
+                                    <th class="text-left px-3 py-2">Model</th>
+                                    <th class="text-left px-3 py-2">Serial</th>
+                                    <th class="text-left px-3 py-2">Status</th>
+                                    <th class="text-right px-3 py-2">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="invTbody"></tbody>
+                        </table>
+                        <div id="invEmpty" class="hidden text-center text-slate-500 py-8">No inventory items yet.</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Printer Modal -->
+    <div id="addPrinterModal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/40"></div>
+        <div class="relative bg-white rounded-lg shadow-lg w-full max-w-md p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-semibold text-slate-900">Add Printer</h2>
+                <button id="closeAddPrinter" class="text-slate-500 hover:text-slate-700">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="space-y-3">
+                <div class="flex items-center gap-4">
+                    <label for="modalBrand" class="w-28 text-sm text-slate-600">Brand</label>
+                    <input id="modalBrand" class="border rounded-md px-3 py-2 w-full" placeholder="e.g., HP, Canon">
+                </div>
+                <div class="flex items-center gap-4">
+                    <label for="modalModel" class="w-28 text-sm text-slate-600">Model</label>
+                    <input id="modalModel" class="border rounded-md px-3 py-2 w-full" placeholder="e.g., LaserJet Pro M404dn">
+                </div>
+                <div class="flex items-center gap-4">
+                    <label for="modalSerial" class="w-28 text-sm text-slate-600">Serial</label>
+                    <input id="modalSerial" class="border rounded-md px-3 py-2 w-full" placeholder="e.g., CNBX123456">
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-2">
+                <button id="cancelAddPrinter" class="px-4 py-2 rounded-md border">Cancel</button>
+                <button id="confirmAddPrinter" class="bg-blue-600 text-white px-4 py-2 rounded-md">Add Printer</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/dynamic-sidebar-loader.js"></script>
+    <script src="../../js/inventory-items.js"></script>
+</body>
+</html>

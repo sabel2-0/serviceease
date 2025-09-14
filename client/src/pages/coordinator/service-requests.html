@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Requests | Coordinator Portal | ServiceEase</title>
+    <!-- Tailwind CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <!-- Custom Styles -->
+    <link href="/styles/main.css" rel="stylesheet">
+    <link href="/coordinator/styles/service-requests.css" rel="stylesheet">
+    
+    <style>
+        /* Dropdown Menu Styles */
+        .dropdown-toggle .fa-chevron-down {
+            transition: transform 0.3s ease;
+        }
+        
+        .dropdown-menu {
+            overflow: hidden;
+            max-height: 0;
+            transition: max-height 0.3s ease-out, opacity 0.2s ease-out;
+            opacity: 0;
+        }
+        
+        .dropdown-menu:not(.hidden) {
+            max-height: 500px;
+            opacity: 1;
+            transition: max-height 0.5s ease-in, opacity 0.3s ease-in;
+        }
+        
+        .sidenav-item.active {
+            background-color: rgba(31, 41, 55, var(--tw-bg-opacity));
+            color: white;
+            border-left: 3px solid #3b82f6;
+            padding-left: calc(1rem - 3px);
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar Container -->
+        <div id="sidebar-container" class="flex-shrink-0 w-64 bg-gray-900 text-white">
+            <!-- The dynamic sidebar will be loaded here via coordinator-sidenav.js -->
+        </div>
+        
+        <!-- Main Content -->
+        <div class="flex-1 overflow-auto">
+            <!-- Top Navigation -->
+            <header class="bg-white shadow-sm">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="flex justify-between items-center py-4">
+                        <h1 class="text-2xl font-semibold text-gray-900">Service Requests</h1>
+                        <div class="flex items-center space-x-4">
+                            <!-- Notification Bell -->
+                            <button id="notifications-button" class="p-2 rounded-full hover:bg-gray-200 relative">
+                                <i class="fas fa-bell text-gray-600"></i>
+                                <span class="notification-badge absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">0</span>
+                            </button>
+                            
+                            <!-- Profile Dropdown -->
+                            <div class="relative">
+                                <button id="profile-menu-button" class="flex items-center space-x-3 focus:outline-none">
+                                    <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white">
+                                        <span id="user-initials">CC</span>
+                                    </div>
+                                    <div class="hidden md:block text-left">
+                                        <span class="block text-sm font-medium text-gray-900">Welcome, <span id="welcome-name">Coordinator</span></span>
+                                        <span class="block text-sm text-gray-500">Institutional Coordinator</span>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content Area -->
+            <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                <!-- Service Requests Content -->
+                <div class="bg-white rounded-lg shadow">
+                    <div class="px-6 py-4 border-b flex justify-between items-center">
+                        <h2 class="text-lg font-semibold text-gray-800">Service Request Management</h2>
+                        <button id="new-service-request-btn" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-plus mr-2"></i>New Request
+                        </button>
+                    </div>
+                    <div class="p-6">
+                        <!-- Filter Controls -->
+                        <div class="mb-6 flex flex-wrap gap-4">
+                            <div class="w-full md:w-64">
+                                <input type="text" id="searchInput" placeholder="Search requests..." class="w-full px-4 py-2 border rounded-md">
+                            </div>
+                            <div class="w-full md:w-48">
+                                <select id="statusFilter" class="w-full px-4 py-2 border rounded-md">
+                                    <option value="">All Statuses</option>
+                                    <option value="new">New</option>
+                                    <option value="in_progress">In Progress</option>
+                                    <option value="completed">Completed</option>
+                                    <option value="issue">Issue</option>
+                                </select>
+                            </div>
+                            <div class="w-full md:w-48">
+                                <select id="serviceTypeFilter" class="w-full px-4 py-2 border rounded-md">
+                                    <option value="">All Types</option>
+                                    <option value="repair">Repair</option>
+                                    <option value="maintenance">Maintenance</option>
+                                    <option value="installation">Installation</option>
+                                </select>
+                            </div>
+                            <div class="flex-grow text-right">
+                                <button id="refreshBtn" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-md">
+                                    <i class="fas fa-sync-alt mr-2"></i>Refresh
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Stats Bar -->
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                            <div class="bg-blue-50 border border-blue-100 rounded-lg p-4">
+                                <div class="text-center">
+                                    <p class="text-sm text-gray-600">New</p>
+                                    <p id="newRequests" class="text-xl font-bold text-blue-600">0</p>
+                                </div>
+                            </div>
+                            <div class="bg-yellow-50 border border-yellow-100 rounded-lg p-4">
+                                <div class="text-center">
+                                    <p class="text-sm text-gray-600">In Progress</p>
+                                    <p id="inProgressRequests" class="text-xl font-bold text-yellow-600">0</p>
+                                </div>
+                            </div>
+                            <div class="bg-green-50 border border-green-100 rounded-lg p-4">
+                                <div class="text-center">
+                                    <p class="text-sm text-gray-600">Completed</p>
+                                    <p id="completedRequests" class="text-xl font-bold text-green-600">0</p>
+                                </div>
+                            </div>
+                            <div class="bg-red-50 border border-red-100 rounded-lg p-4">
+                                <div class="text-center">
+                                    <p class="text-sm text-gray-600">Issues</p>
+                                    <p id="issueRequests" class="text-xl font-bold text-red-600">0</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Service Request Cards -->
+                        <div id="loadingState" class="py-16 text-center">
+                            <i class="fas fa-spinner fa-spin text-3xl text-gray-400 mb-3"></i>
+                            <p class="text-gray-500">Loading service requests...</p>
+                        </div>
+                        
+                        <div id="emptyState" class="py-16 text-center hidden">
+                            <i class="fas fa-clipboard-list text-5xl text-gray-300 mb-3"></i>
+                            <p class="text-lg text-gray-500">No service requests found</p>
+                            <p class="text-gray-400">Try adjusting your filters or create a new request</p>
+                        </div>
+                        
+                        <div id="requestsContainer" class="space-y-4 hidden">
+                            <!-- Service request cards will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- New Service Request Modal -->
+    <div id="newRequestModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="absolute inset-0 bg-black/60"></div>
+        <div class="relative bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 ease-in-out scale-100">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-800">Submit New Service Request</h3>
+            </div>
+            <div class="p-6">
+                <form id="newRequestForm">
+                    <div class="mb-6">
+                        <h4 class="text-md font-medium text-gray-800 mb-3">Printer Information</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label for="servicePrinterSelect" class="block text-sm font-medium text-gray-700 mb-2">Select Printer</label>
+                                <select id="servicePrinterSelect" class="w-full px-4 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 transition-colors" required>
+                                    <option value="">Choose a printer</option>
+                                </select>
+                                <p class="text-xs text-gray-500 mt-1">Only printers assigned to your institution will be shown</p>
+                            </div>
+                            <div>
+                                <label for="printerLocation" class="block text-sm font-medium text-gray-700 mb-2">Location</label>
+                                <input type="text" id="printerLocation" class="w-full px-4 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 transition-colors" placeholder="e.g., Room 101, 2nd Floor">
+                                <p class="text-xs text-gray-500 mt-1">Optional - will be pre-filled if known</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <h4 class="text-md font-medium text-gray-800 mb-3">Service Details</h4>
+
+                        <div class="mb-4">
+                            <label for="priority" class="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+                            <select id="priority" class="w-full px-4 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 transition-colors" required>
+                                <option value="low">Low</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="high">High</option>
+                                <option value="urgent">Urgent</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="issueDescription" class="block text-sm font-medium text-gray-700 mb-2">Issue Description</label>
+                            <textarea id="issueDescription" class="w-full px-4 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 transition-colors h-32" placeholder="Please describe the issue in detail..." required></textarea>
+                            <p class="text-xs text-gray-500 mt-1">Include any relevant details about the problem</p>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="px-6 py-4 border-t bg-gray-50 flex justify-end gap-3">
+                <button id="submitNewRequest" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors transform hover:scale-105">
+                    Submit Request
+                </button>
+                <button id="cancelNewRequest" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300 transition-colors">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Service Request Detail Modal -->
+    <div id="requestModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+        <div class="relative bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 ease-in-out">
+            <div class="px-6 py-4 border-b flex justify-between items-center sticky top-0 bg-white z-10">
+                <h3 class="text-lg font-semibold text-gray-800">Service Request Details</h3>
+                <button id="closeRequestModal" class="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="requestModalContent" class="p-6">
+                <!-- Request details will be loaded here -->
+            </div>
+            <div class="px-6 py-4 border-t bg-gray-50 flex justify-end gap-3 sticky bottom-0">
+                <button id="updateStatusBtn" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors transform hover:scale-105 shadow hover:shadow-md">
+                    Update Status
+                </button>
+                <button id="closeModalBtn" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300 transition-colors">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Update Modal -->
+    <div id="statusModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+        <div class="relative bg-white rounded-lg shadow-xl w-full max-w-md transform transition-all duration-300 ease-in-out">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-800">Update Service Status</h3>
+            </div>
+            <div class="p-6">
+                <form id="statusUpdateForm">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">New Status</label>
+                        <select id="newStatus" class="w-full px-4 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                            <option value="in_progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                            <option value="issue">Issue Detected</option>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Select the appropriate status for this service request</p>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                        <textarea id="statusNotes" class="w-full px-4 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 transition-colors h-32" placeholder="Enter additional notes about this status update..."></textarea>
+                        <p class="text-xs text-gray-500 mt-1">Include any relevant details about the status change</p>
+                    </div>
+                </form>
+            </div>
+            <div class="px-6 py-4 border-t bg-gray-50 flex justify-end gap-3">
+                <button id="submitStatusUpdate" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors transform hover:scale-105 shadow hover:shadow-md">
+                    Update
+                </button>
+                <button id="cancelStatusUpdate" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300 transition-colors">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Center -->
+    <div id="notification-center" class="fixed inset-y-0 right-0 max-w-sm w-full bg-white shadow-lg z-40 transform translate-x-full transition-transform duration-300">
+        <div class="p-6 border-b flex justify-between items-center">
+            <h3 class="text-lg font-semibold text-gray-800">Notifications</h3>
+            <button id="close-notifications" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div id="notification-list" class="p-4 overflow-y-auto h-[calc(100%-4rem)]">
+            <!-- Notifications will be loaded here -->
+            <div class="text-center py-8 text-gray-500">
+                <i class="fas fa-bell-slash text-4xl mb-3"></i>
+                <p>No new notifications</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="/js/auth.js"></script>
+    <script src="/js/coordinator-sidenav.js"></script>
+    <script src="/js/coordinator-service-requests.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize user data
+            const user = JSON.parse(localStorage.getItem('user')) || { first_name: 'Coordinator', last_name: 'User' };
+            document.getElementById('welcome-name').textContent = user.first_name;
+            document.getElementById('user-initials').textContent = `${user.first_name?.charAt(0) || 'C'}${user.last_name?.charAt(0) || 'C'}`;
+            
+            // Set the active sidebar item
+            window.location.hash = '#service-requests';
+            
+            // Notification Center Toggle
+            document.getElementById('notifications-button').addEventListener('click', () => {
+                const notificationCenter = document.getElementById('notification-center');
+                notificationCenter.classList.toggle('translate-x-full');
+                notificationCenter.classList.toggle('translate-x-0');
+            });
+            
+            document.getElementById('close-notifications').addEventListener('click', () => {
+                document.getElementById('notification-center').classList.add('translate-x-full');
+                document.getElementById('notification-center').classList.remove('translate-x-0');
+            });
+            
+            // Modal Controls
+            document.getElementById('new-service-request-btn')?.addEventListener('click', () => {
+                document.getElementById('newRequestModal').classList.remove('hidden');
+            });
+            
+            // Close all modals when clicking outside
+            document.querySelectorAll('.fixed.inset-0').forEach(modal => {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.classList.add('hidden');
+                    }
+                });
+            });
+            
+            // Cancel button for modal
+            document.getElementById('cancelNewRequest')?.addEventListener('click', () => {
+                document.getElementById('newRequestModal').classList.add('hidden');
+            });
+            
+                // Form submission
+            document.getElementById('submitNewRequest')?.addEventListener('click', async () => {
+                const printerId = parseInt(document.getElementById('servicePrinterSelect').value, 10);
+                const location = document.getElementById('printerLocation').value;
+                const priority = document.getElementById('priority').value;
+                const description = document.getElementById('issueDescription').value;
+
+                console.log('Form values:', {
+                    printerId,
+                    location,
+                    priority,
+                    description
+                });
+
+                if (!printerId || isNaN(printerId)) {
+                    showNotification('Error', 'Please select a valid printer', 'error');
+                    return;
+                }
+
+                if (!priority || !description) {
+                    showNotification('Error', 'Please fill out all required fields', 'error');
+                    return;
+                }
+
+                const user = JSON.parse(localStorage.getItem('user'));
+                
+                const requestData = {
+                    inventory_item_id: printerId,
+                    priority: priority,
+                    description: description,
+                    location: location || null,
+                    institution_id: user.institution_id,
+                    coordinator_id: user.id,
+                    status: 'new'
+                };                console.log('Request data:', requestData);
+
+                try {
+                    console.log('Sending request data:', requestData);
+                    const response = await fetch('/api/service-requests', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + localStorage.getItem('token') // Add authentication token
+                        },
+                        body: JSON.stringify(requestData),
+                    });
+
+                    const responseData = await response.json();
+                    console.log('Server response:', responseData);
+
+                    if (response.ok) {
+                        showNotification('Success', 'Service request submitted successfully', 'success');
+                        document.getElementById('newRequestModal').classList.add('hidden');
+                    } else {
+                        showNotification('Error', responseData.message || 'Failed to submit request', 'error');
+                    }
+                } catch (error) {
+                    showNotification('Error', 'An error occurred while submitting the request', 'error');
+                }
+            });
+            
+            // Helper function to show notifications
+            function showNotification(title, message, type = 'info') {
+                const toast = document.createElement('div');
+                const bgColor = type === 'success' ? 'bg-green-100 border-green-500' : 
+                               type === 'error' ? 'bg-red-100 border-red-500' : 
+                               'bg-blue-100 border-blue-500';
+                const textColor = type === 'success' ? 'text-green-700' : 
+                                 type === 'error' ? 'text-red-700' : 
+                                 'text-blue-700';
+                const icon = type === 'success' ? 'fa-check-circle' : 
+                           type === 'error' ? 'fa-exclamation-circle' : 
+                           'fa-info-circle';
+                
+                toast.className = `fixed bottom-4 right-4 ${bgColor} border-l-4 p-4 rounded shadow-lg max-w-md z-50`;
+                toast.innerHTML = `
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas ${icon} ${textColor}"></i>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium ${textColor}">${title}</p>
+                            <p class="text-sm ${textColor} opacity-90">${message}</p>
+                        </div>
+                        <button onclick="this.parentElement.parentElement.remove()" class="ml-4 ${textColor}">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `;
+                document.body.appendChild(toast);
+                setTimeout(() => {
+                    if (document.body.contains(toast)) {
+                        document.body.removeChild(toast);
+                    }
+                }, 5000);
+            }
+        });
+    </script>
+</script>
+<script>
+    window.addEventListener('DOMContentLoaded', function() {
+        console.log('[DEBUG] Auto-load script running after DOMContentLoaded');
+            function tryLoadServiceRequests() {
+                if (window.loadAssignedPrinters && window.loadServiceRequests) {
+                    const result = window.loadAssignedPrinters();
+                    if (result && typeof result.then === 'function') {
+                        result.then(function() {
+                            console.log('[DEBUG] loadAssignedPrinters finished (Promise), now calling loadServiceRequests');
+                            window.loadServiceRequests();
+                        });
+                    } else {
+                        console.log('[DEBUG] loadAssignedPrinters finished (sync), now calling loadServiceRequests');
+                        window.loadServiceRequests();
+                    }
+                } else {
+                    console.warn('[DEBUG] Waiting for loadAssignedPrinters and loadServiceRequests to be available...');
+                    setTimeout(tryLoadServiceRequests, 100);
+                }
+            }
+            tryLoadServiceRequests();
+    });
+</script>
+</body>
+</html>
