@@ -55,6 +55,22 @@
                         </div>
                         <div class="text-right">
                             <p class="text-sm font-medium text-slate-900">Last Login</p>
+                                            <script>
+                                                // Example: Fetch admin data from backend API
+                                                fetch('https://serviceease.up.railway.app/api/admin/some-endpoint', {
+                                                    headers: {
+                                                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                                                    }
+                                                })
+                                                .then(res => res.json())
+                                                .then(data => {
+                                                    console.log('Admin API response:', data);
+                                                    // You can update the DOM here with admin data
+                                                })
+                                                .catch(err => {
+                                                    console.error('API error:', err);
+                                                });
+                                            </script>
                             <p class="text-xs text-slate-500" id="last-login-time">Loading...</p>
                         </div>
                     </div>
