@@ -1,0 +1,4 @@
+# Python dependencies for Association Rule Mining
+pandas>=1.5.0
+mlxtend>=0.22.0
+mysql-connector-python>=8.0.0

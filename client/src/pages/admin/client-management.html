@@ -28,6 +28,169 @@
             }
         }
     </script>
+    <style>
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .client-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* Text wrapping utilities */
+        .word-wrap { word-wrap: break-word; }
+        .break-word { overflow-wrap: break-word; }
+        .hyphens-auto { hyphens: auto; }
+        .line-height-1\.3 { line-height: 1.3; }
+        
+        .client-card.highlighted-card {
+            background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+            border: 2px solid #22c55e;
+            box-shadow: 0 10px 25px rgba(34, 197, 94, 0.15);
+            transform: scale(1.02);
+        }
+        
+        .flash-highlight {
+            animation: flashHighlight 3s ease-in-out;
+        }
+        
+        @keyframes flashHighlight {
+            0%, 100% { box-shadow: 0 10px 25px rgba(34, 197, 94, 0.15); }
+            50% { box-shadow: 0 20px 40px rgba(34, 197, 94, 0.3); }
+        }
+        
+        .client-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #10b981, #059669);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .client-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border-color: #d1fae5;
+        }
+        
+        .client-card:hover::before {
+            opacity: 1;
+        }
+        
+        .client-card.deactivated {
+            background: #fafafa;
+        }
+        
+        .status-badge {
+            backdrop-filter: blur(8px);
+            font-weight: 600;
+            letter-spacing: 0.025em;
+        }
+        
+        .action-button {
+            transition: all 0.2s ease-in-out;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .action-button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s;
+        }
+        
+        .action-button:hover::before {
+            width: 100px;
+            height: 100px;
+        }
+        
+        .action-button:hover {
+            transform: translateY(-1px);
+        }
+        
+        .technician-badge {
+            background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+            border: 1px solid #86efac;
+        }
+        
+        .warning-badge {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 1px solid #f59e0b;
+        }
+        
+        .multiple-tech-badge {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            border: 1px solid #60a5fa;
+        }
+        
+        .card-icon {
+            /* Dynamic background color set via JavaScript based on status */
+            box-shadow: 0 4px 14px 0 rgba(16, 185, 129, 0.39);
+        }
+        
+        .card-icon.bg-red-500 {
+            box-shadow: 0 4px 14px 0 rgba(239, 68, 68, 0.39);
+        }
+        
+        /* Deactivated card styling */
+        .client-card.deactivated {
+            background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+            border: 1px solid #e5e7eb;
+            transition: all 0.3s ease;
+        }
+        
+        .client-card.deactivated::before {
+            background: linear-gradient(90deg, #ef4444, #dc2626);
+        }
+        
+        .client-card.deactivated:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(239, 68, 68, 0.15);
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+            border: 1px solid #fecaca;
+        }
+        
+        .client-card.deactivated:hover::before {
+            opacity: 1;
+        }
+        
+        .client-card.deactivated .card-footer {
+            background: linear-gradient(to right, transparent, #f3f4f6, transparent);
+        }
+        
+        .client-card.deactivated:hover .card-footer {
+            background: linear-gradient(to right, transparent, #fee2e2, transparent);
+        }
+        
+        .institution-id {
+            background: #f8fafc;
+            color: #64748b;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+        }
+        
+        .card-footer {
+            background: linear-gradient(to right, transparent, #f9fafb, transparent);
+        }
+    </style>
 </head>
 <body class="bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
     <div class="flex h-screen">
@@ -37,119 +200,212 @@
         <!-- Main Content -->
         <main class="flex-1 overflow-auto bg-gradient-to-br from-slate-50 to-white">
             <!-- Header Section -->
-            <div class="bg-white shadow-sm border-b border-slate-200 px-8 py-6">
+            <div class="bg-white shadow-sm border-b border-slate-200 px-8 py-8">
                 <div class="flex items-center justify-between">
-                    <div class="animate-fade-in">
-                        <h1 class="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
-                            Client Management
-                        </h1>
-                        <p class="text-slate-600 mt-1">Manage and monitor all client accounts</p>
-                    </div>
-                    <div class="flex space-x-4">
-                        <button onclick="openAddClientModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
-                            <i class="fas fa-plus"></i>
-                            <span>Add New Client</span>
-                        </button>
+                    <div class="animate-fade-in flex items-center space-x-4">
+                        <div class="p-3 bg-green-100 rounded-xl">
+                            <i class="fas fa-building text-green-600 text-2xl"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-3xl font-bold text-gray-900">
+                                Client Management
+                            </h1>
+                            <p class="text-slate-600 text-lg">Assign and manage clients for your organization</p>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Main Content Area -->
             <div class="p-8">
-                <!-- Search and Filter Section -->
-                <div class="bg-white rounded-lg shadow p-6 mb-6">
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div class="col-span-2">
-                            <div class="relative">
-                                <input type="text" id="searchInput" placeholder="Search clients..." 
-                                    class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                <!-- Tab Navigation -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-6">
+                    <div class="border-b border-gray-200">
+                        <nav class="-mb-px flex space-x-8 px-8" aria-label="Tabs">
+                            <button onclick="switchTab('active')" id="activeTab" class="tab-button active border-b-2 border-blue-500 py-4 px-1 text-sm font-semibold text-blue-600 flex items-center space-x-2">
+                                <i class="fas fa-building"></i>
+                                <span>Active Clients</span>
+                                <span id="activeCount" class="ml-2 bg-blue-100 text-blue-600 py-1 px-2.5 rounded-full text-xs font-bold">0</span>
+                            </button>
+                            <button onclick="switchTab('deactivated')" id="deactivatedTab" class="tab-button border-b-2 border-transparent py-4 px-1 text-sm font-semibold text-gray-500 hover:text-gray-700 hover:border-gray-300 flex items-center space-x-2">
+                                <i class="fas fa-archive"></i>
+                                <span>Deactivated Clients</span>
+                                <span id="deactivatedCount" class="ml-2 bg-gray-100 text-gray-600 py-1 px-2.5 rounded-full text-xs font-bold">0</span>
+                            </button>
+                        </nav>
+                    </div>
+
+                    <!-- Search and Filter Section -->
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                            <div class="lg:col-span-2">
+                                <div class="relative">
+                                    <input type="text" id="searchInput" placeholder="Search clients by name, ID, or address..." 
+                                        class="w-full pl-12 pr-12 py-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm bg-gray-50 focus:bg-white">
+                                    <i class="fas fa-search absolute left-4 top-4 text-gray-400"></i>
+                                    <button onclick="clearSearch()" class="absolute right-4 top-4 text-gray-400 hover:text-gray-600 transition-colors p-1">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                        <div>
-                            <select id="statusFilter" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                <option value="">All Statuses</option>
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
-                                <option value="pending">Pending</option>
-                            </select>
-                        </div>
-                        <div>
-                            <select id="sortBy" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                <option value="name">Sort by Name</option>
-                                <option value="date">Sort by Date Added</option>
-                                <option value="status">Sort by Status</option>
-                            </select>
+                            <div>
+                                <select id="typeFilter" class="w-full p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm bg-gray-50 focus:bg-white">
+                                    <option value="">All Institution Types</option>
+                                    <option value="public_school">Public School</option>
+                                    <option value="private_school">Private School</option>
+                                    <option value="private_company">Private Company</option>
+                                    <option value="lgu">Local Government Unit</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Clients Table -->
-                <div class="bg-white rounded-lg shadow overflow-hidden">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Institution ID</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned Technician</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200" id="clientsTableBody">
-                            <!-- Client rows will be populated dynamically -->
-                        </tbody>
-                    </table>
-
-                    <!-- Pagination -->
-                    <div class="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
-                        <div class="flex items-center justify-between">
-                            <div class="flex-1 flex justify-between sm:hidden">
-                                <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                                    Previous
-                                </button>
-                                <button class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                                    Next
-                                </button>
+                <!-- Clients Grid -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
+                    <div class="flex items-center justify-between mb-8">
+                        <div class="flex items-center space-x-4">
+                            <div class="p-3 bg-green-100 rounded-xl">
+                                <i class="fas fa-building text-green-600 text-xl"></i>
                             </div>
-                            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                                <div>
-                                    <p class="text-sm text-gray-700">
-                                        Showing <span class="font-medium">1</span> to <span class="font-medium">10</span> of <span class="font-medium">20</span> results
-                                    </p>
+                            <div>
+                                <h2 class="text-xl font-bold text-gray-900">Select a Client</h2>
+                                <p class="text-gray-600 mt-1">Click on any client card to view and manage their details</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <button onclick="refreshData()" class="p-3 bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-xl transition-all duration-200 border border-gray-200" title="Refresh">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                            <button onclick="openAddClientModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl flex items-center space-x-2 transition-all duration-200 font-semibold shadow-sm">
+                                <i class="fas fa-plus"></i>
+                                <span>Add Client</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Clients Grid -->
+                    <div id="clientsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Client cards will be populated dynamically -->
+                    </div>
+
+                    <!-- Empty State -->
+                    <div id="emptyState" class="hidden text-center py-16">
+                        <div class="flex justify-center mb-6">
+                            <div class="relative">
+                                <div class="p-8 bg-gradient-to-br from-gray-50 to-gray-100 rounded-3xl">
+                                    <i class="fas fa-building text-gray-400 text-5xl"></i>
                                 </div>
-                                <div>
-                                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                                        <button class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                                            <span class="sr-only">Previous</span>
-                                            <i class="fas fa-chevron-left"></i>
-                                        </button>
-                                        <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
-                                            1
-                                        </button>
-                                        <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
-                                            2
-                                        </button>
-                                        <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
-                                            3
-                                        </button>
-                                        <button class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                                            <span class="sr-only">Next</span>
-                                            <i class="fas fa-chevron-right"></i>
-                                        </button>
-                                    </nav>
+                                <div class="absolute -bottom-2 -right-2 p-2 bg-green-500 rounded-full">
+                                    <i class="fas fa-plus text-white text-sm"></i>
                                 </div>
                             </div>
                         </div>
+                        <h3 class="text-2xl font-bold text-gray-900 mb-3">No clients found</h3>
+                        <p class="text-gray-600 max-w-md mx-auto mb-8">Get started by adding your first client to begin managing your organization's institutions.</p>
+                        <button onclick="openAddClientModal()" class="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-8 py-4 rounded-xl font-semibold flex items-center space-x-3 mx-auto transition-all duration-200 hover:shadow-lg transform hover:-translate-y-1">
+                            <i class="fas fa-plus"></i>
+                            <span>Add Your First Client</span>
+                        </button>
                     </div>
                 </div>
             </div>
         </main>
     </div>
 
+    <!-- View Client Details Modal -->
+    <div id="viewClientModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-[9999]">
+        <div class="bg-white rounded-xl shadow-2xl w-[900px] h-[600px] flex flex-col overflow-hidden">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+                <h3 class="text-xl font-bold text-gray-900">Client Details</h3>
+                <button onclick="closeViewClientModal()" class="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <!-- Modal Content - Horizontal Layout -->
+            <div class="flex flex-1 overflow-hidden">
+                <!-- Left Side - Client Information (60%) -->
+                <div class="w-3/5 p-6 overflow-y-auto">
+                    <div id="viewClientContent" class="space-y-6">
+                        <!-- Basic Information -->
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <h4 class="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                                <i class="fas fa-building text-blue-600 mr-2"></i>
+                                Basic Information
+                            </h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-600">Institution ID</label>
+                                    <p class="mt-1 text-sm text-gray-900 font-mono bg-white px-2 py-1 rounded border" id="viewInstitutionId">-</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-600">Status</label>
+                                    <span id="viewStatus" class="mt-1 inline-flex px-3 py-1 text-xs font-semibold rounded-full">-</span>
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-medium text-gray-600">Institution Name</label>
+                                    <p class="mt-1 text-sm text-gray-900 bg-white px-2 py-1 rounded border" id="viewInstitutionName">-</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-600">Type</label>
+                                    <p class="mt-1 text-sm text-gray-900 bg-white px-2 py-1 rounded border" id="viewInstitutionType">-</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-600">Created Date</label>
+                                    <p class="mt-1 text-sm text-gray-900 bg-white px-2 py-1 rounded border" id="viewCreatedDate">-</p>
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-medium text-gray-600">Address</label>
+                                    <p class="mt-1 text-sm text-gray-900 bg-white px-2 py-1 rounded border" id="viewInstitutionAddress">-</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex flex-wrap gap-3">
+                            <button onclick="editClientFromView()" id="editFromViewBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                <i class="fas fa-edit mr-2"></i>Edit Client
+                            </button>
+                            <button onclick="toggleClientStatusFromView()" id="toggleStatusBtn" class="px-4 py-2 rounded-lg transition-colors">
+                                <!-- Button text and style will be set dynamically -->
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Side - Assigned Technicians (40%) -->
+                <div class="w-2/5 bg-gradient-to-br from-green-50 to-green-100 border-l border-gray-200 flex flex-col">
+                    <!-- Technicians Header -->
+                    <div class="p-4 border-b border-green-200">
+                        <h4 class="text-lg font-bold text-green-900 flex items-center">
+                            <i class="fas fa-users text-green-600 mr-2"></i>
+                            Assigned Technicians
+                        </h4>
+                        <p class="text-sm text-green-700 mt-1">Technical support team for this institution</p>
+                    </div>
+                    
+                    <!-- Scrollable Technicians List -->
+                    <div class="flex-1 overflow-y-auto p-4">
+                        <div id="viewTechnicians" class="space-y-3">
+                            <!-- Technician list will be populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Modal Footer -->
+            <div class="flex justify-end p-4 border-t border-gray-200 bg-gray-50">
+                <button onclick="closeViewClientModal()" class="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Technician Assignment Modal -->
-    <div id="technicianModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div id="technicianModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[9999]">
         <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div class="mt-3">
                 <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4" id="technicianModalTitle">Assign Technician</h3>
@@ -167,6 +423,7 @@
                         <select id="technicianSelect" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" required>
                             <option value="">Loading technicians...</option>
                         </select>
+                        <p class="text-xs text-gray-500 mt-1">You can assign multiple technicians to the same institution</p>
                     </div>
                     
                     <div id="currentAssignment" class="hidden mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
@@ -188,8 +445,8 @@
     </div>
 
     <!-- Add/Edit Client Modal -->
-    <div id="clientModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
-        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+    <div id="clientModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[9999]">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white z-[10000]">
             <div class="mt-3">
                 <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4" id="modalTitle">Add New Client</h3>
                 <form id="clientForm" class="space-y-4">
@@ -224,132 +481,539 @@
         </div>
     </div>
 
+    <!-- Confirmation Modal for Client Actions -->
+    <div id="confirmationModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-[9999]">
+        <div class="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 z-[10000]">
+            <div class="p-6">
+                <div class="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-yellow-100 rounded-full">
+                    <i id="confirmIcon" class="fas fa-exclamation-triangle text-yellow-600 text-xl"></i>
+                </div>
+                <h3 id="confirmTitle" class="text-lg font-semibold text-gray-900 text-center mb-2">Confirm Action</h3>
+                <p id="confirmMessage" class="text-gray-600 text-center mb-6">Are you sure you want to proceed?</p>
+                <div class="flex space-x-3">
+                    <button onclick="closeConfirmationModal()" class="flex-1 px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                        Cancel
+                    </button>
+                    <button id="confirmButton" onclick="executeConfirmAction()" class="flex-1 px-4 py-2 text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors">
+                        Confirm
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal for Technician Removal -->
+    <div id="technicianRemovalModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-[9999]">
+        <div class="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 z-[10000]">
+            <div class="p-6">
+                <div class="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-100 rounded-full">
+                    <i class="fas fa-user-times text-red-600 text-xl"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 text-center mb-2">Remove Technician Assignment</h3>
+                <p id="technicianRemovalMessage" class="text-gray-600 text-center mb-4">Are you sure you want to remove this technician assignment?</p>
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-6">
+                    <div class="flex items-start">
+                        <i class="fas fa-exclamation-triangle text-yellow-500 mt-0.5 mr-2"></i>
+                        <p class="text-sm text-yellow-800">
+                            <strong>Warning:</strong> Future service requests from this institution will not be auto-assigned to this technician.
+                        </p>
+                    </div>
+                </div>
+                <div class="flex space-x-3">
+                    <button onclick="closeTechnicianRemovalModal()" class="flex-1 px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                        Cancel
+                    </button>
+                    <button id="removeTechnicianButton" onclick="executeRemoveTechnician()" class="flex-1 px-4 py-2 text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors">
+                        Remove Assignment
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="../../js/auth.js"></script>
     <script src="../../js/dynamic-sidebar-loader.js"></script>
     <script>
         // Client Management Specific JavaScript
+        let currentTab = 'active';
+        let allInstitutions = [];
+        let allAssignments = [];
+        let currentViewingClientId = null;
+        
+        // Confirmation modal variables
+        let pendingAction = null;
+        let pendingActionParams = {};
+
+        // Confirmation Modal Functions
+        function confirmClientStatusToggle(institutionId, currentStatus, institutionName) {
+            const isCurrentlyActive = currentStatus === 'active';
+            const action = isCurrentlyActive ? 'deactivate' : 'reactivate';
+            const actionText = isCurrentlyActive ? 'Deactivate' : 'Reactivate';
+            const iconClass = isCurrentlyActive ? 'fa-ban' : 'fa-check-circle';
+            const iconColor = isCurrentlyActive ? 'text-red-600' : 'text-green-600';
+            const buttonColor = isCurrentlyActive ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700';
+            
+            document.getElementById('confirmIcon').className = `fas ${iconClass} ${iconColor} text-xl`;
+            document.getElementById('confirmTitle').textContent = `${actionText} Client`;
+            document.getElementById('confirmMessage').innerHTML = `
+                Are you sure you want to ${action} <strong>${institutionName}</strong>?
+                ${isCurrentlyActive ? '<br><br><span class="text-sm text-yellow-600">This will prevent new service requests from being processed.</span>' : ''}
+            `;
+            document.getElementById('confirmButton').textContent = actionText;
+            document.getElementById('confirmButton').className = `flex-1 px-4 py-2 text-white ${buttonColor} rounded-lg transition-colors`;
+            
+            pendingAction = 'toggleClientStatus';
+            pendingActionParams = { institutionId, currentStatus };
+            
+            document.getElementById('confirmationModal').classList.remove('hidden');
+        }
+
+        function confirmRemoveTechnician(institutionId, assignmentId, technicianName) {
+            document.getElementById('technicianRemovalMessage').innerHTML = `
+                Are you sure you want to remove <strong>${technicianName}</strong> from this institution?
+            `;
+            
+            pendingAction = 'removeTechnician';
+            pendingActionParams = { institutionId, assignmentId };
+            
+            document.getElementById('technicianRemovalModal').classList.remove('hidden');
+        }
+
+        function closeConfirmationModal() {
+            document.getElementById('confirmationModal').classList.add('hidden');
+            pendingAction = null;
+            pendingActionParams = {};
+        }
+
+        function closeTechnicianRemovalModal() {
+            document.getElementById('technicianRemovalModal').classList.add('hidden');
+            pendingAction = null;
+            pendingActionParams = {};
+        }
+
+        async function executeConfirmAction() {
+            if (pendingAction === 'toggleClientStatus') {
+                // Store parameters before closing modal (which clears them)
+                const institutionId = pendingActionParams.institutionId;
+                const currentStatus = pendingActionParams.currentStatus;
+                closeConfirmationModal();
+                await toggleClientStatus(institutionId, currentStatus);
+            }
+        }
+
+        async function executeRemoveTechnician() {
+            if (pendingAction === 'removeTechnician') {
+                // Store parameters before closing modal (which clears them)
+                const institutionId = pendingActionParams.institutionId;
+                const assignmentId = pendingActionParams.assignmentId;
+                closeTechnicianRemovalModal();
+                await removeTechnician(institutionId, assignmentId);
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize the page
             loadClients();
 
             // Add event listeners
-            document.getElementById('searchInput').addEventListener('input', filterClients);
-            document.getElementById('statusFilter').addEventListener('change', filterClients);
-            document.getElementById('sortBy').addEventListener('change', sortClients);
+            document.getElementById('searchInput').addEventListener('input', filterAndDisplayClients);
+            document.getElementById('typeFilter').addEventListener('change', filterAndDisplayClients);
             document.getElementById('clientForm').addEventListener('submit', handleClientSubmit);
+
+            // Check if we need to highlight a specific institution
+            const highlightInstitutionId = sessionStorage.getItem('highlightInstitution');
+            if (highlightInstitutionId) {
+                // Remove the highlight flag from session storage
+                sessionStorage.removeItem('highlightInstitution');
+                // Store it for use after clients are loaded
+                window.pendingHighlight = highlightInstitutionId;
+            }
         });
 
         async function loadClients() {
             try {
+                // Show loading state
+                const clientsGrid = document.getElementById('clientsGrid');
+                const emptyState = document.getElementById('emptyState');
+                
+                emptyState.classList.add('hidden');
+                clientsGrid.classList.remove('hidden');
+                clientsGrid.innerHTML = `
+                    <div class="col-span-full text-center py-16">
+                        <div class="flex justify-center mb-6">
+                            <div class="relative">
+                                <div class="p-6 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl">
+                                    <i class="fas fa-spinner fa-spin text-blue-500 text-4xl"></i>
+                                </div>
+                                <div class="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full animate-ping"></div>
+                            </div>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-900 mb-3">Loading clients...</h3>
+                        <p class="text-gray-600 max-w-md mx-auto">Please wait while we fetch your client data. This shouldn't take long.</p>
+                        <div class="mt-6 flex justify-center">
+                            <div class="w-32 h-1 bg-gray-200 rounded-full overflow-hidden">
+                                <div class="w-full h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full animate-pulse"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Load institutions
                 const response = await fetch('/api/institutions');
-                const institutions = await response.json();
-                const tableBody = document.getElementById('clientsTableBody');
-                tableBody.innerHTML = '';
+                allInstitutions = await response.json();
 
-                if (institutions.length === 0) {
-                    tableBody.innerHTML = `
-                        <tr>
-                            <td colspan="6" class="px-6 py-12 text-center text-gray-500">
-                                <i class="fas fa-building text-4xl mb-4 opacity-50"></i>
-                                <p class="text-lg">No clients found</p>
-                                <p class="text-sm">Add your first client to get started</p>
-                            </td>
-                        </tr>
-                    `;
-                    return;
-                }
-
-                // Load technician assignments for all institutions
+                // Load technician assignments
                 const assignmentsResponse = await fetch('/api/technician-assignments');
-                const assignments = await assignmentsResponse.json();
-                const assignmentMap = {};
-                assignments.forEach(assignment => {
-                    assignmentMap[assignment.institution_id] = assignment;
-                });
+                allAssignments = await assignmentsResponse.json();
 
-                for (const inst of institutions) {
-                    const assignment = assignmentMap[inst.institution_id];
-                    const row = document.createElement('tr');
-                    row.className = 'hover:bg-gray-50';
-                    row.innerHTML = `
-                        <td class="px-6 py-4">
-                            <div class="text-sm font-medium text-gray-900">${inst.institution_id}</div>
-                        </td>
-                        <td class="px-6 py-4">
-                            <div class="flex items-center">
-                                <div class="flex-shrink-0 h-10 w-10 bg-gray-100 rounded-full flex items-center justify-center">
-                                    <i class="fas fa-building text-gray-500"></i>
-                                </div>
-                                <div class="ml-4">
-                                    <div class="text-sm font-medium text-gray-900">${inst.name}</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4">
-                            <div class="text-sm text-gray-900">${formatInstitutionType(inst.type)}</div>
-                        </td>
-                        <td class="px-6 py-4">
-                            <div class="text-sm text-gray-900">${inst.address}</div>
-                        </td>
-                        <td class="px-6 py-4">
-                            ${assignment ? `
-                                <div class="flex items-center">
-                                    <div class="flex-shrink-0 h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
-                                        <i class="fas fa-user-cog text-green-600 text-sm"></i>
-                                    </div>
-                                    <div class="ml-3">
-                                        <div class="text-sm font-medium text-gray-900">${assignment.technician_first_name} ${assignment.technician_last_name}</div>
-                                        <div class="text-xs text-gray-500">${assignment.technician_email}</div>
-                                    </div>
-                                </div>
-                            ` : `
-                                <span class="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
-                                    <i class="fas fa-exclamation-triangle mr-1"></i>
-                                    Not Assigned
-                                </span>
-                            `}
-                        </td>
-                        <td class="px-6 py-4 text-sm font-medium">
-                            <div class="flex space-x-3">
-                                ${assignment ? `
-                                    <button onclick="changeTechnician('${inst.institution_id}', ${assignment.id})" class="text-green-600 hover:text-green-900" title="Change Technician">
-                                        <i class="fas fa-user-edit"></i>
-                                    </button>
-                                    <button onclick="removeTechnician('${inst.institution_id}', ${assignment.id})" class="text-orange-600 hover:text-orange-900" title="Remove Assignment">
-                                        <i class="fas fa-user-minus"></i>
-                                    </button>
-                                ` : `
-                                    <button onclick="assignTechnician('${inst.institution_id}')" class="text-blue-600 hover:text-blue-900" title="Assign Technician">
-                                        <i class="fas fa-user-plus"></i>
-                                    </button>
-                                `}
-                                <button onclick="viewClientDetails('${inst.institution_id}')" class="text-blue-600 hover:text-blue-900" title="View Details">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                                <button onclick="editClient('${inst.institution_id}')" class="text-indigo-600 hover:text-indigo-900" title="Edit">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button onclick="deleteClient('${inst.institution_id}')" class="text-red-600 hover:text-red-900" title="Delete">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </td>
-                    `;
-                    tableBody.appendChild(row);
-                }
+                // Display clients and update counts
+                filterAndDisplayClients();
+                updateTabCounts();
+
             } catch (error) {
                 console.error('Error loading clients:', error);
-                const tableBody = document.getElementById('clientsTableBody');
-                tableBody.innerHTML = `
-                    <tr>
-                        <td colspan="6" class="px-6 py-12 text-center text-red-500">
-                            <i class="fas fa-exclamation-triangle text-4xl mb-4"></i>
-                            <p class="text-lg">Error loading clients</p>
-                            <p class="text-sm">Please try refreshing the page</p>
-                        </td>
-                    </tr>
+                const clientsGrid = document.getElementById('clientsGrid');
+                const emptyState = document.getElementById('emptyState');
+                
+                emptyState.classList.add('hidden');
+                clientsGrid.classList.remove('hidden');
+                clientsGrid.innerHTML = `
+                    <div class="col-span-full text-center py-16">
+                        <div class="flex justify-center mb-6">
+                            <div class="relative">
+                                <div class="p-6 bg-gradient-to-br from-red-50 to-red-100 rounded-2xl">
+                                    <i class="fas fa-exclamation-triangle text-red-500 text-4xl"></i>
+                                </div>
+                                <div class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full animate-pulse"></div>
+                            </div>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-900 mb-3">Error loading clients</h3>
+                        <p class="text-gray-600 max-w-md mx-auto mb-6">We encountered an issue while fetching your client data. Please check your connection and try again.</p>
+                        <button onclick="loadClients()" class="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 hover:shadow-lg transform hover:-translate-y-1">
+                            <i class="fas fa-sync-alt mr-2"></i>
+                            Try Again
+                        </button>
+                    </div>
                 `;
             }
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            
+            // Update tab appearance
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active', 'border-blue-500', 'text-blue-600');
+                btn.classList.add('border-transparent', 'text-gray-500');
+            });
+            
+            const activeButton = document.getElementById(tab + 'Tab');
+            activeButton.classList.add('active', 'border-blue-500', 'text-blue-600');
+            activeButton.classList.remove('border-transparent', 'text-gray-500');
+            
+            // Filter and display clients for the selected tab
+            filterAndDisplayClients();
+        }
+
+        function filterAndDisplayClients() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const typeFilter = document.getElementById('typeFilter').value;
+
+            // Filter institutions based on current tab
+            let filteredInstitutions = allInstitutions.filter(inst => {
+                const matchesTab = currentTab === 'active' ? 
+                    (inst.status === 'active' || !inst.status) : 
+                    inst.status === 'deactivated';
+                
+                const matchesSearch = !searchTerm || 
+                    inst.name.toLowerCase().includes(searchTerm) ||
+                    inst.institution_id.toLowerCase().includes(searchTerm) ||
+                    inst.address.toLowerCase().includes(searchTerm);
+                
+                const matchesType = !typeFilter || inst.type === typeFilter;
+                
+                return matchesTab && matchesSearch && matchesType;
+            });
+
+            displayClients(filteredInstitutions);
+        }
+
+        function displayClients(institutions) {
+            const clientsGrid = document.getElementById('clientsGrid');
+            const emptyState = document.getElementById('emptyState');
+            
+            if (institutions.length === 0) {
+                clientsGrid.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                
+                // Update empty state message based on current tab
+                const emptyTitle = currentTab === 'active' ? 'No active clients found' : 'No deactivated clients found';
+                const emptySubtext = currentTab === 'active' ? 
+                    'Get started by adding your first client' : 'All clients are currently active';
+                
+                emptyState.querySelector('h3').textContent = emptyTitle;
+                emptyState.querySelector('p').textContent = emptySubtext;
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            clientsGrid.classList.remove('hidden');
+
+            // Create assignment map for quick lookup
+            const assignmentMap = {};
+            allAssignments.forEach(assignment => {
+                if (!assignmentMap[assignment.institution_id]) {
+                    assignmentMap[assignment.institution_id] = [];
+                }
+                assignmentMap[assignment.institution_id].push(assignment);
+            });
+
+            clientsGrid.innerHTML = '';
+            institutions.forEach(inst => {
+                const assignments = assignmentMap[inst.institution_id] || [];
+                const card = document.createElement('div');
+                
+                // Ensure status is properly set
+                const actualStatus = inst.status || 'active';
+                const isDeactivated = actualStatus === 'deactivated';
+                const isHighlighted = window.pendingHighlight && window.pendingHighlight === inst.institution_id;
+                
+                card.className = `client-card ${isDeactivated ? 'deactivated cursor-not-allowed' : 'cursor-pointer'} ${isHighlighted ? 'highlighted-card' : ''} rounded-xl p-6 group hover:shadow-lg h-[460px] overflow-hidden`;
+                
+                // Only allow clicking on active cards
+                if (!isDeactivated) {
+                    card.onclick = () => viewClientDetails(inst.institution_id);
+                }
+                
+                card.id = `institution-${inst.institution_id}`;
+                
+                // Status badge - cleaner design without dots
+                const statusBadge = isDeactivated ? 
+                    `<div class="status-badge inline-flex items-center px-3 py-1 text-xs font-semibold text-red-700 bg-red-50 rounded-full border border-red-200">
+                        Deactivated
+                    </div>` :
+                    `<div class="status-badge inline-flex items-center px-3 py-1 text-xs font-semibold text-green-700 bg-green-50 rounded-full border border-green-200">
+                        Active
+                    </div>`;
+
+                // Technician information - matching screenshot style
+                let technicianSection = '';
+                if (assignments.length === 0) {
+                    technicianSection = `
+                        <div class="warning-badge flex items-center px-3 py-2 rounded-lg w-full">
+                            <i class="fas fa-exclamation-triangle text-amber-600 mr-2"></i>
+                            <span class="text-sm font-medium text-amber-800">No technicians assigned</span>
+                        </div>
+                    `;
+                } else if (assignments.length === 1) {
+                    const tech = assignments[0];
+                    technicianSection = `
+                        <div class="technician-badge flex items-center px-3 py-2 rounded-lg w-full">
+                            <i class="fas fa-user text-green-600 mr-2"></i>
+                            <div class="flex-1">
+                                <div class="text-sm font-semibold text-green-800">${tech.technician_first_name} ${tech.technician_last_name}</div>
+                                <div class="text-xs text-green-600">${tech.technician_email}</div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    technicianSection = `
+                        <div class="multiple-tech-badge flex items-center px-3 py-2 rounded-lg w-full">
+                            <i class="fas fa-users text-blue-600 mr-2"></i>
+                            <div class="flex-1">
+                                <div class="text-sm font-semibold text-blue-800">${assignments.length} Technicians</div>
+                                <div class="text-xs text-blue-600">Multiple assignments</div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                card.innerHTML = `
+                    <!-- Fixed Layout Container -->
+                    <div class="h-full flex flex-col">
+                        <!-- Header Section - Fixed Height -->
+                        <div class="flex items-start space-x-4 mb-4 h-[102px] relative">
+                            <div class="card-icon p-3 rounded-xl text-white flex-shrink-0 ${isDeactivated ? 'bg-red-500' : 'bg-green-500'}">
+                                <i class="fas fa-building text-lg"></i>
+                            </div>
+                            <div class="flex-1 min-w-0 overflow-hidden">
+                                <!-- Institution Name - Fixed Height -->
+                                <div class="h-[54px] flex items-start mb-2 overflow-hidden">
+                                    <h3 class="font-bold text-lg text-gray-900 transition-colors leading-tight line-clamp-2">
+                                        ${inst.name}
+                                    </h3>
+                                </div>
+                                <!-- Institution ID Row - Fixed Height -->
+                                <div class="flex items-start h-[44px]">
+                                    <div class="institution-id text-xs px-2 py-1 rounded-md font-medium bg-gray-100 text-gray-700 border truncate">
+                                        ${inst.institution_id}
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Status Section - Absolutely positioned to avoid overlap -->
+                            <div class="absolute top-14 right-0 flex flex-col items-end">
+                                ${statusBadge}
+                                ${isDeactivated ? `
+                                    <!-- Deactivation date below status badge -->
+                                    <div class="text-xs text-red-600 font-medium mt-1 text-right">
+                                        ${inst.deactivated_at ? 
+                                            new Date(inst.deactivated_at).toLocaleDateString('en-US', { 
+                                                month: 'short', 
+                                                day: 'numeric',
+                                                year: 'numeric',
+                                                hour: '2-digit',
+                                                minute: '2-digit'
+                                            }) : 
+                                            'Date Unknown'
+                                        }
+                                    </div>
+                                ` : ''}
+                            </div>
+                            <!-- Chevron for active cards only -->
+                            ${isDeactivated ? '' : '<div class="w-[24px] h-[24px] flex items-center justify-center flex-shrink-0"><i class="fas fa-chevron-right text-gray-300 transition-all duration-300 text-sm"></i></div>'}
+                        </div>
+                        
+                        <!-- Date Information Section - Fixed Height -->
+                        <div class="mb-4 ${isDeactivated ? 'h-0' : 'h-0'} overflow-hidden">
+                        </div>
+                        
+                        <!-- Institution Details Section - Fixed Height -->
+                        <div class="space-y-2 mb-4 h-[84px] overflow-hidden">
+                            <div class="flex items-center text-sm text-gray-600 h-[28px]">
+                                <i class="fas fa-tag text-gray-400 mr-3 w-4 flex-shrink-0"></i>
+                                <span class="font-medium truncate">${formatInstitutionType(inst.type)}</span>
+                            </div>
+                            
+                            <div class="flex items-start text-sm text-gray-600 h-[48px] overflow-hidden">
+                                <i class="fas fa-map-marker-alt text-gray-400 mr-3 w-4 mt-0.5 flex-shrink-0"></i>
+                                <span class="leading-tight line-clamp-3">${inst.address}</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Technician Assignment Section - Fixed Height -->
+                        <div class="mb-6 h-[68px] flex items-start pt-2 overflow-hidden">
+                            ${technicianSection}
+                        </div>
+                        
+                        <!-- Footer Section - Fixed Height and Position -->
+                        <div class="mt-auto">
+                            <div class="flex justify-between items-center pt-4 border-t border-gray-100 h-[64px]">
+                                <!-- Action Buttons - Fixed Width Container -->
+                                <div class="flex space-x-1 w-[120px]">
+                                    ${isDeactivated ? `
+                                        <!-- Only reactivate button is enabled for deactivated clients -->
+                                        <button disabled class="action-button p-2.5 text-gray-300 bg-gray-100 rounded-lg cursor-not-allowed relative z-1 w-[36px] h-[36px] flex items-center justify-center opacity-50" 
+                                            title="Not available for deactivated clients">
+                                            <i class="fas fa-user-plus text-sm relative z-1"></i>
+                                        </button>
+                                        <button disabled class="action-button p-2.5 text-gray-300 bg-gray-100 rounded-lg cursor-not-allowed relative z-1 w-[36px] h-[36px] flex items-center justify-center opacity-50" 
+                                            title="Not available for deactivated clients">
+                                            <i class="fas fa-edit text-sm relative z-1"></i>
+                                        </button>
+                                        <!-- Only reactivate button is enabled -->
+                                        <button onclick="event.stopPropagation(); confirmClientStatusToggle('${inst.institution_id}', '${actualStatus}', this.dataset.institutionName)" 
+                                            data-institution-name="${inst.name}"
+                                            class="action-button p-2.5 text-white bg-green-600 hover:bg-green-700 rounded-lg transition-all relative z-1 shadow-md w-[36px] h-[36px] flex items-center justify-center" 
+                                            title="Reactivate Client">
+                                            <i class="fas fa-check-circle text-sm relative z-1"></i>
+                                        </button>
+                                    ` : `
+                                        <!-- Normal buttons for active clients -->
+                                        <button onclick="event.stopPropagation(); assignTechnician('${inst.institution_id}')" 
+                                            class="action-button p-2.5 text-green-600 bg-green-50 hover:bg-green-600 hover:text-white rounded-lg transition-all relative z-1 w-[36px] h-[36px] flex items-center justify-center" 
+                                            title="Assign Technician">
+                                            <i class="fas fa-user-plus text-sm relative z-1"></i>
+                                        </button>
+                                        <button onclick="event.stopPropagation(); editClient('${inst.institution_id}')" 
+                                            class="action-button p-2.5 text-blue-600 bg-blue-50 hover:bg-blue-600 hover:text-white rounded-lg transition-all relative z-1 w-[36px] h-[36px] flex items-center justify-center" 
+                                            title="Edit Client">
+                                            <i class="fas fa-edit text-sm relative z-1"></i>
+                                        </button>
+                                        <button onclick="event.stopPropagation(); confirmClientStatusToggle('${inst.institution_id}', '${actualStatus}', this.dataset.institutionName)" 
+                                            data-institution-name="${inst.name}"
+                                            class="action-button p-2.5 text-red-600 bg-red-50 hover:bg-red-600 hover:text-white rounded-lg transition-all relative z-1 w-[36px] h-[36px] flex items-center justify-center" 
+                                            title="Deactivate Client">
+                                            <i class="fas fa-ban text-sm relative z-1"></i>
+                                        </button>
+                                    `}
+                                </div>
+                                
+                                <!-- Date Section - Flexible Width Container -->
+                                <div class="flex-1 text-right ml-4">
+                                    ${isDeactivated ? `
+                                        <!-- Deactivated cards: Show only added date next to button -->
+                                        <div class="text-right">
+                                            <div class="text-xs text-green-600 font-semibold bg-green-50 px-2 py-1 rounded border border-green-200 mb-1 inline-block">Added</div>
+                                            <div class="text-xs text-gray-600 font-medium">
+                                                ${new Date(inst.created_at).toLocaleDateString('en-US', { 
+                                                    month: 'short', 
+                                                    day: 'numeric',
+                                                    year: 'numeric',
+                                                    hour: '2-digit',
+                                                    minute: '2-digit'
+                                                })}
+                                            </div>
+                                        </div>
+                                    ` : `
+                                        <!-- Active cards: Show added date on right -->
+                                        <div class="text-right">
+                                            <div class="text-xs text-gray-400 font-medium">Added</div>
+                                            <div class="text-xs text-gray-600 font-semibold">
+                                                ${new Date(inst.created_at).toLocaleDateString('en-US', { 
+                                                    month: 'short', 
+                                                    day: 'numeric',
+                                                    year: 'numeric',
+                                                    hour: '2-digit',
+                                                    minute: '2-digit'
+                                                })}
+                                            </div>
+                                        </div>
+                                    `}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                clientsGrid.appendChild(card);
+            });
+
+            // Handle highlighting and scrolling to specific institution
+            if (window.pendingHighlight) {
+                setTimeout(() => {
+                    const highlightedCard = document.getElementById(`institution-${window.pendingHighlight}`);
+                    if (highlightedCard) {
+                        // Scroll to the highlighted card
+                        highlightedCard.scrollIntoView({ 
+                            behavior: 'smooth', 
+                            block: 'center' 
+                        });
+                        
+                        // Add a flash animation
+                        highlightedCard.classList.add('flash-highlight');
+                        setTimeout(() => {
+                            highlightedCard.classList.remove('flash-highlight');
+                        }, 3000);
+                    }
+                    window.pendingHighlight = null;
+                }, 100);
+            }
+        }
+
+        function updateTabCounts() {
+            const activeCount = allInstitutions.filter(inst => inst.status !== 'deactivated').length;
+            const deactivatedCount = allInstitutions.filter(inst => inst.status === 'deactivated').length;
+            
+            document.getElementById('activeCount').textContent = activeCount;
+            document.getElementById('deactivatedCount').textContent = deactivatedCount;
+        }
+
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            filterAndDisplayClients();
+        }
+
+        function refreshData() {
+            loadClients();
         }
 
         function formatInstitutionType(type) {
@@ -362,14 +1026,205 @@
             return typeMap[type] || type;
         }
 
-        function filterClients() {
-            // TODO: Implement client filtering
-            console.log('Filtering clients...');
+        // View Client Details Modal Functions
+        async function viewClientDetails(clientId) {
+            currentViewingClientId = clientId;
+            
+            try {
+                // Load institution details
+                const response = await fetch(`/api/institutions/${clientId}`);
+                const institution = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(institution.error || 'Failed to load client details');
+                }
+
+                // Load technician assignments for this institution
+                const assignments = allAssignments.filter(a => a.institution_id === clientId);
+
+                // Populate modal with data
+                document.getElementById('viewInstitutionId').textContent = institution.institution_id;
+                document.getElementById('viewInstitutionName').textContent = institution.name;
+                document.getElementById('viewInstitutionType').textContent = formatInstitutionType(institution.type);
+                document.getElementById('viewInstitutionAddress').textContent = institution.address;
+                document.getElementById('viewCreatedDate').textContent = new Date(institution.created_at).toLocaleDateString();
+
+                // Set status badge
+                const statusElement = document.getElementById('viewStatus');
+                if (institution.status === 'deactivated') {
+                    statusElement.textContent = 'Deactivated';
+                    statusElement.className = 'mt-1 inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800';
+                } else {
+                    statusElement.textContent = 'Active';
+                    statusElement.className = 'mt-1 inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800';
+                }
+
+                // Populate technicians
+                const techniciansContainer = document.getElementById('viewTechnicians');
+                if (assignments.length === 0) {
+                    techniciansContainer.innerHTML = `
+                        <div class="flex flex-col items-center justify-center p-6 text-center">
+                            <div class="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mb-3">
+                                <i class="fas fa-exclamation-triangle text-yellow-600 text-2xl"></i>
+                            </div>
+                            <h5 class="font-medium text-gray-900 mb-1">No Technicians Assigned</h5>
+                            <p class="text-sm text-gray-600 mb-4">This institution doesn't have any technicians assigned yet.</p>
+                            <button onclick="assignTechnician('${clientId}')" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm">
+                                <i class="fas fa-plus mr-2"></i>Assign Technician
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    techniciansContainer.innerHTML = `
+                        ${assignments.map(assignment => `
+                            <div class="bg-white border border-green-200 rounded-lg p-4 hover:shadow-md transition-all duration-200">
+                                <div class="flex items-start space-x-3">
+                                    <div class="flex-shrink-0 h-10 w-10 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-user-cog text-white text-sm"></i>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center justify-between">
+                                            <h5 class="text-sm font-semibold text-gray-900 truncate">${assignment.technician_first_name} ${assignment.technician_last_name}</h5>
+                                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Active</span>
+                                        </div>
+                                        <p class="text-xs text-gray-600 mt-1 truncate">${assignment.technician_email}</p>
+                                        <div class="flex items-center justify-between mt-3">
+                                            <div class="text-xs text-gray-500">
+                                                <i class="fas fa-calendar mr-1"></i>
+                                                Assigned ${new Date(assignment.assigned_at || assignment.created_at).toLocaleDateString()}
+                                            </div>
+                                            <div class="flex space-x-1">
+                                                <button onclick="reassignTechnician('${clientId}', ${assignment.id})" 
+                                                        class="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors" 
+                                                        title="Change Assignment">
+                                                    <i class="fas fa-edit text-xs"></i>
+                                                </button>
+                                                <button onclick="confirmRemoveTechnician('${clientId}', ${assignment.id}, '${assignment.technician_first_name} ${assignment.technician_last_name}')" 
+                                                        class="p-1.5 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors" 
+                                                        title="Remove Assignment">
+                                                    <i class="fas fa-trash text-xs"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                        
+                        <!-- Add New Technician Button -->
+                        <div class="border-2 border-dashed border-green-300 rounded-lg p-4 text-center hover:border-green-400 hover:bg-green-25 transition-colors cursor-pointer" onclick="assignTechnician('${clientId}')">
+                            <div class="flex flex-col items-center space-y-2">
+                                <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-plus text-green-600"></i>
+                                </div>
+                                <span class="text-sm font-medium text-green-700">Add Technician</span>
+                                <span class="text-xs text-green-600">Assign another technician</span>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // Set toggle status button
+                const toggleBtn = document.getElementById('toggleStatusBtn');
+                if (institution.status === 'deactivated') {
+                    toggleBtn.textContent = 'Reactivate Client';
+                    toggleBtn.className = 'px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors';
+                    toggleBtn.innerHTML = '<i class="fas fa-check-circle mr-2"></i>Reactivate Client';
+                } else {
+                    toggleBtn.textContent = 'Deactivate Client';
+                    toggleBtn.className = 'px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors';
+                    toggleBtn.innerHTML = '<i class="fas fa-ban mr-2"></i>Deactivate Client';
+                }
+
+                // Show modal
+                document.getElementById('viewClientModal').classList.remove('hidden');
+                
+            } catch (error) {
+                console.error('Error loading client details:', error);
+                alert('Error loading client details. Please try again.');
+            }
         }
 
-        function sortClients() {
-            // TODO: Implement client sorting
-            console.log('Sorting clients...');
+        function closeViewClientModal() {
+            document.getElementById('viewClientModal').classList.add('hidden');
+            currentViewingClientId = null;
+        }
+
+        function editClientFromView() {
+            if (currentViewingClientId) {
+                const clientId = currentViewingClientId; // Store the ID before closing modal
+                closeViewClientModal();
+                editClient(clientId);
+            } else {
+                console.error('No client ID available for editing');
+                alert('Error: No client selected for editing');
+            }
+        }
+
+        function toggleClientStatusFromView() {
+            if (currentViewingClientId) {
+                const clientId = currentViewingClientId; // Store the ID before closing modal
+                const institution = allInstitutions.find(inst => inst.institution_id === clientId);
+                if (institution) {
+                    closeViewClientModal();
+                    confirmClientStatusToggle(clientId, institution.status || 'active', institution.name);
+                } else {
+                    console.error('Institution not found in allInstitutions');
+                    alert('Error: Institution data not found');
+                }
+            } else {
+                console.error('No client ID available for status toggle');
+                alert('Error: No client selected');
+            }
+        }
+
+        // Toggle client status (activate/deactivate)
+        async function toggleClientStatus(clientId, currentStatus) {
+            const isDeactivating = currentStatus !== 'deactivated';
+            const newStatus = isDeactivating ? 'deactivated' : 'active';
+            const action = isDeactivating ? 'deactivate' : 'reactivate';
+            
+            try {
+                const response = await fetch(`/api/institutions/${clientId}/status`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ status: newStatus })
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Status toggle error response:', errorText);
+                    throw new Error(`HTTP ${response.status}: Failed to ${action} client`);
+                }
+                
+                const result = await response.json();
+                
+                alert(`Client ${action}d successfully!`);
+                await loadClients();
+                
+                // Refresh the client details modal if it's currently open
+                if (currentViewingClientId) {
+                    await refreshClientDetailsModal();
+                }
+                
+            } catch (error) {
+                console.error(`Error ${action}ing client:`, error);
+                alert(error.message || `Error ${action}ing client. Please try again.`);
+            }
+        }
+
+        // Manage multiple technicians for an institution
+        function manageTechnicians(institutionId) {
+            // For now, we'll use the existing single technician modal
+            // In a full implementation, this would open a dedicated multi-technician management modal
+            const assignments = allAssignments.filter(a => a.institution_id === institutionId);
+            if (assignments.length > 0) {
+                changeTechnician(institutionId, assignments[0].id);
+            } else {
+                assignTechnician(institutionId);
+            }
         }
 
         function openAddClientModal() {
@@ -461,35 +1316,31 @@
             }
         }
 
-        async function viewClientDetails(clientId) {
-            try {
-                const response = await fetch(`/api/institutions/${clientId}`);
-                const institution = await response.json();
-                
-                if (!response.ok) {
-                    throw new Error(institution.error || 'Failed to load client details');
-                }
-                
-                alert(`Client Details:\n\nID: ${institution.institution_id}\nName: ${institution.name}\nType: ${formatInstitutionType(institution.type)}\nAddress: ${institution.address}\nCreated: ${new Date(institution.created_at).toLocaleDateString()}`);
-            } catch (error) {
-                console.error('Error loading client details:', error);
-                alert('Error loading client details. Please try again.');
-            }
-        }
-
         async function editClient(clientId) {
+            console.log('editClient called with clientId:', clientId);
             try {
+                console.log('Fetching institution data...');
                 const response = await fetch(`/api/institutions/${clientId}`);
-                const institution = await response.json();
+                console.log('Response status:', response.status);
                 
                 if (!response.ok) {
-                    throw new Error(institution.error || 'Failed to load client details');
+                    const errorText = await response.text();
+                    console.error('Response error:', errorText);
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
                 }
                 
-                // Populate form with existing data (no institution_id field needed)
-                document.getElementById('name').value = institution.name;
-                document.getElementById('type').value = institution.type;
-                document.getElementById('address').value = institution.address;
+                const institution = await response.json();
+                console.log('Institution data loaded:', institution);
+                
+                // Check if required fields exist
+                if (!institution.name) {
+                    throw new Error('Institution name is missing from response');
+                }
+                
+                // Populate form with existing data
+                document.getElementById('name').value = institution.name || '';
+                document.getElementById('type').value = institution.type || '';
+                document.getElementById('address').value = institution.address || '';
                 
                 // Set edit mode and store the institution_id for the update API call
                 document.getElementById('clientForm').setAttribute('data-edit-mode', 'true');
@@ -497,7 +1348,9 @@
                 
                 // Update modal title and show modal
                 document.getElementById('modalTitle').textContent = `Edit Client (${institution.institution_id})`;
+                console.log('About to show modal...');
                 document.getElementById('clientModal').classList.remove('hidden');
+                console.log('Modal should now be visible');
                 
             } catch (error) {
                 console.error('Error loading client for edit:', error);
@@ -505,29 +1358,68 @@
             }
         }
 
-        async function deleteClient(clientId) {
-            if (!confirm('Are you sure you want to delete this client? This action cannot be undone.')) {
+        async function handleClientSubmit(event) {
+            event.preventDefault();
+            
+            const name = document.getElementById('name').value.trim();
+            const type = document.getElementById('type').value;
+            const address = document.getElementById('address').value.trim();
+            
+            if (!name || !type || !address) {
+                alert('Please fill in all fields');
                 return;
             }
             
+            const isEditing = document.getElementById('clientForm').hasAttribute('data-edit-mode');
+            
             try {
-                const response = await fetch(`/api/institutions/${clientId}`, {
-                    method: 'DELETE'
+                let url, method, payload;
+                
+                if (isEditing) {
+                    const institutionId = document.getElementById('clientForm').getAttribute('data-edit-id');
+                    url = `/api/institutions/${institutionId}`;
+                    method = 'PUT';
+                    payload = { name, type, address };
+                } else {
+                    url = '/api/institutions';
+                    method = 'POST';
+                    payload = { name, type, address, status: 'active' };
+                }
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
                 });
                 
                 const result = await response.json();
                 
                 if (!response.ok) {
-                    throw new Error(result.error || 'Failed to delete client');
+                    throw new Error(result.error || 'Failed to save institution');
                 }
                 
-                alert('Client deleted successfully!');
+                alert(isEditing ? 'Client updated successfully!' : 'Client added successfully!');
+                closeClientModal();
                 await loadClients();
                 
             } catch (error) {
-                console.error('Error deleting client:', error);
-                alert(error.message || 'Error deleting client. Please try again.');
+                console.error('Error saving client:', error);
+                alert(error.message || 'Error saving client. Please try again.');
             }
+        }
+
+        function openAddClientModal() {
+            document.getElementById('clientModal').classList.remove('hidden');
+            document.getElementById('modalTitle').textContent = 'Add New Client';
+            document.getElementById('clientForm').reset();
+            document.getElementById('clientForm').removeAttribute('data-edit-mode');
+            document.getElementById('clientForm').removeAttribute('data-edit-id');
+        }
+
+        function closeClientModal() {
+            document.getElementById('clientModal').classList.add('hidden');
         }
 
         // Technician Assignment Functions
@@ -548,26 +1440,42 @@
                 const staff = await techResponse.json();
                 const technicians = staff.filter(s => s.role === 'technician' && s.status === 'active');
                 
+                // Get current assignments for this institution
+                const currentAssignments = allAssignments.filter(a => a.institution_id === institutionId);
+                const assignedTechnicianIds = currentAssignments.map(a => a.technician_id);
+                
+                // Filter out already assigned technicians
+                const availableTechnicians = technicians.filter(tech => !assignedTechnicianIds.includes(tech.id));
+                
                 // Update modal content
                 document.getElementById('selectedInstitutionName').textContent = institution.name;
                 document.getElementById('selectedInstitutionId').textContent = `ID: ${institution.institution_id}`;
-                document.getElementById('technicianModalTitle').textContent = 'Assign Technician';
-                document.getElementById('assignTechnicianBtn').textContent = 'Assign Technician';
-                document.getElementById('currentAssignment').classList.add('hidden');
+                document.getElementById('technicianModalTitle').textContent = currentAssignments.length > 0 ? 'Assign Additional Technician' : 'Assign Technician';
+                document.getElementById('assignTechnicianBtn').textContent = currentAssignments.length > 0 ? 'Add Technician' : 'Assign Technician';
                 
-                // Populate technician dropdown
+                // Show current assignments if any
+                if (currentAssignments.length > 0) {
+                    document.getElementById('currentAssignment').classList.remove('hidden');
+                    document.getElementById('currentTechnicianName').innerHTML = currentAssignments.map(assignment => 
+                        `${assignment.technician_first_name} ${assignment.technician_last_name}`
+                    ).join(', ');
+                } else {
+                    document.getElementById('currentAssignment').classList.add('hidden');
+                }
+                
+                // Populate technician dropdown with available technicians only
                 const select = document.getElementById('technicianSelect');
-                select.innerHTML = '<option value="">Select a technician...</option>';
                 
-                technicians.forEach(tech => {
-                    const option = document.createElement('option');
-                    option.value = tech.id;
-                    option.textContent = `${tech.first_name} ${tech.last_name} (${tech.email})`;
-                    select.appendChild(option);
-                });
-                
-                if (technicians.length === 0) {
-                    select.innerHTML = '<option value="">No technicians available</option>';
+                if (availableTechnicians.length === 0) {
+                    select.innerHTML = '<option value="">All available technicians are already assigned</option>';
+                } else {
+                    select.innerHTML = '<option value="">Select a technician to assign...</option>';
+                    availableTechnicians.forEach(tech => {
+                        const option = document.createElement('option');
+                        option.value = tech.id;
+                        option.textContent = `${tech.first_name} ${tech.last_name} (${tech.email})`;
+                        select.appendChild(option);
+                    });
                 }
                 
                 document.getElementById('technicianModal').classList.remove('hidden');
@@ -578,7 +1486,7 @@
             }
         }
 
-        async function changeTechnician(institutionId, assignmentId) {
+        async function reassignTechnician(institutionId, assignmentId) {
             currentInstitutionId = institutionId;
             currentAssignmentId = assignmentId;
             
@@ -588,8 +1496,7 @@
                 const institution = await instResponse.json();
                 
                 // Load current assignment
-                const assignResponse = await fetch(`/api/institutions/${institutionId}/technician`);
-                const assignmentData = await assignResponse.json();
+                const currentAssignment = allAssignments.find(a => a.id === assignmentId);
                 
                 // Load available technicians
                 const techResponse = await fetch('/api/staff');
@@ -603,13 +1510,11 @@
                 document.getElementById('assignTechnicianBtn').textContent = 'Update Assignment';
                 
                 // Show current assignment
-                if (assignmentData.assigned) {
-                    document.getElementById('currentAssignment').classList.remove('hidden');
-                    document.getElementById('currentTechnicianName').textContent = 
-                        `${assignmentData.technician.technician_first_name} ${assignmentData.technician.technician_last_name}`;
-                }
+                document.getElementById('currentAssignment').classList.remove('hidden');
+                document.getElementById('currentTechnicianName').textContent = 
+                    `${currentAssignment.technician_first_name} ${currentAssignment.technician_last_name}`;
                 
-                // Populate technician dropdown
+                // Populate technician dropdown with all technicians
                 const select = document.getElementById('technicianSelect');
                 select.innerHTML = '<option value="">Select a different technician...</option>';
                 
@@ -619,7 +1524,7 @@
                     option.textContent = `${tech.first_name} ${tech.last_name} (${tech.email})`;
                     
                     // Pre-select current technician
-                    if (assignmentData.assigned && tech.id === assignmentData.technician.technician_id) {
+                    if (tech.id === currentAssignment.technician_id) {
                         option.selected = true;
                     }
                     
@@ -629,33 +1534,70 @@
                 document.getElementById('technicianModal').classList.remove('hidden');
                 
             } catch (error) {
-                console.error('Error loading change assignment modal:', error);
-                alert('Error loading technician assignment modal. Please try again.');
+                console.error('Error loading reassignment modal:', error);
+                alert('Error loading technician reassignment modal. Please try again.');
             }
         }
 
+        async function changeTechnician(institutionId, assignmentId) {
+            // This function is kept for backwards compatibility
+            // It now redirects to reassignTechnician
+            reassignTechnician(institutionId, assignmentId);
+        }
+
         async function removeTechnician(institutionId, assignmentId) {
-            if (!confirm('Are you sure you want to remove the technician assignment? Future service requests from this institution will not be auto-assigned.')) {
-                return;
-            }
-            
             try {
+                console.log('Removing technician assignment:', { institutionId, assignmentId });
+                
                 const response = await fetch(`/api/technician-assignments/${assignmentId}`, {
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
                 });
                 
+                console.log('Delete response status:', response.status);
+                
                 const result = await response.json();
+                console.log('Delete response body:', result);
                 
                 if (!response.ok) {
                     throw new Error(result.error || 'Failed to remove assignment');
                 }
                 
+                // Wait a moment to ensure database transaction completes
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
                 alert('Technician assignment removed successfully!');
+                
+                // Reload all data from server
                 await loadClients();
+                
+                // Refresh the client details modal if it's currently open
+                if (currentViewingClientId) {
+                    await refreshClientDetailsModal();
+                }
                 
             } catch (error) {
                 console.error('Error removing technician assignment:', error);
                 alert(error.message || 'Error removing assignment. Please try again.');
+            }
+        }
+
+        async function refreshClientDetailsModal() {
+            if (!currentViewingClientId) return;
+            
+            try {
+                // Re-load the updated assignment data
+                const assignmentsResponse = await fetch('/api/technician-assignments');
+                if (assignmentsResponse.ok) {
+                    allAssignments = await assignmentsResponse.json();
+                }
+                
+                // Refresh the modal content
+                await viewClientDetails(currentViewingClientId);
+            } catch (error) {
+                console.error('Error refreshing client details modal:', error);
             }
         }
 
@@ -671,7 +1613,7 @@
                 const assignBtn = document.getElementById('assignTechnicianBtn');
                 const originalText = assignBtn.textContent;
                 assignBtn.disabled = true;
-                assignBtn.textContent = 'Assigning...';
+                assignBtn.textContent = currentAssignmentId ? 'Updating...' : 'Assigning...';
                 
                 // Get current user (admin) ID from auth storage
                 const currentUser = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
@@ -680,35 +1622,97 @@
                 }
                 const adminId = currentUser.id;
                 
-                const response = await fetch('/api/technician-assignments', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
+                let response, result;
+                let requestData;
+                
+                if (currentAssignmentId) {
+                    // Update existing assignment
+                    requestData = {
+                        technician_id: parseInt(selectedTechnicianId),
+                        assigned_by: adminId
+                    };
+                    
+                    console.log('Updating assignment:', currentAssignmentId, requestData);
+                    
+                    response = await fetch(`/api/technician-assignments/${currentAssignmentId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(requestData)
+                    });
+                } else {
+                    // Create new assignment
+                    requestData = {
                         technician_id: parseInt(selectedTechnicianId),
                         institution_id: currentInstitutionId,
                         assigned_by: adminId
-                    })
-                });
-                
-                const result = await response.json();
-                
-                if (!response.ok) {
-                    throw new Error(result.error || 'Failed to assign technician');
+                    };
+                    
+                    console.log('Creating new assignment:', requestData);
+                    console.log('Current Institution ID:', currentInstitutionId);
+                    console.log('Selected Technician ID:', selectedTechnicianId);
+                    console.log('Admin ID:', adminId);
+                    console.log('Parsed Technician ID:', parseInt(selectedTechnicianId));
+                    
+                    response = await fetch('/api/technician-assignments', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(requestData)
+                    });
                 }
                 
-                alert('Technician assigned successfully!');
+                result = await response.json();
+                
+                console.log('Assignment API Response:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    result: result
+                });
+                
+                if (!response.ok) {
+                    console.error('Assignment failed:', result);
+                    // Extract more detailed error information
+                    let errorMessage = 'Failed to assign technician';
+                    if (result && typeof result === 'object') {
+                        if (result.error) {
+                            errorMessage = result.error;
+                        } else if (result.message) {
+                            errorMessage = result.message;
+                        } else if (result.details) {
+                            errorMessage = result.details;
+                        } else {
+                            // If it's an object but no standard error fields, stringify it
+                            errorMessage = `Failed to assign technician: ${JSON.stringify(result)}`;
+                        }
+                    } else if (typeof result === 'string') {
+                        errorMessage = result;
+                    }
+                    throw new Error(errorMessage);
+                }
+                
+                const successMessage = currentAssignmentId ? 
+                    'Technician assignment updated successfully!' : 
+                    'Technician assigned successfully!';
+                
+                alert(successMessage);
                 closeTechnicianModal();
                 await loadClients();
                 
+                // Refresh the client details modal if it's currently open
+                if (currentViewingClientId) {
+                    await refreshClientDetailsModal();
+                }
+                
             } catch (error) {
-                console.error('Error assigning technician:', error);
-                alert(error.message || 'Error assigning technician. Please try again.');
+                console.error('Error with technician assignment:', error);
+                alert(error.message || 'Error with technician assignment. Please try again.');
             } finally {
                 const assignBtn = document.getElementById('assignTechnicianBtn');
                 assignBtn.disabled = false;
-                assignBtn.textContent = currentAssignmentId ? 'Update Assignment' : 'Assign Technician';
+                assignBtn.textContent = currentAssignmentId ? 'Update Assignment' : (currentAssignmentId === null ? 'Assign Technician' : 'Add Technician');
             }
         }
 

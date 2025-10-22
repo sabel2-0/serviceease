@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notifications | Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(10px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
+    <div class="flex h-screen">
+        <!-- Dynamic Sidebar Container -->
+        <div id="dynamic-sidebar"></div>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-auto bg-gradient-to-br from-slate-50 to-white">
+            <!-- Header Section -->
+            <div class="bg-white shadow-sm border-b border-slate-200 px-8 py-6">
+                <div class="flex items-center justify-between">
+                    <div class="animate-fade-in">
+                        <h1 class="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
+                            <i class="fas fa-bell mr-3 text-blue-600"></i>
+                            Notifications
+                        </h1>
+                        <p class="text-slate-600 mt-1">Manage and review system notifications</p>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <button id="markAllReadBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-2">
+                            <i class="fas fa-check-double"></i>
+                            <span>Mark All Read</span>
+                        </button>
+                        <button id="refreshBtn" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-2">
+                            <i class="fas fa-refresh"></i>
+                            <span>Refresh</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notifications Content -->
+            <div class="p-8">
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-slate-600">Total Notifications</p>
+                                <p id="totalCount" class="text-2xl font-bold text-slate-900">0</p>
+                            </div>
+                            <div class="bg-blue-100 p-3 rounded-lg">
+                                <i class="fas fa-bell text-blue-600 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-slate-600">Unread</p>
+                                <p id="unreadCount" class="text-2xl font-bold text-red-600">0</p>
+                            </div>
+                            <div class="bg-red-100 p-3 rounded-lg">
+                                <i class="fas fa-exclamation-circle text-red-600 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-slate-600">Today</p>
+                                <p id="todayCount" class="text-2xl font-bold text-green-600">0</p>
+                            </div>
+                            <div class="bg-green-100 p-3 rounded-lg">
+                                <i class="fas fa-calendar-day text-green-600 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filter Tabs -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 mb-6">
+                    <div class="border-b border-slate-200">
+                        <nav class="flex space-x-8 px-6 overflow-x-auto">
+                            <button class="filter-tab active py-4 text-sm font-medium border-b-2 border-blue-600 text-blue-600 whitespace-nowrap" data-filter="all">
+                                All Notifications
+                            </button>
+                            <button class="filter-tab py-4 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap" data-filter="unread">
+                                Unread
+                            </button>
+                            <button class="filter-tab py-4 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap" data-filter="coordinator_registration">
+                                Coordinator Registrations
+                            </button>
+                            <button class="filter-tab py-4 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap" data-filter="parts_request">
+                                Parts Requests
+                            </button>
+                        </nav>
+                    </div>
+                </div>
+
+                <!-- Notifications List -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200">
+                    <div id="loadingState" class="p-8 text-center">
+                        <i class="fas fa-spinner fa-spin text-2xl text-slate-400 mb-3"></i>
+                        <p class="text-slate-500">Loading notifications...</p>
+                    </div>
+                    
+                    <div id="notificationsList" class="divide-y divide-slate-200 hidden">
+                        <!-- Notifications will be rendered here -->
+                    </div>
+                    
+                    <div id="emptyState" class="p-12 text-center hidden">
+                        <div class="flex flex-col items-center">
+                            <i class="fas fa-inbox text-4xl text-slate-300 mb-4"></i>
+                            <h3 class="text-lg font-medium text-slate-900 mb-2">No notifications</h3>
+                            <p class="text-slate-500">You're all caught up! No notifications to display.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Load dynamic sidebar system -->
+    <script src="/js/auth.js"></script>
+    <script src="/js/dynamic-sidebar-loader.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            let notifications = [];
+            let currentFilter = 'all';
+
+            // DOM Elements
+            const totalCount = document.getElementById('totalCount');
+            const unreadCount = document.getElementById('unreadCount');
+            const todayCount = document.getElementById('todayCount');
+            const loadingState = document.getElementById('loadingState');
+            const notificationsList = document.getElementById('notificationsList');
+            const emptyState = document.getElementById('emptyState');
+            const markAllReadBtn = document.getElementById('markAllReadBtn');
+            const refreshBtn = document.getElementById('refreshBtn');
+            const filterTabs = document.querySelectorAll('.filter-tab');
+
+            // Event Listeners
+            markAllReadBtn.addEventListener('click', markAllAsRead);
+            refreshBtn.addEventListener('click', loadNotifications);
+
+            filterTabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    currentFilter = this.dataset.filter;
+                    updateActiveTab(this);
+                    renderNotifications();
+                });
+            });
+
+            // Load notifications on page load
+            loadNotifications();
+
+            // Auto-refresh every 30 seconds
+            setInterval(loadNotifications, 30000);
+
+            async function loadNotifications() {
+                try {
+                    showLoading();
+                    const token = localStorage.getItem('token');
+                    const response = await fetch('/api/admin/notifications', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    if (response.ok) {
+                        notifications = await response.json();
+                        updateStats();
+                        renderNotifications();
+                    } else {
+                        throw new Error('Failed to load notifications');
+                    }
+                } catch (error) {
+                    console.error('Error loading notifications:', error);
+                    showError();
+                }
+            }
+
+            function updateStats() {
+                const total = notifications.length;
+                const unread = notifications.filter(n => !n.is_read).length;
+                const today = notifications.filter(n => {
+                    const notificationDate = new Date(n.created_at);
+                    const currentDate = new Date();
+                    return notificationDate.toDateString() === currentDate.toDateString();
+                }).length;
+
+                totalCount.textContent = total;
+                unreadCount.textContent = unread;
+                todayCount.textContent = today;
+            }
+
+            function renderNotifications() {
+                let filteredNotifications = notifications;
+
+                // Apply filter
+                if (currentFilter === 'unread') {
+                    filteredNotifications = notifications.filter(n => !n.is_read);
+                } else if (currentFilter === 'coordinator_registration') {
+                    filteredNotifications = notifications.filter(n => n.type === 'coordinator_registration');
+                } else if (currentFilter === 'parts_request') {
+                    filteredNotifications = notifications.filter(n => n.type === 'parts_request' || n.type === 'parts_approved' || n.type === 'parts_denied');
+                }
+
+                if (filteredNotifications.length === 0) {
+                    showEmpty();
+                    return;
+                }
+
+                notificationsList.innerHTML = filteredNotifications.map(notification => `
+                    <div class="notification-item p-6 hover:bg-slate-50 transition-colors ${notification.is_read ? 'opacity-75' : ''}" 
+                         data-notification-id="${notification.id}">
+                        <div class="flex items-start space-x-4">
+                            <div class="flex-shrink-0">
+                                <div class="w-10 h-10 rounded-full ${getNotificationIconBg(notification.type)} flex items-center justify-center">
+                                    <i class="${getNotificationIcon(notification.type)} text-white"></i>
+                                </div>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center justify-between">
+                                    <h3 class="text-sm font-medium text-slate-900">${notification.title}</h3>
+                                    <div class="flex items-center space-x-2">
+                                        <span class="text-xs text-slate-500">${formatTimeAgo(notification.created_at)}</span>
+                                        ${!notification.is_read ? `
+                                            <button class="mark-read-btn text-blue-600 hover:text-blue-800 text-xs font-medium" 
+                                                    data-notification-id="${notification.id}">
+                                                Mark read
+                                            </button>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                                <p class="text-sm text-slate-600 mt-1">${notification.message}</p>
+                                ${notification.first_name && notification.last_name ? `
+                                    <div class="mt-2 flex items-center space-x-4 text-xs text-slate-500">
+                                        <span><i class="fas fa-user mr-1"></i>${notification.first_name} ${notification.last_name}</span>
+                                        <span><i class="fas fa-envelope mr-1"></i>${notification.email}</span>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+
+                // Add click handlers for mark as read buttons
+                document.querySelectorAll('.mark-read-btn').forEach(btn => {
+                    btn.addEventListener('click', async function(e) {
+                        e.stopPropagation();
+                        const notificationId = this.dataset.notificationId;
+                        await markAsRead(notificationId);
+                    });
+                });
+
+                showNotifications();
+            }
+
+            function getNotificationIcon(type) {
+                switch (type) {
+                    case 'coordinator_registration':
+                        return 'fas fa-user-plus';
+                    case 'service_request':
+                        return 'fas fa-wrench';
+                    case 'parts_request':
+                        return 'fas fa-box';
+                    case 'parts_approved':
+                        return 'fas fa-check-circle';
+                    case 'parts_denied':
+                        return 'fas fa-times-circle';
+                    case 'system':
+                        return 'fas fa-cog';
+                    default:
+                        return 'fas fa-info';
+                }
+            }
+
+            function getNotificationIconBg(type) {
+                switch (type) {
+                    case 'coordinator_registration':
+                        return 'bg-blue-500';
+                    case 'service_request':
+                        return 'bg-green-500';
+                    case 'parts_request':
+                        return 'bg-orange-500';
+                    case 'parts_approved':
+                        return 'bg-green-600';
+                    case 'parts_denied':
+                        return 'bg-red-500';
+                    case 'system':
+                        return 'bg-purple-500';
+                    default:
+                        return 'bg-gray-500';
+                }
+            }
+
+            async function markAsRead(notificationId) {
+                try {
+                    const token = localStorage.getItem('token');
+                    const response = await fetch(`/api/admin/notifications/${notificationId}/read`, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (response.ok) {
+                        await loadNotifications();
+                    }
+                } catch (error) {
+                    console.error('Error marking notification as read:', error);
+                }
+            }
+
+            async function markAllAsRead() {
+                try {
+                    const token = localStorage.getItem('token');
+                    const response = await fetch('/api/admin/notifications/read-all', {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (response.ok) {
+                        await loadNotifications();
+                    }
+                } catch (error) {
+                    console.error('Error marking all notifications as read:', error);
+                }
+            }
+
+            function updateActiveTab(activeTab) {
+                filterTabs.forEach(tab => {
+                    tab.classList.remove('active', 'border-blue-600', 'text-blue-600');
+                    tab.classList.add('border-transparent', 'text-slate-500');
+                });
+                activeTab.classList.add('active', 'border-blue-600', 'text-blue-600');
+                activeTab.classList.remove('border-transparent', 'text-slate-500');
+            }
+
+            function formatTimeAgo(dateString) {
+                const date = new Date(dateString);
+                const now = new Date();
+                const diffInSeconds = Math.floor((now - date) / 1000);
+
+                if (diffInSeconds < 60) return 'Just now';
+                if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+                if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+                return `${Math.floor(diffInSeconds / 86400)}d ago`;
+            }
+
+            function showLoading() {
+                loadingState.classList.remove('hidden');
+                notificationsList.classList.add('hidden');
+                emptyState.classList.add('hidden');
+            }
+
+            function showNotifications() {
+                loadingState.classList.add('hidden');
+                notificationsList.classList.remove('hidden');
+                emptyState.classList.add('hidden');
+            }
+
+            function showEmpty() {
+                loadingState.classList.add('hidden');
+                notificationsList.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+            }
+
+            function showError() {
+                loadingState.classList.add('hidden');
+                notificationsList.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                emptyState.innerHTML = `
+                    <div class="flex flex-col items-center">
+                        <i class="fas fa-exclamation-triangle text-4xl text-red-300 mb-4"></i>
+                        <h3 class="text-lg font-medium text-slate-900 mb-2">Failed to load notifications</h3>
+                        <p class="text-slate-500">Please try refreshing the page.</p>
+                    </div>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>

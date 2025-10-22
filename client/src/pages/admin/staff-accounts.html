@@ -6,6 +6,167 @@
     <title>Staff Accounts | ServiceEase</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Tabs */
+        .tabs { display: flex; gap: 0.5rem; align-items: center; }
+        .tab-btn { padding: 0.5rem 1rem; border-radius: 0.75rem; background: transparent; color: #475569; border: 1px solid transparent; cursor: pointer; font-weight: 600; }
+        .tab-btn:hover { background: #f1f5f9; }
+        .tab-active { background: #e6f0ff; border-color: #bfdbfe; color: #1e3a8a; box-shadow: 0 4px 12px rgba(37,99,235,0.08); }
+        .tab-btn:focus { outline: 3px solid rgba(37,99,235,0.15); outline-offset: 2px; }
+        /* Corporate table styles */
+        .corp-card { border-radius: 0.75rem; box-shadow: 0 6px 28px rgba(15,23,42,0.06); border: 1px solid #e6eef8; overflow: hidden; }
+        .corp-table thead th { background: #f8fafc; color: #475569; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.78rem; }
+        .corp-table td { padding: 1rem 1.25rem; color: #334155; }
+        .corp-avatar { width: 44px; height: 44px; border-radius: 9999px; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; color: white; background: linear-gradient(135deg,#2563eb,#60a5fa); box-shadow: 0 4px 12px rgba(37,99,235,0.08); margin-right: 0.75rem; }
+        .status-pill { display: inline-block; padding: 0.25rem 0.5rem; border-radius: 9999px; font-weight: 600; font-size: 0.75rem; }
+        .status-active { background: #e6f4ff; color: #0b5ed7; }
+        .status-inactive { background: #f1f5f9; color: #475569; }
+        .row-hover:hover { background: #f1f9ff; box-shadow: inset 0 -1px 0 rgba(0,0,0,0.02); }
+            /* Row divider */
+            .corp-table tbody tr { border-bottom: 1px solid #e6eef8; }
+            .corp-table tbody tr:last-child { border-bottom: none; }
+            .corp-table td { padding-top: 1.15rem; padding-bottom: 1.15rem; }
+        .action-btn { padding: 0.45rem 0.6rem; border-radius: 0.6rem; background: #f8fafc; color: #0b5ed7; border: 1px solid #e6eef8; transition: transform .12s ease, box-shadow .12s ease; }
+        .action-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 18px rgba(37,99,235,0.08); }
+    /* Action variants - corporate palette */
+    /* Primary: deep blue */
+    .action-view { background: linear-gradient(90deg,#0b5ed7,#1e40af); color: #fff; border: none; }
+    .action-view:hover { box-shadow: 0 8px 24px rgba(11,94,215,0.18); transform: translateY(-3px); }
+    /* Secondary: slate/neutral for edit */
+    .action-edit { background: linear-gradient(90deg,#334155,#475569); color: #fff; border: none; }
+    .action-edit:hover { box-shadow: 0 8px 24px rgba(71,85,105,0.12); transform: translateY(-3px); }
+    /* Toggle: neutral when idle */
+    .action-toggle { background: #f1f5f9; color: #334155; border: 1px solid #e6eef8; }
+    /* Deactivate action (red) - shown when user is currently active */
+    .action-toggle.deactivate { background: linear-gradient(90deg,#dc2626,#b91c1c); color: #fff; border: none; box-shadow: 0 8px 24px rgba(220,38,38,0.12); }
+    .action-toggle.deactivate:hover { transform: translateY(-3px); }
+    /* Activate action (green) - shown when user is currently inactive */
+    .action-toggle.activate { background: linear-gradient(90deg,#059669,#047857); color: #fff; border: none; box-shadow: 0 8px 24px rgba(4,120,87,0.12); }
+    .action-toggle.activate:hover { transform: translateY(-3px); }
+    /* Password change action - purple/violet */
+    .action-password { background: linear-gradient(90deg,#7c3aed,#6d28d9); color: #fff; border: none; }
+    .action-password:hover { box-shadow: 0 8px 24px rgba(124,58,237,0.18); transform: translateY(-3px); }
+    /* Assignment chip sizing */
+    .assignment-chip { font-size: 0.875rem; /* 14px */ white-space: nowrap; }
+    .assignment-chip i { font-size: 0.75rem; margin-right: 0.35rem; }
+    
+    /* Institution name display improvements */
+    .institution-name-display {
+        white-space: nowrap;
+        overflow: visible;
+        text-overflow: initial;
+        max-width: none;
+    }
+    
+    /* Ensure assignment containers can accommodate longer names */
+    .assignment-container {
+        min-width: fit-content;
+        width: fit-content;
+        overflow: visible;
+    }
+    
+    /* Dynamic width assignments column */
+    .assignments-column {
+        min-width: max-content;
+        width: auto;
+    }
+    
+    /* Prevent table from constraining assignment column width */
+    .corp-table {
+        table-layout: auto;
+        width: 100%;
+    }
+    
+    .corp-table td:nth-child(3) { /* Assigned Clients column */
+        min-width: max-content;
+        width: auto;
+        white-space: nowrap;
+    }
+    
+    /* Unlimited Assignment Cards */
+    .assignment-single-card,
+    .assignment-mini-card,
+    .assignment-summary-card {
+        position: relative;
+        overflow: hidden;
+        backdrop-filter: blur(10px);
+        transform: translateY(0);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .assignment-single-card:hover,
+    .assignment-summary-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 25px rgba(0, 0, 0, 0.15);
+    }
+    
+    .assignment-mini-card:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Shine effect for cards */
+    .assignment-single-card::before,
+    .assignment-summary-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: left 0.5s;
+    }
+    
+    .assignment-single-card:hover::before,
+    .assignment-summary-card:hover::before {
+        left: 100%;
+    }
+    
+    /* Team size badge animations */
+    .team-size-badge {
+        animation: pulse-badge 2s infinite;
+    }
+    
+    @keyframes pulse-badge {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+    
+    /* Color variations for unlimited scaling */
+    .from-green-50 { --tw-gradient-from: #f0fdf4; }
+    .to-green-100 { --tw-gradient-to: #dcfce7; }
+    .border-green-200 { border-color: #bbf7d0; }
+    .text-green-900 { color: #14532d; }
+    .text-green-700 { color: #15803d; }
+    .bg-green-500 { background-color: #22c55e; }
+    
+    .from-purple-50 { --tw-gradient-from: #faf5ff; }
+    .to-purple-100 { --tw-gradient-to: #f3e8ff; }
+    .border-purple-200 { border-color: #e9d5ff; }
+    .text-purple-900 { color: #581c87; }
+    .text-purple-800 { color: #6b21a8; }
+    .text-purple-700 { color: #7c3aed; }
+    .text-purple-600 { color: #9333ea; }
+    .bg-purple-500 { background-color: #8b5cf6; }
+    .from-purple-500 { --tw-gradient-from: #8b5cf6; }
+    .to-pink-600 { --tw-gradient-to: #db2777; }
+    
+    .from-pink-100 { --tw-gradient-from: #fce7f3; }
+    .to-pink-100 { --tw-gradient-to: #fce7f3; }
+    .border-pink-200 { border-color: #fbcfe8; }
+    
+    /* Hover effects for interactive elements */
+    .assignment-single-card:hover .team-size-badge {
+        animation: bounce 0.6s;
+    }
+    
+    @keyframes bounce {
+        0%, 20%, 50%, 80%, 100% { transform: translateY(0) scale(1); }
+        40% { transform: translateY(-4px) scale(1.1); }
+        60% { transform: translateY(-2px) scale(1.05); }
+    }
+    </style>
 </head>
 <body class="bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
     <div class="flex h-screen">
@@ -25,57 +186,97 @@
                 </button>
             </div>
 
-            <!-- Filters and Search -->
-            <div class="bg-white p-4 rounded-lg shadow mb-6">
-                <div class="flex items-center space-x-4">
-                    <div class="flex-1">
-                        <div class="relative">
+            <!-- Filters and Search (tabs + quick filters) -->
+            <div class="mb-4">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="tabs">
+                        <button class="tab-btn tab-active" data-role="">All</button>
+                        <button class="tab-btn" data-role="technician">Technicians</button>
+                        <button class="tab-btn" data-role="operations_officer">Operations Officers</button>
+                        <button class="tab-btn" data-role="deactivated">Deactivated</button>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="relative w-72">
                             <input id="searchInput" type="text" placeholder="Search staff members..." 
                                 class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <div class="absolute left-3 top-2.5 text-gray-400">
                                 <i class="fas fa-search"></i>
                             </div>
                         </div>
+                        <select id="statusFilter" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
                     </div>
-                    <select id="roleFilter" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="">All Roles</option>
-                        <option value="operations_officer">Operations Officer</option>
-                        <option value="technician">Technician</option>
-                    </select>
-                    <select id="statusFilter" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="">All Status</option>
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
-                    </select>
                 </div>
             </div>
 
+            <!-- hidden role select kept for compatibility with existing JS -->
+            <select id="roleFilter" class="sr-only" aria-hidden="true">
+                <option value="">All Roles</option>
+                <option value="operations_officer">Operations Officer</option>
+                <option value="technician">Technician</option>
+            </select>
+
+            <script>
+                // Tab click handling: set the roleFilter select and dispatch change
+                (function(){
+                    const tabs = document.querySelectorAll('.tab-btn');
+                    const roleSelect = document.getElementById('roleFilter');
+                    function setActive(tab){
+                        tabs.forEach(t=>t.classList.remove('tab-active'));
+                        tab.classList.add('tab-active');
+                        const role = tab.getAttribute('data-role') || '';
+                        if(roleSelect){
+                            roleSelect.value = role;
+                            roleSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+                    }
+                    tabs.forEach(tab=>{
+                        tab.addEventListener('click', ()=> setActive(tab));
+                    });
+                    // Initialize active tab based on current select value
+                    if(roleSelect){
+                        const initial = roleSelect.value || '';
+                        const match = Array.from(tabs).find(t=>t.getAttribute('data-role')===initial);
+                        if(match) setActive(match);
+                    }
+                })();
+            </script>
+
             <!-- Staff Table -->
-            <div class="bg-white rounded-lg shadow overflow-hidden">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
+            <div class="corp-card mb-6">
+                <table class="min-w-full corp-table">
+                    <thead>
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Staff Member
-                            </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Role
-                            </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Assigned Clients
-                            </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Status
-                            </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Last Active
-                            </th>
-                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Actions
-                            </th>
+                            <th class="px-8 py-4 text-left">Staff Member</th>
+                            <th class="px-8 py-4 text-left">Role</th>
+                            <th class="px-8 py-4 text-left">Assigned Clients</th>
+                            <th class="px-8 py-4 text-left">Status</th>
+                            <th class="px-8 py-4 text-right">Actions</th>
                         </tr>
                     </thead>
-                    <tbody id="staffTableBody" class="bg-white divide-y divide-gray-200">
+                    <tbody id="staffTableBody">
+                        <!-- Example row (commented): structure for JS population -->
+                        <!--
+                        <tr class="row-hover">
+                            <td class="px-8 py-6 flex items-center">
+                                <span class="corp-avatar">JD</span>
+                                <div>
+                                    <div class="font-semibold text-gray-900">Jane Doe</div>
+                                    <div class="text-sm text-gray-500">jane.doe@example.com</div>
+                                </div>
+                            </td>
+                            <td class="px-8 py-6">Technician</td>
+                            <td class="px-8 py-6 text-gray-600">Client A, Client B</td>
+                            <td class="px-8 py-6"><span class="status-pill status-active">Active</span></td>
+                            <td class="px-8 py-6 text-right">
+                                <button class="action-btn"><i class="fas fa-edit"></i></button>
+                                <button class="action-btn ml-2"><i class="fas fa-ellipsis-v"></i></button>
+                            </td>
+                        </tr>
+                        -->
                         <!-- Staff rows will be populated dynamically -->
                     </tbody>
                 </table>
@@ -195,17 +396,90 @@
         </div>
     </div>
 
-    <!-- Add Staff Modal -->
-    <div id="addStaffModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg max-w-md w-full mx-4 p-6 transform transition-all">
+    <!-- Edit Staff Modal -->
+    <div id="editStaffModal" class="hidden fixed inset-0 flex items-center justify-center z-50">
+        <div class="absolute inset-0 bg-black bg-opacity-75 backdrop-blur-sm"></div>
+        <div class="relative bg-white rounded-lg max-w-lg w-full mx-4 p-8 transform transition-all">
             <div class="flex justify-between items-center mb-6">
-                <h3 class="text-lg font-semibold text-gray-900">Add New Staff Member</h3>
-                <button onclick="closeAddStaffModal()" class="text-gray-400 hover:text-gray-500">
+                <div class="flex items-center gap-3">
+                    <div class="h-10 w-10 bg-slate-200 rounded-full flex items-center justify-center text-slate-700">
+                        <i class="fas fa-user-edit"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900">Edit Staff Member</h3>
+                </div>
+                <button onclick="closeEditStaffModal()" aria-label="Close edit staff dialog" class="text-gray-400 hover:text-gray-500">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            
-            <form id="addStaffForm" class="space-y-4">
+            <div id="editStaffAlert" class="hidden rounded-md p-3 mb-4 text-sm" role="status" aria-live="polite"></div>
+            <form id="editStaffForm" class="space-y-4" aria-describedby="editStaffAlert">
+                <input type="hidden" name="id" id="editStaffId">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                    <input type="text" name="firstName" id="editStaffFirstName" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter first name">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                    <input type="text" name="lastName" id="editStaffLastName" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter last name">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input type="email" name="email" id="editStaffEmail" required disabled class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Department</label>
+                    <input type="text" name="department" id="editStaffDepartment" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter department">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                    <select name="role" id="editStaffRole" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Select role</option>
+                        <option value="operations_officer">Operations Officer</option>
+                        <option value="technician">Technician</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <select name="status" id="editStaffStatus" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                </div>
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button type="button" onclick="closeEditStaffModal()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400">Cancel</button>
+                    <button type="submit" id="submitEditStaffBtn" aria-live="polite" aria-busy="false" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <span id="submitEditBtnText">Save Changes</span>
+                        <svg id="submitEditBtnLoader" class="hidden animate-spin ml-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Staff Modal -->
+    <div id="addStaffModal" class="hidden fixed inset-0 flex items-center justify-center z-50">
+        <!-- Darker overlay with backdrop blur -->
+        <div id="addStaffModalOverlay" class="absolute inset-0 bg-black bg-opacity-75 backdrop-blur-sm"></div>
+    <div class="relative bg-white rounded-lg max-w-lg w-full mx-4 p-8 transform transition-all">
+            <div class="flex justify-between items-center mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-700">
+                        <i class="fas fa-user-plus"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900">Add New Staff Member</h3>
+                </div>
+                <button onclick="closeAddStaffModal()" aria-label="Close add staff dialog" class="text-gray-400 hover:text-gray-500">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Inline alert area for modal-specific feedback -->
+            <div id="addStaffAlert" class="hidden rounded-md p-3 mb-4 text-sm" role="status" aria-live="polite"></div>
+
+            <form id="addStaffForm" class="space-y-4" aria-describedby="addStaffAlert">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">First Name</label>
                     <input type="text" name="firstName" required 
@@ -229,10 +503,16 @@
                 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                    <input type="password" name="password" required 
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                           placeholder="Enter password"
-                           minlength="6">
+                    <div class="relative">
+                        <input type="password" name="password" id="addStaffPassword" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                               placeholder="Enter password"
+                               minlength="6" aria-describedby="passwordHelp">
+                        <button type="button" id="togglePasswordBtn" aria-label="Show password" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <p id="passwordHelp" class="text-xs text-gray-500 mt-1">Use at least 6 characters. You can change this later.</p>
                 </div>
                 
                 <div>
@@ -251,10 +531,127 @@
                             class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400">
                         Cancel
                     </button>
-                    <button type="submit" id="submitStaffBtn"
-                            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <button type="submit" id="submitStaffBtn" aria-live="polite" aria-busy="false"
+                            class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <span id="submitBtnText">Add Staff</span>
-                        <i id="submitBtnLoader" class="fas fa-spinner fa-spin ml-2 hidden"></i>
+                        <svg id="submitBtnLoader" class="hidden animate-spin ml-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- View Staff Modal -->
+    <div id="viewStaffModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl max-w-lg w-full mx-4 p-6 transform transition-all shadow-2xl">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-gray-900">Staff Details</h3>
+                <button onclick="closeViewStaffModal()" class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <div id="viewStaffContent" class="space-y-4">
+                <!-- Staff Name & Email -->
+                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div>
+                            <div class="text-lg font-semibold text-gray-900" id="viewStaffName">Loading...</div>
+                            <div class="text-sm text-gray-600" id="viewStaffEmail">Loading...</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Staff Details -->
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between py-2 border-b border-gray-100">
+                        <span class="font-semibold text-gray-700">Role:</span>
+                        <span id="viewStaffRole" class="text-gray-900">-</span>
+                    </div>
+                    <div class="flex items-center justify-between py-2 border-b border-gray-100">
+                        <span class="font-semibold text-gray-700">Status:</span>
+                        <span id="viewStaffStatus" class="text-gray-900">-</span>
+                    </div>
+                    <div class="flex items-center justify-between py-2 border-b border-gray-100">
+                        <span class="font-semibold text-gray-700">Date Added:</span>
+                        <span id="viewStaffDateAdded" class="text-gray-900">-</span>
+                    </div>
+                    <div class="py-2">
+                        <div class="font-semibold text-gray-700 mb-2">Assigned Institutions:</div>
+                        <div id="viewStaffAssignments" class="text-gray-900">-</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex justify-end mt-6">
+                <button onclick="closeViewStaffModal()" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Change Password Modal -->
+    <div id="changePasswordModal" class="hidden fixed inset-0 flex items-center justify-center z-50">
+        <div class="absolute inset-0 bg-black bg-opacity-75 backdrop-blur-sm"></div>
+        <div class="relative bg-white rounded-lg max-w-md w-full mx-4 p-6 transform transition-all shadow-2xl">
+            <div class="flex justify-between items-center mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="h-10 w-10 bg-purple-100 rounded-full flex items-center justify-center text-purple-600">
+                        <i class="fas fa-key"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900">Change Password</h3>
+                </div>
+                <button onclick="closeChangePasswordModal()" aria-label="Close change password dialog" class="text-gray-400 hover:text-gray-500">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div id="changePasswordAlert" class="hidden rounded-md p-3 mb-4 text-sm" role="status" aria-live="polite"></div>
+            
+            <form id="changePasswordForm" class="space-y-4">
+                <input type="hidden" id="changePasswordStaffId">
+                
+                <div class="bg-gray-50 p-3 rounded-lg mb-4">
+                    <p class="text-sm text-gray-600">Changing password for:</p>
+                    <p class="font-semibold text-gray-900" id="changePasswordStaffName">-</p>
+                    <p class="text-sm text-gray-500" id="changePasswordStaffEmail">-</p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+                    <input type="password" id="newPasswordInput" required minlength="6" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                           placeholder="Enter new password (min 6 characters)">
+                    <p class="text-xs text-gray-500 mt-1">Minimum 6 characters</p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
+                    <input type="password" id="confirmPasswordInput" required minlength="6"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                           placeholder="Confirm new password">
+                </div>
+                
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button type="button" onclick="closeChangePasswordModal()" 
+                            class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400">
+                        Cancel
+                    </button>
+                    <button type="submit" id="submitChangePasswordBtn"
+                            class="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        <i class="fas fa-key mr-2"></i>
+                        <span id="changePasswordBtnText">Change Password</span>
+                        <svg id="changePasswordLoader" class="hidden animate-spin ml-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                        </svg>
                     </button>
                 </div>
             </form>

@@ -32,7 +32,18 @@ const auth = (req, res, next) => {
         // Continue with request
         next();
     } catch (error) {
-        console.error('Auth middleware error:', error);
+        // Only log if it's not a common expiration error
+        if (error.name !== 'TokenExpiredError') {
+            console.error('[AUTH] Token verification failed:', error.message);
+        }
+        
+        if (error.name === 'TokenExpiredError') {
+            return res.status(401).json({ 
+                message: 'Token expired', 
+                code: 'TOKEN_EXPIRED' 
+            });
+        }
+        
         return res.status(401).json({ message: 'Invalid authentication token' });
     }
 };
@@ -41,13 +52,22 @@ const auth = (req, res, next) => {
  * Middleware to authenticate technician users
  * Only allows technicians to access protected routes
  */
-const authenticateTechnician = (req, res, next) => {
-    auth(req, res, () => {
-        // After general auth, verify user is a technician
-        if (req.user && req.user.role === 'technician') {
+const db = require('../config/database');
+const authenticateTechnician = async (req, res, next) => {
+    auth(req, res, async () => {
+        try {
+            if (!req.user || !req.user.id) {
+                return res.status(403).json({ message: 'Access denied. Technicians only.' });
+            }
+            // Query the users table for the role
+            const [rows] = await db.query('SELECT role FROM users WHERE id = ?', [req.user.id]);
+            if (rows.length === 0 || rows[0].role !== 'technician') {
+                return res.status(403).json({ message: 'Access denied. Technicians only.' });
+            }
             next();
-        } else {
-            return res.status(403).json({ message: 'Access denied. Technicians only.' });
+        } catch (error) {
+            console.error('Technician auth DB error:', error);
+            return res.status(500).json({ message: 'Internal server error during technician authentication.' });
         }
     });
 };

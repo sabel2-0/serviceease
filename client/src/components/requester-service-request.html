@@ -1,0 +1,35 @@
+<form id="reqServiceForm" class="space-y-4">
+  <div>
+    <label class="block text-sm font-medium text-gray-700">Printer (optional)</label>
+    <select id="reqPrinter" class="w-full mt-1 px-3 py-2 border rounded">
+      <option value="">-- Select printer --</option>
+    </select>
+  </div>
+  <div>
+    <label class="block text-sm font-medium text-gray-700">Issue Type</label>
+    <select id="reqType" class="w-full mt-1 px-3 py-2 border rounded" required>
+      <option value="">Select type</option>
+      <option value="paper_jam">Paper Jam</option>
+      <option value="print_quality">Print Quality</option>
+      <option value="connectivity">Connectivity</option>
+      <option value="mechanical">Mechanical</option>
+      <option value="other">Other</option>
+    </select>
+  </div>
+  <div>
+    <label class="block text-sm font-medium text-gray-700">Priority</label>
+    <select id="reqPriority" class="w-full mt-1 px-3 py-2 border rounded" required>
+      <option value="low">Low</option>
+      <option value="medium" selected>Medium</option>
+      <option value="high">High</option>
+    </select>
+  </div>
+  <div>
+    <label class="block text-sm font-medium text-gray-700">Details</label>
+    <textarea id="reqDetails" rows="4" class="w-full mt-1 px-3 py-2 border rounded" placeholder="Describe the issue" required></textarea>
+  </div>
+  <div class="flex items-center justify-between">
+    <button type="button" id="reqSubmit" class="px-4 py-2 bg-blue-600 text-white rounded">Send</button>
+    <div id="reqStatus" class="text-sm text-gray-500"></div>
+  </div>
+</form>

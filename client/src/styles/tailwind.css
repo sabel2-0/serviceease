@@ -1,0 +1,138 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom responsive utilities */
+@layer utilities {
+    /* Touch-friendly elements */
+    .touch-optimization {
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -khtml-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+    }
+    
+    /* Better text truncation for mobile */
+    .truncate-mobile {
+        @apply xs:truncate;
+    }
+    
+    /* Responsive line clamping */
+    .line-clamp-mobile-2 {
+        @apply line-clamp-1 xs:line-clamp-2;
+    }
+    
+    .line-clamp-mobile-3 {
+        @apply line-clamp-2 xs:line-clamp-3;
+    }
+    
+    /* Mobile-first spacing */
+    .responsive-padding {
+        @apply p-3 sm:p-4 lg:p-6;
+    }
+    
+    .responsive-margin {
+        @apply m-3 sm:m-4 lg:m-6;
+    }
+    
+    /* Enhanced scrolling for mobile */
+    .scroll-smooth-mobile {
+        scroll-behavior: smooth;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Better button touch targets */
+    .touch-target {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    /* Mobile-optimized focus states */
+    .focus-mobile {
+        @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1;
+    }
+    
+    /* Responsive flex utilities */
+    .flex-mobile-column {
+        @apply flex-col xs:flex-row;
+    }
+    
+    .flex-mobile-row {
+        @apply flex-row xs:flex-col;
+    }
+}
+
+/* Viewport-based styling */
+.viewport-xs .mobile-optimized { @apply block; }
+.viewport-sm .mobile-optimized { @apply hidden; }
+.viewport-md .desktop-optimized { @apply block; }
+.viewport-lg .desktop-optimized { @apply block; }
+
+/* Device-specific optimizations */
+.is-mobile .card-hover-effect:hover {
+    transform: none !important;
+    box-shadow: inherit !important;
+}
+
+.is-mobile .touch-optimization:active {
+    transform: scale(0.98) !important;
+    transition: transform 0.1s ease-out !important;
+}
+
+.is-desktop .card-hover-effect:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Enhanced scrollbar styling for desktop */
+@media (min-width: 768px) {
+    .scroll-styled::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+    
+    .scroll-styled::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 3px;
+    }
+    
+    .scroll-styled::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 3px;
+    }
+    
+    .scroll-styled::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
+}
+
+/* Print styles for better document printing */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    .print-optimized {
+        color: black !important;
+        background: white !important;
+        box-shadow: none !important;
+    }
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+    .card-animate-in {
+        animation: none;
+    }
+    
+    .transition-all {
+        transition: none;
+    }
+    
+    .hover-lift:hover {
+        transform: none;
+    }
+}

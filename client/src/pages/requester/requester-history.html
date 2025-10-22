@@ -1,0 +1,99 @@
+<section class="space-y-4">
+  <!-- Header -->
+  <div class="bg-white rounded-lg shadow p-4">
+    <h2 class="text-xl font-semibold text-gray-800">Service Request History</h2>
+    <p class="text-sm text-gray-500 mt-1">Track all your submitted service requests</p>
+  </div>
+
+  <!-- Filter Tabs -->
+  <div class="bg-white rounded-lg shadow p-2 flex gap-2 overflow-x-auto">
+    <button class="history-filter-btn px-4 py-2 rounded text-sm font-medium whitespace-nowrap bg-blue-600 text-white" data-filter="all">
+      All
+    </button>
+    <button class="history-filter-btn px-4 py-2 rounded text-sm font-medium whitespace-nowrap text-gray-600 hover:bg-gray-100" data-filter="pending">
+      Pending
+    </button>
+    <button class="history-filter-btn px-4 py-2 rounded text-sm font-medium whitespace-nowrap text-gray-600 hover:bg-gray-100" data-filter="in_progress">
+      In Progress
+    </button>
+    <button class="history-filter-btn px-4 py-2 rounded text-sm font-medium whitespace-nowrap text-gray-600 hover:bg-gray-100" data-filter="pending_approval">
+      Needs Approval
+    </button>
+    <button class="history-filter-btn px-4 py-2 rounded text-sm font-medium whitespace-nowrap text-gray-600 hover:bg-gray-100" data-filter="completed">
+      Completed
+    </button>
+  </div>
+
+  <!-- Requests List -->
+  <div id="history-requests-list" class="space-y-3">
+    <!-- Service requests will be loaded here -->
+    <div class="bg-white rounded-lg shadow p-6 text-center">
+      <div class="animate-pulse text-gray-400">Loading service requests...</div>
+    </div>
+  </div>
+
+  <!-- Empty State (hidden by default) -->
+  <div id="history-empty-state" class="hidden bg-white rounded-lg shadow p-8 text-center">
+    <div class="text-4xl mb-3">📋</div>
+    <h3 class="text-lg font-semibold text-gray-700 mb-2">No Requests Found</h3>
+    <p class="text-sm text-gray-500 mb-4">You haven't submitted any service requests yet</p>
+    <button id="history-new-request-btn" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
+      Create New Request
+    </button>
+  </div>
+</section>
+
+<!-- Approval Modal -->
+<div id="approval-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+  <div class="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-xl">
+      <h3 class="text-xl font-bold">Review Completed Work</h3>
+      <p class="text-sm text-blue-100 mt-1" id="approval-request-number"></p>
+    </div>
+    
+    <!-- Content -->
+    <div class="p-6 space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Technician</label>
+        <div class="text-gray-900" id="approval-technician-name"></div>
+      </div>
+      
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Your Feedback (Optional)</label>
+        <textarea 
+          id="approval-feedback" 
+          rows="3" 
+          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          placeholder="Add any comments about the completed work..."></textarea>
+      </div>
+      
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <p class="text-sm text-blue-800">
+          <strong>Approve:</strong> Mark the service request as completed.<br>
+          <strong>Reject:</strong> Send it back to the technician for revision.
+        </p>
+      </div>
+    </div>
+    
+    <!-- Actions -->
+    <div class="flex gap-3 p-6 border-t">
+      <button 
+        id="approval-reject-btn" 
+        class="flex-1 bg-red-500 hover:bg-red-600 text-white py-3 rounded-lg font-medium transition">
+        ❌ Reject
+      </button>
+      <button 
+        id="approval-approve-btn" 
+        class="flex-1 bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg font-medium transition">
+        ✅ Approve
+      </button>
+    </div>
+    
+    <button 
+      id="approval-cancel-btn" 
+      class="w-full py-3 text-gray-600 hover:bg-gray-50 transition">
+      Cancel
+    </button>
+  </div>
+</div>

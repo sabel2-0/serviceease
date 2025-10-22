@@ -18,9 +18,15 @@
             <header class="bg-white shadow">
                 <div class="px-4 sm:px-6 lg:px-8 py-4">
                     <div class="flex items-center justify-between">
-                        <h1 class="text-xl font-semibold text-gray-900">Manage Printers</h1>
-                        <div class="flex items-center space-x-3">
-                            <span class="text-sm text-gray-500">Welcome, <span id="welcome-name">Coordinator</span></span>
+                        <div>
+                            <h1 class="text-2xl font-semibold text-gray-900">Printer Management</h1>
+                            <p class="text-sm text-gray-500">Manage printers assigned to your institution</p>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <div class="text-right">
+                                <div class="text-sm text-gray-500">Institution</div>
+                                <div id="welcome-name" class="text-sm font-medium text-gray-900">Coordinator</div>
+                            </div>
                             <button id="user-menu-button" class="bg-gray-100 p-2 rounded-full">
                                 <i class="fas fa-user text-gray-600"></i>
                             </button>
@@ -31,24 +37,32 @@
             
             <!-- Page Content -->
             <main class="flex-1 overflow-x-hidden overflow-y-auto p-6 bg-gray-100">
-                <!-- Filters Section -->
+                <!-- Filters & Actions -->
                 <div class="bg-white rounded-lg shadow mb-6 p-4">
-                    <div class="flex flex-wrap items-center justify-between gap-4">
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i class="fas fa-search text-gray-400"></i>
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div class="flex-1 flex items-center gap-3">
+                            <div class="relative w-full md:w-80">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-search text-gray-400"></i>
+                                </div>
+                                <input type="text" id="searchInput" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Search by model, serial, location...">
                             </div>
-                            <input type="text" id="searchInput" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Search printers...">
+
+                            <div class="hidden md:flex items-center space-x-3">
+                                <label for="statusFilter" class="text-sm font-medium text-gray-700">Status:</label>
+                                <select id="statusFilter" class="border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                    <option value="">All Statuses</option>
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                    <option value="maintenance">In Maintenance</option>
+                                </select>
+                            </div>
                         </div>
-                        
-                        <div class="flex items-center space-x-3">
-                            <label for="statusFilter" class="text-sm font-medium text-gray-700">Status:</label>
-                            <select id="statusFilter" class="border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                                <option value="">All Statuses</option>
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
-                                <option value="maintenance">In Maintenance</option>
-                            </select>
+
+                        <div class="flex items-center gap-3">
+                            <button id="refreshPrintersBtn" class="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-md">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -132,19 +146,20 @@
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-gray-50">
                                     <tr>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Printer</th>
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Model</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Serial Number</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Serial</th>
                                         <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="printersTableBody" class="bg-white divide-y divide-gray-200">
                                     <!-- Printers will be loaded dynamically -->
                                     <tr>
-                                        <td colspan="5" class="px-6 py-10 text-center text-gray-500">
+                                        <td colspan="4" class="px-6 py-10 text-center text-gray-500">
                                             <div class="flex flex-col items-center justify-center">
-                                                <i class="fas fa-spinner fa-spin mb-3 text-3xl text-gray-400"></i>
-                                                <p class="text-lg">Loading printers...</p>
+                                                <svg class="w-16 h-16 text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17v-2a4 4 0 00-4-4H5a3 3 0 013-3h8a3 3 0 013 3h-.01A4 4 0 0015 15v2"></path></svg>
+                                                <p class="text-lg font-medium">No printers found</p>
+                                                <p class="text-sm mt-1">Try adjusting your filters or assign a printer to your institution.</p>
                                             </div>
                                         </td>
                                     </tr>
@@ -186,16 +201,8 @@
                         <p id="printerSerial" class="text-base text-gray-900">-</p>
                     </div>
                     <div>
-                        <h4 class="text-sm font-medium text-gray-500 mb-1">Status</h4>
-                        <span id="printerStatus" class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Active</span>
-                    </div>
-                    <div>
                         <h4 class="text-sm font-medium text-gray-500 mb-1">Institution</h4>
                         <p id="printerInstitution" class="text-base text-gray-900">-</p>
-                    </div>
-                    <div>
-                        <h4 class="text-sm font-medium text-gray-500 mb-1">Location</h4>
-                        <p id="printerLocation" class="text-base text-gray-900">-</p>
                     </div>
                     <div>
                         <h4 class="text-sm font-medium text-gray-500 mb-1">Installation Date</h4>
@@ -217,10 +224,7 @@
                 </div>
             </div>
             
-            <div class="px-6 py-4 bg-gray-50 flex justify-end space-x-3">
-                <button id="reportIssueBtn" class="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md">
-                    Report Issue
-                </button>
+                <div class="px-6 py-4 bg-gray-50 flex justify-end space-x-3">
                 <button class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-md modal-close" onclick="closeDetailsModal()">
                     Close
                 </button>
@@ -228,61 +232,7 @@
         </div>
     </div>
     
-    <!-- Report Issue Modal -->
-    <div id="reportIssueModal" class="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-40 hidden">
-        <div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4">
-            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                <h3 class="text-lg font-medium text-gray-900">Report Printer Issue</h3>
-                <button class="modal-close text-gray-400 hover:text-gray-500" onclick="closeReportModal()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            
-            <form id="reportIssueForm">
-                <input type="hidden" id="reportPrinterId">
-                
-                <div class="px-6 py-4 space-y-4">
-                    <div>
-                        <label for="issueType" class="block text-sm font-medium text-gray-700 mb-1">Issue Type</label>
-                        <select id="issueType" name="issueType" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required>
-                            <option value="">Select issue type</option>
-                            <option value="paper_jam">Paper Jam</option>
-                            <option value="print_quality">Print Quality</option>
-                            <option value="connectivity">Connectivity Issue</option>
-                            <option value="error_message">Error Message</option>
-                            <option value="mechanical">Mechanical Problem</option>
-                            <option value="maintenance">Regular Maintenance</option>
-                            <option value="other">Other</option>
-                        </select>
-                    </div>
-                    
-                    <div>
-                        <label for="issuePriority" class="block text-sm font-medium text-gray-700 mb-1">Priority</label>
-                        <select id="issuePriority" name="issuePriority" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required>
-                            <option value="low">Low - Not Urgent</option>
-                            <option value="medium" selected>Medium - Normal Priority</option>
-                            <option value="high">High - Urgent</option>
-                            <option value="critical">Critical - Immediate Attention</option>
-                        </select>
-                    </div>
-                    
-                    <div>
-                        <label for="issueDescription" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                        <textarea id="issueDescription" name="issueDescription" rows="4" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Provide details about the issue..." required></textarea>
-                    </div>
-                </div>
-                
-                <div class="px-6 py-4 bg-gray-50 flex justify-end space-x-3">
-                    <button type="button" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-md modal-close" onclick="closeReportModal()">
-                        Cancel
-                    </button>
-                    <button type="submit" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md">
-                        Submit Report
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
+    <!-- Report Issue Modal removed per UI cleanup -->
     
     <!-- Scripts -->
     <script src="../../js/auth.js"></script>

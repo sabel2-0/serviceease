@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>Requester Mobile - ServiceEase</title>
+  
+  <!-- AUTHENTICATION CHECK - Runs before page renders -->
+  <script>
+    (function() {
+      // Check authentication immediately
+      const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+      const userStr = localStorage.getItem('user');
+      
+      if (!isLoggedIn || !userStr) {
+        // Not logged in - redirect to login
+        window.location.replace('/pages/login.html');
+        return;
+      }
+      
+      try {
+        const user = JSON.parse(userStr);
+        // Check if user is requester
+        if (user.role !== 'requester') {
+          // Wrong role - redirect to correct dashboard
+          const rolePaths = {
+            'admin': '/pages/admin/admin.html',
+            'operations_officer': '/pages/operations-officer/operations-officer.html',
+            'technician': '/pages/technician/technician.html',
+            'coordinator': '/pages/coordinator/coordinator.html'
+          };
+          const targetPath = rolePaths[user.role] || '/pages/login.html';
+          window.location.replace(targetPath);
+          return;
+        }
+      } catch (e) {
+        // Invalid user data - redirect to login
+        window.location.replace('/pages/login.html');
+        return;
+      }
+    })();
+  </script>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/styles/main.css">
+  <style>/* Mobile-only safe area */
+    @media (min-width: 640px) { .mobile-only { display:none !important } }
+  </style>
+</head>
+<body class="bg-gray-50 mobile-only">
+  <div id="app" class="max-w-md mx-auto min-h-screen flex flex-col pb-20">
+    <div id="requester-topnav-container"></div>
+
+    <main class="p-4 flex-1">
+      <div id="requester-service-component"></div>
+    </main>
+
+    <div id="requester-bottomnav-container"></div>
+  </div>
+
+  <script src="/js/auth.js"></script>
+  <script src="/js/requester-app.js"></script>
+</body>
+</html>

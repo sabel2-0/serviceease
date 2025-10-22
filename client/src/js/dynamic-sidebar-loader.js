@@ -10,7 +10,7 @@ function loadDynamicSidebar(containerId = 'dynamic-sidebar') {
     
     if (!user) {
         console.error('No user found, redirecting to login');
-        window.location.href = '../../pages/login.html';
+        window.location.href = '/pages/login.html';
         return;
     }
     
@@ -155,26 +155,14 @@ function initializeSidebarFunctionality(userRole) {
                 localStorage.removeItem('token');
                 console.log('Local storage cleared');
                 
-                // Try multiple approaches to redirect
+                // Use absolute path for redirect - works from any page location
                 try {
-                    // Absolute path to login page
-                    console.log('Redirecting to login page (absolute path)');
+                    console.log('Redirecting to login page');
                     window.location.href = '/pages/login.html';
-                    
-                    // If that doesn't work, try with the protocol and host
-                    setTimeout(function() {
-                        console.log('Fallback redirect with origin');
-                        window.location.href = window.location.origin + '/pages/login.html';
-                    }, 200);
-                    
-                    // And if that doesn't work, try forcing a hard reload
-                    setTimeout(function() {
-                        console.log('Fallback with replace and relative path');
-                        window.location.replace('../../pages/login.html');
-                    }, 400);
                 } catch (e) {
                     console.error('Error during logout redirect:', e);
-                    alert('Error during logout. Please close your browser to log out completely.');
+                    // Fallback to origin-based redirect
+                    window.location.href = window.location.origin + '/pages/login.html';
                 }
             }
         });

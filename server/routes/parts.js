@@ -61,15 +61,16 @@ router.get('/', async (req, res) => {
             SELECT 
                 id,
                 name,
-                part_number,
+                brand,
                 category,
-                description,
-                quantity as stock,
+                quantity,
                 minimum_stock,
                 status,
-                compatible_printers,
                 created_at,
-                updated_at
+                updated_at,
+                is_universal,
+                part_type,
+                unit
             FROM printer_parts
             ORDER BY created_at DESC
         `);
@@ -89,49 +90,38 @@ router.get('/', async (req, res) => {
 // Create new part
 router.post('/', async (req, res) => {
     try {
-        const { 
-            name, 
-            partNumber, 
-            category, 
-            description, 
-            stock, 
-            minimumStock, 
-            compatiblePrinters 
+        const {
+            name,
+            brand,
+            category,
+            quantity
         } = req.body;
-        
+
         if (!name) {
             return res.status(400).json({ error: 'Name is required' });
         }
-
-        const quantity = parseInt(stock) || 0;
-        const status = quantity > 10 ? 'in_stock' : quantity > 0 ? 'low_stock' : 'out_of_stock';
+        if (!category) {
+            return res.status(400).json({ error: 'Category is required' });
+        }
 
         const [result] = await db.query(
             `INSERT INTO printer_parts (
-                name, 
-                part_number, 
-                category, 
-                description, 
-                quantity, 
-                minimum_stock, 
-                status, 
-                compatible_printers
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                name,
+                brand,
+                category,
+                quantity
+            ) VALUES (?, ?, ?, ?)`,
             [
-                name, 
-                partNumber || null, 
-                category || null, 
-                description || null, 
-                quantity, 
-                minimumStock || 5, 
-                status,
-                compatiblePrinters || null
+                name,
+                brand || null,
+                category,
+                parseInt(quantity) || 0
             ]
         );
 
-        res.status(201).json({ 
+        res.status(201).json({
             message: 'Part created successfully',
-            id: result.insertId 
+            id: result.insertId
         });
     } catch (error) {
         console.error('Error creating part:', error);
@@ -143,27 +133,34 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, category, stock } = req.body;
+        const {
+            name,
+            brand,
+            category,
+            quantity,
+            unit,
+            minimum_stock,
+            status,
+            part_type,
+            is_universal
+        } = req.body;
 
-        if (!name && !category && stock === undefined) {
+        if (!name && !brand && !category && quantity === undefined && unit === undefined && minimum_stock === undefined && status === undefined && part_type === undefined && is_universal === undefined) {
             return res.status(400).json({ error: 'At least one field to update is required' });
         }
 
         const updateFields = [];
         const values = [];
 
-        if (name) {
-            updateFields.push('name = ?');
-            values.push(name);
-        }
-        if (category) {
-            updateFields.push('category = ?');
-            values.push(category);
-        }
-        if (stock !== undefined) {
-            updateFields.push('stock = ?');
-            values.push(stock);
-        }
+        if (name !== undefined) { updateFields.push('name = ?'); values.push(name); }
+        if (brand !== undefined) { updateFields.push('brand = ?'); values.push(brand); }
+        if (category !== undefined) { updateFields.push('category = ?'); values.push(category); }
+        if (quantity !== undefined) { updateFields.push('quantity = ?'); values.push(quantity); }
+        if (unit !== undefined) { updateFields.push('unit = ?'); values.push(unit); }
+        if (minimum_stock !== undefined) { updateFields.push('minimum_stock = ?'); values.push(minimum_stock); }
+        if (status !== undefined) { updateFields.push('status = ?'); values.push(status); }
+        if (part_type !== undefined) { updateFields.push('part_type = ?'); values.push(part_type); }
+        if (is_universal !== undefined) { updateFields.push('is_universal = ?'); values.push(is_universal); }
 
         values.push(id);
 

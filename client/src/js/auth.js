@@ -10,19 +10,31 @@ function verifyRole(allowedRoles) {
 
     // If user's role is not in the allowed roles, redirect to their appropriate dashboard
     if (!allowedRoles.includes(user.role)) {
-        // Redirect to appropriate dashboard based on role
+        // Get current path
+        const currentPath = window.location.pathname;
+        let targetPath = '';
         switch (user.role) {
             case 'admin':
-                window.location.href = '/pages/admin/admin.html';
+                targetPath = '/pages/admin/admin.html';
                 break;
             case 'operations_officer':
-                window.location.href = '/pages/operations-officer/operations-officer.html';
+                targetPath = '/pages/operations-officer/operations-officer.html';
                 break;
             case 'technician':
-                window.location.href = '/pages/technician/technician.html';
+                targetPath = '/pages/technician/technician.html';
+                break;
+            case 'requester':
+                targetPath = '/pages/requester/requester.html';
+                break;
+            case 'coordinator':
+                targetPath = '/pages/coordinator/coordinator.html';
                 break;
             default:
-                window.location.href = '/pages/coordinator/coordinator.html';
+                targetPath = '/pages/login.html'; // fallback to login for unknown roles
+        }
+        // Only redirect if not already on the correct dashboard
+        if (currentPath !== targetPath) {
+            window.location.href = targetPath;
         }
         return false;
     }
@@ -60,13 +72,18 @@ function verifySectionAccess() {
             case 'admin': return 'admin';
             case 'operations_officer': return 'operations-officer';
             case 'technician': return 'technician';
-            default: return 'coordinator';
+            case 'requester': return 'requester';
+            case 'coordinator': return 'coordinator';
+            default: return null; // fallback for unknown roles
         }
     })();
 
-    if (pathInfo.section !== allowedSection) {
-        // Redirect to correct section
-        window.location.href = `/pages/${allowedSection}/${allowedSection}.html`;
+    if (allowedSection && pathInfo.section !== allowedSection) {
+        const targetPath = `/pages/${allowedSection}/${allowedSection}.html`;
+        // Only redirect if not already on the correct dashboard
+        if (window.location.pathname !== targetPath) {
+            window.location.href = targetPath;
+        }
         return false;
     }
 
@@ -196,6 +213,9 @@ async function loginUser({ email, password }) {
             window.location.href = `${basePath}operations-officer/operations-officer.html`;
         } else if (data.user.role === 'technician') {
             window.location.href = `${basePath}technician/technician.html`;
+        } else if (data.user.role === 'requester') {
+            // Requester users have a dedicated mobile/compact UI
+            window.location.href = `${basePath}requester/requester.html`;
         } else {
             // All other users (including coordinators) go to coordinator.html
             window.location.href = `${basePath}coordinator/coordinator.html`;
@@ -229,22 +249,25 @@ async function registerUser(formData) {
         registrationData.append('lastName', formData.lastName);
         registrationData.append('email', formData.email);
         registrationData.append('password', formData.password);
-        registrationData.append('institutionType', formData.institutionType);
-        registrationData.append('institutionName', formData.institutionName);
-        registrationData.append('institutionAddress', formData.institutionAddress);
+        registrationData.append('role', 'coordinator'); // Default role for registration
+        
+        // Add institutionId if provided (from the institution selection dropdown)
+        if (formData.institutionId) {
+            registrationData.append('institutionId', formData.institutionId);
+        }
         
         // Add photo files if they exist
         const frontIdInput = document.getElementById('front-id-upload');
         const backIdInput = document.getElementById('back-id-upload');
         const selfieInput = document.getElementById('selfie-upload');
         
-        if (frontIdInput.files[0]) {
+        if (frontIdInput && frontIdInput.files[0]) {
             registrationData.append('frontId', frontIdInput.files[0]);
         }
-        if (backIdInput.files[0]) {
+        if (backIdInput && backIdInput.files[0]) {
             registrationData.append('backId', backIdInput.files[0]);
         }
-        if (selfieInput.files[0]) {
+        if (selfieInput && selfieInput.files[0]) {
             registrationData.append('selfie', selfieInput.files[0]);
         }
 

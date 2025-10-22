@@ -100,7 +100,11 @@
                                 </select>
                             </div>
                             <div class="flex-grow text-right">
-                                <button id="refreshUsersBtn" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-md">
+                                <div class="inline-flex rounded-md shadow-sm" role="tablist" aria-label="User status tabs">
+                                    <button type="button" id="tab-active" class="px-4 py-2 bg-white border rounded-l-md" role="tab" aria-selected="true">Active</button>
+                                    <button type="button" id="tab-inactive" class="px-4 py-2 bg-white border rounded-r-md" role="tab" aria-selected="false">Deactivated</button>
+                                </div>
+                                <button type="button" id="refreshUsersBtn" class="ml-3 bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-md">
                                     <i class="fas fa-sync-alt mr-2"></i>Refresh
                                 </button>
                             </div>
@@ -117,6 +121,8 @@
                                                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
                                                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
                                                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Department</th>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Assigned Printer</th>
                                                 <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
                                             </tr>
                                         </thead>
@@ -160,15 +166,19 @@
                         <input type="email" id="userEmail" class="w-full px-4 py-2 border rounded-md" required>
                     </div>
                     <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Role</label>
-                        <select id="userRole" class="w-full px-4 py-2 border rounded-md">
-                            <option value="staff">Staff</option>
-                            <option value="manager">Manager</option>
-                        </select>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                        <input type="password" id="userPassword" class="w-full px-4 py-2 border rounded-md" placeholder="Enter a password for the user" required>
                     </div>
+                    <!-- Coordinator-created users are assigned the 'requester' role by the server -->
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Department</label>
                         <input type="text" id="department" class="w-full px-4 py-2 border rounded-md">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Assign Printer (optional)</label>
+                        <select id="assignPrinterSelect" class="w-full px-4 py-2 border rounded-md">
+                            <option value="">-- No printer --</option>
+                        </select>
                     </div>
                 </form>
             </div>
@@ -200,6 +210,100 @@
         </div>
     </div>
 
+    <!-- Edit User Modal (moved to top-level) -->
+    <div id="editUserModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="absolute inset-0 bg-black/40"></div>
+        <div class="relative bg-white rounded-lg shadow-lg w-full max-w-md">
+            <div class="px-6 py-4 border-b">
+                <h3 class="text-lg font-semibold text-gray-800">Edit User</h3>
+            </div>
+            <div class="p-6">
+                <form id="editUserForm">
+                    <input type="hidden" id="editUserId">
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+                            <input type="text" id="editFirstName" class="w-full px-4 py-2 border rounded-md" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+                            <input type="text" id="editLastName" class="w-full px-4 py-2 border rounded-md" required>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                        <input type="email" id="editEmail" class="w-full px-4 py-2 border rounded-md" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Department</label>
+                        <input type="text" id="editDepartment" class="w-full px-4 py-2 border rounded-md">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Assign Printer (optional)</label>
+                        <select id="editAssignPrinterSelect" class="w-full px-4 py-2 border rounded-md">
+                            <option value="">-- No printer --</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="px-6 py-4 border-t bg-gray-50 flex justify-end gap-3">
+                <button type="button" id="submitEditUser" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">Save</button>
+                <button type="button" id="cancelEditUser" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div id="changePasswordModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="absolute inset-0 bg-black/40"></div>
+        <div class="relative bg-white rounded-lg shadow-lg w-full max-w-md">
+            <div class="px-6 py-4 border-b">
+                <h3 class="text-lg font-semibold text-gray-800">Change User Password</h3>
+            </div>
+            <div class="p-6">
+                <form id="changePasswordForm">
+                    <input type="hidden" id="passwordChangeUserId">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">User</label>
+                        <p id="passwordChangeUserName" class="text-gray-900 font-medium">-</p>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+                        <input type="password" id="newPasswordInput" class="w-full px-4 py-2 border rounded-md" placeholder="Enter new password (min 6 characters)" required minlength="6">
+                        <p class="text-xs text-gray-500 mt-1">Minimum 6 characters</p>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
+                        <input type="password" id="confirmPasswordInput" class="w-full px-4 py-2 border rounded-md" placeholder="Confirm new password" required minlength="6">
+                    </div>
+                    <div id="passwordChangeError" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                        <p class="text-sm text-red-600"></p>
+                    </div>
+                </form>
+            </div>
+            <div class="px-6 py-4 border-t bg-gray-50 flex justify-end gap-3">
+                <button type="button" id="submitPasswordChange" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">Change Password</button>
+                <button type="button" id="cancelPasswordChange" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div id="confirmModal" class="fixed inset-0 z-60 flex items-center justify-center hidden">
+        <div class="absolute inset-0 bg-black/40"></div>
+        <div class="relative bg-white rounded-lg shadow-lg w-full max-w-md">
+            <div class="px-6 py-4 border-b">
+                <h3 id="confirmTitle" class="text-lg font-semibold text-gray-800">Confirm</h3>
+            </div>
+            <div class="p-6" id="confirmBody">
+                Are you sure?
+            </div>
+            <div class="px-6 py-4 border-t bg-gray-50 flex justify-end gap-3">
+                <button type="button" id="confirmCancel" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-md">Cancel</button>
+                <button type="button" id="confirmOk" class="bg-red-600 text-white px-4 py-2 rounded-md">Confirm</button>
+            </div>
+        </div>
+    </div>
     <!-- JavaScript -->
     <script src="../../js/auth.js"></script>
     <script src="../../js/coordinator-sidenav.js"></script>
@@ -249,12 +353,467 @@
             
             // Form submission
             document.getElementById('submitAddUser')?.addEventListener('click', async () => {
-                // Form submission logic would go here
-                document.getElementById('addUserModal').classList.add('hidden');
-                // Show success notification
-                showNotification('Success', 'New user added successfully', 'success');
+                // Collect form values
+                const firstName = document.getElementById('firstName').value.trim();
+                const lastName = document.getElementById('lastName').value.trim();
+                const email = document.getElementById('userEmail').value.trim();
+                // Password provided by coordinator
+                const password = document.getElementById('userPassword').value.trim();
+                const inventory_item_id = document.getElementById('assignPrinterSelect').value || null;
+                const department = document.getElementById('department').value.trim() || null;
+
+                if (!firstName || !lastName || !email || !password) {
+                    showNotification('Error', 'First name, last name, email and password are required', 'error');
+                    return;
+                }
+
+                // Determine coordinator id from localStorage user
+                const user = JSON.parse(localStorage.getItem('user')) || {};
+                const coordinatorId = user.id;
+                if (!coordinatorId) {
+                    showNotification('Error', 'Coordinator information not available. Please login again.', 'error');
+                    return;
+                }
+
+                try {
+                    const payload = { firstName, lastName, email, password, department };
+                    if (inventory_item_id) payload.inventory_item_id = Number(inventory_item_id);
+
+                    const token = localStorage.getItem('token');
+                    console.log('Create user payload:', payload);
+                    const res = await fetch(`/api/coordinators/${coordinatorId}/users`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!res.ok) {
+                        const err = await res.json();
+                        throw new Error(err.error || err.message || 'Failed to create user');
+                    }
+
+                    const resultJson = await res.json();
+                    console.log('Create user response:', resultJson);
+                    document.getElementById('addUserModal').classList.add('hidden');
+                    showNotification('Success', 'New user added successfully', 'success');
+                    // Refresh user list so the new user becomes visible
+                    loadUsers();
+                } catch (err) {
+                    console.error('Create user error:', err);
+                    showNotification('Error', err.message || 'Failed to create user', 'error');
+                }
             });
-            
+
+            // Load available printers for this coordinator's institution into select
+            async function loadAvailablePrinters() {
+                const user = JSON.parse(localStorage.getItem('user')) || {};
+                if (!user.institution_id) return;
+                try {
+                    const res = await fetch(`/api/institutions/${user.institution_id}/printers`);
+                    if (!res.ok) return;
+                    const printers = await res.json();
+                    const select = document.getElementById('assignPrinterSelect');
+                    printers.forEach(p => {
+                        const opt = document.createElement('option');
+                        opt.value = p.inventory_item_id;
+                        const parts = [p.name];
+                        if (p.model) parts.push('(' + p.model + ')');
+                        if (p.serial_number) parts.push('- SN:' + p.serial_number);
+                        opt.textContent = parts.join(' ');
+                        select.appendChild(opt);
+                    });
+                } catch (e) {
+                    console.error('Failed to load printers:', e);
+                }
+            }
+
+            // Define and call helper loaders
+            // Load available printers
+            loadAvailablePrinters();
+
+            // Fetch and render users for the coordinator
+            async function loadUsers() {
+                const currentUser = JSON.parse(localStorage.getItem('user')) || {};
+                const coordinatorId = currentUser.id;
+                const token = localStorage.getItem('token');
+                const tbody = document.getElementById('usersTbody');
+                const emptyState = document.getElementById('usersEmptyState');
+
+                // Clear table
+                tbody.innerHTML = '';
+
+                if (!coordinatorId) return;
+                try {
+                    console.log('Fetching coordinator users for coordinatorId=', coordinatorId);
+                    const res = await fetch(`/api/coordinators/${coordinatorId}/users`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    console.log('Users API response status:', res.status);
+                    if (!res.ok) {
+                        const errBody = await res.text();
+                        console.warn('Failed to load users. Status:', res.status, 'Body:', errBody);
+                        emptyState.classList.remove('hidden');
+                        return;
+                    }
+                    const users = await res.json();
+                    console.log('loadUsers fetched', users);
+                    if (!users || users.length === 0) {
+                        emptyState.classList.remove('hidden');
+                        return;
+                    }
+
+                    // Filter by status tab
+                    const filtered = users.filter(row => {
+                        const s = (row.status || '').toLowerCase();
+                        return currentStatusFilter ? s === currentStatusFilter : true;
+                    });
+
+                    if (!filtered || filtered.length === 0) {
+                        emptyState.classList.remove('hidden');
+                        return;
+                    }
+                    emptyState.classList.add('hidden');
+
+                    filtered.forEach(u => {
+                        const tr = document.createElement('tr');
+                        tr.className = 'hover:bg-gray-50';
+
+                        const nameTd = document.createElement('td');
+                        nameTd.className = 'px-6 py-4 whitespace-nowrap';
+                        nameTd.innerHTML = `<div class="text-sm font-medium text-gray-900">${(u.first_name || '') + ' ' + (u.last_name || '')}</div>`;
+
+                        const emailTd = document.createElement('td');
+                        emailTd.className = 'px-6 py-4 whitespace-nowrap';
+                        emailTd.innerHTML = `<div class="text-sm text-gray-500">${u.email || ''}</div>`;
+
+                        const roleTd = document.createElement('td');
+                        roleTd.className = 'px-6 py-4 whitespace-nowrap';
+                        roleTd.innerHTML = `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">${u.role || ''}</span>`;
+
+                        const statusTd = document.createElement('td');
+                        statusTd.className = 'px-6 py-4 whitespace-nowrap';
+                        const statusLabel = (u.status || '').toLowerCase();
+                        const statusColor = statusLabel === 'active' ? 'bg-green-100 text-green-800' : statusLabel === 'inactive' ? 'bg-gray-100 text-gray-800' : 'bg-yellow-100 text-yellow-800';
+                        statusTd.innerHTML = `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${statusColor}">${u.status || ''}</span>`;
+
+                        const deptTd = document.createElement('td');
+                        deptTd.className = 'px-6 py-4 whitespace-nowrap text-sm text-gray-600';
+                        deptTd.textContent = u.department || '';
+
+                        const printerTd = document.createElement('td');
+                        printerTd.className = 'px-6 py-4 whitespace-nowrap text-sm text-gray-600';
+                        printerTd.textContent = u.printer_name || '';
+
+                        const actionsTd = document.createElement('td');
+                        actionsTd.className = 'px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex gap-2 justify-end';
+                        // Edit button
+                        const editBtn = document.createElement('button');
+                        editBtn.type = 'button';
+                        editBtn.className = 'text-blue-600 hover:text-blue-800 text-sm mr-3';
+                        editBtn.textContent = 'Edit';
+                        editBtn.addEventListener('click', () => openEditModal(u));
+                        actionsTd.appendChild(editBtn);
+
+                        // Change Password button
+                        const passwordBtn = document.createElement('button');
+                        passwordBtn.type = 'button';
+                        passwordBtn.className = 'text-purple-600 hover:text-purple-800 text-sm mr-3';
+                        passwordBtn.textContent = 'Change Password';
+                        passwordBtn.addEventListener('click', () => openChangePasswordModal(u));
+                        actionsTd.appendChild(passwordBtn);
+
+                        // Deactivate/Activate button
+                        const toggleBtn = document.createElement('button');
+                        toggleBtn.type = 'button';
+                        toggleBtn.className = statusLabel === 'active' ? 'text-red-600 hover:text-red-800 text-sm' : 'text-green-600 hover:text-green-800 text-sm';
+                        toggleBtn.textContent = statusLabel === 'active' ? 'Deactivate' : 'Activate';
+                        toggleBtn.addEventListener('click', () => {
+                            const displayName = (u.first_name || '') + ' ' + (u.last_name || '');
+                            const action = statusLabel === 'active' ? 'Deactivate' : 'Activate';
+                            showConfirm(`${action} user`, `Are you sure you want to ${action.toLowerCase()} ${displayName.trim()}?`, async () => {
+                                await toggleUserStatus(u.user_id, statusLabel);
+                            });
+                        });
+                        actionsTd.appendChild(toggleBtn);
+
+                        tr.appendChild(nameTd);
+                        tr.appendChild(emailTd);
+                        tr.appendChild(roleTd);
+                        tr.appendChild(statusTd);
+                        tr.appendChild(deptTd);
+                        tr.appendChild(printerTd);
+                        tr.appendChild(actionsTd);
+
+                        tbody.appendChild(tr);
+                    });
+                } catch (e) {
+                    console.error('Error loading users:', e);
+                    emptyState.classList.remove('hidden');
+                }
+            }
+
+            // State for current filter (active/inactive)
+            let currentStatusFilter = 'active';
+
+            // Tab handling
+            document.getElementById('tab-active').addEventListener('click', () => {
+                currentStatusFilter = 'active';
+                document.getElementById('tab-active').classList.add('ring-2','ring-blue-500');
+                document.getElementById('tab-inactive').classList.remove('ring-2','ring-blue-500');
+                loadUsers();
+            });
+            document.getElementById('tab-inactive').addEventListener('click', () => {
+                currentStatusFilter = 'inactive';
+                document.getElementById('tab-inactive').classList.add('ring-2','ring-blue-500');
+                document.getElementById('tab-active').classList.remove('ring-2','ring-blue-500');
+                loadUsers();
+            });
+
+            // Refresh button
+            document.getElementById('refreshUsersBtn').addEventListener('click', () => loadUsers());
+
+            // Edit modal controls
+            document.getElementById('cancelEditUser').addEventListener('click', () => {
+                document.getElementById('editUserModal').classList.add('hidden');
+            });
+
+            // Populate edit printers select (reuse loadAvailablePrinters but target edit select)
+            async function loadAvailablePrintersForEdit() {
+                const user = JSON.parse(localStorage.getItem('user')) || {};
+                if (!user.institution_id) return;
+                try {
+                    const res = await fetch(`/api/institutions/${user.institution_id}/printers`);
+                    if (!res.ok) return;
+                    const printers = await res.json();
+                    const select = document.getElementById('editAssignPrinterSelect');
+                    select.innerHTML = '<option value="">-- No printer --</option>';
+                    printers.forEach(p => {
+                        const opt = document.createElement('option');
+                        opt.value = p.inventory_item_id;
+                        const parts = [p.name];
+                        if (p.model) parts.push('(' + p.model + ')');
+                        if (p.serial_number) parts.push('- SN:' + p.serial_number);
+                        opt.textContent = parts.join(' ');
+                        select.appendChild(opt);
+                    });
+                } catch (e) {
+                    console.error('Failed to load printers for edit:', e);
+                }
+            }
+
+            // Handler to open edit modal for a given user
+            function openEditModal(user) {
+                console.log('Opening edit modal for user', user);
+                document.getElementById('editUserId').value = user.user_id;
+                document.getElementById('editFirstName').value = user.first_name || '';
+                document.getElementById('editLastName').value = user.last_name || '';
+                document.getElementById('editEmail').value = user.email || '';
+                document.getElementById('editDepartment').value = user.department || '';
+                // Show modal immediately
+                document.getElementById('editUserModal').classList.remove('hidden');
+                // Load printers and preselect if user has assignment (don't block showing modal)
+                loadAvailablePrintersForEdit().then(() => {
+                    try {
+                        if (user.inventory_item_id) {
+                            document.getElementById('editAssignPrinterSelect').value = user.inventory_item_id;
+                        } else {
+                            document.getElementById('editAssignPrinterSelect').value = '';
+                        }
+                    } catch (e) {
+                        console.warn('Could not preselect printer in edit modal:', e.message);
+                    }
+                }).catch(e => console.warn('Failed to load printers for edit:', e));
+            }
+
+            // Submit edit
+            document.getElementById('submitEditUser').addEventListener('click', async () => {
+                const userId = document.getElementById('editUserId').value;
+                const firstName = document.getElementById('editFirstName').value.trim();
+                const lastName = document.getElementById('editLastName').value.trim();
+                const email = document.getElementById('editEmail').value.trim();
+                const department = document.getElementById('editDepartment').value.trim() || null;
+                const inventory_item_id = document.getElementById('editAssignPrinterSelect').value || null;
+
+                if (!firstName || !lastName || !email) {
+                    showNotification('Error', 'First, last name and email are required', 'error');
+                    return;
+                }
+
+                try {
+                    const token = localStorage.getItem('token');
+                    const payload = { firstName, lastName, email, department };
+                    if (inventory_item_id) payload.inventory_item_id = Number(inventory_item_id);
+
+                    const currentUser = JSON.parse(localStorage.getItem('user')) || {};
+                    const coordinatorId = currentUser.id;
+
+                    const res = await fetch(`/api/coordinators/${coordinatorId}/users/${userId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!res.ok) {
+                        const err = await res.json();
+                        throw new Error(err.error || err.message || 'Failed to update user');
+                    }
+
+                    const result = await res.json();
+                    console.log('Edit user result:', result);
+                    document.getElementById('editUserModal').classList.add('hidden');
+                    showNotification('Success', 'User updated', 'success');
+                    loadUsers();
+                } catch (e) {
+                    console.error('Edit user error:', e);
+                    showNotification('Error', e.message || 'Failed to update user', 'error');
+                }
+            });
+
+            // Deactivate/reactivate user handler (called from action button)
+            async function toggleUserStatus(userId, currentStatus) {
+                try {
+                    const token = localStorage.getItem('token');
+                    const desired = currentStatus === 'active' ? 'inactive' : 'active';
+                    const currentUser = JSON.parse(localStorage.getItem('user')) || {};
+                    const coordinatorId = currentUser.id;
+                    const res = await fetch(`/api/coordinators/${coordinatorId}/users/${userId}/status`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify({ status: desired })
+                    });
+                    if (!res.ok) {
+                        const text = await res.text();
+                        console.warn('toggleUserStatus non-ok response:', res.status, text);
+                        let errMsg = 'Failed to change status';
+                        try {
+                            const err = JSON.parse(text);
+                            errMsg = err.error || err.message || errMsg;
+                        } catch (_) {
+                            // not JSON
+                            errMsg = text;
+                        }
+                        throw new Error(errMsg);
+                    }
+                    showNotification('Success', `User ${desired}`, 'success');
+                    loadUsers();
+                } catch (e) {
+                    console.error('Toggle status error:', e);
+                    showNotification('Error', e.message || 'Failed to change status', 'error');
+                }
+            }
+
+            // Confirm modal helper
+            function showConfirm(title, body, onConfirm) {
+                const modal = document.getElementById('confirmModal');
+                document.getElementById('confirmTitle').textContent = title;
+                document.getElementById('confirmBody').textContent = body;
+                modal.classList.remove('hidden');
+
+                const ok = document.getElementById('confirmOk');
+                const cancel = document.getElementById('confirmCancel');
+
+                function cleanup() {
+                    ok.removeEventListener('click', onOk);
+                    cancel.removeEventListener('click', onCancel);
+                    modal.classList.add('hidden');
+                }
+
+                async function onOk() {
+                    try { await onConfirm(); } catch (e) { console.error(e); showNotification('Error', e.message || 'Action failed', 'error'); }
+                    cleanup();
+                }
+
+                function onCancel() {
+                    cleanup();
+                }
+
+                ok.addEventListener('click', onOk);
+                cancel.addEventListener('click', onCancel);
+            }
+
+            // Password change modal handlers
+            let currentPasswordChangeUser = null;
+
+            function openChangePasswordModal(user) {
+                currentPasswordChangeUser = user;
+                document.getElementById('passwordChangeUserId').value = user.user_id;
+                document.getElementById('passwordChangeUserName').textContent = `${user.first_name} ${user.last_name} (${user.email})`;
+                document.getElementById('newPasswordInput').value = '';
+                document.getElementById('confirmPasswordInput').value = '';
+                document.getElementById('passwordChangeError').classList.add('hidden');
+                document.getElementById('changePasswordModal').classList.remove('hidden');
+            }
+
+            document.getElementById('cancelPasswordChange').addEventListener('click', () => {
+                document.getElementById('changePasswordModal').classList.add('hidden');
+                currentPasswordChangeUser = null;
+            });
+
+            document.getElementById('submitPasswordChange').addEventListener('click', async () => {
+                const newPassword = document.getElementById('newPasswordInput').value;
+                const confirmPassword = document.getElementById('confirmPasswordInput').value;
+                const errorDiv = document.getElementById('passwordChangeError');
+                const errorText = errorDiv.querySelector('p');
+
+                // Validation
+                if (newPassword.length < 6) {
+                    errorText.textContent = 'Password must be at least 6 characters';
+                    errorDiv.classList.remove('hidden');
+                    return;
+                }
+
+                if (newPassword !== confirmPassword) {
+                    errorText.textContent = 'Passwords do not match';
+                    errorDiv.classList.remove('hidden');
+                    return;
+                }
+
+                if (!currentPasswordChangeUser) {
+                    errorText.textContent = 'User information is missing';
+                    errorDiv.classList.remove('hidden');
+                    return;
+                }
+
+                try {
+                    const currentUser = JSON.parse(localStorage.getItem('user')) || {};
+                    const coordinatorId = currentUser.id;
+                    const token = localStorage.getItem('token');
+                    const userId = currentPasswordChangeUser.user_id;
+
+                    const res = await fetch(`/api/coordinators/${coordinatorId}/users/${userId}/password`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ newPassword })
+                    });
+
+                    if (!res.ok) {
+                        const err = await res.json();
+                        throw new Error(err.error || err.message || 'Failed to change password');
+                    }
+
+                    document.getElementById('changePasswordModal').classList.add('hidden');
+                    currentPasswordChangeUser = null;
+                    showNotification('Success', 'Password changed successfully', 'success');
+                } catch (e) {
+                    console.error('Password change error:', e);
+                    errorText.textContent = e.message || 'Failed to change password';
+                    errorDiv.classList.remove('hidden');
+                }
+            });
+
+            // Initial load of users
+            // pre-select active tab style
+            document.getElementById('tab-active').classList.add('ring-2','ring-blue-500');
+            loadUsers();
+
             // Helper function to show notifications
             function showNotification(title, message, type = 'info') {
                 const toast = document.createElement('div');

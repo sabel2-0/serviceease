@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Request Parts - ServiceEase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: #f5f5f5;
+            min-height: 100vh;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .part-card {
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .part-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-color: #2563eb;
+        }
+        
+        .part-card.selected {
+            border: 2px solid #3b82f6;
+            background: #f8fafc;
+        }
+        
+        .filter-chip {
+            transition: all 0.2s ease;
+            border: 1px solid #d1d5db;
+        }
+        
+        .filter-chip.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+        
+        .quantity-control {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .quantity-btn {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            border: 2px solid #e5e7eb;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .quantity-btn:hover {
+            border-color: #3b82f6;
+            background: #f3f4f6;
+        }
+        
+        .quantity-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .loading-spinner {
+            border: 2px solid #f3f4f6;
+            border-top: 2px solid #3b82f6;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="p-4">
+    <!-- Header -->
+    <div class="card rounded p-4 mb-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900 mb-1">Request Parts & Supplies</h1>
+                <p class="text-gray-600">Search and request parts for your service tasks</p>
+            </div>
+            <button onclick="history.back()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded transition-colors">
+                ← Back
+            </button>
+        </div>
+    </div>
+    
+    <!-- Search and Filters -->
+    <div class="card rounded p-4 mb-4">
+        <div class="space-y-3">
+            <!-- Search Bar -->
+            <input 
+                type="text" 
+                id="searchInput" 
+                placeholder="Search by part name, description, or part number..." 
+                class="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+            
+            <!-- Filter Buttons -->
+            <div class="flex flex-wrap gap-2">
+                <button class="filter-chip px-3 py-1 bg-blue-600 text-white rounded" data-filter="all">
+                    All Items
+                </button>
+                <button class="filter-chip px-3 py-1 bg-gray-100 text-gray-700 rounded" data-filter="consumable">
+                    Consumables
+                </button>
+                <button class="filter-chip px-3 py-1 bg-gray-100 text-gray-700 rounded" data-filter="printer_part">
+                    Printer Parts
+                </button>
+            </div>
+            
+            <!-- Filters -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <select id="categoryFilter" class="px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Categories</option>
+                    <option value="toner">Toner</option>
+                    <option value="ink">Ink</option>
+                    <option value="ink-bottle">Ink Bottles</option>
+                    <option value="drum">Drum Units</option>
+                    <option value="paper">Paper</option>
+                    <option value="cleaning-supplies">Cleaning Supplies</option>
+                    <option value="tools">Tools</option>
+                    <option value="other">Other</option>
+                </select>
+                
+                <select id="stockFilter" class="px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Stock Levels</option>
+                    <option value="available">Available (>0)</option>
+                    <option value="high">High Stock (>20)</option>
+                    <option value="medium">Medium Stock (11-20)</option>
+                    <option value="low">Low Stock (1-10)</option>
+                </select>
+                
+                <button id="refreshBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors">
+                    Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Loading State -->
+    <div id="loadingState" class="card rounded p-8 text-center">
+        <div class="inline-block w-6 h-6 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin mb-2"></div>
+        <p class="text-gray-600">Loading available parts...</p>
+    </div>
+    
+    <!-- Empty State -->
+    <div id="emptyState" class="hidden card rounded p-8 text-center">
+        <div class="text-gray-400 mb-4">
+            <svg class="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+            </svg>
+        </div>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">No Parts Found</h3>
+        <p class="text-gray-500" id="emptyMessage">No parts match your current search criteria.</p>
+    </div>
+    
+    <!-- Parts Grid -->
+    <div id="partsGrid" class="hidden grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <!-- Parts will be loaded here -->
+    </div>
+    
+    <!-- Request Modal -->
+    <div id="requestModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-900">
+                        <i class="fas fa-plus-circle text-blue-600 mr-2"></i>
+                        Request Part
+                    </h3>
+                    <button id="closeModal" class="text-gray-400 hover:text-gray-600 text-xl">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div id="selectedPartInfo" class="mb-6">
+                    <!-- Selected part info will be shown here -->
+                </div>
+                
+                <form id="requestForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-hashtag mr-1"></i>
+                            Quantity Needed
+                        </label>
+                        <div class="quantity-control">
+                            <button type="button" id="decreaseQty" class="quantity-btn">
+                                <i class="fas fa-minus text-sm"></i>
+                            </button>
+                            <input 
+                                type="number" 
+                                id="requestQuantity" 
+                                value="1" 
+                                min="1" 
+                                class="w-20 text-center py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            >
+                            <button type="button" id="increaseQty" class="quantity-btn">
+                                <i class="fas fa-plus text-sm"></i>
+                            </button>
+                            <span id="maxQuantityInfo" class="text-sm text-gray-500 ml-2"></span>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-flag mr-1"></i>
+                            Priority Level
+                        </label>
+                        <select id="requestPriority" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <option value="low">Low - Can wait a few days</option>
+                            <option value="medium" selected>Medium - Needed within 24-48 hours</option>
+                            <option value="high">High - Needed within 24 hours</option>
+                            <option value="urgent">Urgent - Needed immediately</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-comment mr-1"></i>
+                            Reason for Request <span class="text-red-500">*</span>
+                        </label>
+                        <textarea 
+                            id="requestReason" 
+                            rows="3" 
+                            placeholder="Please describe why you need this part (e.g., for service request #123, printer maintenance, replacement of faulty component, etc.)"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 resize-none"
+                            required
+                        ></textarea>
+                        <p class="text-xs text-gray-500 mt-1">Minimum 10 characters required</p>
+                    </div>
+                    
+                    <div class="flex gap-3 pt-4">
+                        <button 
+                            type="button" 
+                            id="cancelRequest" 
+                            class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-4 rounded-lg transition-colors font-medium"
+                        >
+                            Cancel
+                        </button>
+                        <button 
+                            type="submit" 
+                            id="submitRequest" 
+                            class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg transition-colors font-medium"
+                        >
+                            <span id="submitBtnText">Submit Request</span>
+                            <div id="submitBtnSpinner" class="hidden loading-spinner mx-auto"></div>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="fixed top-4 right-4 z-50 space-y-2">
+        <!-- Toasts will be added here -->
+    </div>
+
+    <script>
+        // Global variables
+        let allParts = [];
+        let filteredParts = [];
+        let selectedPart = null;
+        let currentFilter = 'all';
+        
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔧 Initializing Parts Request Page');
+            checkAuthentication();
+            loadParts();
+            setupEventListeners();
+        });
+        
+        // Check if user is authenticated
+        function checkAuthentication() {
+            const token = localStorage.getItem('token');
+            const user = localStorage.getItem('user');
+            
+            if (!token || !user) {
+                window.location.href = '/client/src/pages/auth/login.html';
+                return;
+            }
+            
+            const userData = JSON.parse(user);
+            if (userData.role !== 'technician') {
+                showToast('error', 'Access Denied', 'This page is only accessible to technicians');
+                setTimeout(() => {
+                    window.location.href = '/client/src/pages/auth/login.html';
+                }, 2000);
+                return;
+            }
+        }
+        
+        // Setup event listeners
+        function setupEventListeners() {
+            // Search functionality
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('input', debounce(handleSearch, 300));
+            
+            // Filter chips
+            document.querySelectorAll('.filter-chip').forEach(chip => {
+                chip.addEventListener('click', function() {
+                    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+                    this.classList.add('active');
+                    currentFilter = this.dataset.filter;
+                    filterParts();
+                });
+            });
+            
+            // Category and stock filters
+            document.getElementById('categoryFilter').addEventListener('change', filterParts);
+            document.getElementById('stockFilter').addEventListener('change', filterParts);
+            document.getElementById('refreshBtn').addEventListener('click', loadParts);
+            
+            // Modal controls
+            document.getElementById('closeModal').addEventListener('click', closeModal);
+            document.getElementById('cancelRequest').addEventListener('click', closeModal);
+            document.getElementById('decreaseQty').addEventListener('click', () => adjustQuantity(-1));
+            document.getElementById('increaseQty').addEventListener('click', () => adjustQuantity(1));
+            
+            // Form submission
+            document.getElementById('requestForm').addEventListener('submit', handleSubmitRequest);
+            
+            // Close modal when clicking outside
+            document.getElementById('requestModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeModal();
+                }
+            });
+        }
+        
+        // Load parts from API
+        async function loadParts() {
+            console.log('📦 Loading parts...');
+            showLoadingState();
+            
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/parts', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('📦 Parts data received:', data);
+                
+                allParts = Array.isArray(data) ? data : (data.parts || data.data || []);
+                
+                if (allParts.length === 0) {
+                    showEmptyState('No parts are currently available in the inventory.');
+                } else {
+                    filteredParts = [...allParts];
+                    filterParts();
+                    showPartsGrid();
+                }
+                
+            } catch (error) {
+                console.error('❌ Error loading parts:', error);
+                showEmptyState('Failed to load parts. Please try again later.');
+                showToast('error', 'Error', 'Failed to load parts inventory');
+            }
+        }
+        
+        // Handle search input
+        function handleSearch() {
+            filterParts();
+        }
+        
+        // Filter parts based on current criteria
+        function filterParts() {
+            const search = document.getElementById('searchInput').value.toLowerCase().trim();
+            const category = document.getElementById('categoryFilter').value;
+            const stock = document.getElementById('stockFilter').value;
+            
+            filteredParts = allParts.filter(part => {
+                // Search filter
+                const matchesSearch = !search || 
+                    part.name?.toLowerCase().includes(search) ||
+                    part.description?.toLowerCase().includes(search) ||
+                    part.part_number?.toLowerCase().includes(search) ||
+                    part.brand?.toLowerCase().includes(search);
+                
+                // Type filter (consumable vs printer part)
+                const matchesType = currentFilter === 'all' || 
+                    (currentFilter === 'consumable' && isConsumable(part.category)) ||
+                    (currentFilter === 'printer_part' && !isConsumable(part.category));
+                
+                // Category filter
+                const matchesCategory = !category || part.category === category;
+                
+                // Stock filter
+                let matchesStock = true;
+                if (stock) {
+                    const quantity = parseInt(part.quantity) || 0;
+                    switch (stock) {
+                        case 'available': matchesStock = quantity > 0; break;
+                        case 'high': matchesStock = quantity > 20; break;
+                        case 'medium': matchesStock = quantity >= 11 && quantity <= 20; break;
+                        case 'low': matchesStock = quantity >= 1 && quantity <= 10; break;
+                    }
+                }
+                
+                return matchesSearch && matchesType && matchesCategory && matchesStock;
+            });
+            
+            displayParts();
+            
+            if (filteredParts.length === 0 && allParts.length > 0) {
+                showEmptyState('No parts match your current search criteria. Try adjusting your filters.');
+            } else if (filteredParts.length > 0) {
+                showPartsGrid();
+            }
+        }
+        
+        // Check if a category is consumable
+        function isConsumable(category) {
+            const consumableCategories = [
+                'paper', 'cleaning-supplies', 'tools', 'cables', 
+                'batteries', 'lubricants', 'labels', 'other-consumable'
+            ];
+            return consumableCategories.includes(category);
+        }
+        
+        // Display filtered parts
+        function displayParts() {
+            const grid = document.getElementById('partsGrid');
+            grid.innerHTML = filteredParts.map(part => createPartCard(part)).join('');
+            
+            // Add click listeners to part cards
+            grid.querySelectorAll('.part-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    const partId = parseInt(this.dataset.partId);
+                    const part = allParts.find(p => p.id === partId);
+                    if (part && part.quantity > 0) {
+                        openRequestModal(part);
+                    }
+                });
+            });
+        }
+        
+        // Create part card HTML
+        function createPartCard(part) {
+            const quantity = parseInt(part.quantity) || 0;
+            const isAvailable = quantity > 0;
+            
+            const stockText = quantity > 20 ? 'High Stock' : 
+                             quantity > 10 ? 'Medium Stock' : 
+                             quantity > 0 ? 'Low Stock' : 'Out of Stock';
+            
+            const stockColor = quantity > 20 ? 'text-green-600' : 
+                              quantity > 10 ? 'text-yellow-600' : 
+                              quantity > 0 ? 'text-orange-600' : 'text-red-600';
+            
+            return `
+                <div class="part-card card rounded p-4 ${!isAvailable ? 'opacity-60' : ''}" 
+                     data-part-id="${part.id}">
+                    
+                    <div class="mb-3">
+                        <h3 class="font-semibold text-gray-900 mb-1">
+                            ${part.name || 'Unknown Part'}
+                        </h3>
+                        
+                        <div class="space-y-1 text-sm text-gray-600">
+                            ${part.brand ? `<p>Brand: ${part.brand}</p>` : ''}
+                            <p>Category: ${part.category || 'Unknown'}</p>
+                            ${part.part_number ? `<p>Part #: ${part.part_number}</p>` : ''}
+                            ${part.description ? `<p>${part.description}</p>` : ''}
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between pt-3 border-t border-gray-100">
+                        <div>
+                            <span class="text-xl font-bold ${stockColor}">${quantity}</span>
+                            <span class="text-sm text-gray-500 ml-1">${part.unit || 'pieces'}</span>
+                            <p class="text-xs ${stockColor}">${stockText}</p>
+                        </div>
+                        
+                        <button class="request-btn ${isAvailable ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'} px-3 py-2 rounded transition-colors text-sm" 
+                                ${!isAvailable ? 'disabled' : ''}>
+                            ${isAvailable ? 'Request' : 'Out of Stock'}
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Open request modal
+        function openRequestModal(part) {
+            selectedPart = part;
+            
+            // Populate part info
+            const partInfo = document.getElementById('selectedPartInfo');
+            partInfo.innerHTML = `
+                <div class="bg-blue-50 rounded-lg p-4">
+                    <h4 class="font-semibold text-blue-900 mb-2">${part.name}</h4>
+                    <div class="text-sm text-blue-700 space-y-1">
+                        ${part.brand ? `<p><i class="fas fa-tag mr-2"></i>${part.brand}</p>` : ''}
+                        <p><i class="fas fa-layer-group mr-2"></i>${part.category}</p>
+                        <p><i class="fas fa-warehouse mr-2"></i>Available: ${part.quantity} ${part.unit || 'pieces'}</p>
+                    </div>
+                </div>
+            `;
+            
+            // Set quantity limits
+            const qtyInput = document.getElementById('requestQuantity');
+            qtyInput.value = 1;
+            qtyInput.max = part.quantity;
+            
+            document.getElementById('maxQuantityInfo').textContent = `(max: ${part.quantity})`;
+            
+            // Show modal
+            document.getElementById('requestModal').classList.remove('hidden');
+            document.getElementById('requestReason').focus();
+        }
+        
+        // Close request modal
+        function closeModal() {
+            document.getElementById('requestModal').classList.add('hidden');
+            selectedPart = null;
+            document.getElementById('requestForm').reset();
+        }
+        
+        // Adjust quantity
+        function adjustQuantity(delta) {
+            const qtyInput = document.getElementById('requestQuantity');
+            const currentValue = parseInt(qtyInput.value) || 1;
+            const newValue = Math.max(1, Math.min(selectedPart.quantity, currentValue + delta));
+            qtyInput.value = newValue;
+        }
+        
+        // Handle form submission
+        async function handleSubmitRequest(e) {
+            e.preventDefault();
+            
+            if (!selectedPart) {
+                showToast('error', 'Error', 'No part selected');
+                return;
+            }
+            
+            const quantity = parseInt(document.getElementById('requestQuantity').value);
+            const priority = document.getElementById('requestPriority').value;
+            const reason = document.getElementById('requestReason').value.trim();
+            
+            // Validation
+            if (quantity < 1 || quantity > selectedPart.quantity) {
+                showToast('error', 'Invalid Quantity', `Please request between 1 and ${selectedPart.quantity} ${selectedPart.unit || 'pieces'}`);
+                return;
+            }
+            
+            if (reason.length < 10) {
+                showToast('error', 'Invalid Reason', 'Reason must be at least 10 characters long');
+                return;
+            }
+            
+            // Show loading state
+            const submitBtn = document.getElementById('submitRequest');
+            const submitBtnText = document.getElementById('submitBtnText');
+            const submitBtnSpinner = document.getElementById('submitBtnSpinner');
+            
+            submitBtn.disabled = true;
+            submitBtnText.classList.add('hidden');
+            submitBtnSpinner.classList.remove('hidden');
+            
+            try {
+                const token = localStorage.getItem('token');
+                const user = JSON.parse(localStorage.getItem('user'));
+                
+                const requestData = {
+                    part_id: selectedPart.id,
+                    quantity_requested: quantity,
+                    reason: reason,
+                    priority: priority
+                };
+                
+                console.log('📋 Submitting request:', requestData);
+                
+                const response = await fetch('/api/parts-requests', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showToast('success', 'Request Submitted', 'Your parts request has been submitted successfully and is pending approval');
+                    closeModal();
+                    // Optionally refresh the parts list
+                    loadParts();
+                } else {
+                    throw new Error(data.error || 'Failed to submit request');
+                }
+                
+            } catch (error) {
+                console.error('❌ Error submitting request:', error);
+                showToast('error', 'Submission Failed', error.message || 'Could not submit your request. Please try again.');
+            } finally {
+                // Reset button state
+                submitBtn.disabled = false;
+                submitBtnText.classList.remove('hidden');
+                submitBtnSpinner.classList.add('hidden');
+            }
+        }
+        
+        // State management functions
+        function showLoadingState() {
+            document.getElementById('loadingState').classList.remove('hidden');
+            document.getElementById('emptyState').classList.add('hidden');
+            document.getElementById('partsGrid').classList.add('hidden');
+        }
+        
+        function showEmptyState(message = 'No parts match your current search criteria.') {
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('emptyState').classList.remove('hidden');
+            document.getElementById('partsGrid').classList.add('hidden');
+            document.getElementById('emptyMessage').textContent = message;
+        }
+        
+        function showPartsGrid() {
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('emptyState').classList.add('hidden');
+            document.getElementById('partsGrid').classList.remove('hidden');
+        }
+        
+        // Toast notification system
+        function showToast(type, title, message) {
+            const toastContainer = document.getElementById('toastContainer');
+            const toastId = 'toast-' + Date.now();
+            
+            const iconMap = {
+                success: 'fas fa-check-circle text-green-500',
+                error: 'fas fa-exclamation-circle text-red-500',
+                warning: 'fas fa-exclamation-triangle text-yellow-500',
+                info: 'fas fa-info-circle text-blue-500'
+            };
+            
+            const colorMap = {
+                success: 'border-green-200 bg-green-50',
+                error: 'border-red-200 bg-red-50',
+                warning: 'border-yellow-200 bg-yellow-50',
+                info: 'border-blue-200 bg-blue-50'
+            };
+            
+            const toast = document.createElement('div');
+            toast.id = toastId;
+            toast.className = `bg-white rounded-lg border-l-4 p-4 shadow-lg max-w-sm ${colorMap[type] || colorMap.info} fade-in`;
+            toast.innerHTML = `
+                <div class="flex items-start">
+                    <i class="${iconMap[type] || iconMap.info} text-xl mr-3 mt-0.5"></i>
+                    <div class="flex-1">
+                        <h4 class="font-semibold text-gray-900">${title}</h4>
+                        <p class="text-sm text-gray-600 mt-1">${message}</p>
+                    </div>
+                    <button onclick="removeToast('${toastId}')" class="text-gray-400 hover:text-gray-600 ml-2">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            
+            toastContainer.appendChild(toast);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                removeToast(toastId);
+            }, 5000);
+        }
+        
+        function removeToast(toastId) {
+            const toast = document.getElementById(toastId);
+            if (toast) {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }
+        }
+        
+        // Debounce function for search
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+    </script>
+</body>
+</html>

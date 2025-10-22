@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coordinator Dashboard | ServiceEase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="../js/auth.js" type="module" defer></script>
+    <script src="../js/coordinator-sidenav.js" type="module" defer></script>
+    <script src="../js/coordinator-dashboard.js" defer></script>
+    <script src="../js/technician-assignments.js" defer></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <style>
+        /* Dropdown styles */
+        .dropdown-toggle .fa-chevron-down {
+            transition: transform 0.3s ease;
+        }
+        .dropdown-menu {
+            overflow: hidden;
+            max-height: 0;
+            transition: max-height 0.3s ease-out, opacity 0.2s ease-out;
+            opacity: 0;
+        }
+        .dropdown-menu:not(.hidden) {
+            max-height: 500px;
+            opacity: 1;
+            transition: max-height 0.5s ease-in, opacity 0.3s ease-in;
+        }
+        .sidenav-item.active {
+            background-color: rgba(31, 41, 55, var(--tw-bg-opacity));
+            color: white;
+            border-left: 3px solid #3b82f6;
+            padding-left: calc(1rem - 3px);
+        }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const user = JSON.parse(localStorage.getItem('user'));
+            const showApprovalAlert = localStorage.getItem('showApprovalAlert');
+            const showVerificationAlert = localStorage.getItem('showVerificationAlert');
+
+            // Only show approval status modal for pending users
+            if (user && showApprovalAlert === 'true' && user.approvalStatus === 'pending') {
+                showApprovalModal();
+            }
+        });
+
+        function showApprovalModal() {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+                    <div class="text-center">
+                        <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-yellow-100 mb-6">
+                            <i class="fas fa-clock text-3xl text-yellow-600"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-gray-900 mb-4">Account Pending Approval</h2>
+                        <p class="text-gray-600 mb-6">
+                            Your account is currently under review by our administrators. You'll have full access to all features once approved.
+                        </p>
+                        <button onclick="dismissApprovalModal(this)" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            Got it
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        function showEmailBanner() {
+            const banner = document.createElement('div');
+            banner.className = 'fixed top-0 left-0 right-0 bg-yellow-50 border-b border-yellow-200 p-4 z-40';
+            banner.innerHTML = `
+                <div class="max-w-7xl mx-auto flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-exclamation-circle text-yellow-400"></i>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium text-yellow-800">
+                                Please verify your email address to access all features
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex">
+                        <button type="button" onclick="sendVerificationEmail()" class="mr-3 bg-yellow-200 px-3 py-1 rounded-md text-sm font-medium text-yellow-800 hover:bg-yellow-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500">
+                            Verify Now
+                        </button>
+                        <button type="button" onclick="dismissEmailBanner(this)" class="bg-transparent text-yellow-700 hover:text-yellow-600">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.prepend(banner);
+        }
+
+        function dismissApprovalModal(button) {
+            localStorage.removeItem('showApprovalAlert');
+            button.closest('.fixed').remove();
+        }
+
+        function dismissEmailBanner(button) {
+            localStorage.removeItem('showVerificationAlert');
+            button.closest('.fixed').remove();
+        }
+    </script>
+</head>
+<body class="bg-gray-100">
+    <div class="flex h-screen">
+        <!-- Sidebar Container - will be populated by coordinator-sidenav.js -->
+        <aside id="sidebar-container" class="bg-slate-900 text-white w-64 min-h-screen shadow-lg border-r border-slate-700 flex flex-col">
+            <!-- The sidenav will be loaded here dynamically -->
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-8 overflow-y-auto">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold text-gray-900">Welcome, <span id="coordinator-name">Coordinator</span></h2>
+                <p class="text-gray-600">Manage your institution's service requests and printer assignments</p>
+            </div>
+
+            <!-- Stats Overview -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-600">Active Requests</p>
+                            <h3 class="text-2xl font-bold text-gray-900" id="active-requests">0</h3>
+                        </div>
+                        <div class="text-blue-500">
+                            <i class="fas fa-clipboard-list text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-600">Pending Approvals</p>
+                            <h3 class="text-2xl font-bold text-gray-900" id="pending-approvals">0</h3>
+                        </div>
+                        <div class="text-orange-500">
+                            <i class="fas fa-clock text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-600">Total Printers</p>
+                            <h3 class="text-2xl font-bold text-gray-900" id="total-printers">0</h3>
+                        </div>
+                        <div class="text-green-500">
+                            <i class="fas fa-print text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-600">Active Users</p>
+                            <h3 class="text-2xl font-bold text-gray-900" id="active-users">0</h3>
+                        </div>
+                        <div class="text-purple-500">
+                            <i class="fas fa-users text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Sections -->
+            <div class="space-y-6">
+                <!-- Printers Section -->
+                <div id="printers" class="tab-content hidden">
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-xl font-semibold">Institution Printers</h3>
+                            <button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                                <i class="fas fa-plus mr-2"></i> Add Printer
+                            </button>
+                        </div>
+                        <div id="printer-list" class="space-y-4">
+                            <!-- Printer list will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Service Requests Section -->
+                <div id="new-request" class="tab-content hidden">
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h3 class="text-xl font-semibold mb-6">Submit New Service Request</h3>
+                        <form id="service-request-form" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Printer</label>
+                                <select id="printer-select" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                    <!-- Options will be populated by JavaScript -->
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Request Type</label>
+                                <select id="request-type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                    <option value="maintenance">Maintenance</option>
+                                    <option value="repair">Repair</option>
+                                    <option value="supplies">Supplies</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Priority</label>
+                                <select id="priority" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                    <option value="normal">Normal</option>
+                                    <option value="urgent">Urgent</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Description</label>
+                                <textarea id="description" rows="4" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"></textarea>
+                            </div>
+                            <button type="submit" class="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                                Submit Request
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- All other sections remain the same -->
+                <!-- Active Requests Section -->
+                <div id="requests" class="tab-content hidden">
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h3 class="text-xl font-semibold mb-6">Active Service Requests</h3>
+                        <div id="service-requests" class="space-y-4">
+                            <!-- Service requests will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Request Approvals Section -->
+                <div id="request-approvals" class="tab-content hidden">
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h3 class="text-xl font-semibold mb-6">Pending Approvals</h3>
+                        <div id="approval-requests" class="space-y-4">
+                            <!-- Approval requests will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User Management Section -->
+                <div id="users" class="tab-content hidden">
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-xl font-semibold">User Accounts</h3>
+                            <button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                                <i class="fas fa-user-plus mr-2"></i> Add User
+                            </button>
+                        </div>
+                        <div id="user-list" class="space-y-4">
+                            <!-- User list will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Printer Assignments Section -->
+                <div id="assignments" class="tab-content hidden">
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h3 class="text-xl font-semibold mb-6">Printer Assignments</h3>
+                        <div id="assignment-list" class="space-y-4">
+                            <!-- Printer assignments will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Service History Section -->
+                <div id="printer-history" class="tab-content hidden">
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h3 class="text-xl font-semibold mb-6">Printer Service History</h3>
+                        <div id="history-list" class="space-y-4">
+                            <!-- Service history will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Technician Assignments Section -->
+                <div id="technician-assignments" class="tab-content hidden">
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h3 class="text-xl font-semibold mb-4">Technician Assignments</h3>
+                        <p class="text-gray-600 mb-6">View the technicians assigned to your institution's printers</p>
+                        
+                        <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-info-circle text-blue-400"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm text-blue-700">
+                                        Technicians are assigned to your printers by administrators. If you need changes to your technician assignments, please contact the admin.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="technician-assignments-list" class="space-y-4">
+                            <!-- Technician assignments will be populated by JavaScript -->
+                            <div class="flex items-center justify-center">
+                                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dashboard Overview (default view) -->
+                <div id="dashboard" class="tab-content">
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h3 class="text-xl font-semibold mb-4">Recent Activity</h3>
+                        <div id="recent-activity" class="space-y-4">
+                            <!-- Recent activity will be populated by JavaScript -->
+                        </div>
+                    </div>
+                    
+                    <!-- Dashboard Technician Assignments Summary -->
+                    <div id="dashboard-stats" class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                        <!-- This area will be populated by technician-assignments.js -->
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Notification Area -->
+        <div id="notification-area" class="fixed top-4 right-4 z-50 space-y-4">
+            <!-- Notifications will be dynamically added here -->
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        // Use auth.js logout function if available, otherwise use a fallback
+        function handleLogout() {
+            if (typeof logout === 'function') {
+                logout();
+            } else {
+                // Fallback logout function
+                localStorage.removeItem('user');
+                localStorage.removeItem('isLoggedIn');
+                localStorage.removeItem('token');
+                sessionStorage.clear();
+                window.location.href = '../login.html';
+            }
+        }
+        
+        // Tab navigation function
+        window.showTab = function(tabId) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+            
+            // Show selected tab content
+            const selectedTab = document.getElementById(tabId);
+            if (selectedTab) {
+                selectedTab.classList.remove('hidden');
+                
+                // Update URL hash
+                window.location.hash = tabId;
+            }
+            
+            // Update active state in sidebar
+            document.querySelectorAll('.nav-item').forEach(item => {
+                if (item.getAttribute('onclick')?.includes(`showTab('${tabId}')`)) {
+                    item.classList.add('bg-slate-800', 'text-white');
+                    item.classList.remove('text-slate-300');
+                } else {
+                    item.classList.remove('bg-slate-800', 'text-white');
+                    item.classList.add('text-slate-300');
+                }
+            });
+        }
+    </script>
+</body>
+</html>

@@ -403,49 +403,28 @@ function createFallbackSidenav() {
  * Setup real-time notifications
  */
 function setupNotifications() {
-    // In a real app, this would connect to a WebSocket or use SSE for real-time notifications
-    // For demo purposes, we'll just simulate notifications
-    
-    // Simulate receiving a new notification every 30-60 seconds
-    setInterval(() => {
-        // Only show notifications 30% of the time to avoid being annoying
-        if (Math.random() < 0.3) {
-            const notificationTypes = [
-                { title: 'New Service Request', message: 'A new service request has been submitted.', type: 'info' },
-                { title: 'Service Completed', message: 'A service request has been completed and needs approval.', type: 'success' },
-                { title: 'Printer Issue', message: 'Printer HP-3001 reported low toner levels.', type: 'warning' }
-            ];
-            
-            const randomNotification = notificationTypes[Math.floor(Math.random() * notificationTypes.length)];
-            showNotification(randomNotification.title, randomNotification.message, randomNotification.type);
-            
-            // Update the notification badge counts
-            updateNotificationCounts();
-        }
-    }, Math.random() * 30000 + 30000); // Random interval between 30-60 seconds
+    // Notifications should be loaded from the server or real-time channel.
+    // Removed dummy simulation. Trigger a single counts update (no-op by default).
+    try {
+        updateNotificationCounts();
+    } catch (e) {
+        // ignore
+    }
 }
 
 /**
  * Update notification counts
  */
 function updateNotificationCounts() {
-    // In a real app, this would fetch real notification counts from the server
-    // For demo purposes, we'll just use random numbers
-    
-    // Check if updateNotificationBadge function exists (it's defined in the sidenav component)
-    if (typeof updateNotificationBadge === 'function') {
-        const approvalCount = Math.floor(Math.random() * 5);
-        const notificationCount = Math.floor(Math.random() * 8);
-        
-        updateNotificationBadge('approvals', approvalCount);
-        updateNotificationBadge('notifications', notificationCount);
-        
-        // Also update the notification bell in the header
+    // Intentionally left blank: notification counts should come from server-side API or real-time events.
+    // Implement a small safe fallback to hide header badge if present.
+    try {
         const headerBadge = document.querySelector('#notifications-button .notification-badge');
         if (headerBadge) {
-            headerBadge.textContent = notificationCount;
-            headerBadge.classList.toggle('hidden', notificationCount === 0);
+            headerBadge.classList.add('hidden');
         }
+    } catch (e) {
+        // ignore
     }
 }
 
@@ -615,54 +594,11 @@ function createTechnicianAssignmentsPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            <tr class="border-b hover:bg-gray-50">
-                                <td class="py-3 px-4">PR-1001</td>
-                                <td class="py-3 px-4">Main Office, Floor 1</td>
-                                <td class="py-3 px-4">HP LaserJet Pro M404</td>
-                                <td class="py-3 px-4">
-                                    <div class="flex items-center">
-                                        <span class="w-2 h-2 rounded-full bg-green-500 mr-2"></span>
-                                        <span>John Smith</span>
-                                    </div>
-                                </td>
-                                <td class="py-3 px-4">Aug 15, 2023</td>
-                            </tr>
-                            <tr class="border-b hover:bg-gray-50">
-                                <td class="py-3 px-4">PR-1002</td>
-                                <td class="py-3 px-4">Finance Department</td>
-                                <td class="py-3 px-4">Canon ImageCLASS MF743Cdw</td>
-                                <td class="py-3 px-4">
-                                    <div class="flex items-center">
-                                        <span class="w-2 h-2 rounded-full bg-green-500 mr-2"></span>
-                                        <span>John Smith</span>
-                                    </div>
-                                </td>
-                                <td class="py-3 px-4">Sep 3, 2023</td>
-                            </tr>
-                            <tr class="border-b hover:bg-gray-50">
-                                <td class="py-3 px-4">PR-1003</td>
-                                <td class="py-3 px-4">HR Department</td>
-                                <td class="py-3 px-4">Epson WorkForce Pro WF-C5790</td>
-                                <td class="py-3 px-4">
-                                    <div class="flex items-center">
-                                        <span class="w-2 h-2 rounded-full bg-green-500 mr-2"></span>
-                                        <span>Maria Rodriguez</span>
-                                    </div>
-                                </td>
-                                <td class="py-3 px-4">Jul 22, 2023</td>
-                            </tr>
-                            <tr class="border-b hover:bg-gray-50">
-                                <td class="py-3 px-4">PR-1004</td>
-                                <td class="py-3 px-4">Marketing Department</td>
-                                <td class="py-3 px-4">Brother MFC-L8900CDW</td>
-                                <td class="py-3 px-4">
-                                    <div class="flex items-center">
-                                        <span class="w-2 h-2 rounded-full bg-green-500 mr-2"></span>
-                                        <span>Maria Rodriguez</span>
-                                    </div>
-                                </td>
-                                <td class="py-3 px-4">Aug 30, 2023</td>
-                            </tr>
+                                        <tr>
+                                            <td colspan="5" class="py-6 px-4 text-center text-gray-500">
+                                                No technician assignments available.
+                                            </td>
+                                        </tr>
                         </tbody>
                     </table>
                 </div>

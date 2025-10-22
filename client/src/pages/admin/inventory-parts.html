@@ -8,94 +8,805 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script>tailwind.config = { theme: { extend: {} } };</script>
     <style>
-        /* placeholder for future parts styles */
+        /* Custom animations and improvements */
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        .slide-in {
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        .hover-lift {
+            transition: all 0.2s ease;
+        }
+        
+        .hover-lift:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .status-pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(-10px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .glass-effect {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.8);
+        }
+        
+        .table-hover-effect tbody tr:hover {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s ease;
+        }
+        
+        .category-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.5rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            text-transform: capitalize;
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #e5e7eb;
+        }
+        .category-toner {
+            background: #e0e7ef;
+            color: #1e293b;
+        }
+        .category-ink {
+            background: #fef9c3;
+            color: #92400e;
+        }
+        .category-drum {
+            background: #ede9fe;
+            color: #5b21b6;
+        }
+        .category-fuser {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+        .category-roller {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .category-other {
+            background: #e0f2fe;
+            color: #0369a1;
+        }
+        
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.375rem;
+            padding: 0.375rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .status-in-stock {
+            background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+            color: #15803d;
+            border: 1px solid #86efac;
+        }
+        
+        .status-low-stock {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            color: #92400e;
+            border: 1px solid #fcd34d;
+        }
+        
+        .status-out-of-stock {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            color: #dc2626;
+            border: 1px solid #f87171;
+        }
+        
+        .action-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 0.75rem;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+        }
+        
+        .action-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .action-edit {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            color: #1d4ed8;
+            border-color: #93c5fd;
+        }
+        
+        .action-edit:hover {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+        }
+        
+        .action-delete {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            color: #dc2626;
+            border-color: #f87171;
+        }
+        
+        .action-delete:hover {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            color: white;
+        }
+        
+        .mobile-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border: 1px solid #e2e8f0;
+            border-radius: 1rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            transition: all 0.2s ease;
+        }
+        
+        .mobile-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            border-color: #cbd5e1;
+        }
+        
+        .custom-scrollbar {
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 #f1f5f9;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 3px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
     </style>
-    </head>
+</head>
 <body class="bg-slate-50 min-h-screen">
     <div class="flex h-screen">
         <!-- Dynamic Sidebar -->
         <div id="dynamic-sidebar"></div>
 
-        <main class="flex-1 overflow-auto bg-gradient-to-br from-slate-50 to-white">
-            <div class="bg-white shadow-sm border-b border-slate-200 px-8 py-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h1 class="text-2xl font-bold text-slate-900">Printer Parts</h1>
-                        <p class="text-slate-600 mt-1">Organize and manage printer parts</p>
+        <main class="flex-1 overflow-auto bg-gradient-to-br from-slate-50 via-blue-50/30 to-white">
+            <div class="bg-white shadow-sm border-b border-slate-200 px-4 sm:px-8 py-6 sm:py-8">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div class="fade-in">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="p-3 bg-blue-100 text-blue-600 rounded-xl">
+                                <i class="fas fa-print text-xl"></i>
+                            </div>
+                            <h1 class="text-2xl sm:text-3xl font-bold text-slate-900">Printer Parts Inventory</h1>
+                        </div>
+                        <p class="text-slate-600 text-base sm:text-lg">Organize and manage your printer parts inventory</p>
+                    </div>
+                    <div class="flex flex-wrap gap-4 justify-center sm:justify-end">
+                        <div class="text-center">
+                            <div class="text-sm text-slate-500">Total Parts</div>
+                            <div id="totalPartsCount" class="text-xl sm:text-2xl font-bold text-slate-900">-</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-sm text-slate-500">Low Stock</div>
+                            <div id="lowStockCount" class="text-xl sm:text-2xl font-bold text-yellow-600">-</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-sm text-slate-500">Out of Stock</div>
+                            <div id="outOfStockCount" class="text-xl sm:text-2xl font-bold text-red-600">-</div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="p-8 space-y-6">
-                <!-- Search and Add Part Section -->
-                <div class="flex justify-between items-center">
-                    <div class="relative w-96">
-                        <input type="text" id="searchParts" placeholder="Search parts..." class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <i class="fas fa-search absolute left-3 top-3 text-slate-400"></i>
-                    </div>
-                    <button id="addPartBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2">
-                        <i class="fas fa-plus"></i>
-                        Add New Part
-                    </button>
-                </div>
-
-                <!-- Parts Table -->
-                <div class="bg-white rounded-lg shadow overflow-hidden">
-                    <table class="min-w-full divide-y divide-slate-200">
-                        <thead class="bg-slate-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Part Name</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Category</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Stock</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="partsTableBody" class="bg-white divide-y divide-slate-200">
-                            <!-- Table rows will be dynamically populated -->
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Add/Edit Part Modal -->
-                <div id="partModal" class="hidden fixed inset-0 bg-slate-900 bg-opacity-50 flex items-center justify-center">
-                    <div class="bg-white rounded-lg p-6 w-full max-w-md">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 id="modalTitle" class="text-lg font-semibold text-slate-900">Add New Part</h3>
-                            <button id="closeModal" class="text-slate-400 hover:text-slate-500">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                        <form id="partForm" class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700">Part Name</label>
-                                <input type="text" id="partName" name="partName" required class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
+            <div class="p-4 sm:p-8 space-y-6">
+                <!-- Enhanced Search and Controls Section -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 slide-in">
+                    <div class="flex flex-col space-y-4">
+                        <div class="flex flex-col sm:flex-row gap-4 flex-1">
+                            <!-- Search -->
+                            <div class="relative flex-1">
+                                <input type="text" id="searchParts" placeholder="Search parts by name or category..." 
+                                    class="w-full pl-11 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+                                <i class="fas fa-search absolute left-4 top-4 text-slate-400"></i>
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700">Category</label>
-                                <select id="partCategory" name="partCategory" required class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
-                                    <option value="">Select category</option>
+                        </div>
+                        
+                        <div class="flex flex-col sm:flex-row gap-3">
+                            <!-- Category Filter -->
+                            <div class="relative flex-1">
+                                <select id="categoryFilter" class="appearance-none bg-white border border-slate-300 rounded-lg px-4 py-3 pr-10 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+                                    <option value="">All Categories</option>
                                     <option value="toner">Toner</option>
+                                    <option value="ink">Printer Ink</option>
                                     <option value="drum">Drum</option>
                                     <option value="fuser">Fuser</option>
                                     <option value="roller">Roller</option>
                                     <option value="other">Other</option>
                                 </select>
+                                <i class="fas fa-chevron-down absolute right-3 top-4 text-slate-400 pointer-events-none"></i>
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700">Initial Stock</label>
-                                <input type="number" id="partStock" name="partStock" required min="0" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                            
+                            <!-- Stock Filter -->
+                            <div class="relative flex-1">
+                                <select id="stockFilter" class="appearance-none bg-white border border-slate-300 rounded-lg px-4 py-3 pr-10 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+                                    <option value="">All Stock Levels</option>
+                                    <option value="in-stock">In Stock</option>
+                                    <option value="low-stock">Low Stock</option>
+                                    <option value="out-of-stock">Out of Stock</option>
+                                </select>
+                                <i class="fas fa-filter absolute right-3 top-4 text-slate-400 pointer-events-none"></i>
                             </div>
-                            <div class="flex justify-end gap-3 mt-6">
-                                <button type="button" id="cancelBtn" class="px-4 py-2 border border-slate-300 rounded-md text-slate-700 hover:bg-slate-50">Cancel</button>
-                                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Save Part</button>
+                            
+                            <!-- Action Buttons -->
+                            <div class="flex gap-3 sm:flex-shrink-0">
+                                <button id="exportBtn" class="bg-slate-100 text-slate-700 px-4 py-3 rounded-lg hover:bg-slate-200 flex items-center gap-2 transition-all hover-lift flex-1 sm:flex-initial justify-center">
+                                    <i class="fas fa-download"></i>
+                                    <span class="hidden sm:inline">Export</span>
+                                </button>
+                                <button id="addPartBtn" class="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-blue-800 flex items-center gap-2 transition-all hover-lift shadow-md flex-1 sm:flex-initial justify-center">
+                                    <i class="fas fa-plus"></i>
+                                    <span>Add New Part</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Enhanced Parts Table -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden fade-in">
+                    <!-- Desktop Table View -->
+                    <div class="hidden md:block overflow-x-auto custom-scrollbar">
+                        <table class="min-w-full divide-y divide-slate-200 table-hover-effect">
+                            <thead class="bg-gradient-to-r from-slate-50 to-slate-100">
+                                <tr>
+                                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider cursor-pointer hover:bg-slate-200 transition-colors" data-sort="name">
+                                        <div class="flex items-center gap-2">
+                                            <span>Part Name</span>
+                                            <i class="fas fa-sort text-slate-400"></i>
+                                        </div>
+                                    </th>
+                                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider cursor-pointer hover:bg-slate-200 transition-colors" data-sort="brand">
+                                        <div class="flex items-center gap-2">
+                                            <span>Brand</span>
+                                            <i class="fas fa-sort text-slate-400"></i>
+                                        </div>
+                                    </th>
+                                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider cursor-pointer hover:bg-slate-200 transition-colors" data-sort="stock">
+                                        <div class="flex items-center gap-2">
+                                            <span>Quantity</span>
+                                            <i class="fas fa-sort text-slate-400"></i>
+                                        </div>
+                                    </th>
+                                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                                        Status
+                                    </th>
+                                    <th class="px-6 py-4 text-right text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                                        Actions
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody id="partsTableBody" class="bg-white divide-y divide-slate-100">
+                                <!-- Table rows will be dynamically populated -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Mobile Card View -->
+                    <div id="mobileCardsContainer" class="md:hidden divide-y divide-slate-100">
+                        <!-- Mobile cards will be dynamically populated -->
+                    </div>
+                    
+                    <!-- Table Footer with Pagination -->
+                    <div class="bg-slate-50 px-4 sm:px-6 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-slate-200">
+                        <div class="text-sm text-slate-600 text-center sm:text-left">
+                            Showing <span id="showingStart">0</span> to <span id="showingEnd">0</span> of <span id="totalResults">0</span> results
+                        </div>
+                        <div class="flex justify-center gap-2">
+                            <button id="prevPage" class="px-3 py-1 text-sm border border-slate-300 rounded hover:bg-white transition-colors disabled:opacity-50" disabled>
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <span class="px-3 py-1 text-sm text-slate-600">Page <span id="currentPage">1</span> of <span id="totalPages">1</span></span>
+                            <button id="nextPage" class="px-3 py-1 text-sm border border-slate-300 rounded hover:bg-white transition-colors disabled:opacity-50" disabled>
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Enhanced Add/Edit Part Modal with Progressive Disclosure -->
+                <div id="partModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 opacity-0 transition-all duration-300">
+                    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl transform transition-all duration-300 scale-95 border border-white/20">
+                        <!-- Enhanced Header with Gradient -->
+                        <div class="bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-600 p-5 rounded-t-2xl relative overflow-hidden">
+                            <div class="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20"></div>
+                            <div class="relative flex justify-between items-center">
+                                <div class="flex items-center gap-3">
+                                    <div class="p-2 bg-white/20 backdrop-blur-sm rounded-lg">
+                                        <i id="modalIcon" class="fas fa-plus-circle text-white text-lg"></i>
+                                    </div>
+                                    <div>
+                                        <h3 id="modalTitle" class="text-xl font-bold text-white">Add New Item</h3>
+                                        <p class="text-blue-100 text-sm">Choose what you're adding</p>
+                                    </div>
+                                </div>
+                                <button id="closeModal" class="text-white/80 hover:text-white hover:bg-white/20 p-2 rounded-lg transition-all duration-200">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <form id="partForm" class="p-6 space-y-6 min-h-[500px] max-h-[600px] overflow-y-auto">
+                            <!-- Step 1: Item Type Selection - Show First -->
+                            <div class="space-y-4">
+                                <div class="text-center mb-6">
+                                    <h4 class="text-lg font-bold text-slate-800 mb-2">What are you adding?</h4>
+                                    <p class="text-sm text-slate-600">Choose the type of item you want to add to inventory</p>
+                                </div>
+                                
+                                <div id="itemTypeCards" class="grid grid-cols-2 gap-4">
+                                    <label class="cursor-pointer group">
+                                        <input type="radio" name="itemType" value="part" class="hidden peer">
+                                        <div class="relative flex flex-col items-center justify-center border-2 border-slate-200 rounded-xl p-4 transition-all duration-300 bg-white group-hover:border-blue-400 peer-checked:border-blue-600 peer-checked:bg-gradient-to-br peer-checked:from-blue-50 peer-checked:to-blue-100/50 shadow-sm peer-checked:shadow-md hover:shadow-sm">
+                                            <div class="absolute top-2 right-2 opacity-0 peer-checked:opacity-100 transition-opacity">
+                                                <div class="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center">
+                                                    <i class="fas fa-check text-white text-xs"></i>
+                                                </div>
+                                            </div>
+                                            <div class="w-12 h-12 flex items-center justify-center rounded-xl bg-blue-100 mb-3 group-hover:bg-blue-200 transition-colors">
+                                                <i class="fas fa-cogs text-blue-600 text-2xl"></i>
+                                            </div>
+                                            <span class="font-bold text-slate-800 text-base mb-1">Printer Part</span>
+                                            <span class="text-xs text-slate-500 text-center leading-tight">Hardware component</span>
+                                        </div>
+                                    </label>
+                                    <label class="cursor-pointer group">
+                                        <input type="radio" name="itemType" value="consumable" class="hidden peer">
+                                        <div class="relative flex flex-col items-center justify-center border-2 border-slate-200 rounded-xl p-4 transition-all duration-300 bg-white group-hover:border-purple-400 peer-checked:border-purple-600 peer-checked:bg-gradient-to-br peer-checked:from-purple-50 peer-checked:to-purple-100/50 shadow-sm peer-checked:shadow-md hover:shadow-sm">
+                                            <div class="absolute top-2 right-2 opacity-0 peer-checked:opacity-100 transition-opacity">
+                                                <div class="w-5 h-5 bg-purple-600 rounded-full flex items-center justify-center">
+                                                    <i class="fas fa-check text-white text-xs"></i>
+                                                </div>
+                                            </div>
+                                            <div class="w-12 h-12 flex items-center justify-center rounded-xl bg-purple-100 mb-3 group-hover:bg-purple-200 transition-colors">
+                                                <i class="fas fa-tint text-purple-600 text-2xl"></i>
+                                            </div>
+                                            <span class="font-bold text-slate-800 text-base mb-1">Consumable</span>
+                                            <span class="text-xs text-slate-500 text-center leading-tight">Ink, toner, supplies</span>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Step 2: Item Details - Hidden Initially -->
+                            <div id="itemDetailsSection" class="space-y-4 pt-4 border-t border-slate-200 hidden transition-all duration-500">
+                                <div class="text-center mb-4">
+                                    <h4 class="text-lg font-bold text-slate-800 mb-1">Item Details</h4>
+                                    <p class="text-sm text-slate-600">Provide information about your <span id="selectedItemType">item</span></p>
+                                </div>
+                                
+                                <!-- Horizontal Layout: Main Form + Additional Details -->
+                                <div id="formContainer" class="flex flex-col lg:flex-row gap-4">
+                                    <!-- Left Side: Main Form Fields -->
+                                    <div id="mainFormFields" class="flex-1 space-y-3">
+                                        <div class="relative group">
+                                            <label class="flex items-center text-sm font-semibold text-slate-700 mb-3">
+                                                <div class="w-8 h-8 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center mr-3">
+                                                    <i class="fas fa-tag text-blue-600"></i>
+                                                </div>
+                                                <span>Item Name</span>
+                                                <span class="text-red-500 ml-1">*</span>
+                                            </label>
+                                            <input type="text" id="partName" name="partName" required 
+                                                placeholder="e.g., HP 26A Black LaserJet Toner Cartridge"
+                                                class="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white placeholder-slate-400">
+                                        </div>
+                                        
+                                        <div class="relative group">
+                                            <label class="flex items-center text-sm font-semibold text-slate-700 mb-3">
+                                                <div class="w-8 h-8 bg-gradient-to-br from-purple-100 to-purple-200 rounded-lg flex items-center justify-center mr-3">
+                                                    <i class="fas fa-th-large text-purple-600"></i>
+                                                </div>
+                                                <span>Category</span>
+                                                <span class="text-red-500 ml-1">*</span>
+                                            </label>
+                                            <select id="partCategory" name="partCategory" required 
+                                                class="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all duration-200 appearance-none bg-white cursor-pointer">
+                                                <option value="">Select a category...</option>
+                                                <!-- Parts options will be dynamically populated -->
+                                                <option value="printhead" data-type="part">Printhead</option>
+                                                <option value="drum" data-type="part">Drum Unit</option>
+                                                <option value="fuser" data-type="part">Fuser Assembly</option>
+                                                <option value="roller" data-type="part">Paper Roller</option>
+                                                <option value="transfer-belt" data-type="part">Transfer Belt</option>
+                                                <option value="maintenance-unit" data-type="part">Maintenance Unit</option>
+                                                <option value="power-board" data-type="part">Power Supply Board</option>
+                                                <option value="mainboard" data-type="part">Mainboard</option>
+                                                <option value="other" data-type="part">Other Component</option>
+                                                <!-- Consumables options will be dynamically populated -->
+                                                <option value="ink" data-type="consumable">Ink Cartridge</option>
+                                                <option value="ink-bottle" data-type="consumable">Ink Bottle</option>
+                                                <option value="toner" data-type="consumable">Toner Cartridge</option>
+                                                <option value="drum-cartridge" data-type="consumable">Drum Cartridge</option>
+                                                <option value="maintenance-box" data-type="consumable">Maintenance Box / Waste Ink Pad</option>
+                                                <option value="other-consumable" data-type="consumable">Other Consumable</option>
+                                            </select>
+                                            <div class="absolute right-3 top-12 pointer-events-none">
+                                                <i class="fas fa-chevron-down text-slate-400"></i>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="relative group">
+                                            <label class="flex items-center text-sm font-semibold text-slate-700 mb-3">
+                                                <div class="w-8 h-8 bg-gradient-to-br from-orange-100 to-orange-200 rounded-lg flex items-center justify-center mr-3">
+                                                    <i class="fas fa-building text-orange-600"></i>
+                                                </div>
+                                                <span>Brand</span>
+                                            </label>
+                                            <input type="text" id="partBrand" name="partBrand" 
+                                                placeholder="e.g., HP, Canon, Epson, Brother"
+                                                class="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all duration-200 bg-white placeholder-slate-400">
+                                        </div>
+                                        
+                                        <div class="relative group">
+                                            <label class="flex items-center text-sm font-semibold text-slate-700 mb-3">
+                                                <div class="w-8 h-8 bg-gradient-to-br from-green-100 to-green-200 rounded-lg flex items-center justify-center mr-3">
+                                                    <i class="fas fa-warehouse text-green-600"></i>
+                                                </div>
+                                                <span>Initial Stock Quantity</span>
+                                                <span class="text-red-500 ml-1">*</span>
+                                            </label>
+                                            <div class="relative">
+                                                <input type="number" id="partStock" name="partStock" required min="0" 
+                                                    placeholder="Enter starting quantity"
+                                                    class="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/20 transition-all duration-200 bg-white placeholder-slate-400 pr-12">
+                                                <div class="absolute right-3 top-3 text-slate-400 text-sm">
+                                                    units
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Right Side: Additional Details Section -->
+                                    <div id="additionalDetailsSection" class="flex-1 hidden transition-all duration-500">
+                                        <div class="bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 rounded-xl p-4 border-2 border-blue-200">
+                                            <div class="space-y-3">
+                                                <!-- Color Selection for Ink -->
+                                                <div id="colorField" class="hidden">
+                                                    <label class="flex items-center text-sm font-semibold text-slate-700 mb-2">
+                                                        <div class="w-6 h-6 bg-gradient-to-br from-red-100 to-blue-100 rounded mr-2">
+                                                            <i class="fas fa-palette text-purple-600 text-xs mt-1 ml-1"></i>
+                                                        </div>
+                                                        <span>Color</span>
+                                                    </label>
+                                                    <select id="inkColor" name="inkColor" 
+                                                        class="w-full px-3 py-3 rounded-lg border-2 border-slate-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 appearance-none bg-white cursor-pointer text-sm">
+                                                        <option value="">Select color...</option>
+                                                        <option value="black">⚫ Black</option>
+                                                        <option value="cyan">🔵 Cyan</option>
+                                                        <option value="magenta">🔴 Magenta</option>
+                                                        <option value="yellow">🟡 Yellow</option>
+                                                        <option value="photo-black">⚫ Photo Black</option>
+                                                        <option value="light-cyan">🔵 Light Cyan</option>
+                                                        <option value="light-magenta">🔴 Light Magenta</option>
+                                                        <option value="gray">⚪ Gray</option>
+                                                        <option value="other">🎨 Other</option>
+                                                    </select>
+                                                </div>
+                                                
+                                                <!-- Volume for Ink Bottles -->
+                                                <div id="volumeField" class="hidden">
+                                                    <label class="flex items-center text-sm font-semibold text-slate-700 mb-2">
+                                                        <div class="w-6 h-6 bg-gradient-to-br from-blue-100 to-green-100 rounded mr-2">
+                                                            <i class="fas fa-flask text-blue-600 text-xs mt-1 ml-1"></i>
+                                                        </div>
+                                                        <span>Volume</span>
+                                                    </label>
+                                                    <div class="relative">
+                                                        <input type="number" id="inkVolume" name="inkVolume" min="0" step="0.1"
+                                                            placeholder="e.g., 100"
+                                                            class="w-full px-3 py-3 rounded-lg border-2 border-slate-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white placeholder-slate-400 pr-10 text-sm">
+                                                        <div class="absolute right-3 top-3 text-slate-400 text-xs">
+                                                            ml
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- Page Yield for Cartridges -->
+                                                <div id="pageYieldField" class="hidden">
+                                                    <label class="flex items-center text-sm font-semibold text-slate-700 mb-2">
+                                                        <div class="w-6 h-6 bg-gradient-to-br from-yellow-100 to-orange-100 rounded mr-2">
+                                                            <i class="fas fa-file-alt text-orange-600 text-xs mt-1 ml-1"></i>
+                                                        </div>
+                                                        <span>Page Yield (approx.)</span>
+                                                    </label>
+                                                    <div class="relative">
+                                                        <input type="number" id="pageYield" name="pageYield" min="0"
+                                                            placeholder="e.g., 2000"
+                                                            class="w-full px-3 py-3 rounded-lg border-2 border-slate-200 focus:border-yellow-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 transition-all duration-200 bg-white placeholder-slate-400 pr-14 text-sm">
+                                                        <div class="absolute right-3 top-3 text-slate-400 text-xs">
+                                                            pages
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Action Buttons - Also Hidden Initially -->
+                            <div id="actionButtonsSection" class="flex gap-4 pt-6 border-t border-slate-200 hidden">
+                                <button type="button" id="cancelBtn" 
+                                    class="flex-1 px-6 py-3 border-2 border-slate-300 rounded-lg text-slate-700 font-semibold hover:bg-slate-50 hover:border-slate-400 transition-all duration-200 flex items-center justify-center gap-2">
+                                    <i class="fas fa-times"></i>
+                                    Cancel
+                                </button>
+                                <button type="submit" id="submitBtn"
+                                    class="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2">
+                                    <i class="fas fa-save"></i>
+                                    <span id="submitText">Save Item</span>
+                                </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+
+                <!-- Loading Overlay -->
+                <div id="loadingOverlay" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div class="bg-white rounded-2xl p-8 shadow-2xl flex flex-col items-center gap-4">
+                        <div class="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                        <p class="text-slate-700 font-medium">Processing...</p>
                     </div>
                 </div>
             </div>
         </main>
     </div>
+
+    <script>
+    // Progressive disclosure with improved category filtering and conditional fields
+    document.addEventListener('DOMContentLoaded', function() {
+        const partCategory = document.getElementById('partCategory');
+        const radios = document.querySelectorAll('input[name="itemType"]');
+        const itemDetailsSection = document.getElementById('itemDetailsSection');
+        const actionButtonsSection = document.getElementById('actionButtonsSection');
+        const selectedItemType = document.getElementById('selectedItemType');
+        const itemTypeSelectionSection = document.querySelector('#partForm > div:first-child');
+        const additionalDetailsSection = document.getElementById('additionalDetailsSection');
+        
+        // Additional detail fields
+        const colorField = document.getElementById('colorField');
+        const volumeField = document.getElementById('volumeField');
+        const pageYieldField = document.getElementById('pageYieldField');
+        const mainFormFields = document.getElementById('mainFormFields');
+        
+        function showFormFields() {
+            // Hide the item type selection section with animation
+            itemTypeSelectionSection.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+            itemTypeSelectionSection.style.opacity = '0';
+            itemTypeSelectionSection.style.transform = 'translateY(-20px)';
+            
+            setTimeout(() => {
+                itemTypeSelectionSection.classList.add('hidden');
+                
+                // Show the details section with animation
+                itemDetailsSection.classList.remove('hidden');
+                actionButtonsSection.classList.remove('hidden');
+                
+                // Add animation effect
+                setTimeout(() => {
+                    itemDetailsSection.style.opacity = '1';
+                    itemDetailsSection.style.transform = 'translateY(0)';
+                }, 50);
+            }, 300);
+        }
+        
+        function hideFormFields() {
+            itemDetailsSection.classList.add('hidden');
+            actionButtonsSection.classList.add('hidden');
+            additionalDetailsSection.classList.add('hidden');
+            itemDetailsSection.style.opacity = '0';
+            itemDetailsSection.style.transform = 'translateY(-10px)';
+            
+            // Show the item type selection again
+            itemTypeSelectionSection.classList.remove('hidden');
+            itemTypeSelectionSection.style.opacity = '1';
+            itemTypeSelectionSection.style.transform = 'translateY(0)';
+        }
+        
+        function filterCategories(selectedType) {
+            const options = partCategory.querySelectorAll('option[data-type]');
+            
+            // Hide all options first
+            options.forEach(option => {
+                option.style.display = 'none';
+                option.disabled = true;
+            });
+            
+            // Show only relevant options
+            const relevantOptions = partCategory.querySelectorAll(`option[data-type="${selectedType}"]`);
+            relevantOptions.forEach(option => {
+                option.style.display = 'block';
+                option.disabled = false;
+            });
+            
+            // Reset category selection
+            partCategory.value = '';
+        }
+        
+        function showAdditionalDetails(category) {
+            console.log('showAdditionalDetails called with category:', category); // Debug log
+            // Hide all additional fields first
+            colorField.classList.add('hidden');
+            volumeField.classList.add('hidden');
+            pageYieldField.classList.add('hidden');
+            
+            let showSection = false;
+            
+            switch(category) {
+                case 'ink-bottle':
+                    colorField.classList.remove('hidden');
+                    volumeField.classList.remove('hidden');
+                    showSection = true;
+                    break;
+                    
+                case 'ink':
+                    colorField.classList.remove('hidden');
+                    pageYieldField.classList.remove('hidden');
+                    showSection = true;
+                    break;
+                    
+                case 'toner':
+                    pageYieldField.classList.remove('hidden');
+                    showSection = true;
+                    break;
+                    
+                case 'drum-cartridge':
+                    pageYieldField.classList.remove('hidden');
+                    showSection = true;
+                    break;
+                    
+                default:
+                    if (category && (category.includes('cartridge') || category === 'maintenance-box')) {
+                        showSection = true;
+                    }
+                    break;
+            }
+            
+            if (showSection) {
+                additionalDetailsSection.classList.remove('hidden');
+                // Simple show animation
+                setTimeout(() => {
+                    additionalDetailsSection.style.opacity = '1';
+                    additionalDetailsSection.style.transform = 'translateX(0)';
+                }, 50);
+            } else {
+                // Simple hide animation
+                additionalDetailsSection.style.opacity = '0';
+                additionalDetailsSection.style.transform = 'translateX(20px)';
+                setTimeout(() => {
+                    additionalDetailsSection.classList.add('hidden');
+                }, 300);
+            }
+        }
+        
+        function updateCategoryOptions() {
+            const selectedValue = document.querySelector('input[name="itemType"]:checked')?.value;
+            
+            if (selectedValue === 'part') {
+                filterCategories('part');
+                selectedItemType.textContent = 'printer part';
+                showFormFields();
+            } else if (selectedValue === 'consumable') {
+                filterCategories('consumable');
+                selectedItemType.textContent = 'consumable';
+                showFormFields();
+            }
+        }
+        
+        // Listen for category changes to show additional details
+        partCategory.addEventListener('change', function() {
+            console.log('Category changed to:', this.value); // Debug log
+            showAdditionalDetails(this.value);
+        });
+        
+        // Form validation with visual feedback
+        const form = document.getElementById('partForm');
+        form.addEventListener('submit', function(e) {
+            const inputs = form.querySelectorAll('input[required], select[required]');
+            let isValid = true;
+            
+            inputs.forEach(input => {
+                if (!input.value) {
+                    input.classList.add('border-red-500', 'bg-red-50');
+                    input.classList.remove('border-slate-200');
+                    isValid = false;
+                } else {
+                    input.classList.remove('border-red-500', 'bg-red-50');
+                    input.classList.add('border-green-500');
+                }
+            });
+            
+            if (!isValid) {
+                e.preventDefault();
+                // Scroll to first invalid field
+                const firstInvalid = form.querySelector('.border-red-500');
+                if (firstInvalid) {
+                    firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    firstInvalid.focus();
+                }
+            }
+        });
+        
+        // Add CSS for smooth transitions
+        itemDetailsSection.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+        itemDetailsSection.style.opacity = '0';
+        itemDetailsSection.style.transform = 'translateY(-10px)';
+        
+        additionalDetailsSection.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+        additionalDetailsSection.style.opacity = '0';
+        additionalDetailsSection.style.transform = 'translateX(20px)';
+        
+        radios.forEach(radio => radio.addEventListener('change', updateCategoryOptions));
+        
+        // Initially hide form fields
+        hideFormFields();
+        
+        // Reset form when modal is closed
+        const closeModal = document.getElementById('closeModal');
+        const cancelBtn = document.getElementById('cancelBtn');
+        
+        function resetModal() {
+            // Reset radio buttons
+            radios.forEach(radio => radio.checked = false);
+            
+            // Reset form fields
+            form.reset();
+            
+            // Hide form fields and show item type selection again
+            hideFormFields();
+        }
+        
+        closeModal.addEventListener('click', resetModal);
+        cancelBtn.addEventListener('click', resetModal);
+    });
+    </script>
 
     <script src="../../js/auth.js"></script>
     <script src="../../js/dynamic-sidebar-loader.js"></script>

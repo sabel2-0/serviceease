@@ -37,6 +37,37 @@
             border-left: 3px solid #3b82f6;
             padding-left: calc(1rem - 3px);
         }
+        
+        /* Tab button styles */
+        .tab-button {
+            position: relative;
+        }
+        
+        .tab-button.active {
+            background: white;
+            color: #2563eb;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Card hover effects */
+        .service-card {
+            transition: all 0.3s ease;
+        }
+        
+        .service-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Smooth animations */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -80,68 +111,97 @@
             <!-- Main Content Area -->
             <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                 <!-- Service Requests Content -->
-                <div class="bg-white rounded-lg shadow">
-                    <div class="px-6 py-4 border-b flex justify-between items-center">
-                        <h2 class="text-lg font-semibold text-gray-800">Service Request Management</h2>
-                        <button id="new-service-request-btn" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
-                            <i class="fas fa-plus mr-2"></i>New Request
-                        </button>
+                <div class="bg-white rounded-xl shadow-lg border border-gray-200">
+                    <div class="px-8 py-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-xl">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-800 flex items-center">
+                                    <i class="fas fa-clipboard-list mr-3 text-blue-600"></i>
+                                    Service Request Management
+                                </h2>
+                                <p class="text-gray-600 mt-1">Monitor and manage all service requests for your institution</p>
+                            </div>
+                            <button id="new-service-request-btn" class="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105">
+                                <i class="fas fa-plus mr-2"></i>New Request
+                            </button>
+                        </div>
                     </div>
-                    <div class="p-6">
+                    <div class="p-8">
                         <!-- Filter Controls -->
-                        <div class="mb-6 flex flex-wrap gap-4">
-                            <div class="w-full md:w-64">
-                                <input type="text" id="searchInput" placeholder="Search requests..." class="w-full px-4 py-2 border rounded-md">
-                            </div>
-                            <div class="w-full md:w-48">
-                                <select id="statusFilter" class="w-full px-4 py-2 border rounded-md">
-                                    <option value="">All Statuses</option>
-                                    <option value="new">New</option>
-                                    <option value="in_progress">In Progress</option>
-                                    <option value="completed">Completed</option>
-                                    <option value="issue">Issue</option>
-                                </select>
-                            </div>
-                            <div class="w-full md:w-48">
-                                <select id="serviceTypeFilter" class="w-full px-4 py-2 border rounded-md">
-                                    <option value="">All Types</option>
-                                    <option value="repair">Repair</option>
-                                    <option value="maintenance">Maintenance</option>
-                                    <option value="installation">Installation</option>
-                                </select>
-                            </div>
-                            <div class="flex-grow text-right">
-                                <button id="refreshBtn" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-md">
-                                    <i class="fas fa-sync-alt mr-2"></i>Refresh
+                        <div class="mb-8 bg-gray-50 rounded-xl p-6 border border-gray-200">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                                <i class="fas fa-filter mr-2 text-blue-600"></i>
+                                Filter & Search
+                            </h3>
+                            <div class="flex flex-wrap gap-4">
+                                <div class="flex-1 min-w-64">
+                                    <div class="relative">
+                                        <input type="text" id="searchInput" placeholder="Search requests, IDs, or descriptions..." class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                                        <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                                    </div>
+                                </div>
+                                <div class="w-full md:w-48">
+                                    <select id="priorityFilter" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                                        <option value="">All Priorities</option>
+                                        <option value="urgent">Urgent</option>
+                                        <option value="high">High</option>
+                                        <option value="medium">Medium</option>
+                                        <option value="low">Low</option>
+                                    </select>
+                                </div>
+                                <button id="refreshBtn" class="bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 px-6 py-3 rounded-lg transition-all duration-200 border border-gray-300 shadow-sm hover:shadow-md">
+                                    <i class="fas fa-sync-alt mr-2 text-gray-700"></i>
+                                    <span class="text-gray-700 font-medium">Refresh</span>
                                 </button>
                             </div>
                         </div>
                         
-                        <!-- Stats Bar -->
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                            <div class="bg-blue-50 border border-blue-100 rounded-lg p-4">
-                                <div class="text-center">
-                                    <p class="text-sm text-gray-600">New</p>
-                                    <p id="newRequests" class="text-xl font-bold text-blue-600">0</p>
-                                </div>
+                        <!-- Tabs Navigation -->
+                        <div class="mb-8">
+                            <div class="flex space-x-1 bg-gray-100 p-1 rounded-xl">
+                                <button id="tab-all" class="tab-button flex-1 px-6 py-3 rounded-lg font-medium transition-all duration-200 text-sm bg-white text-blue-600 shadow-sm">
+                                    <i class="fas fa-list mr-2"></i>All Requests
+                                    <span id="all-count" class="ml-2 bg-blue-100 text-blue-600 px-2 py-1 rounded-full text-xs font-bold">0</span>
+                                </button>
+                                <button id="tab-new" class="tab-button flex-1 px-6 py-3 rounded-lg font-medium transition-all duration-200 text-sm text-gray-600 hover:text-blue-600">
+                                    <i class="fas fa-plus mr-2"></i>New
+                                    <span id="new-count" class="ml-2 bg-blue-100 text-blue-600 px-2 py-1 rounded-full text-xs font-bold">0</span>
+                                </button>
+                                <button id="tab-in-progress" class="tab-button flex-1 px-6 py-3 rounded-lg font-medium transition-all duration-200 text-sm text-gray-600 hover:text-yellow-600">
+                                    <i class="fas fa-cogs mr-2"></i>In Progress
+                                    <span id="progress-count" class="ml-2 bg-yellow-100 text-yellow-600 px-2 py-1 rounded-full text-xs font-bold">0</span>
+                                </button>
+                                <button id="tab-pending-approval" class="tab-button flex-1 px-6 py-3 rounded-lg font-medium transition-all duration-200 text-sm text-gray-600 hover:text-orange-600">
+                                    <i class="fas fa-clock mr-2"></i>Pending Approval
+                                    <span id="pending-approval-count" class="ml-2 bg-orange-100 text-orange-600 px-2 py-1 rounded-full text-xs font-bold">0</span>
+                                </button>
+                                <button id="tab-completed" class="tab-button flex-1 px-6 py-3 rounded-lg font-medium transition-all duration-200 text-sm text-gray-600 hover:text-green-600">
+                                    <i class="fas fa-check mr-2"></i>Completed
+                                    <span id="completed-count" class="ml-2 bg-green-100 text-green-600 px-2 py-1 rounded-full text-xs font-bold">0</span>
+                                </button>
                             </div>
-                            <div class="bg-yellow-50 border border-yellow-100 rounded-lg p-4">
-                                <div class="text-center">
-                                    <p class="text-sm text-gray-600">In Progress</p>
-                                    <p id="inProgressRequests" class="text-xl font-bold text-yellow-600">0</p>
-                                </div>
+                                    <span id="completed-count" class="ml-2 bg-green-100 text-green-600 px-2 py-1 rounded-full text-xs font-bold">0</span>
+                                </button>
                             </div>
-                            <div class="bg-green-50 border border-green-100 rounded-lg p-4">
-                                <div class="text-center">
-                                    <p class="text-sm text-gray-600">Completed</p>
-                                    <p id="completedRequests" class="text-xl font-bold text-green-600">0</p>
-                                </div>
+                        </div>
+                        
+                        <!-- Quick Stats Overview (smaller, more compact) -->
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                            <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 text-center">
+                                <p class="text-sm font-medium text-blue-700">Total Requests</p>
+                                <p id="totalRequests" class="text-2xl font-bold text-blue-600">0</p>
                             </div>
-                            <div class="bg-red-50 border border-red-100 rounded-lg p-4">
-                                <div class="text-center">
-                                    <p class="text-sm text-gray-600">Issues</p>
-                                    <p id="issueRequests" class="text-xl font-bold text-red-600">0</p>
-                                </div>
+                            <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg p-4 text-center">
+                                <p class="text-sm font-medium text-yellow-700">Active</p>
+                                <p id="activeRequests" class="text-2xl font-bold text-yellow-600">0</p>
+                            </div>
+                            <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 text-center">
+                                <p class="text-sm font-medium text-green-700">Completed</p>
+                                <p id="completedRequests" class="text-2xl font-bold text-green-600">0</p>
+                            </div>
+                            <div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 text-center">
+                                <p class="text-sm font-medium text-gray-700">This Month</p>
+                                <p id="monthlyRequests" class="text-2xl font-bold text-gray-600">0</p>
                             </div>
                         </div>
                         
@@ -239,9 +299,6 @@
                 <!-- Request details will be loaded here -->
             </div>
             <div class="px-6 py-4 border-t bg-gray-50 flex justify-end gap-3 sticky bottom-0">
-                <button id="updateStatusBtn" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors transform hover:scale-105 shadow hover:shadow-md">
-                    Update Status
-                </button>
                 <button id="closeModalBtn" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300 transition-colors">
                     Close
                 </button>
@@ -249,37 +306,64 @@
         </div>
     </div>
 
-    <!-- Status Update Modal -->
-    <div id="statusModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+    <!-- Service Approval Modal -->
+    <div id="approvalModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+        <div class="relative bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 ease-in-out">
+            <div class="px-6 py-4 border-b flex justify-between items-center sticky top-0 bg-white z-10">
+                <h3 class="text-lg font-semibold text-gray-800 flex items-center">
+                    <i class="fas fa-check-circle mr-2 text-orange-600"></i>
+                    Service Completion Approval
+                </h3>
+                <button id="closeApprovalModal" class="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="approvalModalContent" class="p-6">
+                <!-- Approval details will be loaded here -->
+            </div>
+            <div class="px-6 py-4 border-t bg-gray-50 flex justify-between">
+                <div class="flex space-x-3">
+                    <button id="rejectServiceBtn" class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105">
+                        <i class="fas fa-times mr-2"></i>Reject Service
+                    </button>
+                    <button id="approveServiceBtn" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105">
+                        <i class="fas fa-check mr-2"></i>Approve Service
+                    </button>
+                </div>
+                <button id="closeApprovalModalBtn" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300 transition-colors">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Approval Action Modal (for adding notes) -->
+    <div id="approvalActionModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
         <div class="relative bg-white rounded-lg shadow-xl w-full max-w-md transform transition-all duration-300 ease-in-out">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-semibold text-gray-800">Update Service Status</h3>
+            <div class="px-6 py-4 border-b flex justify-between items-center">
+                <h3 id="approvalActionTitle" class="text-lg font-semibold text-gray-800">Approve Service</h3>
+                <button id="closeApprovalActionModal" class="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
             <div class="p-6">
-                <form id="statusUpdateForm">
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">New Status</label>
-                        <select id="newStatus" class="w-full px-4 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 transition-colors">
-                            <option value="in_progress">In Progress</option>
-                            <option value="completed">Completed</option>
-                            <option value="issue">Issue Detected</option>
-                        </select>
-                        <p class="text-xs text-gray-500 mt-1">Select the appropriate status for this service request</p>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Notes</label>
-                        <textarea id="statusNotes" class="w-full px-4 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 transition-colors h-32" placeholder="Enter additional notes about this status update..."></textarea>
-                        <p class="text-xs text-gray-500 mt-1">Include any relevant details about the status change</p>
-                    </div>
-                </form>
+                <div class="mb-4">
+                    <label for="approvalNotes" class="block text-sm font-medium text-gray-700 mb-2">
+                        <span id="approvalNotesLabel">Approval Notes</span>
+                        <span id="approvalNotesRequired" class="text-red-500 hidden">*</span>
+                    </label>
+                    <textarea id="approvalNotes" class="w-full px-4 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 transition-colors h-24" placeholder="Add any notes or comments..."></textarea>
+                    <p id="approvalNotesHelpText" class="text-xs text-gray-500 mt-1">Optional notes for this approval</p>
+                </div>
             </div>
-            <div class="px-6 py-4 border-t bg-gray-50 flex justify-end gap-3">
-                <button id="submitStatusUpdate" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors transform hover:scale-105 shadow hover:shadow-md">
-                    Update
-                </button>
-                <button id="cancelStatusUpdate" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300 transition-colors">
+            <div class="px-6 py-4 border-t bg-gray-50 flex justify-end space-x-3">
+                <button id="cancelApprovalAction" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300 transition-colors">
                     Cancel
+                </button>
+                <button id="confirmApprovalAction" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105">
+                    <i class="fas fa-check mr-2"></i>Confirm
                 </button>
             </div>
         </div>
@@ -330,9 +414,13 @@
             });
             
             // Modal Controls
-            document.getElementById('new-service-request-btn')?.addEventListener('click', () => {
-                document.getElementById('newRequestModal').classList.remove('hidden');
-            });
+            const _newServiceRequestBtn = document.getElementById('new-service-request-btn');
+            if (_newServiceRequestBtn && !_newServiceRequestBtn.dataset.listenerSet) {
+                _newServiceRequestBtn.addEventListener('click', () => {
+                    document.getElementById('newRequestModal').classList.remove('hidden');
+                });
+                _newServiceRequestBtn.dataset.listenerSet = 'true';
+            }
             
             // Close all modals when clicking outside
             document.querySelectorAll('.fixed.inset-0').forEach(modal => {
@@ -344,70 +432,98 @@
             });
             
             // Cancel button for modal
-            document.getElementById('cancelNewRequest')?.addEventListener('click', () => {
-                document.getElementById('newRequestModal').classList.add('hidden');
-            });
-            
-                // Form submission
-            document.getElementById('submitNewRequest')?.addEventListener('click', async () => {
-                const printerId = parseInt(document.getElementById('servicePrinterSelect').value, 10);
-                const location = document.getElementById('printerLocation').value;
-                const priority = document.getElementById('priority').value;
-                const description = document.getElementById('issueDescription').value;
-
-                console.log('Form values:', {
-                    printerId,
-                    location,
-                    priority,
-                    description
+            const _cancelNewRequestBtn = document.getElementById('cancelNewRequest');
+            if (_cancelNewRequestBtn && !_cancelNewRequestBtn.dataset.listenerSet) {
+                _cancelNewRequestBtn.addEventListener('click', () => {
+                    document.getElementById('newRequestModal').classList.add('hidden');
                 });
+                _cancelNewRequestBtn.dataset.listenerSet = 'true';
+            }
+            
+                // Form submission - avoid adding duplicate handler if module already bound it
+                const _submitNewRequestBtn = document.getElementById('submitNewRequest');
+                if (_submitNewRequestBtn && !_submitNewRequestBtn.dataset.listenerSet) {
+                    _submitNewRequestBtn.addEventListener('click', async () => {
+                        const printerId = parseInt(document.getElementById('servicePrinterSelect').value, 10);
+                        const location = document.getElementById('printerLocation').value;
+                        const priority = document.getElementById('priority').value;
+                        const description = document.getElementById('issueDescription').value;
 
-                if (!printerId || isNaN(printerId)) {
-                    showNotification('Error', 'Please select a valid printer', 'error');
-                    return;
-                }
+                        console.log('Form values:', {
+                            printerId,
+                            location,
+                            priority,
+                            description
+                        });
 
-                if (!priority || !description) {
-                    showNotification('Error', 'Please fill out all required fields', 'error');
-                    return;
-                }
+                        if (!printerId || isNaN(printerId)) {
+                            showNotification('Error', 'Please select a valid printer', 'error');
+                            return;
+                        }
 
-                const user = JSON.parse(localStorage.getItem('user'));
-                
-                const requestData = {
-                    inventory_item_id: printerId,
-                    priority: priority,
-                    description: description,
-                    location: location || null,
-                    institution_id: user.institution_id,
-                    coordinator_id: user.id,
-                    status: 'new'
-                };                console.log('Request data:', requestData);
+                        if (!priority || !description) {
+                            showNotification('Error', 'Please fill out all required fields', 'error');
+                            return;
+                        }
 
-                try {
-                    console.log('Sending request data:', requestData);
-                    const response = await fetch('/api/service-requests', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': 'Bearer ' + localStorage.getItem('token') // Add authentication token
-                        },
-                        body: JSON.stringify(requestData),
+                        const user = JSON.parse(localStorage.getItem('user'));
+                        // Fetch assigned technician for this institution
+                        let assignedTechnicianId = null;
+                        try {
+                            const techRes = await fetch(`/api/institutions/${user.institution_id}/technician`, {
+                                headers: {
+                                    'Authorization': 'Bearer ' + localStorage.getItem('token')
+                                }
+                            });
+                            const techData = await techRes.json();
+                            if (techData.assigned && techData.technician && techData.technician.technician_id) {
+                                assignedTechnicianId = techData.technician.technician_id;
+                                console.log('Fetched assigned_technician_id:', assignedTechnicianId);
+                            } else {
+                                console.log('No assigned technician found for institution:', user.institution_id);
+                            }
+                        } catch (err) {
+                            console.warn('Could not fetch assigned technician:', err);
+                        }
+
+                        const requestData = {
+                            inventory_item_id: printerId,
+                            priority: priority,
+                            description: description,
+                            location: location || null,
+                            institution_id: user.institution_id,
+                            coordinator_id: user.id,
+                            status: 'new',
+                            assigned_technician_id: assignedTechnicianId || null
+                        };
+                        console.log('Request data:', requestData);
+
+                        try {
+                            console.log('Sending request data:', requestData);
+                            const response = await fetch('/api/service-requests', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': 'Bearer ' + localStorage.getItem('token') // Add authentication token
+                                },
+                                body: JSON.stringify(requestData),
+                            });
+
+                            const responseData = await response.json();
+                            console.log('Server response:', responseData);
+
+                            if (response.ok) {
+                                showNotification('Success', 'Service request submitted successfully', 'success');
+                                document.getElementById('newRequestModal').classList.add('hidden');
+                            } else {
+                                showNotification('Error', responseData.message || 'Failed to submit request', 'error');
+                            }
+                        } catch (error) {
+                            showNotification('Error', 'An error occurred while submitting the request', 'error');
+                        }
                     });
-
-                    const responseData = await response.json();
-                    console.log('Server response:', responseData);
-
-                    if (response.ok) {
-                        showNotification('Success', 'Service request submitted successfully', 'success');
-                        document.getElementById('newRequestModal').classList.add('hidden');
-                    } else {
-                        showNotification('Error', responseData.message || 'Failed to submit request', 'error');
-                    }
-                } catch (error) {
-                    showNotification('Error', 'An error occurred while submitting the request', 'error');
+                    _submitNewRequestBtn.dataset.listenerSet = 'true';
                 }
-            });
             
             // Helper function to show notifications
             function showNotification(title, message, type = 'info') {

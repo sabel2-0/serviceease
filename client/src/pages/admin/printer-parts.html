@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Printer Parts | ServiceEase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>tailwind.config = { theme: { extend: {} } };</script>
+    <style>
+        /* placeholder for future parts styles */
+    </style>
+    </head>
+<body class="bg-slate-50 min-h-screen">
+    <div class="flex h-screen">
+        <div id="sidebar"></div>
+
+        <main class="flex-1 overflow-auto bg-gradient-to-br from-slate-50 to-white">
+            <div class="bg-white shadow-sm border-b border-slate-200 px-8 py-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-bold text-slate-900">Printer Parts</h1>
+                        <p class="text-slate-600 mt-1">Organize and manage printer parts</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-8 space-y-6">
+                <!-- Search and Add Part Section -->
+                <div class="flex justify-between items-center">
+                    <div class="relative w-96">
+                        <input type="text" id="searchParts" placeholder="Search parts..." class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <i class="fas fa-search absolute left-3 top-3 text-slate-400"></i>
+                    </div>
+                    <button id="addPartBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                        <i class="fas fa-plus"></i>
+                        Add New Part
+                    </button>
+                </div>
+
+                <!-- Parts Table -->
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <table class="min-w-full divide-y divide-slate-200">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Part Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Category</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Stock</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="partsTableBody" class="bg-white divide-y divide-slate-200">
+                            <!-- Table rows will be dynamically populated -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Add/Edit Part Modal -->
+                <div id="partModal" class="hidden fixed inset-0 bg-slate-900 bg-opacity-50 flex items-center justify-center">
+                    <div class="bg-white rounded-lg p-6 w-full max-w-md">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 id="modalTitle" class="text-lg font-semibold text-slate-900">Add New Part</h3>
+                            <button id="closeModal" class="text-slate-400 hover:text-slate-500">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <form id="partForm" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700">Part Name</label>
+                                <input type="text" id="partName" name="partName" required class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700">Category</label>
+                                <select id="partCategory" name="partCategory" required class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                                    <option value="">Select category</option>
+                                    <option value="toner">Toner</option>
+                                    <option value="drum">Drum</option>
+                                    <option value="fuser">Fuser</option>
+                                    <option value="roller">Roller</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700">Initial Stock</label>
+                                <input type="number" id="partStock" name="partStock" required min="0" class="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                            </div>
+                            <div class="flex justify-end gap-3 mt-6">
+                                <button type="button" id="cancelBtn" class="px-4 py-2 border border-slate-300 rounded-md text-slate-700 hover:bg-slate-50">Cancel</button>
+                                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Save Part</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/auth.js"></script>
+    <script src="../js/sidebar.js"></script>
+    <script src="../js/inventory-parts.js"></script>
+</body>
+</html>
+
+

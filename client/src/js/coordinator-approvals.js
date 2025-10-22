@@ -71,15 +71,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         registrationsContainer.innerHTML = '';
         
-        // Sort users by institution match status first (matches first), then by date
+        // Sort users by date (newest first)
         const sortedUsers = users.sort((a, b) => {
-            // First, sort by institution match (matched first)
-            const aMatch = a.has_institution_match == 1 || a.has_institution_match === true;
-            const bMatch = b.has_institution_match == 1 || b.has_institution_match === true;
-            if (aMatch !== bMatch) {
-                return bMatch - aMatch;
-            }
-            // Then sort by date (newest first)
             return new Date(b.created_at) - new Date(a.created_at);
         });
         
@@ -91,119 +84,95 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function createRegistrationCard(user) {
         const card = document.createElement('div');
-        const hasMatch = user.has_institution_match == 1 || user.has_institution_match === true;
+        card.className = 'bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 border-l-4 border-blue-500';
         
-        // Debug logging
-        console.log(`Creating card for ${user.first_name} ${user.last_name}:`);
-        console.log(`  has_institution_match value: ${user.has_institution_match} (type: ${typeof user.has_institution_match})`);
-        console.log(`  hasMatch result: ${hasMatch}`);
+        // Format date and time
+        const registrationDate = new Date(user.created_at);
+        const formattedDate = registrationDate.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+        });
+        const formattedTime = registrationDate.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
         
-        // Different styling based on institution match
-        if (hasMatch) {
-            card.className = 'bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 border-l-4 border-green-500';
-        } else {
-            card.className = 'bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 border-l-4 border-yellow-500';
-        }
-        
-        const formattedDate = new Date(user.created_at).toLocaleDateString();
         const institutionTypeDisplay = formatInstitutionType(user.institution_type);
-        
-        // Create institution info section based on match status
-        const institutionSection = hasMatch ? `
-            <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-                <div class="flex items-start">
-                    <div class="flex-shrink-0">
-                        <i class="fas fa-check-circle text-green-600 mt-1"></i>
-                    </div>
-                    <div class="ml-3">
-                        <h4 class="text-sm font-medium text-green-900 flex items-center">
-                            <i class="fas fa-building mr-2"></i>Institution Match Found
-                        </h4>
-                        <div class="mt-2 text-sm">
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <p class="font-medium text-green-800">Admin Institution (${user.institution_id}):</p>
-                                    <p class="text-green-700">${user.matched_institution_name}</p>
-                                    <p class="text-green-700">${formatInstitutionType(user.matched_institution_type)}</p>
-                                    <p class="text-green-700">${user.matched_institution_address}</p>
-                                </div>
-                                <div>
-                                    <p class="font-medium text-green-800">User Registration:</p>
-                                    <p class="text-green-700">${user.institution_name}</p>
-                                    <p class="text-green-700">${institutionTypeDisplay}</p>
-                                    <p class="text-green-700">${user.institution_address}</p>
-                                    <p class="text-green-700">Role: ${formatRole(user.role)}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        ` : `
-            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-                <div class="flex items-start">
-                    <div class="flex-shrink-0">
-                        <i class="fas fa-exclamation-triangle text-yellow-600 mt-1"></i>
-                    </div>
-                    <div class="ml-3">
-                        <h4 class="text-sm font-medium text-yellow-900 flex items-center">
-                            <i class="fas fa-building mr-2"></i>No Institution Match
-                        </h4>
-                        <div class="mt-2 text-sm">
-                            <p class="text-yellow-800 font-medium">User's Institution:</p>
-                            <p class="text-yellow-700">${user.institution_name}</p>
-                            <p class="text-yellow-700">${institutionTypeDisplay}</p>
-                            <p class="text-yellow-700">${user.institution_address}</p>
-                            <p class="text-yellow-700">Role: ${formatRole(user.role)}</p>
-                            <p class="text-yellow-600 text-xs mt-2">
-                                <i class="fas fa-info-circle mr-1"></i>
-                                This institution is not in the admin's client database
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
         
         card.innerHTML = `
             <div class="p-6">
+                <!-- Header Section -->
                 <div class="flex items-start justify-between mb-4">
-                    <div>
-                        <h3 class="text-lg font-semibold text-gray-900 mb-1">
+                    <div class="flex-1">
+                        <h3 class="text-xl font-bold text-gray-900 mb-1">
                             ${user.first_name} ${user.last_name}
                         </h3>
-                        <p class="text-sm text-gray-600">${user.email}</p>
-                        <p class="text-sm text-gray-500">Registered: ${formattedDate}</p>
+                        <p class="text-sm text-gray-600 flex items-center mb-1">
+                            <i class="fas fa-envelope mr-2 text-gray-400"></i>
+                            ${user.email}
+                        </p>
+                        <p class="text-sm text-gray-500 flex items-center">
+                            <i class="fas fa-calendar-alt mr-2 text-gray-400"></i>
+                            ${formattedDate} at ${formattedTime}
+                        </p>
                     </div>
-                    <div class="flex flex-col items-end gap-2">
-                        <span class="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">
-                            Pending
-                        </span>
-                        ${hasMatch ? 
-                            '<span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">Institution Match</span>' :
-                            '<span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium">New Institution</span>'
-                        }
+                    <span class="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-semibold">
+                        <i class="fas fa-clock mr-1"></i>Pending
+                    </span>
+                </div>
+
+                <!-- User Information Section -->
+                <div class="bg-gray-50 rounded-lg p-4 mb-4 space-y-3">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-user-tie text-blue-600 mt-1"></i>
+                        </div>
+                        <div class="ml-3 flex-1">
+                            <p class="text-xs font-medium text-gray-500 uppercase">Role</p>
+                            <p class="text-sm font-semibold text-gray-900">${formatRole(user.role)}</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-building text-blue-600 mt-1"></i>
+                        </div>
+                        <div class="ml-3 flex-1">
+                            <p class="text-xs font-medium text-gray-500 uppercase">Institution</p>
+                            <p class="text-sm font-semibold text-gray-900">${user.institution_name}</p>
+                            <p class="text-xs text-gray-600 mt-1">${institutionTypeDisplay}</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-map-marker-alt text-blue-600 mt-1"></i>
+                        </div>
+                        <div class="ml-3 flex-1">
+                            <p class="text-xs font-medium text-gray-500 uppercase">Address</p>
+                            <p class="text-sm text-gray-700">${user.institution_address}</p>
+                        </div>
                     </div>
                 </div>
 
-                ${institutionSection}
-
-                <div class="flex justify-end mb-4">
+                <!-- Action Buttons -->
+                <div class="flex items-center justify-between pt-4 border-t">
                     <button onclick="viewSecureDocuments('${user.id}', '${user.first_name}', '${user.last_name}', '${user.front_id_photo}', '${user.back_id_photo}', '${user.selfie_photo}')"
-                        class="px-4 py-2 bg-gray-600 text-white text-sm rounded hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500">
-                        <i class="fas fa-id-card mr-2"></i>View ID Verification
+                        class="px-4 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors">
+                        <i class="fas fa-id-card mr-2"></i>View ID
                     </button>
-                </div>
-
-                <div class="pt-4 border-t flex justify-end space-x-2">
-                    <button onclick="rejectUser(${user.id})" 
-                        class="px-3 py-1.5 bg-red-600 text-white text-sm rounded hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500">
-                        <i class="fas fa-times mr-1"></i>Reject
-                    </button>
-                    <button onclick="approveUser(${user.id})" 
-                        class="px-3 py-1.5 bg-green-600 text-white text-sm rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">
-                        <i class="fas fa-check mr-1"></i>Approve
-                    </button>
+                    
+                    <div class="flex space-x-2">
+                        <button onclick="rejectUser(${user.id})" 
+                            class="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors">
+                            <i class="fas fa-times mr-1"></i>Reject
+                        </button>
+                        <button onclick="approveUser(${user.id})" 
+                            class="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors">
+                            <i class="fas fa-check mr-1"></i>Approve
+                        </button>
+                    </div>
                 </div>
             </div>
         `;
@@ -603,7 +572,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function filterRegistrations() {
         const searchTerm = document.getElementById('searchInput').value.toLowerCase();
         const institutionType = document.getElementById('institutionFilter').value;
-        const matchFilter = document.getElementById('matchFilter').value;
         
         let filteredUsers = pendingUsers.filter(user => {
             // Search filter
@@ -614,11 +582,6 @@ document.addEventListener('DOMContentLoaded', function() {
             // Institution type filter
             if (institutionType && user.institution_type !== institutionType) return false;
             
-            // Match filter
-            const userHasMatch = user.has_institution_match == 1 || user.has_institution_match === true;
-            if (matchFilter === 'matched' && !userHasMatch) return false;
-            if (matchFilter === 'unmatched' && userHasMatch) return false;
-            
             return true;
         });
         
@@ -628,5 +591,4 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add event listeners for filtering
     document.getElementById('searchInput').addEventListener('input', filterRegistrations);
     document.getElementById('institutionFilter').addEventListener('change', filterRegistrations);
-    document.getElementById('matchFilter').addEventListener('change', filterRegistrations);
 });

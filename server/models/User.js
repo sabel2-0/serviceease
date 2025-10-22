@@ -36,9 +36,7 @@ class User {
                 lastName, 
                 email, 
                 password, 
-                institutionType,
-                institutionName,
-                institutionAddress,
+                institutionId,
                 role = 'coordinator' 
             } = userData;
             
@@ -48,9 +46,8 @@ class User {
                 lastName: lastName || '[MISSING]',
                 email: email || '[MISSING]',
                 password: password ? `[${password.length} chars]` : '[MISSING]',
-                institutionType: institutionType || '[MISSING]',
-                institutionName: institutionName || '[MISSING]',
-                institutionAddress: institutionAddress || '[MISSING]'
+                institutionId: institutionId || '[MISSING]',
+                role: role
             });
             
             // Validate required fields
@@ -60,6 +57,11 @@ class User {
             
             if (!password || password.trim() === '') {
                 throw new Error('Password is required and cannot be empty');
+            }
+
+            // Validate institution_id for coordinators and requesters
+            if ((role === 'coordinator' || role === 'requester') && !institutionId) {
+                throw new Error('institution_id is required for coordinators and requesters');
             }
             
             // Check if user exists
@@ -71,17 +73,57 @@ class User {
             // Hash password
             const hashedPassword = await bcrypt.hash(password.trim(), 10);
 
-            // Insert user with institution details and pending approval status
+            // Insert user WITHOUT institution_id (original system)
             const [result] = await db.query(
-                `INSERT INTO users (first_name, last_name, email, password, role, is_email_verified, 
-                 institution_type, institution_name, institution_address, approval_status) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                [firstName, lastName, email, hashedPassword, role, false, 
-                 institutionType, institutionName, institutionAddress, 'pending']
+                `INSERT INTO users (first_name, last_name, email, password, role, is_email_verified, approval_status) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                [firstName, lastName, email, hashedPassword, role, false, 'pending']
             );
 
+            const userId = result.insertId;
+            console.log(`Created user ${userId}`);
+
+            // For coordinators, update the institution's user_id to link them as the owner
+            if (role === 'coordinator' && institutionId) {
+                await db.query(
+                    'UPDATE institutions SET user_id = ? WHERE institution_id = ?',
+                    [userId, institutionId]
+                );
+                console.log(`Linked user ${userId} as owner of institution ${institutionId}`);
+            }
+
+            // Create notification for admins about new coordinator registration
+            if (role === 'coordinator' && institutionId) {
+                // Fetch institution details for notification
+                const [institutions] = await db.query(
+                    'SELECT name, type, address FROM institutions WHERE institution_id = ? LIMIT 1',
+                    [institutionId]
+                );
+                
+                const institution = institutions[0] || {};
+                
+                await db.query(
+                    `INSERT INTO notifications (type, title, message, related_user_id, related_data) 
+                     VALUES (?, ?, ?, ?, ?)`,
+                    [
+                        'coordinator_registration',
+                        'New Coordinator Registration',
+                        `${firstName} ${lastName} from ${institution.name || 'Unknown Institution'} has registered and is awaiting approval.`,
+                        userId,
+                        JSON.stringify({
+                            email: email,
+                            institution_id: institutionId,
+                            institution_name: institution.name,
+                            institution_type: institution.type,
+                            institution_address: institution.address
+                        })
+                    ]
+                );
+                console.log(`Created notification for new coordinator registration: ${email}`);
+            }
+
             return {
-                userId: result.insertId,
+                userId: userId,
                 email: email
             };
         } catch (error) {
@@ -117,18 +159,11 @@ class User {
         try {
             const [rows] = await db.query(`
                 SELECT u.*, tp.front_id_photo, tp.back_id_photo, tp.selfie_photo,
-                       i.institution_id, i.name as matched_institution_name,
-                       i.type as matched_institution_type, i.address as matched_institution_address,
-                       CASE 
-                           WHEN i.institution_id IS NOT NULL THEN 1 
-                           ELSE 0 
-                       END as has_institution_match
+                       i.institution_id, i.name as institution_name,
+                       i.type as institution_type, i.address as institution_address
                 FROM users u
                 LEFT JOIN temp_user_photos tp ON u.id = tp.user_id
-                LEFT JOIN institutions i ON (
-                    LOWER(TRIM(u.institution_name)) = LOWER(TRIM(i.name)) 
-                    AND u.institution_type = i.type
-                )
+                LEFT JOIN institutions i ON i.user_id = u.id
                 WHERE u.approval_status = 'pending'
                 ORDER BY u.created_at DESC
             `);
@@ -141,30 +176,36 @@ class User {
 
     static async approveUser(userId) {
         try {
-            // Find the user's chosen institution
-            const [userRows] = await db.query('SELECT institution_name, institution_type FROM users WHERE id = ?', [userId]);
-            if (!userRows || userRows.length === 0) {
-                throw new Error('User not found');
-            }
-            const { institution_name, institution_type } = userRows[0];
-
-            // Find matching institution record
-            const [instRows] = await db.query(
-                'SELECT institution_id FROM institutions WHERE LOWER(TRIM(name)) = LOWER(TRIM(?)) AND type = ?',
-                [institution_name, institution_type]
+            // First, get the photo paths to delete the actual files
+            const [photos] = await db.query(
+                'SELECT front_id_photo, back_id_photo, selfie_photo FROM temp_user_photos WHERE user_id = ?',
+                [userId]
             );
-            let institutionId = null;
-            if (instRows && instRows.length > 0) {
-                institutionId = instRows[0].institution_id;
-            }
 
-            // Update user approval status and email verification
+            // Update the user's approval status and email verification status
             await db.query(
                 'UPDATE users SET approval_status = ?, is_email_verified = ? WHERE id = ?',
                 ['approved', true, userId]
             );
 
-            // Clean up temporary photos after approval
+            // Delete the photos from filesystem if they exist
+            if (photos && photos[0]) {
+                const photoFields = ['front_id_photo', 'back_id_photo', 'selfie_photo'];
+                for (const field of photoFields) {
+                    if (photos[0][field]) {
+                        const photoPath = path.join(__dirname, '../temp_photos', photos[0][field]);
+                        try {
+                            await fs.promises.unlink(photoPath);
+                            console.log(`Deleted photo file: ${photoPath}`);
+                        } catch (err) {
+                            console.error(`Error deleting photo file ${photoPath}:`, err);
+                            // Continue with approval even if file deletion fails
+                        }
+                    }
+                }
+            }
+
+            // Clean up temporary photos record from database after approval
             await db.query('DELETE FROM temp_user_photos WHERE user_id = ?', [userId]);
 
             return true;
@@ -190,6 +231,7 @@ class User {
                         const photoPath = path.join(__dirname, '../temp_photos', photos[0][field]);
                         try {
                             await fs.promises.unlink(photoPath);
+                            console.log(`Deleted photo file: ${photoPath}`);
                         } catch (err) {
                             console.error(`Error deleting photo file ${photoPath}:`, err);
                             // Continue with rejection even if file deletion fails

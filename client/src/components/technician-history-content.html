@@ -1,0 +1,507 @@
+<!-- History Tab Content Component -->
+<div class="container mx-auto px-3 py-6 pb-32 max-w-full">
+    <div class="max-w-6xl mx-auto">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
+            <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-slate-800">Service History</h1>
+            
+            <!-- Search and Filter Controls -->
+            <div class="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                <div class="relative">
+                    <input 
+                        type="text" 
+                        id="historySearch" 
+                        placeholder="Search requests..." 
+                        class="w-full sm:w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    >
+                    <svg class="absolute left-3 top-2.5 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                </div>
+                
+                <select id="statusFilter" class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white">
+                    <option value="">All Status</option>
+                    <option value="completed">Completed</option>
+                    <option value="pending_approval">Pending Approval</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="assigned">Assigned</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- Results Summary -->
+        <div id="results-summary" class="mb-4 text-sm text-gray-600 hidden">
+            <span id="results-count">0</span> results found
+        </div>
+        
+        <!-- Loading State -->
+        <div id="loading-state" class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6 text-center">
+            <div class="flex items-center justify-center space-x-2 mb-4">
+                <div class="w-3 h-3 bg-blue-500 rounded-full animate-bounce"></div>
+                <div class="w-3 h-3 bg-blue-500 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+                <div class="w-3 h-3 bg-blue-500 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+            </div>
+            <span class="text-blue-800 font-medium">Loading service history...</span>
+        </div>
+        
+        <!-- Service History List -->
+        <div id="history-container" class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-4 sm:p-6 hidden">
+            <h2 class="text-lg font-semibold text-slate-800 mb-6 hidden sm:block">Complete Service History</h2>
+            <div id="history-list" class="space-y-4 sm:space-y-6">
+                <!-- History items will be populated here -->
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Modal for details: move outside main container to avoid stacking context issues -->
+<div id="history-details-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 hidden">
+    <div style="position:fixed!important;z-index:2147483647!important;inset:0;width:100vw;height:100vh;background:white;pointer-events:auto;border-radius:0;box-shadow:none;" class="flex flex-col m-0 p-0">
+    <button id="close-history-modal" style="position:absolute;top:2.5vw;right:2.5vw;z-index:2147483648!important;width:4.5rem;height:4.5rem;background:transparent!important;" class="bg-transparent flex items-center justify-center" onclick="document.getElementById('history-details-modal').classList.add('hidden');">
+            <span style="font-size:2.2rem;line-height:1;color:#222;font-weight:400;display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:transparent;box-shadow:none;border-radius:0;">&times;</span>
+    </button>
+        <div id="history-details-content" class="overflow-y-auto flex-1 pt-24 pb-4 px-4"></div>
+    </div>
+</div>
+            </div>
+            
+            <!-- Load More Button for pagination -->
+            <div id="load-more-container" class="text-center mt-8 hidden">
+                <button id="load-more-btn" class="inline-flex items-center px-6 py-3 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
+                    <svg class="animate-spin -ml-1 mr-3 h-4 w-4 hidden" id="load-more-spinner" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span id="load-more-text">Load More</span>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Empty State -->
+        <div id="empty-state" class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6 text-center hidden">
+            <div class="text-gray-500 mb-4">
+                <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+            </div>
+            <h3 class="text-lg font-medium text-gray-700 mb-2">No Service History</h3>
+            <p class="text-gray-500">You haven't completed any service requests yet.</p>
+        </div>
+        
+        <!-- Error State -->
+        <div id="error-state" class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6 text-center hidden">
+            <div class="text-red-500 mb-4">
+                <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                </svg>
+            </div>
+            <h3 class="text-lg font-medium text-red-700 mb-2">Error Loading History</h3>
+            <p class="text-red-600 mb-4" id="error-message">Failed to load service history. Please try again.</p>
+            <button onclick="loadServiceHistory()" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">
+                Retry
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Service History JavaScript with enhanced mobile UI
+    (function() {
+        'use strict';
+        
+        // State management
+        let allServiceHistory = [];
+    window.filteredHistory = [];
+        let currentPage = 1;
+        const itemsPerPage = 10;
+        let isLoading = false;
+        
+        // Utility function to get auth token
+        function getAuthToken() {
+            return localStorage.getItem('token');
+        }
+        
+        // Format date for display: always show actual date and time
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            });
+        }
+        
+        // Get status badge class
+        function getStatusBadgeClass(status) {
+            const statusClasses = {
+                'completed': 'bg-green-100 text-green-800',
+                'in_progress': 'bg-blue-100 text-blue-800',
+                'pending_approval': 'bg-yellow-100 text-yellow-800',
+                'assigned': 'bg-purple-100 text-purple-800',
+                'pending': 'bg-gray-100 text-gray-800',
+                'cancelled': 'bg-red-100 text-red-800'
+            };
+            return statusClasses[status] || 'bg-gray-100 text-gray-800';
+        }
+        
+        // Format status for display
+        function formatStatus(status) {
+            const statusMap = {
+                'in_progress': 'In Progress',
+                'pending_approval': 'Pending Approval',
+                'completed': 'Completed',
+                'assigned': 'Assigned',
+                'pending': 'Pending',
+                'cancelled': 'Cancelled'
+            };
+            return statusMap[status] || status;
+        }
+        
+        // Get priority badge class
+        function getPriorityBadgeClass(priority) {
+            const priorityClasses = {
+                'urgent': 'bg-red-100 text-red-800',
+                'high': 'bg-orange-100 text-orange-800',
+                'medium': 'bg-blue-100 text-blue-800',
+                'low': 'bg-gray-100 text-gray-800',
+                'scheduled': 'bg-purple-100 text-purple-800'
+            };
+            return priorityClasses[priority] || 'bg-gray-100 text-gray-800';
+        }
+        
+        // Search and filter functionality
+        function setupSearchAndFilter() {
+            const searchInput = document.getElementById('historySearch');
+            const statusFilter = document.getElementById('statusFilter');
+            
+            // Debounced search
+            let searchTimeout;
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => {
+                        applyFilters();
+                    }, 300);
+                });
+            }
+            
+            // Status filter
+            if (statusFilter) {
+                statusFilter.addEventListener('change', applyFilters);
+            }
+        }
+        
+        // Apply search and filter
+        function applyFilters() {
+            const searchTerm = document.getElementById('historySearch')?.value.toLowerCase() || '';
+            const statusFilter = document.getElementById('statusFilter')?.value || '';
+            
+            window.filteredHistory = allServiceHistory.filter(request => {
+                const matchesSearch = searchTerm === '' || 
+                    (request.request_number && request.request_number.toLowerCase().includes(searchTerm)) ||
+                    (request.description && request.description.toLowerCase().includes(searchTerm)) ||
+                    (request.institution_name && request.institution_name.toLowerCase().includes(searchTerm));
+                
+                const matchesStatus = statusFilter === '' || request.status === statusFilter;
+                
+                return matchesSearch && matchesStatus;
+            });
+            
+            currentPage = 1;
+            displayFilteredHistory();
+            updateResultsSummary();
+        }
+        
+        // Update results summary
+        function updateResultsSummary() {
+            const summaryEl = document.getElementById('results-summary');
+            const countEl = document.getElementById('results-count');
+            
+            if (summaryEl && countEl) {
+                countEl.textContent = filteredHistory.length;
+                summaryEl.classList.remove('hidden');
+            }
+        }
+        
+        // Display filtered history with pagination
+        function displayFilteredHistory() {
+            const historyList = document.getElementById('history-list');
+            const loadMoreContainer = document.getElementById('load-more-container');
+            
+            if (!historyList) return;
+            
+            const startIndex = 0;
+            const endIndex = currentPage * itemsPerPage;
+            const visibleHistory = filteredHistory.slice(startIndex, endIndex);
+            
+            if (currentPage === 1) {
+                historyList.innerHTML = '';
+            }
+            
+            visibleHistory.forEach((request, index) => {
+                if (index >= (currentPage - 1) * itemsPerPage) {
+                    const historyItem = document.createElement('div');
+                    historyItem.innerHTML = createHistoryItemHTML(request);
+                    historyList.appendChild(historyItem.firstElementChild);
+                }
+            });
+            
+            // Show/hide load more button
+            if (loadMoreContainer) {
+                if (endIndex < filteredHistory.length) {
+                    loadMoreContainer.classList.remove('hidden');
+                } else {
+                    loadMoreContainer.classList.add('hidden');
+                }
+            }
+        }
+        
+        // Load more functionality
+        function setupLoadMore() {
+            const loadMoreBtn = document.getElementById('load-more-btn');
+            const loadMoreSpinner = document.getElementById('load-more-spinner');
+            const loadMoreText = document.getElementById('load-more-text');
+            
+            if (loadMoreBtn) {
+                loadMoreBtn.addEventListener('click', function() {
+                    if (isLoading) return;
+                    
+                    isLoading = true;
+                    loadMoreSpinner.classList.remove('hidden');
+                    loadMoreText.textContent = 'Loading...';
+                    
+                    setTimeout(() => {
+                        currentPage++;
+                        displayFilteredHistory();
+                        
+                        isLoading = false;
+                        loadMoreSpinner.classList.add('hidden');
+                        loadMoreText.textContent = 'Load More';
+                    }, 800);
+                });
+            }
+        }    // Create history item HTML with enhanced mobile responsiveness
+    function createHistoryItemHTML(request) {
+    // Show details modal for a history entry
+    window.showHistoryDetails = function(index) {
+        const request = filteredHistory[index];
+        const modal = document.getElementById('history-details-modal');
+        const content = document.getElementById('history-details-content');
+        if (!request || !modal || !content) return;
+        content.innerHTML = `
+            <div class="mb-2 px-2 pt-8 pb-2 sm:px-0 sm:pt-0">
+                <div class="flex flex-wrap items-center gap-2 mb-2">
+                    <h3 class="text-lg font-bold text-gray-800 truncate">${request.request_number || `SR-${request.id}`}</h3>
+                    <span class="text-xs ${getStatusBadgeClass(request.status)} px-2 py-1 rounded-full font-medium flex-shrink-0">${formatStatus(request.status)}</span>
+                    <span class="text-xs ${getPriorityBadgeClass(request.priority)} px-2 py-1 rounded-full font-medium flex-shrink-0">${request.priority?.toUpperCase() || 'MEDIUM'}</span>
+                </div>
+                <p class="text-base text-gray-700 mb-2">${request.description || 'No description provided'}</p>
+            </div>
+            <div class="mb-2 px-2 sm:px-0">
+                <div class="flex flex-col gap-2">
+                    <span class="text-xs text-gray-600"><span class="font-medium">Institution:</span> ${request.institution_name || 'Unknown'}</span>
+                    <span class="text-xs text-gray-600"><span class="font-medium">Location:</span> ${request.location || 'Not specified'}</span>
+                    ${request.coordinator_first_name ? `<span class="text-xs text-gray-600"><span class="font-medium">Coordinator:</span> ${request.coordinator_first_name} ${request.coordinator_last_name}</span>` : ''}
+                    <span class="text-xs text-gray-600"><span class="font-medium">Started:</span> ${formatDate(request.created_at)}</span>
+                    ${request.completed_at ? `<span class="text-xs text-gray-600"><span class="font-medium">Completed:</span> ${formatDate(request.completed_at)}</span>` : ''}
+                </div>
+            </div>
+            ${request.resolution_notes ? `
+                <div class="mb-3 px-2 sm:px-0 p-3 bg-green-50 rounded-lg border-l-4 border-green-400">
+                    <h4 class="text-xs font-semibold text-green-800 mb-2">Resolution Notes</h4>
+                    <p class="text-xs text-green-700">${request.resolution_notes}</p>
+                </div>
+            ` : ''}
+            ${request.parts_used && request.parts_used.length > 0 ? `
+                <div class="mb-3 px-2 sm:px-0 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+                    <h4 class="text-xs font-semibold text-blue-800 mb-3 flex items-center">
+                        <svg class="w-3 h-3 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                        </svg>
+                        Parts Used
+                    </h4>
+                    <div class="space-y-2">
+                        ${request.parts_used.map(part => `
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs bg-white p-2 rounded-lg gap-2">
+                                <div class="flex-1 min-w-0">
+                                    <span class="font-medium text-blue-900">${part.part_name}</span>
+                                    <span class="text-blue-700 ml-1">(${part.brand})</span>
+                                    ${part.part_number ? `<span class="text-blue-600 ml-1">- ${part.part_number}</span>` : ''}
+                                </div>
+                                <div class="flex items-center justify-between sm:justify-end space-x-2">
+                                    <span class="text-blue-800 font-medium">${part.quantity_used} ${part.unit || 'pcs'}</span>
+                                    <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">${part.category || 'part'}</span>
+                                </div>
+                            </div>
+                            ${part.part_notes ? `<div class="text-xs text-blue-600 ml-2 italic">Note: ${part.part_notes}</div>` : ''}
+                        `).join('')}
+                    </div>
+                </div>
+            ` : ''}
+            ${request.history && request.history.length > 0 ? `
+                <div class="pt-3 px-2 sm:px-0 border-t border-gray-200">
+                    <h4 class="text-xs font-semibold text-gray-800 mb-3 flex items-center">
+                        <svg class="w-3 h-3 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Status Timeline
+                    </h4>
+                    <div class="space-y-2">
+                        ${request.history.map((hist, idx) => `
+                            <div class="flex items-start space-x-2">
+                                <div class="flex-shrink-0 w-2 h-2 ${idx === request.history.length - 1 ? 'bg-green-500' : 'bg-blue-400'} rounded-full mt-1"></div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="text-xs">
+                                        <span class="font-medium text-gray-900">${formatStatus(hist.previous_status)}</span>
+                                        <span class="text-gray-500 mx-1">→</span>
+                                        <span class="font-medium text-gray-900">${formatStatus(hist.new_status)}</span>
+                                    </div>
+                                    <div class="text-xs text-gray-500 mt-1">
+                                        <span>by ${hist.first_name} ${hist.last_name}</span>
+                                        <span class="mx-1">•</span>
+                                        <span>${formatDate(hist.created_at)}</span>
+                                    </div>
+                                    ${hist.notes ? `<div class="text-xs text-gray-600 mt-1 italic">"${hist.notes}"</div>` : ''}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            ` : ''}
+        `;
+        modal.classList.remove('hidden');
+    };
+
+    // Close modal logic
+    document.addEventListener('DOMContentLoaded', function() {
+        const closeBtn = document.getElementById('close-history-modal');
+        const modal = document.getElementById('history-details-modal');
+        if (closeBtn && modal) {
+            closeBtn.addEventListener('click', function() {
+                modal.classList.add('hidden');
+            });
+        }
+        // Also close modal when clicking outside content
+        if (modal) {
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    modal.classList.add('hidden');
+                }
+            });
+        }
+    });
+        const statusBadgeClass = getStatusBadgeClass(request.status);
+        const priorityBadgeClass = getPriorityBadgeClass(request.priority);
+        const requestDate = formatDate(request.created_at);
+        const completedDate = request.completed_at ? formatDate(request.completed_at) : null;
+        
+        return `
+            <div class="bg-white rounded-xl p-4 sm:p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 history-item flex flex-col" data-search-text="${(request.request_number || '') + ' ' + (request.description || '') + ' ' + (request.institution_name || '')}" data-status="${request.status}">
+                <div class="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+                    <h3 class="text-base sm:text-lg font-semibold text-gray-800 truncate">${request.request_number || `SR-${request.id}`}</h3>
+                    <span class="text-xs sm:text-sm ${statusBadgeClass} px-2 sm:px-3 py-1 rounded-full font-medium flex-shrink-0">${formatStatus(request.status)}</span>
+                    <span class="text-xs sm:text-sm ${priorityBadgeClass} px-2 sm:px-3 py-1 rounded-full font-medium flex-shrink-0">${request.priority?.toUpperCase() || 'MEDIUM'}</span>
+                </div>
+                <p class="text-sm sm:text-base text-gray-700 mb-2 leading-relaxed">${request.description || 'No description provided'}</p>
+                <div class="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                    <span class="text-xs text-gray-600"><span class="font-medium">Institution:</span> ${request.institution_name || 'Unknown'}</span>
+                    <span class="text-xs text-gray-600"><span class="font-medium">Started:</span> ${requestDate}</span>
+                    ${completedDate ? `<span class="text-xs text-gray-600"><span class="font-medium">Completed:</span> ${completedDate}</span>` : ''}
+                </div>
+                <button class="mt-2 self-end bg-blue-50 text-blue-700 px-4 py-1 rounded-lg text-xs font-medium hover:bg-blue-100 transition" onclick="showHistoryDetails(window.filteredHistory.indexOf(window.filteredHistory[this.dataset.index]))" data-index="${window.filteredHistory.indexOf(request)}">View Details</button>
+            </div>
+        `;
+    }
+    
+    // Show/hide elements
+    function showElement(id) {
+        document.getElementById(id).classList.remove('hidden');
+    }
+    
+    function hideElement(id) {
+        document.getElementById(id).classList.add('hidden');
+    }
+    
+        // Load service history with enhanced features
+        async function loadServiceHistory() {
+            hideElement('error-state');
+            hideElement('empty-state');
+            hideElement('history-container');
+            hideElement('results-summary');
+            showElement('loading-state');
+            
+            try {
+                const token = getAuthToken();
+                console.log('Token found:', token ? 'Yes' : 'No');
+                
+                if (!token) {
+                    throw new Error('Authentication required. Please login again.');
+                }
+                
+                // Load service history
+                console.log('Fetching service history from: /api/technician/service-history');
+                const response = await fetch('/api/technician/service-history', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                console.log('Service history response status:', response.status);
+                hideElement('loading-state');
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.log('Error response:', errorText);
+                    
+                    if (response.status === 401) {
+                        throw new Error('Session expired. Please login again.');
+                    } else if (response.status === 403) {
+                        throw new Error('Access denied. Technicians only.');
+                    } else {
+                        throw new Error(`Server error: ${response.status} - ${errorText}`);
+                    }
+                }
+                
+                const serviceHistory = await response.json();
+                console.log('Service history data:', serviceHistory);
+                
+                allServiceHistory = serviceHistory;
+                window.filteredHistory = [...serviceHistory];
+                currentPage = 1;
+                
+                if (serviceHistory.length === 0) {
+                    showElement('empty-state');
+                    return;
+                }
+                
+                // Setup search, filter, and pagination
+                setupSearchAndFilter();
+                setupLoadMore();
+                
+                // Initial display
+                displayFilteredHistory();
+                updateResultsSummary();
+                showElement('history-container');
+                
+            } catch (error) {
+                console.error('Error loading service history:', error);
+                hideElement('loading-state');
+                document.getElementById('error-message').textContent = error.message;
+                showElement('error-state');
+            }
+        }    // Make loadServiceHistory globally available for retry button
+    window.loadServiceHistory = loadServiceHistory;
+    
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', loadServiceHistory);
+    } else {
+        loadServiceHistory();
+    }
+    
+})();
+</script>

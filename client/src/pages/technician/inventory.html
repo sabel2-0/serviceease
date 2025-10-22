@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Technician Inventory</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+        
+        .card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .inventory-card {
+            transition: all 0.2s ease;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .inventory-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stock-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        .stock-high { background-color: #10b981; }
+        .stock-medium { background-color: #f59e0b; }
+        .stock-low { background-color: #ef4444; }
+        .stock-out { background-color: #6b7280; }
+        
+        .category-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .badge-consumable {
+            background: rgba(34, 197, 94, 0.1);
+            color: #059669;
+        }
+        
+        .badge-printer-part {
+            background: rgba(59, 130, 246, 0.1);
+            color: #2563eb;
+        }
+    </style>
+</head>
+<body class="p-4">
+    <!-- Header -->
+    <div class="card rounded p-4 mb-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">My Inventory</h1>
+                <p class="text-gray-600 mt-1">Parts assigned to you by administrators</p>
+            </div>
+            <button onclick="history.back()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors">
+                ← Back
+            </button>
+        </div>
+    </div>
+    
+    <!-- Search and Filters -->
+    <div class="glass-card rounded-2xl shadow-xl p-6 mb-6">
+        <div class="flex flex-col gap-4">
+            <input type="text" id="searchInput" placeholder="Search parts by name, category, or SKU..." 
+                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <select id="categoryFilter" class="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Categories</option>
+                    <option value="ink-bottle">Ink Bottles</option>
+                    <option value="toner">Toner Cartridges</option>
+                    <option value="maintenance">Maintenance Kits</option>
+                    <option value="hardware">Hardware Parts</option>
+                    <option value="accessories">Accessories</option>
+                </select>
+                
+                <select id="stockFilter" class="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Stock Levels</option>
+                    <option value="high">High Stock (>20)</option>
+                    <option value="medium">Medium Stock (11-20)</option>
+                    <option value="low">Low Stock (1-10)</option>
+                    <option value="out">Out of Stock</option>
+                </select>
+                
+                <button id="refreshBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors font-medium">
+                    🔄 Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Inventory Stats -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        <div class="glass-card rounded-xl p-4 text-center">
+            <div class="text-2xl font-bold text-blue-600" id="totalItems">0</div>
+            <div class="text-sm text-gray-600">Total Items</div>
+        </div>
+        <div class="glass-card rounded-xl p-4 text-center">
+            <div class="text-2xl font-bold text-green-600" id="inStock">0</div>
+            <div class="text-sm text-gray-600">In Stock</div>
+        </div>
+        <div class="glass-card rounded-xl p-4 text-center">
+            <div class="text-2xl font-bold text-yellow-600" id="lowStock">0</div>
+            <div class="text-sm text-gray-600">Low Stock</div>
+        </div>
+        <div class="glass-card rounded-xl p-4 text-center">
+            <div class="text-2xl font-bold text-red-600" id="outOfStock">0</div>
+            <div class="text-sm text-gray-600">Out of Stock</div>
+        </div>
+    </div>
+    
+    <!-- Loading State -->
+    <div id="loadingState" class="glass-card rounded-2xl shadow-xl p-12 text-center">
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+        <p class="text-gray-600">Loading inventory...</p>
+    </div>
+    
+    <!-- Empty State -->
+    <div id="emptyState" class="hidden card rounded p-8 text-center">
+        <div class="text-gray-400 mb-4">
+            <svg class="mx-auto h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+            </svg>
+        </div>
+        <h3 class="text-xl font-medium text-gray-900 mb-2">No Inventory Items</h3>
+        <p class="text-gray-500 mb-4" id="emptyMessage">No parts are currently assigned to your inventory.</p>
+        <button onclick="window.location.href='/client/src/pages/technician/parts-request.html'" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors">
+            Request Parts
+        </button>
+    </div>
+    
+    <!-- Inventory Grid -->
+    <div id="inventoryGrid" class="hidden grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <!-- Inventory items will be loaded here -->
+    </div>
+    
+    <!-- Error State -->
+    <div id="errorState" class="hidden glass-card rounded-2xl shadow-xl p-12 text-center">
+        <div class="text-red-500 mb-4">
+            <svg class="mx-auto h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+        </div>
+        <h3 class="text-xl font-medium text-gray-900 mb-2">Error Loading Inventory</h3>
+        <p class="text-gray-500 mb-4" id="errorMessage">Failed to load inventory data.</p>
+        <button onclick="loadInventory()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors">
+            Try Again
+        </button>
+    </div>
+
+    <script>
+        // Global variables
+        let allParts = [];
+        let filteredParts = [];
+        
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔧 Initializing Inventory Page');
+            loadInventory();
+            setupEventListeners();
+        });
+        
+        // Setup event listeners
+        function setupEventListeners() {
+            const searchInput = document.getElementById('searchInput');
+            const categoryFilter = document.getElementById('categoryFilter');
+            const stockFilter = document.getElementById('stockFilter');
+            const refreshBtn = document.getElementById('refreshBtn');
+            
+            searchInput.addEventListener('input', debounce(filterParts, 300));
+            categoryFilter.addEventListener('change', filterParts);
+            stockFilter.addEventListener('change', filterParts);
+            refreshBtn.addEventListener('click', loadInventory);
+        }
+        
+        // Debounce function for search
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+        
+        // Load inventory from API
+        async function loadInventory() {
+            console.log('📦 Loading technician inventory...');
+            showLoadingState();
+            
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    showEmptyState('Please log in to view your inventory.');
+                    return;
+                }
+                
+                const response = await fetch('/api/technician/inventory', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                // Handle case where technician has no inventory assigned yet
+                if (response.status === 500 || response.status === 404) {
+                    showEmptyState('No parts have been assigned to your inventory yet. Contact an administrator to request part assignments, or submit parts requests through the Parts Request page.');
+                    return;
+                }
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('📦 Technician inventory data received:', data);
+                
+                allParts = Array.isArray(data) ? data : [];
+                
+                if (allParts.length === 0) {
+                    showEmptyState('No parts are currently assigned to your inventory. Contact an administrator to request part assignments, or submit parts requests through the Parts Request page.');
+                } else {
+                    filteredParts = [...allParts];
+                    updateStats();
+                    displayParts();
+                    showInventoryGrid();
+                }
+                
+            } catch (error) {
+                console.error('❌ Error loading technician inventory:', error);
+                showEmptyState('Unable to load inventory. This might be because no parts have been assigned to you yet, or there was a connection error. Contact an administrator if this problem persists.');
+            }
+        }
+        
+        // Filter parts based on search and filters
+        function filterParts() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const category = document.getElementById('categoryFilter').value;
+            const stock = document.getElementById('stockFilter').value;
+            
+            filteredParts = allParts.filter(part => {
+                // Search filter
+                const matchesSearch = !search || 
+                    part.name?.toLowerCase().includes(search) ||
+                    part.category?.toLowerCase().includes(search) ||
+                    part.brand?.toLowerCase().includes(search) ||
+                    part.part_number?.toLowerCase().includes(search);
+                
+                // Category filter
+                const matchesCategory = !category || part.category === category;
+                
+                // Stock filter
+                let matchesStock = true;
+                if (stock) {
+                    const quantity = parseInt(part.assigned_quantity) || 0;
+                    switch (stock) {
+                        case 'high': matchesStock = quantity > 20; break;
+                        case 'medium': matchesStock = quantity >= 11 && quantity <= 20; break;
+                        case 'low': matchesStock = quantity >= 1 && quantity <= 10; break;
+                        case 'out': matchesStock = quantity === 0; break;
+                    }
+                }
+                
+                return matchesSearch && matchesCategory && matchesStock;
+            });
+            
+            updateStats();
+            displayParts();
+            
+            if (filteredParts.length === 0 && allParts.length > 0) {
+                showEmptyState('No parts match your current filter criteria.');
+            } else {
+                showInventoryGrid();
+            }
+        }
+        
+        // Check if a category is consumable
+        function isConsumable(category) {
+            const consumableCategories = [
+                'paper', 'cleaning-supplies', 'tools', 'cables', 
+                'batteries', 'lubricants', 'labels', 'other-consumable'
+            ];
+            return consumableCategories.includes(category);
+        }
+        
+        // Update statistics
+        function updateStats() {
+            const total = allParts.length;
+            const inStock = allParts.filter(p => (parseInt(p.assigned_quantity) || 0) > 0).length;
+            const lowStock = allParts.filter(p => {
+                const qty = parseInt(p.assigned_quantity) || 0;
+                return qty >= 1 && qty <= 10;
+            }).length;
+            const outOfStock = allParts.filter(p => (parseInt(p.assigned_quantity) || 0) === 0).length;
+            
+            document.getElementById('totalItems').textContent = total;
+            document.getElementById('inStock').textContent = inStock;
+            document.getElementById('lowStock').textContent = lowStock;
+            document.getElementById('outOfStock').textContent = outOfStock;
+        }
+        
+        // Display parts in grid
+        function displayParts() {
+            const grid = document.getElementById('inventoryGrid');
+            grid.innerHTML = filteredParts.map(part => createPartCard(part)).join('');
+        }
+        
+        // Create individual part card
+        function createPartCard(part) {
+            const quantity = parseInt(part.assigned_quantity) || 0;
+            const stockClass = quantity > 20 ? 'stock-high' : 
+                              quantity > 10 ? 'stock-medium' : 
+                              quantity > 0 ? 'stock-low' : 'stock-out';
+            
+            const stockText = quantity > 20 ? 'High Stock' : 
+                             quantity > 10 ? 'Medium Stock' : 
+                             quantity > 0 ? 'Low Stock' : 'Out of Stock';
+            
+            const typeClass = isConsumable(part.category) ? 'badge-consumable' : 'badge-printer-part';
+            const typeText = isConsumable(part.category) ? 'Consumable' : 'Printer Part';
+            
+            return `
+                <div class="inventory-card glass-card rounded-xl p-4 relative">
+                    <div class="stock-indicator ${stockClass}" title="${stockText}"></div>
+                    
+                    <div class="mb-4">
+                        <h3 class="font-semibold text-gray-900 mb-1">${part.name || 'Unknown Part'}</h3>
+                        <div class="space-y-1">
+                            <span class="category-badge ${typeClass}">
+                                ${typeText}
+                            </span>
+                            <p class="text-sm text-gray-600">${part.category || 'No Category'}</p>
+                            ${part.brand ? `<p class="text-xs text-gray-500">Brand: ${part.brand}</p>` : ''}
+                            ${part.part_number ? `<p class="text-xs text-gray-500">PN: ${part.part_number}</p>` : ''}
+                            ${part.description ? `<p class="text-sm text-gray-600 mt-2">${part.description}</p>` : ''}
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between pt-3 border-t border-gray-100">
+                        <div>
+                            <span class="text-2xl font-bold ${quantity > 0 ? 'text-blue-600' : 'text-red-500'}">${quantity}</span>
+                            <span class="text-sm text-gray-500 ml-1">${part.unit || 'pieces'}</span>
+                        </div>
+                        <button onclick="viewPartDetails('${part.inventory_id}')" class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1 rounded-lg text-sm transition-colors">
+                            Details
+                        </button>
+                    </div>
+                    
+                    ${part.assigned_at ? `<p class="text-xs text-gray-500 mt-2">� Assigned: ${new Date(part.assigned_at).toLocaleDateString()}</p>` : ''}
+                    ${part.notes ? `<p class="text-xs text-gray-600 mt-1">📝 ${part.notes}</p>` : ''}
+                </div>
+            `;
+        }
+        
+        // State management functions
+        function showLoadingState() {
+            document.getElementById('loadingState').classList.remove('hidden');
+            document.getElementById('emptyState').classList.add('hidden');
+            document.getElementById('inventoryGrid').classList.add('hidden');
+            document.getElementById('errorState').classList.add('hidden');
+        }
+        
+        function showEmptyState(message = 'No parts are currently assigned to your inventory.') {
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('emptyState').classList.remove('hidden');
+            document.getElementById('inventoryGrid').classList.add('hidden');
+            document.getElementById('errorState').classList.add('hidden');
+            
+            const emptyState = document.getElementById('emptyState');
+            const messageEl = emptyState.querySelector('p');
+            if (messageEl) messageEl.textContent = message;
+        }
+        
+        function showInventoryGrid() {
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('emptyState').classList.add('hidden');
+            document.getElementById('inventoryGrid').classList.remove('hidden');
+            document.getElementById('errorState').classList.add('hidden');
+        }
+        
+        function showErrorState(message) {
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('emptyState').classList.add('hidden');
+            document.getElementById('inventoryGrid').classList.add('hidden');
+            document.getElementById('errorState').classList.remove('hidden');
+            document.getElementById('errorMessage').textContent = message;
+        }
+        
+        // Part details function
+        function viewPartDetails(inventoryId) {
+            const part = allParts.find(p => p.inventory_id == inventoryId);
+            if (part) {
+                const assignedDate = part.assigned_at ? new Date(part.assigned_at).toLocaleDateString() : 'Unknown';
+                const assignedBy = part.assigned_by_name || 'System';
+                
+                alert(`Part Details:
+
+Name: ${part.name}
+Brand: ${part.brand || 'N/A'}
+Category: ${part.category}
+Part Number: ${part.part_number || 'N/A'}
+Assigned Quantity: ${part.assigned_quantity} ${part.unit || 'pieces'}
+Assigned Date: ${assignedDate}
+Assigned By: ${assignedBy}
+Description: ${part.description || 'N/A'}
+Notes: ${part.notes || 'None'}`);
+            }
+        }
+    </script>
+</body>
+</html>

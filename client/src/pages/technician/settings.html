@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - ServiceEase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom mobile-first responsive design */
+        body {
+            background: linear-gradient(135deg, #fef7ff 0%, #f3e8ff 100%);
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding-bottom: 100px; /* Space for bottom navigation */
+        }
+        
+        .glassmorphism {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .content-container {
+            max-width: 428px;
+            margin: 0 auto;
+            min-height: calc(100vh - 180px);
+            padding: 2rem 1rem;
+            margin-top: 80px; /* Space for top navigation */
+        }
+        
+        @media (min-width: 768px) {
+            .content-container {
+                padding: 4rem 2rem;
+            }
+        }
+        
+        .working-message {
+            animation: fadeInUp 0.8s ease-out;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .pulse-icon {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.8;
+                transform: scale(1.05);
+            }
+        }
+        
+        .gear-rotate {
+            animation: rotate 3s linear infinite;
+        }
+        
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 28px;
+            background: #ddd;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .toggle-switch.active {
+            background: #10b981;
+        }
+        
+        .toggle-knob {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 24px;
+            height: 24px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .toggle-switch.active .toggle-knob {
+            transform: translateX(22px);
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Navigation -->
+    <div id="topnav-container"></div>
+    
+    <!-- Main Content -->
+    <div class="content-container">
+        <div class="working-message glassmorphism rounded-3xl p-8 text-center w-full">
+            <!-- Settings Gear Icon -->
+            <div class="pulse-icon mb-6">
+                <div class="w-16 h-16 mx-auto bg-purple-500 rounded-2xl flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" 
+                         class="w-8 h-8 text-white gear-rotate" 
+                         viewBox="0 0 24 24" 
+                         fill="none" 
+                         stroke="currentColor" 
+                         stroke-width="2"
+                         stroke-linecap="round" 
+                         stroke-linejoin="round">
+                        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+                        <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                </div>
+            </div>
+            
+            <!-- Title -->
+            <h1 class="text-2xl font-bold text-gray-800 mb-4">Settings</h1>
+            
+            <!-- Working Message -->
+            <div class="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
+                <div class="flex items-center justify-center space-x-2">
+                    <div class="w-3 h-3 bg-green-500 rounded-full animate-bounce"></div>
+                    <span class="text-green-800 font-medium">Hi it's working!</span>
+                </div>
+            </div>
+            
+            <!-- Sample Settings Options -->
+            <div class="space-y-4 mb-6">
+                <div class="bg-gray-50 rounded-lg p-4 text-left">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="font-medium text-gray-700">Notifications</h3>
+                            <p class="text-xs text-gray-500">Receive push notifications</p>
+                        </div>
+                        <div class="toggle-switch active" onclick="toggleSetting(this)">
+                            <div class="toggle-knob"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 rounded-lg p-4 text-left">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="font-medium text-gray-700">Dark Mode</h3>
+                            <p class="text-xs text-gray-500">Enable dark theme</p>
+                        </div>
+                        <div class="toggle-switch" onclick="toggleSetting(this)">
+                            <div class="toggle-knob"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 rounded-lg p-4 text-left">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="font-medium text-gray-700">Auto-sync</h3>
+                            <p class="text-xs text-gray-500">Sync data automatically</p>
+                        </div>
+                        <div class="toggle-switch active" onclick="toggleSetting(this)">
+                            <div class="toggle-knob"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Additional Info -->
+            <p class="text-gray-600 text-sm">
+                This is the Settings page. App preferences and account settings will be available here.
+            </p>
+        </div>
+    </div>
+    
+    <!-- Bottom Navigation -->
+    <div id="bottom-navigation-container"></div>
+    
+    <script>
+        // Load navigation components
+        async function loadComponent(elementId, componentPath) {
+            try {
+                const response = await fetch(componentPath);
+                const html = await response.text();
+                document.getElementById(elementId).innerHTML = html;
+            } catch (error) {
+                console.error(`Error loading ${componentPath}:`, error);
+            }
+        }
+        
+        // Load components when page loads
+        document.addEventListener('DOMContentLoaded', async function() {
+            await loadComponent('topnav-container', '../../components/topnav.html');
+            await loadComponent('bottom-navigation-container', '../../components/bottom-navigation.html');
+            
+            console.log('⚙️ Settings page loaded successfully with navigation components');
+        });
+        
+        function toggleSetting(element) {
+            element.classList.toggle('active');
+            
+            // Add haptic feedback on mobile
+            if ('vibrate' in navigator) {
+                navigator.vibrate(10);
+            }
+            
+            // Log the change
+            const setting = element.parentElement.querySelector('h3').textContent;
+            const isActive = element.classList.contains('active');
+            console.log(`⚙️ ${setting} ${isActive ? 'enabled' : 'disabled'}`);
+        }
+        
+        // Add mobile touch feedback
+        document.addEventListener('touchstart', function() {}, {passive: true});
+        
+        // Initialize settings from localStorage (sample)
+        document.addEventListener('DOMContentLoaded', function() {
+            // This would normally load saved settings
+            console.log('🔧 Settings initialized');
+        });
+    </script>
+</body>
+</html>

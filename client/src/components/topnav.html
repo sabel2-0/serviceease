@@ -1,0 +1,289 @@
+<!-- Main Header Navigation -->
+<div class="fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200 shadow-sm" style="min-height:80px;">
+    <!-- Notification Area (White Background) -->
+    <div class="bg-white px-4 py-3 flex items-center justify-between">
+        <!-- Technician Name Section with Arrow (Left Side) -->
+        <button id="technicianNameBtn" class="flex items-center space-x-2 hover:bg-gray-50 rounded-lg px-2 py-1 transition-colors">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                    <span class="text-white text-sm font-medium" id="technicianInitials"></span>
+                </div>
+                <span class="text-gray-800 font-medium" id="technicianName"></span>
+            </div>
+            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path>
+            </svg>
+        </button>
+        
+        <!-- Notification Icon (Right Side) -->
+                <button id="notificationBtn" class="relative p-2 rounded-full hover:bg-gray-50 transition-colors">
+                        <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                        </svg>
+                        <span id="notificationBadge" class="absolute top-1 right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></span>
+                </button>
+    </div>
+</div>
+
+    <!-- Fullscreen Notification Modal -->
+    <div id="notificationModal" class="hidden fixed inset-0 z-[10010] bg-white flex flex-col">
+        <div class="flex items-center justify-between px-4 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-900">Notifications</h2>
+            <button id="closeNotificationModal" class="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <div id="notificationModalContent" class="flex-1 overflow-y-auto p-4"></div>
+    </div>
+
+    <script>
+    (function() {
+        try {
+            console.debug('topnav: initializing notification handlers');
+            const notificationBtn = document.getElementById('notificationBtn');
+            const notificationModal = document.getElementById('notificationModal');
+            const notificationModalContent = document.getElementById('notificationModalContent');
+            const closeNotificationModal = document.getElementById('closeNotificationModal');
+
+            if (!notificationBtn) {
+                console.debug('topnav: no #notificationBtn found');
+                return;
+            }
+
+            // Load notification JS module if not already loaded
+            if (!window.TechnicianNotifications) {
+                console.log('🔔 [TOPNAV] Loading notification module...');
+                const script = document.createElement('script');
+                script.src = '/js/technician-notifications.js';
+                script.onload = () => console.log('🔔 [TOPNAV] Notification module loaded');
+                script.onerror = () => console.error('🔔 [TOPNAV] Failed to load notification module');
+                document.head.appendChild(script);
+            }
+
+            notificationBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                console.log('🔔 [TOPNAV] Notification button clicked');
+                // open modal
+                if (notificationModal) {
+                    notificationModal.classList.remove('hidden');
+                    console.log('🔔 [TOPNAV] Modal opened');
+                }
+                document.body.classList.add('overflow-hidden');
+                // load notifications HTML
+                console.log('🔔 [TOPNAV] Fetching notifications component...');
+                fetch('/components/technician-notifications.html')
+                    .then(res => {
+                        console.log('🔔 [TOPNAV] Component fetch response:', res.status);
+                        return res.text();
+                    })
+                    .then(html => {
+                        console.log('🔔 [TOPNAV] Component HTML loaded, length:', html.length);
+                        if (notificationModalContent) {
+                            notificationModalContent.innerHTML = html;
+                            console.log('🔔 [TOPNAV] Component injected into modal');
+                            
+                            // Initialize notifications module
+                            setTimeout(() => {
+                                if (window.TechnicianNotifications) {
+                                    console.log('🔔 [TOPNAV] Initializing TechnicianNotifications module...');
+                                    window.TechnicianNotifications.init();
+                                } else {
+                                    console.error('🔔 [TOPNAV] TechnicianNotifications module not loaded!');
+                                }
+                            }, 100);
+                        }
+                    })
+                    .catch(err => {
+                        console.error('🔔 [TOPNAV] Failed to load notifications component', err);
+                        if (notificationModalContent) notificationModalContent.innerHTML = '<div class="p-4 text-center text-gray-500">Unable to load notifications.</div>';
+                    });
+            });
+
+            if (closeNotificationModal) {
+                closeNotificationModal.addEventListener('click', function() {
+                    if (notificationModal) notificationModal.classList.add('hidden');
+                    document.body.classList.remove('overflow-hidden');
+                });
+            }
+
+            // allow ESC to close
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && notificationModal && !notificationModal.classList.contains('hidden')) {
+                    notificationModal.classList.add('hidden');
+                    document.body.classList.remove('overflow-hidden');
+                }
+            });
+        } catch (e) {
+            console.error('topnav notifications init error', e);
+        }
+    })();
+    </script>
+
+<!-- Settings Modal - Full Screen -->
+<div id="settingsModal" class="hidden fixed inset-0 bg-white z-50 flex flex-col">
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200 px-4 py-4 flex items-center justify-between">
+        <h2 class="text-xl font-semibold text-gray-900">Account</h2>
+        <button id="closeSettingsModal" class="p-2 hover:bg-gray-100 rounded-full transition-colors">
+            <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+    </div>
+    
+    <!-- Content -->
+    <div class="flex-1 overflow-y-auto">
+        <!-- Main Menu -->
+        <div id="mainMenu" class="p-4">
+            <!-- Profile Section -->
+            <div class="bg-gray-50 rounded-xl p-4 mb-6">
+                <div class="flex items-center space-x-4">
+                    <div class="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center">
+                        <span class="text-white text-xl font-medium" id="modalTechnicianInitials"></span>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900" id="modalTechnicianName"></h3>
+                        <p class="text-gray-600" id="modalTechnicianRole"></p>
+                        <p class="text-sm text-gray-500" id="modalTechnicianId"></p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Menu Options -->
+            <div class="space-y-2">
+                <button id="profileBtn" class="w-full flex items-center justify-between p-4 bg-white rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                            </svg>
+                        </div>
+                        <div class="text-left">
+                            <h4 class="font-medium text-gray-900">Profile</h4>
+                            <p class="text-sm text-gray-500">Manage your personal information</p>
+                        </div>
+                    </div>
+                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </button>
+                
+                <button id="settingsBtn" class="w-full flex items-center justify-between p-4 bg-white rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                        </div>
+
+                        <div class="text-left">
+                            <h4 class="font-medium text-gray-900">Settings</h4>
+                            <p class="text-sm text-gray-500">App preferences and account settings</p>
+                        </div>
+                    </div>
+                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Profile Submenu -->
+        <div id="profileMenu" class="hidden p-4">
+            <div class="flex items-center mb-6">
+                <button id="backToMainFromProfile" class="p-2 hover:bg-gray-100 rounded-full transition-colors mr-3">
+                    <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                </button>
+                <h3 class="text-lg font-semibold text-gray-900">Profile</h3>
+            </div>
+            
+            <div class="space-y-4">
+                <div class="bg-white rounded-xl border border-gray-200 p-4">
+                    <h4 class="font-medium text-gray-900 mb-3">Personal Information</h4>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                            <input id="profileFullName" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" value="" placeholder="Full name" readonly>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Employee ID</label>
+                            <input id="profileEmployeeId" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50" value="" placeholder="Employee ID" readonly>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                            <input id="profileRole" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50" value="" placeholder="Role" readonly>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Settings Submenu -->
+        <div id="settingsMenu" class="hidden p-4">
+            <div class="flex items-center mb-6">
+                <button id="backToMainFromSettings" class="p-2 hover:bg-gray-100 rounded-full transition-colors mr-3">
+                    <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                </button>
+                <h3 class="text-lg font-semibold text-gray-900">Settings</h3>
+            </div>
+            
+            <div class="space-y-2">
+                <button id="openNotificationsBtn" class="w-full flex items-center space-x-3 p-4 bg-white rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors">
+                    <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                        </svg>
+                    </div>
+                    <div class="text-left">
+                        <h4 class="font-medium text-gray-900">Notifications</h4>
+                        <p class="text-sm text-gray-500">Manage notification preferences</p>
+                    </div>
+                </button>
+                
+                <button class="w-full flex items-center space-x-3 p-4 bg-white rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors">
+                    <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="text-left">
+                        <h4 class="font-medium text-gray-900">Help & Support</h4>
+                        <p class="text-sm text-gray-500">Get help and contact support</p>
+                    </div>
+                </button>
+                
+                <div class="pt-4 border-t border-gray-200 mt-6">
+                    <button id="logoutBtn" class="w-full flex items-center justify-center space-x-3 p-4 bg-red-50 text-red-600 rounded-xl border border-red-200 hover:bg-red-100 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                        </svg>
+                        <span class="font-medium">Logout</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notifications Submenu (mirrors mainMenu pattern) -->
+        <div id="notificationsMenu" class="hidden p-4">
+            <div class="flex items-center mb-6">
+                <button id="backToMainFromNotifications" class="p-2 hover:bg-gray-100 rounded-full transition-colors mr-3">
+                    <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                </button>
+                <h3 class="text-lg font-semibold text-gray-900">Notifications</h3>
+            </div>
+            <div id="notificationsMenuContent" class="space-y-4">
+                <!-- Notifications will be loaded here when the Notifications submenu is opened -->
+                <div id="notifications-fallback" class="text-center text-gray-400 py-8">No notifications yet.</div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -34,35 +34,46 @@ CREATE TABLE IF NOT EXISTS service_requests (
     -- Request details
     service_type ENUM('maintenance', 'repair', 'installation', 'consultation', 'training') NOT NULL,
     priority ENUM('low', 'medium', 'high', 'urgent') DEFAULT 'medium',
-    status ENUM('new', 'assigned', 'in_progress', 'completed', 'cancelled', 'on_hold') DEFAULT 'new',
+    status ENUM('new', 'assigned', 'in_progress', 'completed', 'cancelled', 'on_hold', 'needs_reassignment') DEFAULT 'new',
     
     -- Equipment information
     equipment_type VARCHAR(100),
     equipment_model VARCHAR(100),
     equipment_serial VARCHAR(100),
     equipment_location VARCHAR(255),
+    inventory_item_id INT, -- Link to inventory_items table
     
     -- Request description
     description TEXT NOT NULL,
     problem_description TEXT,
     requested_completion_date DATE,
+    location VARCHAR(255), -- Room/area location
     
     -- Contact information
     contact_person VARCHAR(100),
     contact_phone VARCHAR(20),
     contact_email VARCHAR(100),
     
-    -- Timestamps
+    -- Resolution information
+    resolution_notes TEXT,
+    resolved_by INT,
+    resolved_at TIMESTAMP NULL,
+    client_signature LONGTEXT, -- Base64 encoded signature
+    client_name VARCHAR(255), -- Client who signed off
+    
+    -- Timestamps for workflow tracking
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     assigned_at TIMESTAMP NULL,
-    started_at TIMESTAMP NULL,
-    completed_at TIMESTAMP NULL,
+    started_at TIMESTAMP NULL, -- When technician starts work
+    completed_at TIMESTAMP NULL, -- When service is completed
     
     -- Foreign key constraints
     FOREIGN KEY (institution_id) REFERENCES institutions(institution_id) ON DELETE CASCADE,
     FOREIGN KEY (coordinator_id) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY (assigned_technician_id) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (resolved_by) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (inventory_item_id) REFERENCES inventory_items(id) ON DELETE SET NULL,
     
     -- Indexes
     INDEX idx_institution_id (institution_id),
@@ -70,7 +81,9 @@ CREATE TABLE IF NOT EXISTS service_requests (
     INDEX idx_assigned_technician (assigned_technician_id),
     INDEX idx_status (status),
     INDEX idx_priority (priority),
-    INDEX idx_created_at (created_at)
+    INDEX idx_created_at (created_at),
+    INDEX idx_started_at (started_at),
+    INDEX idx_completed_at (completed_at)
 );
 
 -- Create service_request_history table for tracking status changes

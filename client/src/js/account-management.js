@@ -1,29 +1,121 @@
-// Modal Management Functions
-function openCreateUserModal() {
-    document.getElementById('createUserModal').classList.remove('hidden');
-}
 
-function closeCreateUserModal() {
-    document.getElementById('createUserModal').classList.add('hidden');
-    document.getElementById('createUserForm').reset();
-}
+// Account Management Page Logic
+document.addEventListener('DOMContentLoaded', function() {
+    // Load current user profile into the form
+    loadProfile();
 
-function openUpdateUserModal() {
-    document.getElementById('updateUserModal').classList.remove('hidden');
-}
+    // Profile form submit
+    const profileForm = document.getElementById('profile-form');
+    if (profileForm) {
+        profileForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(profileForm);
+            const data = {
+                firstName: formData.get('firstName'),
+                lastName: formData.get('lastName'),
+                department: formData.get('department')
+            };
+            try {
+                const res = await fetch('/api/account/profile', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (res.ok) {
+                    alert('Profile updated successfully.');
+                    loadProfile();
+                } else {
+                    const err = await res.json();
+                    alert('Error updating profile: ' + (err.message || 'Unknown error'));
+                }
+            } catch (err) {
+                alert('Error updating profile: ' + err.message);
+            }
+        });
+    }
 
-function closeUpdateUserModal() {
-    document.getElementById('updateUserModal').classList.add('hidden');
-    document.getElementById('updateUserForm').reset();
-}
+    // Security form submit (password change)
+    const securityForm = document.getElementById('security-form');
+    if (securityForm) {
+        securityForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(securityForm);
+            const data = {
+                currentPassword: formData.get('currentPassword'),
+                newPassword: formData.get('newPassword'),
+                confirmPassword: formData.get('confirmPassword')
+            };
+            if (data.newPassword !== data.confirmPassword) {
+                alert('New passwords do not match.');
+                return;
+            }
+            try {
+                const res = await fetch('/api/account/password', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (res.ok) {
+                    alert('Password updated successfully.');
+                    securityForm.reset();
+                } else {
+                    const err = await res.json();
+                    alert('Error updating password: ' + (err.message || 'Unknown error'));
+                }
+            } catch (err) {
+                alert('Error updating password: ' + err.message);
+            }
+        });
+    }
 
-function openDeactivateUserModal() {
-    document.getElementById('deactivateUserModal').classList.remove('hidden');
-}
+    // Notification preferences form
+    const notificationsForm = document.getElementById('notifications-form');
+    if (notificationsForm) {
+        notificationsForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(notificationsForm);
+            const data = {
+                email_notifications: !!formData.get('email_notifications'),
+                browser_notifications: !!formData.get('browser_notifications')
+            };
+            try {
+                const res = await fetch('/api/account/notifications', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (res.ok) {
+                    alert('Notification preferences updated.');
+                } else {
+                    const err = await res.json();
+                    alert('Error updating notification preferences: ' + (err.message || 'Unknown error'));
+                }
+            } catch (err) {
+                alert('Error updating notification preferences: ' + err.message);
+            }
+        });
+    }
+});
 
-function closeDeactivateUserModal() {
-    document.getElementById('deactivateUserModal').classList.add('hidden');
-    document.getElementById('deactivateUserForm').reset();
+// Load current user profile and fill form
+async function loadProfile() {
+    try {
+        const res = await fetch('/api/account/profile');
+        if (res.ok) {
+            const user = await res.json();
+            document.getElementById('firstName').value = user.firstName || '';
+            document.getElementById('lastName').value = user.lastName || '';
+            document.getElementById('email').value = user.email || '';
+            document.getElementById('department').value = user.department || '';
+            // Optionally load notification preferences if present
+            if (user.notifications) {
+                document.getElementById('email_notifications').checked = !!user.notifications.email;
+                document.getElementById('browser_notifications').checked = !!user.notifications.browser;
+            }
+        }
+    } catch (err) {
+        console.error('Error loading profile:', err);
+    }
 }
 
 // Form Submission Handlers

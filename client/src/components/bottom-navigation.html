@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Mobile Bottom Navigation</title>
+    <style>
+        /* Enhanced highlight for active Service Requests button with white background */
+        .center-button.enhanced-request-highlight {
+            box-shadow: 0 0 0 4px #5B63F5, 0 8px 32px rgba(91,99,245,0.25);
+            border: 2.5px solid #fff;
+            background: #fff;
+            transition: box-shadow 0.3s, border 0.3s, background 0.3s;
+        }
+        .nav-item.nav-center.active .center-button {
+            background: #5B63F5 !important;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        :root {
+            /* Design tokens for consistency */
+            --nav-height: 75px;
+            --nav-safe-area: env(safe-area-inset-bottom, 0px);
+            --primary-color: #5B63F5;
+            --primary-dark: #4147D5;
+            --text-primary: #696c79;
+            --text-secondary: #94abd8;
+            --text-muted: #9CA3AF;
+            --surface-bg: #FFFFFF;
+            --surface-glass: rgba(255, 255, 255, 0.92);
+            --border-light: rgba(0, 0, 0, 0.04);
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.12);
+            --shadow-colored: 0 8px 32px rgba(91, 99, 245, 0.25);
+            --easing-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            --easing-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #F9FAFB;
+            min-height: 100vh;
+            padding-bottom: calc(var(--nav-height) + var(--nav-safe-area) + 20px);
+        }
+
+        /* Bottom Navigation Container - Following Proximity & Alignment Principles */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: calc(var(--nav-height) + var(--nav-safe-area));
+            /* background: var(--surface-glass); */
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            border-top: 0.5px solid var(--border-light);
+            box-shadow: var(--shadow-md);
+            z-index: 10;
+            transform: translateZ(0);
+            will-change: transform;
+        }
+
+        /* Visual hierarchy through layering */
+        .bottom-nav::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, 
+                transparent,
+                rgba(238, 239, 251, 0.1) 20%,
+                rgba(245, 245, 255, 0.1) 80%,
+                transparent
+            );
+            opacity: 0;
+            transition: opacity 0.3s var(--easing-smooth);
+        }
+
+        /* Navigation wrapper - Clear spatial zones */
+        .nav-wrapper {
+            height: var(--nav-height);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 8px;
+            max-width: 428px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        /* Navigation items - Consistent rhythm and spacing */
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-decoration: none;
+            color: var(--text-muted);
+            position: relative;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+            transition: color 0.2s var(--easing-smooth);
+            padding: 0 8px;
+        }
+
+        /* Icon container - Visual weight balance */
+        .nav-item .icon-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 32px;
+            transition: transform 0.3s var(--easing-spring);
+        }
+
+        /* Icons - Consistent stroke weight for visual harmony */
+        .nav-item svg {
+            width: 22px;
+            height: 22px;
+            stroke-width: 1.8;
+            transition: all 0.3s var(--easing-smooth);
+            stroke: currentColor;
+        }
+
+        /* Labels - Typography hierarchy */
+        .nav-item .label {
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+            margin-top: 2px;
+            transition: all 0.2s var(--easing-smooth);
+            opacity: 0.7;
+            text-transform: uppercase;
+        }
+
+        /* Active state - Clear visual feedback */
+        .nav-item.active {
+            color: var(--primary-color);
+        }
+
+        .nav-item.active .icon-container {
+            transform: translateY(-2px) scale(1.1);
+        }
+
+        .nav-item.active svg {
+            stroke-width: 2.2;
+            filter: drop-shadow(0 2px 4px rgba(91, 99, 245, 0.2));
+        }
+
+        .nav-item.active .label {
+            opacity: 1;
+            font-weight: 600;
+        }
+
+        /* Active indicator - Subtle but clear */
+        .nav-item .active-indicator {
+            position: absolute;
+            bottom: -2px;
+            left: 50%;
+            transform: translateX(-50%) scaleX(0);
+            width: 20px;
+            height: 3px;
+            background: var(--primary-color);
+            border-radius: 2px 2px 0 0;
+            transition: transform 0.3s var(--easing-spring);
+        }
+
+        .nav-item.active .active-indicator {
+            transform: translateX(-50%) scaleX(1);
+        }
+
+        /* Center button - Primary action emphasis */
+        .nav-item.nav-center {
+            flex: 0 0 auto;
+            margin: 0 12px;
+        }
+
+        .nav-center .center-button {
+            width: 52px;
+            height: 52px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            box-shadow: var(--shadow-colored);
+            transition: all 0.3s var(--easing-spring);
+            transform: translateY(-6px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Subtle gradient overlay for depth */
+        .nav-center .center-button::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, 
+                rgba(255,255,255,0.25) 0%, 
+                transparent 50%,
+                rgba(0,0,0,0.1) 100%
+            );
+            opacity: 0.6;
+            transition: opacity 0.3s;
+        }
+  
+        .nav-center:active .center-button {
+            transform: translateY(-4px) scale(0.96);
+            box-shadow: 0 4px 16px rgba(91, 99, 245, 0.2);
+        }
+
+        .nav-center:active .center-button::after {
+            transform: scale(1);
+        }
+    
+
+        .nav-center svg {
+            width: 22px;
+            height: 22px;
+            stroke-width: 2.2;
+            position: relative;
+            z-index: 10;
+        }
+
+        .nav-center .label {
+            display: none; /* Hidden for cleaner design */
+        }
+
+        /* Touch feedback ripple - Material Design inspired */
+        .nav-item .ripple {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(91, 99, 245, 0.15);
+            transform: scale(0);
+            animation: ripple 0.6s ease-out;
+            pointer-events: none;
+        }
+
+        @keyframes ripple {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+
+        /* Notification dot - Attention without disruption */
+        .notification-dot {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 8px;
+            height: 8px;
+            background: #EF4444;
+            border-radius: 50%;
+            border: 2px solid var(--surface-bg);
+            animation: pulse-dot 2s infinite;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.2);
+                opacity: 0.8;
+            }
+        }
+
+        /* Badge with count */
+        .badge {
+            position: absolute;
+            top: -4px;
+            right: -8px;
+            min-width: 18px;
+            height: 18px;
+            background: #EF4444;
+            color: white;
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 0 5px;
+            border: 1.5px solid var(--surface-bg);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Micro-interactions on hover (desktop) */
+        @media (hover: hover) {
+            .nav-item:hover:not(.active):not(.nav-center) {
+                color: var(--text-secondary);
+            }
+
+            .nav-item:hover:not(.active) .icon-container {
+                transform: translateY(-1px);
+            }
+
+          
+
+          
+        }
+
+        /* Accessibility focus states */
+        .nav-item:focus-visible {
+            outline: none;
+        }
+
+        .nav-item:focus-visible::after {
+            content: '';
+            position: absolute;
+            inset: 4px;
+            border: 2px solid var(--primary-color);
+            border-radius: 12px;
+            opacity: 0.5;
+        }
+
+        /* Loading state for async actions */
+        .nav-item.loading .icon-container {
+            animation: gentle-pulse 1.5s infinite;
+        }
+
+        @keyframes gentle-pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        /* Respect reduced motion preferences */
+        @media (prefers-reduced-motion: reduce) {
+            .nav-item,
+            .nav-item .icon-container,
+            .nav-center .center-button,
+            .active-indicator {
+                transition-duration: 0.01ms !important;
+            }
+            
+            .ripple,
+            .notification-dot,
+            .nav-item.loading .icon-container {
+                animation: none !important;
+            }
+        }
+
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --text-primary: #F9FAFB;
+                --text-secondary: #D1D5DB;
+                --text-muted: #6B7280;
+                --surface-bg: #111827;
+                --surface-glass: rgba(17, 24, 39, 0.92);
+                --border-light: rgba(255, 255, 255, 0.08);
+                --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+                --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.3);
+                --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.4);
+            }
+
+            body {
+                background: #030712;
+            }
+
+            .notification-dot,
+            .badge {
+                border-color: var(--surface-bg);
+            }
+        }
+
+        /* Ensure safe area is respected */
+        @supports (padding-bottom: env(safe-area-inset-bottom)) {
+            .nav-wrapper {
+                padding-bottom: var(--nav-safe-area);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav" role="navigation" aria-label="Main navigation">
+        <div class="nav-wrapper">
+            <!-- Clients Tab -->
+            <a href="#clients" class="nav-item" data-tab="clients" aria-label="Clients">
+                <div class="icon-container">
+                    <svg xmlns="http://www.w3.org/2000/svg" 
+                         viewBox="0 0 24 24" 
+                         fill="none" 
+                         stroke="currentColor" 
+                         stroke-linecap="round" 
+                         stroke-linejoin="round">
+                        <path d="M3 21h18"/>
+                        <path d="M5 21V7l8-4v18"/>
+                        <path d="M19 21V11l-6-4"/>
+                        <path d="M9 9v.01"/>
+                        <path d="M9 12v.01"/>
+                        <path d="M9 15v.01"/>
+                        <path d="M9 18v.01"/>
+                    </svg>
+                </div>
+                <span class="label">Clients</span>
+                <div class="active-indicator"></div>
+            </a>
+
+            <!-- History Tab -->
+            <a href="#history" class="nav-item" data-tab="history" aria-label="History">
+                <div class="icon-container">
+                    <svg xmlns="http://www.w3.org/2000/svg" 
+                         viewBox="0 0 24 24" 
+                         fill="none" 
+                         stroke="currentColor" 
+                         stroke-linecap="round" 
+                         stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12,6 12,12 16,14"/>
+                    </svg>
+                </div>
+                <span class="label">History</span>
+                <div class="active-indicator"></div>
+            </a>
+
+            <!-- Center Service Requests Button -->
+            <a href="#requests" class="nav-item nav-center active" data-tab="requests" aria-label="Service Requests">
+                <div class="center-button enhanced-request-highlight">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#5B63F5" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="w-7 h-7">
+                        <rect x="6" y="4" width="12" height="16" rx="3" fill="#fff" stroke="#5B63F5" stroke-width="2.2"/>
+                        <line x1="9" y1="8" x2="15" y2="8" stroke="#5B63F5" stroke-width="2.2"/>
+                        <line x1="9" y1="12" x2="15" y2="12" stroke="#5B63F5" stroke-width="2.2"/>
+                        <line x1="9" y1="16" x2="13" y2="16" stroke="#5B63F5" stroke-width="2.2"/>
+                    </svg>
+                </div>
+                <span class="label">Service Requests</span>
+            </a>
+
+            <!-- Parts Tab -->
+            <a href="#parts" class="nav-item" data-tab="parts" aria-label="Parts">
+                <div class="icon-container">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 17v-2a4 4 0 014-4h8a4 4 0 014 4v2" stroke="#5B63F5"/>
+                        <rect x="4" y="7" width="16" height="8" rx="4" fill="#fff" stroke="#5B63F5"/>
+                        <circle cx="8" cy="11" r="1.5" fill="#5B63F5"/>
+                        <circle cx="16" cy="11" r="1.5" fill="#5B63F5"/>
+                    </svg>
+                </div>
+      
+                <span class="label">Parts</span>
+                <div class="active-indicator"></div>
+            </a>
+
+            <!-- Settings Tab -->
+            <a href="technician-home-content.html" class="nav-item" data-tab="home" aria-label="Settings">
+                <div class="icon-container">
+                    <!-- Home Icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 12L12 3l9 9" />
+                        <path d="M9 21V15h6v6" />
+                        <path d="M21 12v7a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2v-4H9v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7" />
+                    </svg>
+                </div>
+                <span class="label">Home</span>
+                <div class="active-indicator"></div>
+            </a>
+        </div>
+    </nav>
+
+    <script>
+
+        // Persistent bottom nav highlight
+        function setActiveNavItem(tabId) {
+            document.querySelectorAll('.nav-item').forEach(navItem => {
+                if (navItem.getAttribute('data-tab') === tabId) {
+                    navItem.classList.add('active');
+                } else {
+                    navItem.classList.remove('active');
+                }
+            });
+        }
+
+        // On page load, highlight last active tab
+        document.addEventListener('DOMContentLoaded', function() {
+            var savedTab = localStorage.getItem('activeTab') || 'requests';
+            setActiveNavItem(savedTab);
+        });
+
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                const tabId = this.getAttribute('data-tab');
+                const href = this.getAttribute('href');
+                const ariaLabel = this.getAttribute('aria-label');
+                e.preventDefault();
+                if (!this.classList.contains('nav-center')) {
+                    createRipple(e, this);
+                }
+                localStorage.setItem('activeTab', tabId);
+                setActiveNavItem(tabId);
+                if (tabId === 'requests') {
+                    if (window.openServiceRequestsModal && typeof window.openServiceRequestsModal === 'function') {
+                        try { window.openServiceRequestsModal(); } catch (error) { console.error(error); }
+                    } else if (window.refreshRequestsPage && typeof window.refreshRequestsPage === 'function') {
+                        try { window.refreshRequestsPage(); } catch (error) { console.error(error); }
+                    }
+                } else if (tabId && ['clients', 'history', 'parts', 'profile'].includes(tabId)) {
+                    if (tabId === 'clients') {
+                        window.location.href = 'clients.html';
+                    } else if (tabId === 'history') {
+                        window.location.href = 'history.html';
+                    } else if (tabId === 'profile') {
+                        window.location.href = 'technician-home-content.html';
+                    } else if (tabId === 'parts') {
+                        if (window.setActiveTab && typeof window.setActiveTab === 'function') {
+                            window.setActiveTab(tabId);
+                        }
+                    }
+                }
+                if ('vibrate' in navigator) { navigator.vibrate(10); }
+            });
+            item.addEventListener('touchstart', function() { this.style.transform = 'scale(0.95)'; });
+            item.addEventListener('touchend', function() { this.style.transform = ''; });
+        });
+
+        // Create ripple effect
+        function createRipple(e, element) {
+            const ripple = document.createElement('span');
+            ripple.classList.add('ripple');
+            
+            const rect = element.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            const x = e.clientX - rect.left - size / 2;
+            const y = e.clientY - rect.top - size / 2;
+            
+            ripple.style.width = ripple.style.height = size + 'px';
+            ripple.style.left = x + 'px';
+            ripple.style.top = y + 'px';
+            
+            element.appendChild(ripple);
+            
+            setTimeout(() => ripple.remove(), 600);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<section class="space-y-4">
+  <!-- Welcome Section -->
+  <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-4 text-white shadow-lg">
+    <h2 class="text-xl font-bold" id="home-welcome-name">Welcome Back!</h2>
+    <p class="text-sm text-blue-100 mt-1">Manage your printers and service requests</p>
+  </div>
+
+  <!-- Quick Stats -->
+  <div class="grid grid-cols-3 gap-3">
+    <div class="bg-white rounded-lg p-3 shadow text-center">
+      <div class="text-2xl font-bold text-blue-600" id="home-printers-count">-</div>
+      <div class="text-xs text-gray-500">My Printers</div>
+    </div>
+    <div class="bg-white rounded-lg p-3 shadow text-center">
+      <div class="text-2xl font-bold text-yellow-600" id="home-pending-count">-</div>
+      <div class="text-xs text-gray-500">Pending</div>
+    </div>
+    <div class="bg-white rounded-lg p-3 shadow text-center">
+      <div class="text-2xl font-bold text-green-600" id="home-completed-count">-</div>
+      <div class="text-xs text-gray-500">Completed</div>
+    </div>
+  </div>
+
+  <!-- My Printers Section -->
+  <div class="bg-white rounded-lg shadow">
+    <div class="p-4 border-b flex items-center justify-between">
+      <h3 class="font-semibold text-gray-800">My Printers</h3>
+      <span class="text-xs text-gray-500" id="home-printers-subtitle">Assigned to you</span>
+    </div>
+    <div id="home-printers-list" class="divide-y">
+      <!-- Printers will be loaded here -->
+      <div class="p-4 text-center text-gray-400">
+        <div class="animate-pulse">Loading printers...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Service Requests -->
+  <div class="bg-white rounded-lg shadow">
+    <div class="p-4 border-b flex items-center justify-between">
+      <h3 class="font-semibold text-gray-800">Recent Service Requests</h3>
+      <a href="#history" class="text-xs text-blue-600 hover:underline">View All</a>
+    </div>
+    <div id="home-recent-requests-list" class="divide-y">
+      <!-- Recent requests will be loaded here -->
+      <div class="p-4 text-center text-gray-400">
+        <div class="animate-pulse">Loading recent requests...</div>
+      </div>
+    </div>
+  </div>
+</section>

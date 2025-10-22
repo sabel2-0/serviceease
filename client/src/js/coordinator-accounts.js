@@ -5,14 +5,17 @@
 
 document.addEventListener('DOMContentLoaded', function() {
     // Check if user is authenticated and has admin role
-    if (!checkAuth(['admin'])) {
-        window.location.href = '../../pages/login.html';
-        return;
+    if (!verifyRole(['admin'])) {
+        return; // verifyRole will handle redirect
     }
 
     // Initialize the page
     initPage();
 });
+
+// Global variables
+let currentTab = 'all';
+let allCoordinators = [];
 
 /**
  * Initialize the page and load coordinators
@@ -25,6 +28,73 @@ function initPage() {
     initializeSearchAndFilters();
     
     // Load coordinators data
+    fetchCoordinators();
+}
+
+/**
+ * Switch between tabs
+ */
+function switchTab(tab) {
+    currentTab = tab;
+    
+    // Update tab styles
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active', 'border-blue-500', 'text-blue-600');
+        btn.classList.add('border-transparent', 'text-gray-500');
+    });
+    
+    const activeTab = document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`);
+    activeTab.classList.add('active', 'border-blue-500', 'text-blue-600');
+    activeTab.classList.remove('border-transparent', 'text-gray-500');
+    
+    // Filter and render coordinators based on tab
+    filterAndRenderCoordinators();
+}
+
+/**
+ * Filter and render coordinators based on current tab and search
+ */
+function filterAndRenderCoordinators() {
+    const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+    
+    let filteredCoordinators = allCoordinators;
+    
+    // Filter by tab
+    if (currentTab === 'active') {
+        filteredCoordinators = allCoordinators.filter(coord => coord.status === 'active');
+    } else if (currentTab === 'inactive') {
+        filteredCoordinators = allCoordinators.filter(coord => coord.status === 'inactive');
+    }
+    
+    // Filter by search query
+    if (searchQuery) {
+        filteredCoordinators = filteredCoordinators.filter(coord => 
+            coord.first_name.toLowerCase().includes(searchQuery) ||
+            coord.last_name.toLowerCase().includes(searchQuery) ||
+            coord.email.toLowerCase().includes(searchQuery) ||
+            (coord.institution && coord.institution.toLowerCase().includes(searchQuery))
+        );
+    }
+    
+    renderCoordinatorTable(filteredCoordinators);
+    updateCounts();
+}
+
+/**
+ * Update status counters
+ */
+function updateCounts() {
+    const activeCount = allCoordinators.filter(coord => coord.status === 'active').length;
+    const inactiveCount = allCoordinators.filter(coord => coord.status === 'inactive').length;
+    
+    document.getElementById('activeCount').textContent = activeCount;
+    document.getElementById('inactiveCount').textContent = inactiveCount;
+}
+
+/**
+ * Refresh coordinators list
+ */
+function refreshCoordinators() {
     fetchCoordinators();
 }
 
@@ -53,39 +123,87 @@ function initializeSearchAndFilters() {
  * Fetch coordinators from the server
  */
 function fetchCoordinators() {
-    const searchQuery = document.getElementById('searchInput').value;
-    const statusFilter = document.getElementById('statusFilter').value;
-    
     document.getElementById('loadingState').classList.remove('hidden');
     
-    // Construct query parameters
-    const params = new URLSearchParams();
-    if (searchQuery) params.append('search', searchQuery);
-    if (statusFilter) params.append('status', statusFilter);
+    const token = getAuthToken();
+    console.log('Auth token:', token ? `Present (${token.substring(0, 20)}...)` : 'Missing');
+    
+    // Check authentication before making request
+    if (!token) {
+        console.error('No authentication token found');
+        localStorage.clear();
+        window.location.href = '/pages/login.html';
+        return;
+    }
     
     // API call to get approved coordinators only
     fetch(`/api/coordinators`, {
         headers: {
-            'Authorization': `Bearer ${getAuthToken()}`
+            'Authorization': `Bearer ${token}`
         }
     })
     .then(response => {
+        console.log('Response status:', response.status);
+        console.log('Response ok:', response.ok);
+        
+        if (response.status === 401) {
+            console.log('Authentication failed - redirecting to login');
+            localStorage.clear();
+            window.location.href = '/pages/login.html';
+            return;
+        }
+        
         if (!response.ok) {
-            throw new Error('Failed to fetch coordinators');
+            return response.json().then(errorData => {
+                console.log('Error response:', errorData);
+                throw new Error(`Failed to fetch coordinators: ${errorData.error || response.status}`);
+            });
         }
         return response.json();
     })
     .then(data => {
-        // Since the API returns an array directly instead of {coordinators: []}
-        const coordinators = Array.isArray(data) ? data : [];
-        renderCoordinatorTable(coordinators);
-        updatePagination(coordinators.length);
+        console.log('Received data:', data);
+        // Store all coordinators
+        allCoordinators = Array.isArray(data) ? data : [];
+        console.log('Stored coordinators:', allCoordinators.length);
+        
+        // Filter and render based on current tab
+        filterAndRenderCoordinators();
+        
         document.getElementById('loadingState').classList.add('hidden');
     })
     .catch(error => {
         console.error('Error fetching coordinators:', error);
         document.getElementById('loadingState').classList.add('hidden');
+        
+        // Check if it's an authentication error
+        if (error.message.includes('401') || error.message.includes('jwt') || !getAuthToken()) {
+            console.log('Authentication error detected, redirecting to login');
+            localStorage.clear(); // Clear any invalid tokens
+            window.location.href = '/pages/login.html';
+            return;
+        }
+        
         showToast('Failed to load coordinators. Please try again.', 'error');
+        
+        // Show empty state
+        const tableBody = document.getElementById('coordinatorTableBody');
+        if (tableBody) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="4" class="px-6 py-10 text-center text-gray-500">
+                        <div class="flex flex-col items-center justify-center">
+                            <i class="fas fa-exclamation-triangle mb-3 text-3xl text-red-400"></i>
+                            <p class="text-lg">Failed to load coordinators</p>
+                            <p class="text-sm mt-1">Please refresh the page or try again</p>
+                            <button onclick="fetchCoordinators()" class="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                                Retry
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
     });
 }
 
@@ -164,6 +282,9 @@ function renderCoordinatorTable(coordinators) {
                 <div class="flex justify-end space-x-3">
                     <button onclick="viewCoordinatorDetails('${coordinator.id}')" class="p-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg" title="View Details">
                         <i class="fas fa-eye"></i>
+                    </button>
+                    <button onclick="changeCoordinatorPassword('${coordinator.id}')" class="p-2 action-password rounded-lg" title="Change Password">
+                        <i class="fas fa-key"></i>
                     </button>
                     <button onclick="toggleCoordinatorStatus('${coordinator.id}', '${coordinator.status}')" 
                         class="p-2 ${coordinator.status === 'active' ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-green-50 text-green-600 hover:bg-green-100'} rounded-lg"
@@ -326,7 +447,7 @@ function closeDetailsModal() {
  * Toggle coordinator account status (active/inactive)
  */
 function toggleCoordinatorStatus(coordinatorId, currentStatus) {
-    const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+    const action = currentStatus === 'active' ? 'deactivate' : 'activate';
     const confirmMsg = currentStatus === 'active' 
         ? 'Are you sure you want to deactivate this coordinator account?' 
         : 'Are you sure you want to activate this coordinator account?';
@@ -339,8 +460,7 @@ function toggleCoordinatorStatus(coordinatorId, currentStatus) {
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${getAuthToken()}`
-            },
-            body: JSON.stringify({ status: newStatus })
+            }
         })
         .then(response => {
             if (!response.ok) {
@@ -357,7 +477,7 @@ function toggleCoordinatorStatus(coordinatorId, currentStatus) {
             // Refresh coordinators list
             fetchCoordinators();
             
-            showToast(`Coordinator ${newStatus === 'active' ? 'activated' : 'deactivated'} successfully`, 'success');
+            showToast(data.message || `Coordinator ${action}d successfully`, 'success');
         })
         .catch(error => {
             console.error('Error updating coordinator status:', error);
@@ -429,7 +549,7 @@ function debounce(func, wait) {
  * Get authentication token from storage
  */
 function getAuthToken() {
-    return localStorage.getItem('authToken');
+    return localStorage.getItem('token');
 }
 
 /**
@@ -481,4 +601,115 @@ function checkAuth(requiredRoles = []) {
         console.error('Error checking auth:', err);
         return false;
     }
+}
+
+/**
+ * Change Coordinator Password Functions
+ */
+window.changeCoordinatorPassword = function(coordinatorId) {
+    console.log('changeCoordinatorPassword called with ID:', coordinatorId);
+    console.log('All coordinators:', allCoordinators);
+    
+    const coordinator = allCoordinators.find(c => String(c.id) === String(coordinatorId));
+    if (!coordinator) {
+        console.error('Coordinator not found with ID:', coordinatorId);
+        showToast('Coordinator not found', 'error');
+        return;
+    }
+
+    console.log('Found coordinator:', coordinator);
+
+    // Populate modal with coordinator info
+    document.getElementById('changePasswordCoordinatorId').value = coordinator.id;
+    document.getElementById('changePasswordCoordinatorName').textContent = `${coordinator.first_name || coordinator.firstName} ${coordinator.last_name || coordinator.lastName}`;
+    document.getElementById('changePasswordCoordinatorEmail').textContent = coordinator.email;
+    
+    // Clear form fields
+    document.getElementById('newPasswordInput').value = '';
+    document.getElementById('confirmPasswordInput').value = '';
+    
+    // Hide any previous alerts
+    const alertDiv = document.getElementById('changePasswordAlert');
+    alertDiv.classList.add('hidden');
+    
+    // Show modal
+    document.getElementById('changePasswordModal').classList.remove('hidden');
+};
+
+window.closeChangePasswordModal = function() {
+    document.getElementById('changePasswordModal').classList.add('hidden');
+    document.getElementById('changePasswordForm').reset();
+};
+
+// Handle password change form submission
+document.getElementById('changePasswordForm')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const coordinatorId = document.getElementById('changePasswordCoordinatorId').value;
+    const newPassword = document.getElementById('newPasswordInput').value.trim();
+    const confirmPassword = document.getElementById('confirmPasswordInput').value.trim();
+    const alertDiv = document.getElementById('changePasswordAlert');
+    const submitBtn = document.getElementById('submitChangePasswordBtn');
+    const btnText = document.getElementById('changePasswordBtnText');
+    const loader = document.getElementById('changePasswordLoader');
+    
+    // Validation
+    if (newPassword.length < 6) {
+        showAlertInModal(alertDiv, 'Password must be at least 6 characters long', 'error');
+        return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+        showAlertInModal(alertDiv, 'Passwords do not match', 'error');
+        return;
+    }
+    
+    try {
+        // Show loading state
+        submitBtn.disabled = true;
+        btnText.textContent = 'Changing...';
+        loader.classList.remove('hidden');
+        alertDiv.classList.add('hidden');
+        
+        const token = getAuthToken();
+        const response = await fetch(`/api/admin/coordinators/${coordinatorId}/password`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ newPassword })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to change password');
+        }
+        
+        // Success
+        showToast('Password changed successfully', 'success');
+        closeChangePasswordModal();
+        
+    } catch (error) {
+        console.error('Error changing password:', error);
+        showAlertInModal(alertDiv, error.message || 'Failed to change password', 'error');
+    } finally {
+        // Reset button state
+        submitBtn.disabled = false;
+        btnText.textContent = 'Change Password';
+        loader.classList.add('hidden');
+    }
+});
+
+// Helper function to show alerts in modal
+function showAlertInModal(alertDiv, message, type) {
+    alertDiv.className = `rounded-md p-3 mb-4 text-sm ${type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'}`;
+    alertDiv.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas fa-${type === 'error' ? 'exclamation-circle' : 'check-circle'} mr-2"></i>
+            <span>${message}</span>
+        </div>
+    `;
+    alertDiv.classList.remove('hidden');
 }

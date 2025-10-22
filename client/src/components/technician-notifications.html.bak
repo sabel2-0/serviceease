@@ -1,0 +1,244 @@
+<!-- Technician Notifications Component (Dynamic) -->
+<div id="notifications-loading" class="text-center py-12">
+	<div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+	<p class="text-gray-600 font-medium">Loading notifications...</p>
+</div>
+<div class="space-y-4" id="technician-notifications-list">
+	<!-- Notifications will be rendered here by script -->
+</div>
+<div id="empty-technician-notifications" class="text-center text-gray-500 mt-8 hidden">
+	<svg class="mx-auto mb-4 w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+		<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M12 20h.01" />
+	</svg>
+	<h3 class="text-base font-medium mb-1">No Notifications</h3>
+	<p class="text-sm">You have no notifications at the moment.</p>
+</div>
+// Technician notifications: fetches notifications, parts request updates, and assigned service requests.
+(function() {
+	try {
+		console.log('[NOTIF] Component script starting...');
+		const listEl = document.getElementById('technician-notifications-list');
+		const emptyEl = document.getElementById('empty-technician-notifications');
+		const loadingEl = document.getElementById('notifications-loading');
+		
+		if (!listEl) {
+			console.error('[NOTIF] ERROR: technician-notifications-list element not found!');
+			return;
+		}
+		if (!emptyEl) {
+			console.error('[NOTIF] ERROR: empty-technician-notifications element not found!');
+			return;
+		}
+		
+		console.log('[NOTIF] DOM elements found:', { listEl: !!listEl, emptyEl: !!emptyEl, loadingEl: !!loadingEl });
+		const POLL_INTERVAL = 30000; // 30s
+
+	function getAuthHeaders() {
+		const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+		return token ? { 'Authorization': `Bearer ${token}` } : {};
+	}
+
+	function el(html) {
+		const tmp = document.createElement('div');
+		tmp.innerHTML = html.trim();
+		return tmp.firstChild;
+	}
+
+	function formatDate(dateStr) {
+		if (!dateStr) return '';
+		try { const d = new Date(dateStr); return d.toLocaleString(); } catch (e) { return dateStr; }
+	}
+
+	function renderNotificationItem(n) {
+		const type = (n.type || '').toLowerCase();
+		let icon = '<svg class="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01"/></svg>';
+		let colorClass = 'text-gray-600';
+
+		if (type.includes('parts') || type.includes('parts_approved')) { icon = '<svg class="w-7 h-7 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-width="2.2"/></svg>'; colorClass='text-green-600'; }
+		if (type.includes('service') || type.includes('service_request')) { icon = '<svg class="w-7 h-7 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="6" y="4" width="12" height="16" rx="3" stroke-width="2.2"/></svg>'; colorClass='text-blue-600'; }
+		if (type.includes('denied') || type.includes('rejected') || n.priority === 'urgent') { icon = '<svg class="w-7 h-7 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="18" stroke-width="2.2"/><line x1="6" y1="18" x2="18" y2="6" stroke-width="2.2"/></svg>'; colorClass='text-red-600'; }
+
+		const title = n.title || (n.type ? n.type.replace(/_/g,' ') : 'Notification');
+		const message = n.message || '';
+		const time = formatDate(n.created_at || n.submitted_at || n.read_at);
+
+		const node = el(`
+			<div class="bg-white rounded-xl shadow border border-gray-100 p-4 flex items-start gap-4 transition hover:shadow-lg notification-item" data-id="${n.id || ''}">
+				<div class="flex-shrink-0">${icon}</div>
+				<div class="flex-1 min-w-0">
+					<div class="flex items-center gap-2 mb-1">
+						<span class="font-semibold text-slate-800">${title}</span>
+						${n.is_read ? '' : '<span class="ml-2 px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-xs font-medium">New</span>'}
+					</div>
+					<div class="text-sm text-gray-700 mb-1">${message}</div>
+					<div class="text-xs text-gray-400">${time}</div>
+				</div>
+			</div>
+		`);
+
+		node.addEventListener('click', () => {
+			// Mark as read via API if available
+			if (n.id) {
+				fetch(`/api/notifications/${n.id}/read`, { method: 'PATCH', headers: getAuthHeaders() }).catch(() => {});
+			}
+			// allow global handler
+			if (typeof window.technicianNotificationClicked === 'function') {
+				try { window.technicianNotificationClicked(n.reference_id || n.id || null); } catch (e) { console.error(e); }
+			}
+		});
+
+		return node;
+	}
+
+	async function fetchNotifications() {
+		try {
+			console.log('[NOTIF] Fetching notifications from /api/notifications');
+			const resp = await fetch('/api/notifications?limit=50', { headers: getAuthHeaders() });
+			console.log('[NOTIF] Response status:', resp.status);
+			if (!resp.ok) {
+				console.error('[NOTIF] Failed to fetch notifications:', resp.status, resp.statusText);
+				throw new Error('Failed to fetch notifications');
+			}
+			const data = await resp.json();
+			console.log('[NOTIF] Received notifications:', data.notifications ? data.notifications.length : 0);
+			return data.notifications || [];
+		} catch (err) {
+			console.error('[NOTIF] Notifications fetch error', err);
+			return [];
+		}
+	}
+
+	async function fetchPartsRequests() {
+		try {
+			// Technician-only endpoint will return only the logged-in technician's requests
+			const resp = await fetch('/api/parts-requests?status=pending', { headers: getAuthHeaders() });
+			if (!resp.ok) return [];
+			return await resp.json();
+		} catch (err) {
+			console.error('Parts requests fetch error', err);
+			return [];
+		}
+	}
+
+	async function fetchAssignedRequests() {
+		try {
+			const resp = await fetch('/api/technician/service-requests?limit=10', { headers: getAuthHeaders() });
+			if (!resp.ok) return [];
+			return await resp.json();
+		} catch (err) {
+			console.error('Assigned requests fetch error', err);
+			return [];
+		}
+	}
+
+	async function refresh() {
+		console.log('[NOTIF] Starting refresh...');
+		const [notifications, parts, assigned] = await Promise.all([
+			fetchNotifications(),
+			fetchPartsRequests(),
+			fetchAssignedRequests()
+		]);
+
+		console.log('[NOTIF] Data fetched - notifications:', notifications.length, 'parts:', parts.length, 'assigned:', assigned.length);
+
+		// Combine and dedupe into a single list to display most-relevant items first
+		const items = [];
+
+		// Service approvals / notifications
+		notifications.slice(0, 30).forEach(n => items.push(n));
+
+		// Parts requests: convert to notification-like objects
+		parts.slice(0, 10).forEach(p => {
+			items.push({
+				id: `parts-${p.id}`,
+				title: `Parts Request ${p.status ? p.status.replace('_',' ') : ''}`,
+				message: `${p.quantity_requested} x ${p.part_name || p.part_id} — ${p.reason || ''}`,
+				type: `parts_${p.status || 'pending'}`,
+				created_at: p.created_at,
+				reference_id: p.id,
+				is_read: p.status && p.status !== 'pending'
+			});
+		});
+
+		// Assigned service requests: notify about new assignments
+		assigned.slice(0, 10).forEach(r => {
+			items.push({
+				id: `req-${r.id}`,
+				title: `Service Request Assigned`,
+				message: `${r.request_number || '#' + r.id} — ${r.description || r.issue || ''}`,
+				type: 'service_request',
+				created_at: r.created_at || r.assigned_at || r.updated_at,
+				reference_id: r.id,
+				is_read: false
+			});
+		});
+
+		// Sort by date desc
+		items.sort((a,b) => new Date(b.created_at || b.submitted_at || 0) - new Date(a.created_at || a.submitted_at || 0));
+
+		console.log('[NOTIF] Total items to display:', items.length);
+
+		// Hide loading indicator
+		if (loadingEl) {
+			loadingEl.classList.add('hidden');
+		}
+
+		// Render
+		listEl.innerHTML = '';
+		if (items.length === 0) {
+			console.log('[NOTIF] No items - showing empty state');
+			emptyEl.classList.remove('hidden');
+			return;
+		}
+		emptyEl.classList.add('hidden');
+
+		// Limit displayed items
+		const displayItems = items.slice(0, 30);
+		console.log('[NOTIF] Rendering', displayItems.length, 'items');
+		displayItems.forEach((i, idx) => {
+			try {
+				listEl.appendChild(renderNotificationItem(i));
+			} catch (e) {
+				console.error('[NOTIF] Error rendering item', idx, e);
+			}
+		});
+
+		console.log('[NOTIF] Refresh complete - rendered', listEl.children.length, 'notification cards');
+
+		// Attach item events (falls back to existing global function)
+		if (window.attachNotificationItemEvents) {
+			try { window.attachNotificationItemEvents(); } catch (e) { /* ignore */ }
+		}
+	}
+
+		// Initial load
+		console.log('[NOTIF] Calling initial refresh...');
+		refresh();
+
+		// Polling
+		const pollHandle = setInterval(refresh, POLL_INTERVAL);
+		console.log('[NOTIF] Polling started (interval:', POLL_INTERVAL, 'ms)');
+
+		// Clean up if the component is removed
+		const observer = new MutationObserver(() => {
+			if (!document.body.contains(listEl)) {
+				clearInterval(pollHandle);
+				observer.disconnect();
+			}
+		});
+		observer.observe(document.body, { childList: true, subtree: true });
+		
+		console.log('[NOTIF] Component initialization complete!');
+	} catch (error) {
+		console.error('[NOTIF] FATAL ERROR during component initialization:', error);
+		console.error('[NOTIF] Error stack:', error.stack);
+		// Show error in UI
+		const listEl = document.getElementById('technician-notifications-list');
+		if (listEl) {
+			listEl.innerHTML = '<div class="bg-red-50 border border-red-200 rounded p-4 text-red-800"><p class="font-semibold">Error loading notifications</p><p class="text-sm">' + error.message + '</p></div>';
+		}
+	}
+})();
+</script>
+
+

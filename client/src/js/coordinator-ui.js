@@ -2,12 +2,9 @@
 // This file manages the coordinator dashboard functionality and interactions
 
 document.addEventListener('DOMContentLoaded', async function() {
-    const user = getCurrentUser();
-    if (!user || user.role !== 'coordinator') {
-        window.location.href = '/pages/login.html';
-        return;
-    }
-
+    // Auth.js handles authentication and role verification
+    // This script assumes the user is already authenticated and authorized
+    
     // Initialize dashboard
     await initializeDashboard();
     
@@ -48,9 +45,6 @@ async function initializeDashboard() {
         // Load dashboard statistics
         await loadDashboardStats();
         
-        // Load recent activities
-        await loadRecentActivity();
-        
         // Initialize service requests section
         await initializeServiceRequests();
         
@@ -74,34 +68,58 @@ async function initializeDashboard() {
 
 async function loadDashboardStats() {
     try {
-        // In a real implementation, this would fetch from your API
-        // For now, we'll simulate API response
         const response = await fetch('/api/coordinator/dashboard-stats', {
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('token')}`
             }
-        }).catch(() => {
-            // If API is not available, return mock data
-            return {
-                ok: true,
-                json: () => Promise.resolve({
-                    activeRequests: Math.floor(Math.random() * 10),
-                    pendingApprovals: Math.floor(Math.random() * 5),
-                    totalPrinters: 10 + Math.floor(Math.random() * 20),
-                    activeUsers: 5 + Math.floor(Math.random() * 15)
-                })
-            };
         });
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch dashboard stats');
+        }
         
         const stats = await response.json();
         
         // Update stats in UI
-        document.getElementById('active-requests-count').textContent = stats.activeRequests;
-        document.getElementById('pending-approvals-count').textContent = stats.pendingApprovals;
-        document.getElementById('total-printers-count').textContent = stats.totalPrinters;
-        document.getElementById('active-users-count').textContent = stats.activeUsers;
+        const totalPrintersElement = document.getElementById('total-printers-count');
+        const totalUsersElement = document.getElementById('total-users-count');
+        
+        if (totalPrintersElement) {
+            totalPrintersElement.innerHTML = stats.totalPrinters || 0;
+        }
+        
+        if (totalUsersElement) {
+            totalUsersElement.innerHTML = stats.totalUsers || 0;
+        }
+        
+        // Optional: Update other stats if they exist
+        const activeRequestsElement = document.getElementById('active-requests-count');
+        const pendingApprovalsElement = document.getElementById('pending-approvals-count');
+        
+        if (activeRequestsElement) {
+            activeRequestsElement.textContent = stats.activeRequests || 0;
+        }
+        
+        if (pendingApprovalsElement) {
+            pendingApprovalsElement.textContent = stats.pendingApprovals || 0;
+        }
+        
     } catch (error) {
         console.error('Error loading dashboard stats:', error);
+        
+        // Show error in UI
+        const totalPrintersElement = document.getElementById('total-printers-count');
+        const totalUsersElement = document.getElementById('total-users-count');
+        
+        if (totalPrintersElement) {
+            totalPrintersElement.innerHTML = '<span class="text-red-500 text-sm">Error</span>';
+        }
+        
+        if (totalUsersElement) {
+            totalUsersElement.innerHTML = '<span class="text-red-500 text-sm">Error</span>';
+        }
+        
+        showNotification('Error', 'Failed to load dashboard statistics. Please refresh the page.', 'error');
     }
 }
 
@@ -226,15 +244,17 @@ async function initializeServiceRequests() {
         const cancelRequestBtn = document.getElementById('cancelNewRequest');
         const servicePrinterSelect = document.getElementById('servicePrinterSelect');
         
-        if (newRequestBtn) {
+        if (newRequestBtn && !newRequestBtn.dataset.listenerSet) {
             newRequestBtn.addEventListener('click', () => {
                 document.getElementById('newRequestModal').classList.remove('hidden');
                 loadPrintersForServiceRequest();
             });
+            newRequestBtn.dataset.listenerSet = 'true';
         }
         
-        if (submitRequestBtn) {
+        if (submitRequestBtn && !submitRequestBtn.dataset.listenerSet) {
             submitRequestBtn.addEventListener('click', submitServiceRequest);
+            submitRequestBtn.dataset.listenerSet = 'true';
         }
         
         if (cancelRequestBtn) {
@@ -412,9 +432,15 @@ async function submitNewUser() {
             return;
         }
         
-        // In a real implementation, this would send data to your API
-        // For now, we'll simulate API call
-        const response = await fetch('/api/users', {
+        // Get current user to add to their institution
+        const user = getCurrentUser();
+        if (!user) {
+            showNotification('Error', 'User not authenticated', 'error');
+            return;
+        }
+        
+        // Send request to add user to coordinator's institution
+        const response = await fetch(`/api/coordinators/${user.id}/users`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -427,9 +453,6 @@ async function submitNewUser() {
                 role,
                 department
             })
-        }).catch(() => {
-            // If API is not available, simulate success
-            return { ok: true };
         });
         
         if (response.ok) {
@@ -470,24 +493,22 @@ async function loadUsers() {
             </tr>
         `;
         
-        // In a real implementation, this would fetch from your API
-        // For now, we'll simulate API response
-        const response = await fetch('/api/users', {
+        // Get current user to fetch their institution's users
+        const user = getCurrentUser();
+        if (!user) {
+            throw new Error('User not authenticated');
+        }
+        
+        // Fetch users from coordinator's institution
+        const response = await fetch(`/api/coordinators/${user.id}/users`, {
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('token')}`
             }
-        }).catch(() => {
-            // If API is not available, return mock data
-            return {
-                ok: true,
-                json: () => Promise.resolve([
-                    { id: 1, first_name: 'John', last_name: 'Doe', email: 'john.doe@example.com', role: 'staff', status: 'active' },
-                    { id: 2, first_name: 'Jane', last_name: 'Smith', email: 'jane.smith@example.com', role: 'manager', status: 'active' },
-                    { id: 3, first_name: 'Michael', last_name: 'Johnson', email: 'michael.j@example.com', role: 'staff', status: 'inactive' },
-                    { id: 4, first_name: 'Emily', last_name: 'Williams', email: 'emily.w@example.com', role: 'staff', status: 'active' }
-                ])
-            };
         });
+        
+        if (!response.ok) {
+            throw new Error(`Failed to fetch users: ${response.status}`);
+        }
         
         const users = await response.json();
         
@@ -521,6 +542,7 @@ async function loadUsers() {
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button class="text-indigo-600 hover:text-indigo-900 mr-3 edit-user-btn">Edit</button>
+                    <button class="text-blue-600 hover:text-blue-900 mr-3 change-password-btn">Change Password</button>
                     <button class="text-red-600 hover:text-red-900 delete-user-btn">
                         ${user.status === 'active' ? 'Deactivate' : 'Activate'}
                     </button>
@@ -533,6 +555,13 @@ async function loadUsers() {
             btn.addEventListener('click', function() {
                 const userId = this.closest('tr').dataset.id;
                 editUser(userId);
+            });
+        });
+        
+        usersTbody.querySelectorAll('.change-password-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const userId = this.closest('tr').dataset.id;
+                showChangePasswordModal(userId);
             });
         });
         
@@ -599,6 +628,98 @@ async function toggleUserStatus(userId, activate) {
     } catch (error) {
         console.error('Error toggling user status:', error);
         showNotification('Error', 'Failed to update user status. Please try again.', 'error');
+    }
+}
+
+// Change Password Functions
+let currentPasswordChangeUserId = null;
+let currentPasswordChangeUserName = null;
+
+function showChangePasswordModal(userId) {
+    // Get user info from the table row
+    const userRow = document.querySelector(`tr[data-id="${userId}"]`);
+    if (!userRow) return;
+    
+    const userName = userRow.querySelector('.text-sm.font-medium.text-gray-900').textContent;
+    
+    currentPasswordChangeUserId = userId;
+    currentPasswordChangeUserName = userName;
+    
+    // Update modal with user info
+    document.getElementById('passwordChangeUserName').textContent = userName;
+    
+    // Clear form
+    document.getElementById('newPassword').value = '';
+    document.getElementById('confirmPassword').value = '';
+    document.getElementById('passwordError').classList.add('hidden');
+    
+    // Show modal
+    document.getElementById('changePasswordModal').classList.remove('hidden');
+}
+
+function hideChangePasswordModal() {
+    document.getElementById('changePasswordModal').classList.add('hidden');
+    currentPasswordChangeUserId = null;
+    currentPasswordChangeUserName = null;
+}
+
+async function submitPasswordChange() {
+    try {
+        const newPassword = document.getElementById('newPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        const errorDiv = document.getElementById('passwordError');
+        const errorText = errorDiv.querySelector('p');
+        
+        // Validate passwords
+        if (!newPassword || newPassword.length < 6) {
+            errorText.textContent = 'Password must be at least 6 characters long';
+            errorDiv.classList.remove('hidden');
+            return;
+        }
+        
+        if (newPassword !== confirmPassword) {
+            errorText.textContent = 'Passwords do not match';
+            errorDiv.classList.remove('hidden');
+            return;
+        }
+        
+        // Hide error
+        errorDiv.classList.add('hidden');
+        
+        // Get current user (coordinator)
+        const user = getCurrentUser();
+        if (!user) {
+            showNotification('Error', 'Authentication required', 'error');
+            return;
+        }
+        
+        // Send request to change password
+        const response = await fetch(`/api/coordinators/${user.id}/users/${currentPasswordChangeUserId}/password`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({
+                newPassword: newPassword
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            showNotification('Success', `Password changed successfully for ${currentPasswordChangeUserName}`, 'success');
+            hideChangePasswordModal();
+        } else {
+            errorText.textContent = data.error || 'Failed to change password';
+            errorDiv.classList.remove('hidden');
+        }
+    } catch (error) {
+        console.error('Error changing password:', error);
+        const errorDiv = document.getElementById('passwordError');
+        const errorText = errorDiv.querySelector('p');
+        errorText.textContent = 'Failed to change password. Please try again.';
+        errorDiv.classList.remove('hidden');
     }
 }
 
@@ -1306,8 +1427,8 @@ function showPage(pageId) {
 }
 
 function bindActionHandlers() {
-    // Add event listeners for action buttons
-    document.getElementById('refresh-activity')?.addEventListener('click', loadRecentActivity);
+    // Action handlers can be added here if needed
+    // Currently, most actions are handled in their respective sections
 }
 
 // Utility functions
@@ -1428,3 +1549,8 @@ function showNotification(title, message, type = 'info') {
         }
     }, 5000);
 }
+
+// Make functions globally accessible
+window.submitPasswordChange = submitPasswordChange;
+window.showChangePasswordModal = showChangePasswordModal;
+window.hideChangePasswordModal = hideChangePasswordModal;

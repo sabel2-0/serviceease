@@ -1,0 +1,32 @@
+<div class="bg-white shadow-sm border-b">
+  <div class="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white flex items-center justify-center font-bold shadow" id="req-user-initials">U</div>
+      <div>
+        <div id="req-user-name" class="text-sm font-semibold text-gray-800">User</div>
+        <div class="text-xs text-gray-500">Requester</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <button id="req-notifications-btn" class="p-2 rounded-full text-gray-600 hover:bg-gray-100 transition relative">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+        </svg>
+        <span id="req-notification-badge" class="hidden absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Fullscreen Notification Modal -->
+<div id="req-notification-modal" class="hidden fixed inset-0 z-[10010] bg-white flex flex-col">
+  <div class="flex items-center justify-between px-4 py-4 border-b border-gray-200">
+    <h2 class="text-xl font-semibold text-gray-900">Notifications</h2>
+    <button id="req-close-notification-modal" class="p-2 hover:bg-gray-100 rounded-full transition-colors">
+      <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+      </svg>
+    </button>
+  </div>
+  <div id="req-notification-modal-content" class="flex-1 overflow-y-auto"></div>
+</div>

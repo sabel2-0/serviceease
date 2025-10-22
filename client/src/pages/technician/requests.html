@@ -1,0 +1,598 @@
+<div id="requests-content" class="tab-content">
+    <!-- Search Overlay (hidden by default) -->
+    <div id="search-overlay" class="fixed inset-0 z-50 flex items-start justify-center bg-black/30 hidden">
+        <div class="mt-16 w-full max-w-lg mx-4 bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 overflow-hidden animate-fade-in">
+            <!-- Search Header -->
+            <div class="flex items-center gap-3 p-4 border-b border-slate-100">
+                <div class="flex items-center gap-3 flex-1">
+                    <div class="p-2 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-xl">
+                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                    </div>
+                    <input id="search-input" type="text" class="flex-1 px-0 py-2 text-lg font-medium bg-transparent border-none focus:outline-none focus:ring-0 placeholder-slate-400" placeholder="Search requests..." autofocus />
+                </div>
+                <button id="close-search-overlay" class="p-2 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Search Results -->
+            <div id="search-results" class="max-h-96 overflow-y-auto">
+                <!-- Results will be populated here -->
+            </div>
+            
+            <!-- Search Footer -->
+            <div class="px-4 py-3 bg-slate-50 border-t border-slate-100">
+                <div class="flex items-center justify-between text-xs text-slate-500">
+                    <span id="search-count">Type to search...</span>
+                    <span class="flex items-center gap-1">
+                        <kbd class="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-xs">ESC</kbd>
+                        to close
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="container mx-auto px-4 pt-2 pb-8">
+        <!-- Custom search animation styles -->
+        <style>
+            @keyframes slideDown {
+                from { opacity: 0; transform: translateY(-10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            .animate-fade-in {
+                animation: slideDown 0.3s ease-out;
+            }
+            .line-clamp-1 {
+                display: -webkit-box;
+                -webkit-line-clamp: 1;
+                line-clamp: 1;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+            }
+        </style>
+        <!-- Header Section -->
+        <div class="max-w-6xl mx-auto mb-8">
+            <!-- Mobile Header (No title/subtitle) -->
+            <div class="md:hidden mb-6"></div>
+            
+            <!-- Desktop Header -->
+            <div class="hidden md:block bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6">
+                <div class="flex items-center justify-between">
+                    <h1 class="text-3xl font-bold text-slate-800 mb-2">Service Requests</h1>
+                    <button id="search-requests-btn-desktop" class="p-3 rounded-full bg-white/90 shadow border border-slate-200 hover:bg-blue-50 transition-colors">
+                        <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter and Search Section -->
+        <!-- Removed floating search icon for mobile, will add inline with heading below -->
+
+        <!-- Service Requests Section -->
+        <div id="serviceRequestsSection" class="max-w-6xl mx-auto">
+            <!-- Desktop Table View (Hidden on Mobile) -->
+            <div class="hidden md:block bg-white/90 backdrop-blur-sm shadow-2xl rounded-2xl border border-white/20 overflow-hidden mb-8">
+                <!-- Section Header -->
+                <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-xl font-semibold text-white flex items-center">
+                            <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                            </svg>
+                            <span>Service Requests</span>
+                        </h2>
+                        <span id="desktop-requests-count" class="text-white bg-white/20 px-3 py-1 rounded-full text-sm font-medium">0 requests</span>
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-200">
+                        <thead class="bg-gradient-to-r from-slate-100 to-slate-200">
+                            <tr>
+                                <th class="px-6 py-4 text-left text-sm font-semibold text-slate-700 uppercase tracking-wider">
+                                    Request ID
+                                </th>
+                                <th class="px-6 py-4 text-left text-sm font-semibold text-slate-700 uppercase tracking-wider">
+                                    Description
+                                </th>
+                                <th class="px-6 py-4 text-left text-sm font-semibold text-slate-700 uppercase tracking-wider">
+                                    Status/Priority
+                                </th>
+                                <th class="px-6 py-4 text-left text-sm font-semibold text-slate-700 uppercase tracking-wider">
+                                    Date
+                                </th>
+                                <th class="px-6 py-4 text-right text-sm font-semibold text-slate-700 uppercase tracking-wider">
+                                    Actions
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="serviceRequestsTableDesktop" class="bg-white/50 backdrop-blur-sm divide-y divide-slate-100">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Mobile Card View -->
+            <div class="md:hidden">
+                <!-- Modern Mobile Header -->
+                <div class="mb-6 px-4">
+                    <div class="bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/50 backdrop-blur-sm rounded-3xl shadow-xl border border-white/30 p-6 relative overflow-hidden">
+                        <!-- Background Pattern -->
+                        <div class="absolute inset-0 opacity-5">
+                            <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-400 to-indigo-600 rounded-full transform translate-x-16 -translate-y-16"></div>
+                            <div class="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-blue-300 to-purple-400 rounded-full transform -translate-x-12 translate-y-12"></div>
+                        </div>
+                        
+                        <div class="relative">
+                            <!-- Header Row -->
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-lg">
+                                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h1 class="text-2xl font-bold text-slate-900 leading-tight">Service Requests</h1>
+                                        <p class="text-sm text-slate-600 mt-0.5">Manage your assigned tasks</p>
+                                    </div>
+                                </div>
+                                <button id="search-requests-btn" class="p-3 bg-white/90 hover:bg-white rounded-2xl shadow-lg border border-white/50 hover:shadow-xl transition-all duration-200 transform hover:scale-105">
+                                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                </button>
+                            </div>
+                            
+                            <!-- Stats Row -->
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                                    <span class="text-sm font-medium text-slate-700">Active Queue</span>
+                                </div>
+                                <span id="mobile-requests-count" class="bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 px-4 py-2 rounded-xl text-sm font-bold shadow-sm border border-blue-200/50">0 requests</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="serviceRequestsCardsMobile" class="px-4 pb-4">
+                    <!-- Service request cards will be populated here -->
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div id="requests-emptyState" class="hidden p-8 mx-4 mb-4">
+                <div class="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-8 text-center">
+                    <div class="w-20 h-20 mx-auto bg-gradient-to-br from-blue-100 to-indigo-100 rounded-2xl flex items-center justify-center mb-4">
+                        <svg class="w-10 h-10 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-2">No Requests Found</h3>
+                    <p class="text-slate-600 leading-relaxed">No service requests match your current filters. Try adjusting your search criteria.</p>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="requests-loadingState" class="hidden p-8 mx-4 mb-4">
+                <div class="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-8 text-center">
+                    <div class="w-16 h-16 mx-auto bg-gradient-to-br from-blue-100 to-indigo-100 rounded-2xl flex items-center justify-center mb-4">
+                        <div class="animate-spin rounded-full h-8 w-8 border-3 border-blue-500 border-t-transparent"></div>
+                    </div>
+                    <h3 class="text-lg font-semibold text-slate-800 mb-2">Loading Requests</h3>
+                    <p class="text-slate-600">Getting your latest service assignments...</p>
+                </div>
+            </div>
+
+            <!-- Error State -->
+            <div id="requests-errorState" class="hidden p-8 mx-4 mb-4">
+                <div class="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-8 text-center">
+                    <div class="w-20 h-20 mx-auto bg-gradient-to-br from-red-100 to-orange-100 rounded-2xl flex items-center justify-center mb-4">
+                        <svg class="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-2">Connection Error</h3>
+                    <p class="text-slate-600 mb-6 leading-relaxed">There was a problem loading your service requests. Please check your connection and try again.</p>
+                    <button onclick="location.reload()" class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl font-semibold transition-all duration-200 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                        Retry Loading
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Service Request Detail Modal -->
+<div id="serviceRequestModal" class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/30 hidden">
+    <div class="glass-modal w-full h-full">
+        <!-- Modal Header -->
+        <div class="glass-modal-header">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <div class="glass-modal-icon">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="glass-modal-title">Service Request</h2>
+                        <p id="modal-request-number" class="text-blue-600 font-semibold text-lg"></p>
+                    </div>
+                </div>
+                <button id="closeServiceModal" class="glass-close-button" onclick="window.closeServiceRequestModal && window.closeServiceRequestModal()">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Modal Content -->
+        <div class="glass-modal-content">
+            <div id="serviceRequestContent">
+                <!-- Loading State -->
+                <div id="modalLoadingState" class="glass-loading-container">
+                    <div class="glass-spinner"></div>
+                    <p class="glass-loading-text">Loading request details...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Job Completion Modal - Mobile Optimized -->
+<div id="jobCompletionModal" class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm hidden">
+    <div class="glass-modal w-full h-full max-h-screen overflow-hidden flex flex-col">
+        <!-- Modal Header - Sticky on Mobile -->
+        <div class="glass-modal-header bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 flex-shrink-0 sticky top-0 z-10 shadow-lg">
+            <div class="flex items-center justify-between px-4 py-3 md:px-6 md:py-4">
+                <div class="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
+                    <div class="glass-modal-icon bg-white/30 backdrop-blur-sm p-2 md:p-3 rounded-xl md:rounded-2xl shadow-lg flex-shrink-0">
+                        <svg class="w-5 h-5 md:w-6 md:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h2 class="glass-modal-title text-white text-base md:text-xl font-bold leading-tight truncate">Complete Service</h2>
+                        <p id="completion-modal-request-number" class="text-white/90 font-semibold text-xs md:text-lg mt-0.5 truncate"></p>
+                    </div>
+                </div>
+                <button id="closeCompletionModal" class="glass-close-button bg-white/20 hover:bg-white/30 p-2 md:p-2.5 rounded-xl transition-all flex-shrink-0 ml-2" onclick="window.closeJobCompletionModal && window.closeJobCompletionModal()">
+                    <svg class="w-5 h-5 md:w-6 md:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Modal Content - Scrollable -->
+        <div class="glass-modal-content flex-1 overflow-y-auto overscroll-contain pb-32 md:pb-24">
+            <div id="jobCompletionContent" class="w-full">
+                <form id="jobCompletionForm" class="space-y-3 md:space-y-4 p-3 md:p-4" onsubmit="handleJobCompletion(event)">
+                    <!-- Request Summary - Mobile Optimized -->
+                    <div class="glass-info-card bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl md:rounded-2xl p-5 md:p-6 shadow-sm w-full">
+                        <div class="flex items-center gap-2 mb-3">
+                            <div class="p-2.5 bg-blue-500 rounded-xl shadow-md">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                                </svg>
+                            </div>
+                            <h3 class="glass-card-title text-lg md:text-xl font-bold text-slate-800">Request Summary</h3>
+                        </div>
+                        <div id="completionRequestSummary" class="text-slate-700 text-base md:text-base space-y-2">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Service Actions - Mobile Optimized -->
+                    <div class="glass-info-card bg-white border-2 border-slate-200 rounded-xl md:rounded-2xl p-5 md:p-6 shadow-sm w-full">
+                        <div class="flex items-start gap-2 mb-3">
+                            <div class="p-2.5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-md flex-shrink-0">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="glass-card-title text-lg md:text-xl font-bold text-slate-800 leading-tight">
+                                    Actions Performed <span class="text-red-500 text-base">*</span>
+                                </h3>
+                                <p class="text-sm text-slate-500 mt-1">Describe what you did to fix the issue</p>
+                            </div>
+                        </div>
+                        <textarea id="serviceActions" class="w-full p-4 md:p-4 border-2 border-slate-300 rounded-xl resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base md:text-base bg-white shadow-inner transition-all" 
+                                  rows="5" 
+                                  placeholder="e.g., Replaced toner cartridge, cleaned print head, updated firmware..." required></textarea>
+                    </div>
+
+                    <!-- Parts Used - Mobile Optimized -->
+                    <div class="glass-info-card overflow-hidden bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-xl md:rounded-2xl shadow-sm w-full">
+                        <div class="p-5 md:p-6">
+                            <div class="mb-4 pb-4 border-b-2 border-purple-200">
+                                <div class="flex items-start gap-2 mb-3">
+                                    <div class="p-2.5 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg flex-shrink-0">
+                                        <svg class="w-5 h-5 md:w-5 md:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <h3 class="text-lg md:text-xl font-bold text-slate-800 leading-tight">Parts & Consumables</h3>
+                                        <p class="text-sm text-slate-600 leading-relaxed mt-1">
+                                            Select parts used during service
+                                        </p>
+                                    </div>
+                                </div>
+                                
+                                <!-- Info badge - Mobile optimized -->
+                                <div class="flex items-start gap-2 text-sm bg-purple-100 text-purple-700 px-3 py-2.5 rounded-lg border border-purple-200">
+                                    <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <span class="font-medium leading-snug">Parts deducted upon approval</span>
+                                </div>
+                                
+                                <!-- Quick search - Mobile optimized -->
+                                <div class="relative mt-3">
+                                    <input type="text" id="partSearchInput" 
+                                           class="w-full pl-10 pr-4 py-3 md:py-3 border-2 border-purple-200 rounded-xl text-base font-medium focus:ring-2 focus:ring-purple-400 focus:border-purple-400 transition-all placeholder-slate-400 hover:border-purple-300 bg-white" 
+                                           placeholder="Search parts...">
+                                    <div class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                                        <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Parts Carousel - Mobile Optimized -->
+                            <div class="relative">
+                                <!-- Carousel Navigation Header - Larger on Mobile -->
+                                <div class="flex items-center justify-between mb-4">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-sm md:text-base font-semibold text-slate-700">
+                                            <span id="currentPartIndex">1</span>/<span id="totalParts">1</span>
+                                        </span>
+                                        <div class="flex items-center gap-2 bg-purple-100 px-3 py-1.5 rounded-full border border-purple-200">
+                                            <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                                            </svg>
+                                            <span class="text-sm font-medium text-purple-700" id="totalPartsSelected">0 selected</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Navigation Buttons - Larger on Mobile -->
+                                    <div class="flex items-center gap-2">
+                                        <button type="button" id="prevPartBtn" class="p-3 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed touch-manipulation active:scale-95" disabled>
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                                            </svg>
+                                        </button>
+                                        <button type="button" id="nextPartBtn" class="p-3 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed touch-manipulation active:scale-95" disabled>
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Carousel Wrapper -->
+                                <div class="relative overflow-hidden rounded-xl">
+                                    <!-- Parts Container -->
+                                    <div id="partsContainer" class="flex transition-transform duration-500 ease-in-out" style="transform: translateX(0);">
+                                        <!-- Initial Part Entry - Full Width -->
+                                        <div class="part-entry min-w-full bg-white rounded-xl p-4 md:p-5 border-2 border-purple-100 hover:border-purple-200 shadow-sm transition-all duration-200">
+                                            <!-- Part entry header - Larger -->
+                                            <div class="flex items-center justify-between mb-4 pb-3 border-b border-purple-100">
+                                                <div class="flex items-center gap-2">
+                                                    <div class="w-8 h-8 md:w-9 md:h-9 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-sm">
+                                                        <svg class="w-4 h-4 md:w-4.5 md:h-4.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                                                        </svg>
+                                                    </div>
+                                                    <span class="text-sm font-semibold text-slate-700">Part #<span class="part-number">1</span></span>
+                                                </div>
+                                                <button type="button" class="remove-part-btn text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition-all duration-200 touch-manipulation active:scale-95">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                    </svg>
+                                                </button>
+                                            </div>
+
+                                            <!-- Form fields - Larger spacing -->
+                                            <div class="space-y-4">
+                                                <!-- Brand Selection -->
+                                                <div>
+                                                    <label class="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-1.5">
+                                                        <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
+                                                        </svg>
+                                                        Select Brand
+                                                    </label>
+                                                    <div class="relative">
+                                                        <select class="part-brand-select w-full p-3.5 md:p-4 pl-4 pr-10 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 bg-white text-base font-medium text-slate-700 appearance-none cursor-pointer hover:border-indigo-300 transition-all touch-manipulation">
+                                                            <option value="">Choose brand...</option>
+                                                            <!-- Brands loaded dynamically -->
+                                                        </select>
+                                                        <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                                                            <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                                            </svg>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Part Selection -->
+                                                <div>
+                                                    <label class="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-1.5">
+                                                        <svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a2 2 0 012-2z"></path>
+                                                        </svg>
+                                                        Select Part
+                                                    </label>
+                                                    <div class="relative">
+                                                        <select class="part-name-select w-full p-3.5 md:p-4 pl-4 pr-10 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-400 focus:border-purple-400 bg-white text-base font-medium text-slate-700 appearance-none cursor-pointer hover:border-purple-300 transition-all touch-manipulation" disabled>
+                                                            <option value="">Select brand first...</option>
+                                                            <!-- Parts loaded dynamically -->
+                                                        </select>
+                                                        <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                                                            <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                                            </svg>
+                                                        </div>
+                                                    </div>
+                                                    <!-- Stock info -->
+                                                    <div class="part-stock-info mt-2 text-sm font-medium"></div>
+                                                </div>
+                                                
+                                                <!-- Quantity and Unit Row -->
+                                                <div class="grid grid-cols-2 gap-3">
+                                                    <!-- Quantity -->
+                                                    <div>
+                                                        <label class="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-1.5">
+                                                            <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path>
+                                                            </svg>
+                                                            Quantity
+                                                        </label>
+                                                        <input type="number" class="part-quantity w-full p-3.5 md:p-4 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-base font-semibold text-slate-700 hover:border-blue-300 transition-all touch-manipulation" 
+                                                               min="1" placeholder="1" value="1" max="999">
+                                                        <div class="availability-text text-sm mt-1.5 font-medium"></div>
+                                                    </div>
+                                                    
+                                                    <!-- Unit -->
+                                                    <div>
+                                                        <label class="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-1.5">
+                                                            <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                                                            </svg>
+                                                            Unit
+                                                        </label>
+                                                        <div class="relative">
+                                                            <select class="part-unit w-full p-3.5 md:p-4 pl-4 pr-10 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-green-400 focus:border-green-400 bg-white text-base font-medium text-slate-700 appearance-none cursor-pointer hover:border-green-300 transition-all touch-manipulation">
+                                                                <option value="pieces">Pieces</option>
+                                                                <option value="ml">ML</option>
+                                                                <option value="liters">Liters</option>
+                                                                <option value="grams">Grams</option>
+                                                                <option value="kg">KG</option>
+                                                                <option value="bottles">Bottles</option>
+                                                                <option value="cartridges">Cartridges</option>
+                                                                <option value="rolls">Rolls</option>
+                                                                <option value="sheets">Sheets</option>
+                                                                <option value="sets">Sets</option>
+                                                            </select>
+                                                            <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                                                                <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                                                </svg>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Add part button - Full Width -->
+                                    <div class="mt-5 flex justify-center">
+                                        <button type="button" id="addPartBtn" 
+                                                class="group relative inline-flex items-center gap-2.5 text-purple-600 hover:text-white font-bold bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-500 hover:to-purple-600 px-6 py-4 md:px-8 md:py-4 rounded-xl transition-all duration-300 border-2 border-purple-200 hover:border-purple-600 shadow-md hover:shadow-xl transform hover:-translate-y-0.5 active:scale-95 touch-manipulation w-full md:w-auto">
+                                            <div class="p-1.5 bg-purple-200 group-hover:bg-white/20 rounded-full transition-all duration-300">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                                </svg>
+                                            </div>
+                                            <span class="text-base md:text-lg">Add Another Part</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Parts Summary - Mobile Optimized -->
+                                <div id="partsSummary" class="mt-4 bg-gradient-to-br from-white via-purple-50/50 to-indigo-50 rounded-xl border-2 border-purple-200 overflow-hidden shadow-md hidden">
+                                    <div class="px-4 py-3 bg-gradient-to-r from-purple-500 via-purple-600 to-indigo-600 border-b-2 border-purple-400">
+                                        <h4 class="text-sm md:text-base font-bold text-white flex items-center gap-2">
+                                            <div class="p-1 bg-white/20 rounded-lg">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                                                </svg>
+                                            </div>
+                                            <span>Selected Parts</span>
+                                        </h4>
+                                    </div>
+                                    <div class="p-4 bg-white">
+                                        <div id="partsSummaryList" class="space-y-2">
+                                            <!-- Summary items added here -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Additional Notes - Full Width -->
+                    <div class="bg-gradient-to-br from-white to-green-50/50 rounded-xl md:rounded-2xl p-5 md:p-6 border-2 border-green-200 shadow-sm w-full">
+                        <div class="flex items-start gap-2 mb-3">
+                            <div class="p-2.5 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-md flex-shrink-0">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path>
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-lg md:text-xl font-bold text-slate-800 leading-tight">Additional Notes</h3>
+                                <p class="text-sm text-slate-500 mt-0.5">Optional observations</p>
+                            </div>
+                        </div>
+                        <textarea id="additionalNotes" class="w-full p-4 md:p-4 border-2 border-green-200 rounded-xl resize-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white shadow-inner transition-all hover:border-green-300 text-slate-700 text-base" 
+                                  rows="4" 
+                                  placeholder="Any recommendations or observations..."></textarea>
+                    </div>
+
+                    <!-- Approval Notice - Full Width -->
+                    <div class="glass-info-card border-l-4 border-blue-500 bg-blue-50/80 rounded-xl p-4 md:p-5 shadow-sm w-full">
+                        <div class="flex items-start gap-3">
+                            <div class="flex-shrink-0 w-8 h-8 md:w-9 md:h-9 bg-blue-100 rounded-full flex items-center justify-center">
+                                <svg class="w-4 h-4 md:w-4.5 md:h-4.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h3 class="text-base md:text-lg font-semibold text-blue-900 mb-1.5">Approval Required</h3>
+                                <p class="text-blue-800 text-sm md:text-base leading-relaxed">
+                                    This completion will be sent to your coordinator for review. Parts will be deducted upon approval.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal Actions - Fixed at Bottom, Larger Buttons -->
+        <div class="glass-actions-container fixed bottom-0 left-0 right-0 bg-white/98 backdrop-blur-md border-t-2 border-slate-200 p-4 md:p-5 z-[10000] shadow-2xl safe-area-inset-bottom">
+            <div class="max-w-4xl mx-auto flex flex-col sm:flex-row justify-center gap-3 md:gap-4">
+                <button type="button" id="cancelCompletion" class="glass-action-secondary w-full sm:flex-1 sm:max-w-xs px-6 py-4 md:py-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-all duration-200 flex items-center justify-center gap-2.5 shadow-md hover:shadow-lg active:scale-98 touch-manipulation border-2 border-slate-200" onclick="window.closeJobCompletionModal && window.closeJobCompletionModal()">
+                    <svg class="w-5 h-5 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                    <span class="text-base md:text-lg">Cancel</span>
+                </button>
+                <button type="submit" form="jobCompletionForm" id="submitCompletion" class="glass-action-primary w-full sm:flex-1 sm:max-w-xs px-6 py-4 md:py-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold rounded-xl transition-all duration-200 flex items-center justify-center gap-2.5 shadow-lg hover:shadow-xl active:scale-98 touch-manipulation">
+                    <svg class="w-5 h-5 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span class="text-base md:text-lg">Submit for Approval</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

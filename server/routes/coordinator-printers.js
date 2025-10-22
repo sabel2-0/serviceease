@@ -159,6 +159,12 @@ router.get('/:id/printer/:printerId/service-history', authenticateCoordinator, a
  */
 router.post('/service-requests', authenticateCoordinator, async (req, res) => {
     try {
+        // Temporary debug log to identify duplicate/alternate POSTs
+        try {
+            console.log('[DEBUG] route=coordinator-printers POST hit', { time: new Date().toISOString(), path: req.originalUrl, user: req.user ? { id: req.user.id, role: req.user.role } : null, bodySummary: Object.keys(req.body).slice(0,8) });
+        } catch (le) {
+            console.warn('[DEBUG] failed to log coordinator-printers entry:', le && le.message);
+        }
     const { printer_id, type, priority, description, location } = req.body;
         
         // Validate required fields
@@ -176,6 +182,18 @@ router.post('/service-requests', authenticateCoordinator, async (req, res) => {
             return res.status(403).json({ message: 'You are not assigned to this printer' });
         }
         
+        // Get institution owned by this coordinator
+        const [institutionRows] = await db.query(
+            'SELECT institution_id FROM institutions WHERE user_id = ? LIMIT 1',
+            [req.user.id]
+        );
+        
+        const institution_id = institutionRows.length > 0 ? institutionRows[0].institution_id : null;
+        
+        if (!institution_id) {
+            return res.status(400).json({ error: 'No institution found for this user' });
+        }
+
         // Generate a new request number (e.g., PRINTER-<id>-YYYYMMDDHHMMSS)
         const now = new Date();
         const dateStr = now.toISOString().replace(/[-:T]/g, '').slice(0, 14); // YYYYMMDDHHMMSS
@@ -185,8 +203,8 @@ router.post('/service-requests', authenticateCoordinator, async (req, res) => {
         console.log('Inserting service request:', {
             request_number: requestNumber,
             inventory_item_id: printer_id,
-            institution_id: req.user.institution_id || null,
-            coordinator_id: req.user.id,
+            institution_id: institution_id,
+            requested_by_user_id: req.user.id,
             priority,
             status: 'pending',
             location: location || 'Unknown',
@@ -196,12 +214,12 @@ router.post('/service-requests', authenticateCoordinator, async (req, res) => {
         // Insert the service request with request_number and required fields
         const [result] = await db.query(`
             INSERT INTO service_requests 
-            (request_number, inventory_item_id, institution_id, coordinator_id, priority, status, location, description, assigned_technician_id, created_at, updated_at)
+            (request_number, inventory_item_id, institution_id, requested_by_user_id, priority, status, location, description, assigned_technician_id, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, NOW(), NOW())
         `, [
             requestNumber,
             printer_id,
-            req.user.institution_id || null,
+            institution_id,
             req.user.id,
             priority,
             'pending',
@@ -221,8 +239,8 @@ router.post('/service-requests', authenticateCoordinator, async (req, res) => {
             request_id: result.insertId,
             request_number: requestNumber,
             inventory_item_id: printer_id,
-            institution_id: req.user.institution_id || null,
-            coordinator_id: req.user.id,
+            institution_id: institution_id,
+            requested_by_user_id: req.user.id,
             priority,
             status: 'pending',
             location: location || 'Unknown',

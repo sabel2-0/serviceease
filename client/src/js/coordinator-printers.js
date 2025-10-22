@@ -76,6 +76,12 @@ function initPrintersPage() {
     fetchAssignedPrinters();
 }
 
+// Wire UI buttons
+document.addEventListener('DOMContentLoaded', function() {
+    const refreshBtn = document.getElementById('refreshPrintersBtn');
+    if (refreshBtn) refreshBtn.addEventListener('click', fetchAssignedPrinters);
+});
+
 /**
  * Initialize search and filter functionality
  */
@@ -189,7 +195,7 @@ function renderPrintersTable(printers) {
     if (printers.length === 0) {
         tableBody.innerHTML = `
             <tr>
-                <td colspan="4" class="px-6 py-10 text-center text-gray-500">
+                <td colspan="6" class="px-6 py-10 text-center text-gray-500">
                     <div class="flex flex-col items-center justify-center">
                         <i class="fas fa-print mb-3 text-3xl text-gray-400"></i>
                         <p class="text-lg">No printers assigned yet</p>
@@ -209,8 +215,8 @@ function renderPrintersTable(printers) {
         const row = document.createElement('tr');
         row.className = 'hover:bg-gray-50';
         
-        const statusClass = printer.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
-        
+        const statusClass = printer.status === 'active' ? 'bg-green-100 text-green-800' : printer.status === 'maintenance' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800';
+
         row.innerHTML = `
             <td class="px-6 py-4">
                 <div class="flex items-center">
@@ -218,25 +224,21 @@ function renderPrintersTable(printers) {
                         <i class="fas fa-print text-blue-600"></i>
                     </div>
                     <div class="ml-4">
-                        <div class="text-sm font-medium text-gray-900">${printer.model || 'Unknown Model'}</div>
+                        <div class="text-sm font-medium text-gray-900">${printer.name || printer.model || 'Printer'}</div>
+                        <div class="text-xs text-gray-500">${printer.brand || ''} ${printer.model ? '(' + printer.model + ')' : ''}</div>
                     </div>
                 </div>
             </td>
             <td class="px-6 py-4">
-                <div class="text-sm text-gray-900 font-mono">${printer.serial_number || 'No Serial'}</div>
+                <div class="text-sm text-gray-900">${printer.model || 'Unknown'}</div>
             </td>
             <td class="px-6 py-4">
-                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">
-                    ${printer.status || 'Unknown'}
-                </span>
+                <div class="text-sm text-gray-900 font-mono">${printer.serial_number || 'No Serial'}</div>
             </td>
             <td class="px-6 py-4 text-right">
-                <div class="flex justify-end space-x-3">
-                    <button onclick="viewPrinterDetails('${printer.printer_id}')" class="p-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg" title="View Details">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                    <button onclick="reportPrinterIssue('${printer.printer_id}')" class="p-2 bg-yellow-50 text-yellow-600 hover:bg-yellow-100 rounded-lg" title="Report Issue">
-                        <i class="fas fa-exclamation-circle"></i>
+                <div class="flex justify-end space-x-2">
+                    <button onclick="viewPrinterDetails('${printer.inventory_item_id || printer.printer_id || ''}')" class="px-3 py-1 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-md text-sm" title="View Details">
+                        <i class="fas fa-eye mr-1"></i>Details
                     </button>
                 </div>
             </td>
@@ -335,14 +337,7 @@ function viewPrinterDetails(printerId) {
         document.getElementById('printerModel').textContent = printer.model || 'Unknown Model';
         document.getElementById('printerSerial').textContent = printer.serial_number || 'No Serial Number';
         
-        const statusElem = document.getElementById('printerStatus');
-        if (statusElem) {
-            statusElem.textContent = printer.status || 'Unknown';
-            statusElem.className = `px-2 py-1 text-xs rounded-full ${printer.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
-        }
-        
         document.getElementById('printerInstitution').textContent = printer.institution_name || 'Unknown Institution';
-        document.getElementById('printerLocation').textContent = printer.location || 'Location not specified';
         
         // Show installation date
         const installationDate = printer.installation_date;
@@ -361,15 +356,6 @@ function viewPrinterDetails(printerId) {
                 day: 'numeric', 
                 year: 'numeric'
             }) : 'No service history';
-        
-        // Set up the report issue button
-        const reportIssueBtn = document.getElementById('reportIssueBtn');
-        if (reportIssueBtn) {
-            reportIssueBtn.onclick = function() {
-                closeDetailsModal();
-                reportPrinterIssue(printer.printer_id);
-            };
-        }
         
         // Show the modal
         document.getElementById('printerDetailsModal').classList.remove('hidden');
@@ -461,109 +447,11 @@ function fetchPrinterServiceHistory(printerId) {
         `;
     });
 }
-
-/**
- * Report an issue with a printer
- */
-function reportPrinterIssue(printerId) {
-    // Show the report issue modal
-    const reportModal = document.getElementById('reportIssueModal');
-    if (!reportModal) {
-        console.error('Report issue modal not found');
-        return;
-    }
-    
-    // Set the printer ID in a hidden field
-    const printerIdInput = document.getElementById('reportPrinterId');
-    if (printerIdInput) {
-        printerIdInput.value = printerId;
-    }
-    
-    // Reset the form
-    const issueForm = document.getElementById('reportIssueForm');
-    if (issueForm) {
-        issueForm.reset();
-    }
-    
-    // Show the modal
-    reportModal.classList.remove('hidden');
-}
-
-/**
- * Submit a printer issue report
- */
-function submitIssueReport() {
-    const form = document.getElementById('reportIssueForm');
-    if (!form) {
-        return;
-    }
-    
-    const printerId = document.getElementById('reportPrinterId').value;
-    const issueType = document.getElementById('issueType').value;
-    const priority = document.getElementById('issuePriority').value;
-    const description = document.getElementById('issueDescription').value;
-    
-    if (!printerId || !issueType || !priority || !description) {
-        showToast('Please fill out all required fields', 'error');
-        return;
-    }
-    
-    // Show loading state
-    const loadingState = document.getElementById('loadingState');
-    if (loadingState) {
-        loadingState.classList.remove('hidden');
-    }
-    
-    fetch('/api/service-requests', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${getAuthToken() || ''}`
-        },
-        body: JSON.stringify({
-            printer_id: printerId,
-            type: issueType,
-            priority: priority,
-            description: description
-        })
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Failed to submit issue report');
-        }
-        return response.json();
-    })
-    .then(data => {
-        // Hide the modal
-        closeReportModal();
-        
-        if (loadingState) loadingState.classList.add('hidden');
-        
-        // Show success message
-        showToast('Issue reported successfully. A technician will be assigned.', 'success');
-    })
-    .catch(error => {
-        console.error('Error submitting issue report:', error);
-        if (loadingState) loadingState.classList.add('hidden');
-        showToast('Failed to submit issue report. Please try again.', 'error');
-    });
-}
-
 /**
  * Close the printer details modal
  */
 function closeDetailsModal() {
     const modal = document.getElementById('printerDetailsModal');
-    if (modal) {
-        modal.classList.add('hidden');
-    }
-}
-
-/**
- * Close the report issue modal
- */
-function closeReportModal() {
-    const modal = document.getElementById('reportIssueModal');
     if (modal) {
         modal.classList.add('hidden');
     }
@@ -653,15 +541,6 @@ function checkAuth(requiredRoles = []) {
 
 // Add event listeners once DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
-    // Handle form submission for reporting issues
-    const reportForm = document.getElementById('reportIssueForm');
-    if (reportForm) {
-        reportForm.addEventListener('submit', function(event) {
-            event.preventDefault();
-            submitIssueReport();
-        });
-    }
-    
     // Modal close buttons
     const closeButtons = document.querySelectorAll('.modal-close');
     closeButtons.forEach(button => {
