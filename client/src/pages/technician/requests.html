@@ -280,62 +280,62 @@
         <!-- Modal Content - Scrollable -->
         <div class="glass-modal-content flex-1 overflow-y-auto overscroll-contain pb-32 md:pb-24">
             <div id="jobCompletionContent" class="w-full">
-                <form id="jobCompletionForm" class="space-y-3 md:space-y-4 p-3 md:p-4" onsubmit="handleJobCompletion(event)">
+                <form id="jobCompletionForm" class="space-y-3 md:space-y-4 px-0 py-3 md:p-4" onsubmit="handleJobCompletion(event)">
                     <!-- Request Summary - Mobile Optimized -->
-                    <div class="glass-info-card bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl md:rounded-2xl p-5 md:p-6 shadow-sm w-full">
+                    <div class="glass-info-card bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-none md:rounded-2xl p-4 md:p-6 shadow-sm w-full">
                         <div class="flex items-center gap-2 mb-3">
-                            <div class="p-2.5 bg-blue-500 rounded-xl shadow-md">
+                            <div class="p-2 bg-blue-500 rounded-xl shadow-md">
                                 <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
                                 </svg>
                             </div>
-                            <h3 class="glass-card-title text-lg md:text-xl font-bold text-slate-800">Request Summary</h3>
+                            <h3 class="glass-card-title text-base md:text-xl font-bold text-slate-800">Request Summary</h3>
                         </div>
-                        <div id="completionRequestSummary" class="text-slate-700 text-base md:text-base space-y-2">
+                        <div id="completionRequestSummary" class="text-slate-700 text-sm md:text-base space-y-1.5">
                             <!-- Populated dynamically -->
                         </div>
                     </div>
 
                     <!-- Service Actions - Mobile Optimized -->
-                    <div class="glass-info-card bg-white border-2 border-slate-200 rounded-xl md:rounded-2xl p-5 md:p-6 shadow-sm w-full">
+                    <div class="glass-info-card bg-white border-2 border-slate-200 rounded-none md:rounded-2xl p-4 md:p-6 shadow-sm w-full">
                         <div class="flex items-start gap-2 mb-3">
-                            <div class="p-2.5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-md flex-shrink-0">
+                            <div class="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-md flex-shrink-0">
                                 <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                                 </svg>
                             </div>
                             <div class="flex-1">
-                                <h3 class="glass-card-title text-lg md:text-xl font-bold text-slate-800 leading-tight">
-                                    Actions Performed <span class="text-red-500 text-base">*</span>
+                                <h3 class="glass-card-title text-base md:text-xl font-bold text-slate-800 leading-tight">
+                                    Actions Performed <span class="text-red-500 text-sm">*</span>
                                 </h3>
-                                <p class="text-sm text-slate-500 mt-1">Describe what you did to fix the issue</p>
+                                <p class="text-xs text-slate-500 mt-0.5">Describe what you did</p>
                             </div>
                         </div>
-                        <textarea id="serviceActions" class="w-full p-4 md:p-4 border-2 border-slate-300 rounded-xl resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base md:text-base bg-white shadow-inner transition-all" 
-                                  rows="5" 
-                                  placeholder="e.g., Replaced toner cartridge, cleaned print head, updated firmware..." required></textarea>
+                        <textarea id="serviceActions" class="w-full p-3 md:p-4 border-2 border-slate-300 rounded-lg md:rounded-xl resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm md:text-base bg-white shadow-inner transition-all" 
+                                  rows="4" 
+                                  placeholder="e.g., Replaced toner cartridge, cleaned print head..." required></textarea>
                     </div>
 
                     <!-- Parts Used - Mobile Optimized -->
-                    <div class="glass-info-card overflow-hidden bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-xl md:rounded-2xl shadow-sm w-full">
-                        <div class="p-5 md:p-6">
-                            <div class="mb-4 pb-4 border-b-2 border-purple-200">
-                                <div class="flex items-start gap-2 mb-3">
-                                    <div class="p-2.5 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg flex-shrink-0">
-                                        <svg class="w-5 h-5 md:w-5 md:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="glass-info-card overflow-hidden bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-none md:rounded-2xl shadow-sm w-full">
+                        <div class="p-4 md:p-6">
+                            <div class="mb-4 pb-3 border-b-2 border-purple-200">
+                                <div class="flex items-start gap-2 mb-2">
+                                    <div class="p-2 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg flex-shrink-0">
+                                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
                                         </svg>
                                     </div>
                                     <div class="flex-1 min-w-0">
-                                        <h3 class="text-lg md:text-xl font-bold text-slate-800 leading-tight">Parts & Consumables</h3>
-                                        <p class="text-sm text-slate-600 leading-relaxed mt-1">
+                                        <h3 class="text-base md:text-xl font-bold text-slate-800 leading-tight">Parts & Consumables</h3>
+                                        <p class="text-xs text-slate-600 leading-relaxed mt-0.5">
                                             Select parts used during service
                                         </p>
                                     </div>
                                 </div>
                                 
                                 <!-- Info badge - Mobile optimized -->
-                                <div class="flex items-start gap-2 text-sm bg-purple-100 text-purple-700 px-3 py-2.5 rounded-lg border border-purple-200">
+                                <div class="flex items-start gap-2 text-xs bg-purple-100 text-purple-700 px-3 py-2 rounded-lg border border-purple-200">
                                     <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                     </svg>
@@ -343,12 +343,12 @@
                                 </div>
                                 
                                 <!-- Quick search - Mobile optimized -->
-                                <div class="relative mt-3">
+                                <div class="relative mt-2">
                                     <input type="text" id="partSearchInput" 
-                                           class="w-full pl-10 pr-4 py-3 md:py-3 border-2 border-purple-200 rounded-xl text-base font-medium focus:ring-2 focus:ring-purple-400 focus:border-purple-400 transition-all placeholder-slate-400 hover:border-purple-300 bg-white" 
+                                           class="w-full pl-10 pr-4 py-2.5 md:py-3 border-2 border-purple-200 rounded-lg md:rounded-xl text-sm md:text-base font-medium focus:ring-2 focus:ring-purple-400 focus:border-purple-400 transition-all placeholder-slate-400 hover:border-purple-300 bg-white" 
                                            placeholder="Search parts...">
                                     <div class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                                        <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                                         </svg>
                                     </div>
@@ -357,29 +357,29 @@
 
                             <!-- Parts Carousel - Mobile Optimized -->
                             <div class="relative">
-                                <!-- Carousel Navigation Header - Larger on Mobile -->
-                                <div class="flex items-center justify-between mb-4">
+                                <!-- Carousel Navigation Header - Compact -->
+                                <div class="flex items-center justify-between mb-3">
                                     <div class="flex items-center gap-2">
-                                        <span class="text-sm md:text-base font-semibold text-slate-700">
+                                        <span class="text-xs md:text-sm font-semibold text-slate-700">
                                             <span id="currentPartIndex">1</span>/<span id="totalParts">1</span>
                                         </span>
-                                        <div class="flex items-center gap-2 bg-purple-100 px-3 py-1.5 rounded-full border border-purple-200">
-                                            <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <div class="flex items-center gap-1.5 bg-purple-100 px-2 py-1 rounded-full border border-purple-200">
+                                            <svg class="w-3.5 h-3.5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
                                             </svg>
-                                            <span class="text-sm font-medium text-purple-700" id="totalPartsSelected">0 selected</span>
+                                            <span class="text-xs font-medium text-purple-700" id="totalPartsSelected">0 selected</span>
                                         </div>
                                     </div>
                                     
-                                    <!-- Navigation Buttons - Larger on Mobile -->
-                                    <div class="flex items-center gap-2">
-                                        <button type="button" id="prevPartBtn" class="p-3 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed touch-manipulation active:scale-95" disabled>
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <!-- Navigation Buttons - Compact -->
+                                    <div class="flex items-center gap-1.5">
+                                        <button type="button" id="prevPartBtn" class="p-2 md:p-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed touch-manipulation active:scale-95" disabled>
+                                            <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                                             </svg>
                                         </button>
-                                        <button type="button" id="nextPartBtn" class="p-3 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed touch-manipulation active:scale-95" disabled>
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <button type="button" id="nextPartBtn" class="p-2 md:p-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed touch-manipulation active:scale-95" disabled>
+                                            <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                                             </svg>
                                         </button>
@@ -387,45 +387,45 @@
                                 </div>
 
                                 <!-- Carousel Wrapper -->
-                                <div class="relative overflow-hidden rounded-xl">
+                                <div class="relative overflow-hidden rounded-lg md:rounded-xl">
                                     <!-- Parts Container -->
                                     <div id="partsContainer" class="flex transition-transform duration-500 ease-in-out" style="transform: translateX(0);">
                                         <!-- Initial Part Entry - Full Width -->
-                                        <div class="part-entry min-w-full bg-white rounded-xl p-4 md:p-5 border-2 border-purple-100 hover:border-purple-200 shadow-sm transition-all duration-200">
-                                            <!-- Part entry header - Larger -->
-                                            <div class="flex items-center justify-between mb-4 pb-3 border-b border-purple-100">
-                                                <div class="flex items-center gap-2">
-                                                    <div class="w-8 h-8 md:w-9 md:h-9 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-sm">
-                                                        <svg class="w-4 h-4 md:w-4.5 md:h-4.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <div class="part-entry min-w-full bg-white rounded-lg md:rounded-xl p-3 md:p-5 border-2 border-purple-100 hover:border-purple-200 shadow-sm transition-all duration-200">
+                                            <!-- Part entry header - Compact -->
+                                            <div class="flex items-center justify-between mb-3 pb-2 border-b border-purple-100">
+                                                <div class="flex items-center gap-1.5">
+                                                    <div class="w-7 h-7 md:w-8 md:h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-sm">
+                                                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
                                                         </svg>
                                                     </div>
-                                                    <span class="text-sm font-semibold text-slate-700">Part #<span class="part-number">1</span></span>
+                                                    <span class="text-xs md:text-sm font-semibold text-slate-700">Part #<span class="part-number">1</span></span>
                                                 </div>
-                                                <button type="button" class="remove-part-btn text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition-all duration-200 touch-manipulation active:scale-95">
+                                                <button type="button" class="remove-part-btn text-red-500 hover:text-red-700 p-1.5 hover:bg-red-50 rounded-lg transition-all duration-200 touch-manipulation active:scale-95">
                                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                                                     </svg>
                                                 </button>
                                             </div>
 
-                                            <!-- Form fields - Larger spacing -->
-                                            <div class="space-y-4">
+                                            <!-- Form fields - Compact spacing -->
+                                            <div class="space-y-3">
                                                 <!-- Brand Selection -->
                                                 <div>
-                                                    <label class="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-1.5">
-                                                        <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <label class="block text-xs md:text-sm font-semibold text-slate-700 mb-1.5 flex items-center gap-1">
+                                                        <svg class="w-3.5 h-3.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
                                                         </svg>
                                                         Select Brand
                                                     </label>
                                                     <div class="relative">
-                                                        <select class="part-brand-select w-full p-3.5 md:p-4 pl-4 pr-10 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 bg-white text-base font-medium text-slate-700 appearance-none cursor-pointer hover:border-indigo-300 transition-all touch-manipulation">
+                                                        <select class="part-brand-select w-full p-2.5 md:p-3 pl-3 pr-10 border-2 border-slate-200 rounded-lg md:rounded-xl focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 bg-white text-sm md:text-base font-medium text-slate-700 appearance-none cursor-pointer hover:border-indigo-300 transition-all touch-manipulation">
                                                             <option value="">Choose brand...</option>
                                                             <!-- Brands loaded dynamically -->
                                                         </select>
                                                         <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                                                            <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                                             </svg>
                                                         </div>
@@ -434,52 +434,52 @@
 
                                                 <!-- Part Selection -->
                                                 <div>
-                                                    <label class="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-1.5">
-                                                        <svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <label class="block text-xs md:text-sm font-semibold text-slate-700 mb-1.5 flex items-center gap-1">
+                                                        <svg class="w-3.5 h-3.5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a2 2 0 012-2z"></path>
                                                         </svg>
                                                         Select Part
                                                     </label>
                                                     <div class="relative">
-                                                        <select class="part-name-select w-full p-3.5 md:p-4 pl-4 pr-10 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-400 focus:border-purple-400 bg-white text-base font-medium text-slate-700 appearance-none cursor-pointer hover:border-purple-300 transition-all touch-manipulation" disabled>
+                                                        <select class="part-name-select w-full p-2.5 md:p-3 pl-3 pr-10 border-2 border-slate-200 rounded-lg md:rounded-xl focus:ring-2 focus:ring-purple-400 focus:border-purple-400 bg-white text-sm md:text-base font-medium text-slate-700 appearance-none cursor-pointer hover:border-purple-300 transition-all touch-manipulation" disabled>
                                                             <option value="">Select brand first...</option>
                                                             <!-- Parts loaded dynamically -->
                                                         </select>
                                                         <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                                                            <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                                             </svg>
                                                         </div>
                                                     </div>
                                                     <!-- Stock info -->
-                                                    <div class="part-stock-info mt-2 text-sm font-medium"></div>
+                                                    <div class="part-stock-info mt-1.5 text-xs md:text-sm font-medium"></div>
                                                 </div>
                                                 
                                                 <!-- Quantity and Unit Row -->
-                                                <div class="grid grid-cols-2 gap-3">
+                                                <div class="grid grid-cols-2 gap-2.5">
                                                     <!-- Quantity -->
                                                     <div>
-                                                        <label class="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-1.5">
-                                                            <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <label class="block text-xs md:text-sm font-semibold text-slate-700 mb-1.5 flex items-center gap-1">
+                                                            <svg class="w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path>
                                                             </svg>
                                                             Quantity
                                                         </label>
-                                                        <input type="number" class="part-quantity w-full p-3.5 md:p-4 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-base font-semibold text-slate-700 hover:border-blue-300 transition-all touch-manipulation" 
+                                                        <input type="number" class="part-quantity w-full p-2.5 md:p-3 border-2 border-slate-200 rounded-lg md:rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-sm md:text-base font-semibold text-slate-700 hover:border-blue-300 transition-all touch-manipulation" 
                                                                min="1" placeholder="1" value="1" max="999">
-                                                        <div class="availability-text text-sm mt-1.5 font-medium"></div>
+                                                        <div class="availability-text text-xs mt-1 font-medium"></div>
                                                     </div>
                                                     
                                                     <!-- Unit -->
                                                     <div>
-                                                        <label class="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-1.5">
-                                                            <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <label class="block text-xs md:text-sm font-semibold text-slate-700 mb-1.5 flex items-center gap-1">
+                                                            <svg class="w-3.5 h-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
                                                             </svg>
                                                             Unit
                                                         </label>
                                                         <div class="relative">
-                                                            <select class="part-unit w-full p-3.5 md:p-4 pl-4 pr-10 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-green-400 focus:border-green-400 bg-white text-base font-medium text-slate-700 appearance-none cursor-pointer hover:border-green-300 transition-all touch-manipulation">
+                                                            <select class="part-unit w-full p-2.5 md:p-3 pl-3 pr-10 border-2 border-slate-200 rounded-lg md:rounded-xl focus:ring-2 focus:ring-green-400 focus:border-green-400 bg-white text-sm md:text-base font-medium text-slate-700 appearance-none cursor-pointer hover:border-green-300 transition-all touch-manipulation">
                                                                 <option value="pieces">Pieces</option>
                                                                 <option value="ml">ML</option>
                                                                 <option value="liters">Liters</option>
@@ -492,7 +492,7 @@
                                                                 <option value="sets">Sets</option>
                                                             </select>
                                                             <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                                                                <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                                                 </svg>
                                                             </div>
@@ -503,16 +503,16 @@
                                         </div>
                                     </div>
                                     
-                                    <!-- Add part button - Full Width -->
-                                    <div class="mt-5 flex justify-center">
+                                    <!-- Add part button - Compact -->
+                                    <div class="mt-3 flex justify-center">
                                         <button type="button" id="addPartBtn" 
-                                                class="group relative inline-flex items-center gap-2.5 text-purple-600 hover:text-white font-bold bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-500 hover:to-purple-600 px-6 py-4 md:px-8 md:py-4 rounded-xl transition-all duration-300 border-2 border-purple-200 hover:border-purple-600 shadow-md hover:shadow-xl transform hover:-translate-y-0.5 active:scale-95 touch-manipulation w-full md:w-auto">
-                                            <div class="p-1.5 bg-purple-200 group-hover:bg-white/20 rounded-full transition-all duration-300">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                class="group relative inline-flex items-center gap-2 text-purple-600 hover:text-white font-semibold bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-500 hover:to-purple-600 px-4 py-2.5 md:px-6 md:py-3 rounded-lg md:rounded-xl transition-all duration-300 border-2 border-purple-200 hover:border-purple-600 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 active:scale-95 touch-manipulation w-full md:w-auto text-sm md:text-base">
+                                            <div class="p-1 bg-purple-200 group-hover:bg-white/20 rounded-full transition-all duration-300">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                                                 </svg>
                                             </div>
-                                            <span class="text-base md:text-lg">Add Another Part</span>
+                                            <span>Add Another Part</span>
                                         </button>
                                     </div>
                                 </div>
@@ -540,35 +540,35 @@
                     </div>
 
                     <!-- Additional Notes - Full Width -->
-                    <div class="bg-gradient-to-br from-white to-green-50/50 rounded-xl md:rounded-2xl p-5 md:p-6 border-2 border-green-200 shadow-sm w-full">
-                        <div class="flex items-start gap-2 mb-3">
-                            <div class="p-2.5 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-md flex-shrink-0">
+                    <div class="bg-gradient-to-br from-white to-green-50/50 rounded-none md:rounded-2xl p-4 md:p-6 border-2 border-green-200 shadow-sm w-full">
+                        <div class="flex items-start gap-2 mb-2">
+                            <div class="p-2 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-md flex-shrink-0">
                                 <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path>
                                 </svg>
                             </div>
                             <div class="flex-1">
-                                <h3 class="text-lg md:text-xl font-bold text-slate-800 leading-tight">Additional Notes</h3>
-                                <p class="text-sm text-slate-500 mt-0.5">Optional observations</p>
+                                <h3 class="text-base md:text-xl font-bold text-slate-800 leading-tight">Additional Notes</h3>
+                                <p class="text-xs text-slate-500 mt-0.5">Optional observations</p>
                             </div>
                         </div>
-                        <textarea id="additionalNotes" class="w-full p-4 md:p-4 border-2 border-green-200 rounded-xl resize-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white shadow-inner transition-all hover:border-green-300 text-slate-700 text-base" 
-                                  rows="4" 
+                        <textarea id="additionalNotes" class="w-full p-3 md:p-4 border-2 border-green-200 rounded-lg md:rounded-xl resize-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white shadow-inner transition-all hover:border-green-300 text-slate-700 text-sm md:text-base" 
+                                  rows="3" 
                                   placeholder="Any recommendations or observations..."></textarea>
                     </div>
 
                     <!-- Approval Notice - Full Width -->
-                    <div class="glass-info-card border-l-4 border-blue-500 bg-blue-50/80 rounded-xl p-4 md:p-5 shadow-sm w-full">
-                        <div class="flex items-start gap-3">
-                            <div class="flex-shrink-0 w-8 h-8 md:w-9 md:h-9 bg-blue-100 rounded-full flex items-center justify-center">
-                                <svg class="w-4 h-4 md:w-4.5 md:h-4.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="glass-info-card border-l-4 border-blue-500 bg-blue-50/80 rounded-none md:rounded-xl p-3 md:p-4 shadow-sm w-full">
+                        <div class="flex items-start gap-2">
+                            <div class="flex-shrink-0 w-7 h-7 md:w-8 md:h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
                             </div>
                             <div class="flex-1 min-w-0">
-                                <h3 class="text-base md:text-lg font-semibold text-blue-900 mb-1.5">Approval Required</h3>
-                                <p class="text-blue-800 text-sm md:text-base leading-relaxed">
-                                    This completion will be sent to your coordinator for review. Parts will be deducted upon approval.
+                                <h3 class="text-sm md:text-base font-semibold text-blue-900 mb-1">Approval Required</h3>
+                                <p class="text-blue-800 text-xs md:text-sm leading-relaxed">
+                                    This will be sent to your coordinator for review. Parts will be deducted upon approval.
                                 </p>
                             </div>
                         </div>
@@ -577,20 +577,20 @@
             </div>
         </div>
 
-        <!-- Modal Actions - Fixed at Bottom, Larger Buttons -->
-        <div class="glass-actions-container fixed bottom-0 left-0 right-0 bg-white/98 backdrop-blur-md border-t-2 border-slate-200 p-4 md:p-5 z-[10000] shadow-2xl safe-area-inset-bottom">
-            <div class="max-w-4xl mx-auto flex flex-col sm:flex-row justify-center gap-3 md:gap-4">
-                <button type="button" id="cancelCompletion" class="glass-action-secondary w-full sm:flex-1 sm:max-w-xs px-6 py-4 md:py-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-all duration-200 flex items-center justify-center gap-2.5 shadow-md hover:shadow-lg active:scale-98 touch-manipulation border-2 border-slate-200" onclick="window.closeJobCompletionModal && window.closeJobCompletionModal()">
-                    <svg class="w-5 h-5 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <!-- Modal Actions - Fixed at Bottom, Compact Buttons -->
+        <div class="glass-actions-container fixed bottom-0 left-0 right-0 bg-white/98 backdrop-blur-md border-t-2 border-slate-200 p-3 md:p-4 z-[10000] shadow-2xl safe-area-inset-bottom">
+            <div class="max-w-4xl mx-auto flex flex-row justify-center gap-2 md:gap-3">
+                <button type="button" id="cancelCompletion" class="glass-action-secondary flex-1 max-w-[140px] md:max-w-xs px-4 py-2.5 md:py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg md:rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 shadow-md hover:shadow-lg active:scale-98 touch-manipulation border-2 border-slate-200 text-sm md:text-base" onclick="window.closeJobCompletionModal && window.closeJobCompletionModal()">
+                    <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
-                    <span class="text-base md:text-lg">Cancel</span>
+                    <span>Cancel</span>
                 </button>
-                <button type="submit" form="jobCompletionForm" id="submitCompletion" class="glass-action-primary w-full sm:flex-1 sm:max-w-xs px-6 py-4 md:py-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold rounded-xl transition-all duration-200 flex items-center justify-center gap-2.5 shadow-lg hover:shadow-xl active:scale-98 touch-manipulation">
-                    <svg class="w-5 h-5 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button type="submit" form="jobCompletionForm" id="submitCompletion" class="glass-action-primary flex-1 max-w-[180px] md:max-w-xs px-4 py-2.5 md:py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold rounded-lg md:rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 shadow-lg hover:shadow-xl active:scale-98 touch-manipulation text-sm md:text-base">
+                    <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
-                    <span class="text-base md:text-lg">Submit for Approval</span>
+                    <span>Submit</span>
                 </button>
             </div>
         </div>

@@ -1,35 +1,874 @@
-<!-- Clients Tab Content Component -->
+<!-- Clients Tab Content Component - Voluntary Services -->
 <div class="container mx-auto px-4 py-8 pb-40">
     <div class="max-w-4xl mx-auto">
-        <h1 class="text-2xl md:text-3xl font-bold text-slate-800 mb-8"></h1>
-        <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6">
-            <div class="flex items-center justify-center space-x-2 mb-6">
-                <div class="w-3 h-3 bg-green-500 rounded-full animate-bounce"></div>
-                <span class="text-green-800 font-medium">Hi it's working!</span>
+        <!-- Header -->
+        <div class="mb-6">
+            <h1 class="text-2xl md:text-3xl font-bold text-slate-800 mb-2">📚 Public Schools</h1>
+            <p class="text-slate-600">View assigned schools and perform voluntary printer services</p>
+        </div>
+
+        <!-- Loading State -->
+        <div id="schools-loading" class="text-center py-8">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <p class="text-slate-600 mt-2">Loading schools...</p>
+        </div>
+
+        <!-- Schools List -->
+        <div id="schools-list" class="space-y-4 hidden">
+            <!-- Schools will be dynamically inserted here -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="schools-empty" class="hidden bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-8 text-center">
+            <div class="w-16 h-16 bg-gradient-to-br from-slate-100 to-slate-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span class="text-3xl">🏫</span>
             </div>
-            
-            <p class="text-slate-600 text-center mb-6">Institution management features will be available here.</p>
-            
-            <!-- Sample Institution List -->
-            <div class="space-y-4">
-                <div class="bg-gray-50 rounded-lg p-4 text-left border-l-4 border-blue-500">
-                    <h3 class="font-medium text-gray-700">University of Technology</h3>
-                    <p class="text-xs text-gray-500">Main Campus - 45 printers registered</p>
-                    <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full mt-2 inline-block">Active</span>
-                </div>
-                
-                <div class="bg-gray-50 rounded-lg p-4 text-left border-l-4 border-yellow-500">
-                    <h3 class="font-medium text-gray-700">Business College</h3>
-                    <p class="text-xs text-gray-500">Downtown Campus - 23 printers registered</p>
-                    <span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full mt-2 inline-block">Pending</span>
-                </div>
-                
-                <div class="bg-gray-50 rounded-lg p-4 text-left border-l-4 border-green-500">
-                    <h3 class="font-medium text-gray-700">Medical Center</h3>
-                    <p class="text-xs text-gray-500">Healthcare Complex - 18 printers registered</p>
-                    <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full mt-2 inline-block">Active</span>
-                </div>
-            </div>
+            <h3 class="text-lg font-semibold text-slate-800 mb-2">No Public Schools Assigned</h3>
+            <p class="text-slate-600">You don't have any public schools assigned yet.</p>
         </div>
     </div>
 </div>
+
+<!-- Service Submission Modal - Fullscreen -->
+<div id="serviceModal" class="hidden fixed inset-0 bg-black/50 z-50 overflow-y-auto">
+    <div class="min-h-screen flex items-center justify-center p-0 md:p-4">
+        <div class="bg-white w-full h-screen md:h-auto md:rounded-2xl md:max-w-4xl md:my-8 shadow-2xl flex flex-col md:max-h-[95vh]">
+        <!-- Header -->
+        <div class="p-6 border-b border-slate-200 flex-shrink-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-2xl">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center gap-4">
+                    <div class="p-3 bg-white/20 rounded-xl">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold">Submit Voluntary Service</h2>
+                        <p class="text-blue-100 text-sm">Complete service details</p>
+                    </div>
+                </div>
+                <button onclick="closeServiceModal()" class="bg-white/20 hover:bg-white/30 p-2.5 rounded-xl transition-all">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Content - Scrollable -->
+        <div class="flex-1 overflow-y-auto p-6">
+            <form id="serviceForm" class="space-y-6">
+                <input type="hidden" id="modal-printer-id" name="printer_id">
+                <input type="hidden" id="modal-institution-id" name="institution_id">
+                
+                <!-- Printer Info -->
+                <div class="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-6">
+                    <div class="flex items-center gap-2 mb-3">
+                        <div class="p-2 bg-blue-500 rounded-xl shadow-md">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-800">Printer Information</h3>
+                    </div>
+                    <div id="modal-printer-info" class="text-slate-700">
+                        <!-- Printer info will be inserted here -->
+                    </div>
+                </div>
+
+                <!-- Service Actions -->
+                <div class="bg-white border-2 border-slate-200 rounded-2xl p-6">
+                    <div class="flex items-start gap-2 mb-3">
+                        <div class="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-md flex-shrink-0">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                            </svg>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-xl font-bold text-slate-800">
+                                Actions Performed <span class="text-red-500">*</span>
+                            </h3>
+                            <p class="text-sm text-slate-600">Describe what you did</p>
+                        </div>
+                    </div>
+                    <textarea id="service-description" name="description" rows="4" required
+                        class="w-full p-4 border-2 border-slate-300 rounded-xl resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                        placeholder="e.g., Replaced toner cartridge, cleaned print head, fixed paper jam..."></textarea>
+                </div>
+
+                <!-- Parts & Consumables -->
+                <div class="bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-2xl p-6">
+                    <div class="mb-4 pb-3 border-b-2 border-purple-200">
+                        <div class="flex items-start gap-2 mb-2">
+                            <div class="p-2 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg flex-shrink-0">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-xl font-bold text-slate-800">Parts & Consumables</h3>
+                                <p class="text-sm text-slate-600">Select parts used during service (optional)</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start gap-2 text-sm bg-purple-100 text-purple-700 px-3 py-2 rounded-lg border border-purple-200">
+                            <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span class="font-medium">Parts will be deducted upon approval by coordinator and requester</span>
+                        </div>
+                    </div>
+
+                    <!-- Parts Carousel -->
+                    <div class="relative">
+                        <!-- Navigation Header -->
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm font-semibold text-slate-700">
+                                    <span id="vs-currentPartIndex">1</span>/<span id="vs-totalParts">1</span>
+                                </span>
+                                <div class="flex items-center gap-1.5 bg-purple-100 px-2 py-1 rounded-full border border-purple-200">
+                                    <svg class="w-3.5 h-3.5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                                    </svg>
+                                    <span class="text-xs font-medium text-purple-700" id="vs-totalPartsSelected">0 selected</span>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center gap-1.5">
+                                <button type="button" id="vs-prevPartBtn" onclick="navigatePart(-1)" class="p-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed" disabled>
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                                    </svg>
+                                </button>
+                                <button type="button" id="vs-nextPartBtn" onclick="navigatePart(1)" class="p-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed" disabled>
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Parts Container -->
+                        <div class="overflow-hidden rounded-xl">
+                            <div id="vs-partsContainer" class="flex transition-transform duration-500 ease-in-out">
+                                <!-- Initial Part Entry -->
+                                <div class="vs-part-entry min-w-full bg-white rounded-xl p-5 border-2 border-purple-100 shadow-sm">
+                                    <div class="flex items-center justify-between mb-3 pb-2 border-b border-purple-100">
+                                        <div class="flex items-center gap-1.5">
+                                            <div class="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-sm">
+                                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                                                </svg>
+                                            </div>
+                                            <span class="text-sm font-semibold text-slate-700">Part #<span class="vs-part-number">1</span></span>
+                                        </div>
+                                        <button type="button" onclick="removePart(this)" class="text-red-500 hover:text-red-700 p-1.5 hover:bg-red-50 rounded-lg transition-all">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+
+                                    <div class="space-y-3">
+                                        <!-- Brand Selection -->
+                                        <div>
+                                            <label class="block text-sm font-semibold text-slate-700 mb-1.5">
+                                                <svg class="w-3.5 h-3.5 text-indigo-500 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
+                                                </svg>
+                                                Select Brand
+                                            </label>
+                                            <select class="vs-part-brand w-full p-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 bg-white font-medium text-slate-700" onchange="loadPartsForBrand(this)">
+                                                <option value="">Choose brand...</option>
+                                            </select>
+                                        </div>
+
+                                        <!-- Part Selection -->
+                                        <div>
+                                            <label class="block text-sm font-semibold text-slate-700 mb-1.5">
+                                                <svg class="w-3.5 h-3.5 text-purple-500 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a2 2 0 012-2z"></path>
+                                                </svg>
+                                                Select Part
+                                            </label>
+                                            <select class="vs-part-name w-full p-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-400 focus:border-purple-400 bg-white font-medium text-slate-700" onchange="updatePartStock(this)" disabled>
+                                                <option value="">Select brand first...</option>
+                                            </select>
+                                            <div class="vs-part-stock text-sm mt-1.5 font-medium"></div>
+                                        </div>
+                                        
+                                        <!-- Quantity and Unit -->
+                                        <div class="grid grid-cols-2 gap-2.5">
+                                            <div>
+                                                <label class="block text-sm font-semibold text-slate-700 mb-1.5">
+                                                    <svg class="w-3.5 h-3.5 text-blue-500 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path>
+                                                    </svg>
+                                                    Quantity
+                                                </label>
+                                                <input type="number" class="vs-part-quantity w-full p-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 font-semibold text-slate-700" min="1" value="1" max="999">
+                                            </div>
+                                            
+                                            <div>
+                                                <label class="block text-sm font-semibold text-slate-700 mb-1.5">
+                                                    <svg class="w-3.5 h-3.5 text-green-500 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                                                    </svg>
+                                                    Unit
+                                                </label>
+                                                <select class="vs-part-unit w-full p-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-green-400 focus:border-green-400 bg-white font-medium text-slate-700">
+                                                    <option value="pieces">Pieces</option>
+                                                    <option value="ml">ML</option>
+                                                    <option value="liters">Liters</option>
+                                                    <option value="grams">Grams</option>
+                                                    <option value="kg">KG</option>
+                                                    <option value="bottles">Bottles</option>
+                                                    <option value="cartridges">Cartridges</option>
+                                                    <option value="rolls">Rolls</option>
+                                                    <option value="sheets">Sheets</option>
+                                                    <option value="sets">Sets</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Add Part Button -->
+                        <div class="mt-3 flex justify-center">
+                            <button type="button" onclick="addNewPart()" 
+                                    class="group inline-flex items-center gap-2 text-purple-600 hover:text-white font-semibold bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-500 hover:to-purple-600 px-6 py-3 rounded-xl transition-all duration-300 border-2 border-purple-200 hover:border-purple-600 shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+                                <div class="p-1 bg-purple-200 group-hover:bg-white/20 rounded-full transition-all">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path>
+                                    </svg>
+                                </div>
+                                <span>Add Another Part</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Footer -->
+        <div class="p-6 border-t border-slate-200 flex justify-end space-x-3 flex-shrink-0 bg-slate-50 rounded-b-2xl">
+            <button type="button" onclick="closeServiceModal()"
+                class="px-6 py-2.5 border-2 border-slate-300 text-slate-700 rounded-xl hover:bg-slate-100 font-medium transition-all">
+                Cancel
+            </button>
+            <button type="button" onclick="submitService()"
+                class="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 font-medium shadow-lg hover:shadow-xl transition-all">
+                Submit Service
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Voluntary Services Client Management - Wrapped to avoid redeclaration
+(function() {
+    'use strict';
+    
+    // Check if already initialized
+    if (window.voluntaryServicesInitialized) {
+        console.log('📚 Voluntary services already initialized, skipping...');
+        return;
+    }
+    window.voluntaryServicesInitialized = true;
+    
+    console.log('📚 Voluntary services script loaded');
+
+    // Store data in closure scope accessible to all functions
+    let schoolsData = [];
+    let currentSchoolPrinters = {};
+
+    // Load assigned public schools
+    window.loadAssignedSchools = async function() {
+    console.log('📚 [1/10] Loading assigned schools...');
+    
+    const loadingElement = document.getElementById('schools-loading');
+    const emptyElement = document.getElementById('schools-empty');
+    const listElement = document.getElementById('schools-list');
+    
+    console.log('📚 [2/10] DOM elements found:', {
+        loading: !!loadingElement,
+        empty: !!emptyElement,
+        list: !!listElement
+    });
+    
+    if (!loadingElement || !emptyElement || !listElement) {
+        console.error('❌ Required DOM elements not found!');
+        return;
+    }
+    
+    try {
+        console.log('📚 [3/10] Getting token...');
+        const token = localStorage.getItem('token');
+        console.log('🔑 [4/10] Token exists:', !!token);
+        
+        console.log('🌐 [5/10] Fetching from /api/voluntary-services/assigned-schools');
+        const response = await fetch('/api/voluntary-services/assigned-schools', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        console.log('📡 [6/10] Response status:', response.status);
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ Response error:', errorText);
+            throw new Error(`Failed to load schools: ${response.status} - ${errorText}`);
+        }
+
+        console.log('📚 [7/10] Parsing JSON response...');
+        schoolsData = await response.json();
+        console.log('✅ [8/10] Schools loaded:', schoolsData);
+        
+        console.log('📚 [9/10] Hiding loading element...');
+        loadingElement.classList.add('hidden');
+        
+        if (schoolsData.length === 0) {
+            console.log('ℹ️ [10/10] No schools found, showing empty state');
+            emptyElement.classList.remove('hidden');
+        } else {
+            console.log(`✅ [10a/10] Rendering ${schoolsData.length} schools`);
+            window.renderSchools();
+            console.log(`✅ [10b/10] Showing schools list`);
+            listElement.classList.remove('hidden');
+            console.log(`✅ [10c/10] DONE!`);
+        }
+    } catch (error) {
+        console.error('❌ Error loading schools:', error);
+        loadingElement.innerHTML = `
+            <div class="text-center py-8 text-red-600">
+                <p>⚠️ Failed to load schools</p>
+                <p class="text-sm mt-2">${error.message}</p>
+                <button onclick="loadAssignedSchools()" class="mt-2 text-blue-600 hover:underline">Retry</button>
+            </div>
+        `;
+    }
+}
+
+// Render schools list
+window.renderSchools = function() {
+    const container = document.getElementById('schools-list');
+    container.innerHTML = schoolsData.map(school => `
+        <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 overflow-hidden">
+            <div class="bg-gradient-to-r from-blue-600 to-blue-700 p-4 text-white">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                            <span class="text-2xl">🏫</span>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-lg">${school.institution_name}</h3>
+                            <p class="text-blue-100 text-sm">${school.institution_id}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-2xl font-bold">${school.total_printers}</div>
+                        <div class="text-xs text-blue-100">Printers</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-4">
+                <div class="grid grid-cols-3 gap-4 mb-4">
+                    <div class="text-center">
+                        <div class="text-xl font-bold text-green-600">${school.serviced_count || 0}</div>
+                        <div class="text-xs text-slate-600">Serviced</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-xl font-bold text-orange-600">${school.pending_count || 0}</div>
+                        <div class="text-xs text-slate-600">Pending</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-xl font-bold text-slate-600">${Math.max(0, school.total_printers - (school.serviced_count || 0))}</div>
+                        <div class="text-xs text-slate-600">Remaining</div>
+                    </div>
+                </div>
+                
+                <button onclick="loadSchoolPrinters('${school.institution_id}')"
+                    class="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 font-medium">
+                    View Printers →
+                </button>
+            </div>
+            
+            <div id="printers-${school.institution_id}" class="hidden border-t border-slate-200"></div>
+        </div>
+    `).join('');
+}
+
+// Load printers for a specific school
+window.loadSchoolPrinters = async function(institutionId) {
+    const container = document.getElementById(`printers-${institutionId}`);
+    
+    if (!container.classList.contains('hidden')) {
+        container.classList.add('hidden');
+        return;
+    }
+    
+    container.innerHTML = `
+        <div class="p-4 text-center">
+            <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+            <p class="text-slate-600 text-sm mt-2">Loading printers...</p>
+        </div>
+    `;
+    container.classList.remove('hidden');
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`/api/voluntary-services/school-printers/${institutionId}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) throw new Error('Failed to load printers');
+
+        const printers = await response.json();
+        currentSchoolPrinters[institutionId] = printers;
+        
+        if (printers.length === 0) {
+            container.innerHTML = `
+                <div class="p-4 text-center text-slate-600">
+                    <p>No printers found for this school</p>
+                </div>
+            `;
+        } else {
+            container.innerHTML = `
+                <div class="p-4 space-y-3">
+                    ${printers.map(printer => window.renderPrinterCard(printer, institutionId)).join('')}
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Error loading printers:', error);
+        container.innerHTML = `
+            <div class="p-4 text-center text-red-600">
+                <p>⚠️ Failed to load printers</p>
+                <button onclick="loadSchoolPrinters('${institutionId}')" class="mt-2 text-blue-600 hover:underline">Retry</button>
+            </div>
+        `;
+    }
+}
+
+// Render printer card
+window.renderPrinterCard = function(printer, institutionId) {
+    const hasService = printer.last_service_status !== null;
+    const statusColors = {
+        'pending_coordinator': 'bg-yellow-100 text-yellow-800 border-yellow-200',
+        'pending_requester': 'bg-blue-100 text-blue-800 border-blue-200',
+        'completed': 'bg-green-100 text-green-800 border-green-200',
+        'rejected': 'bg-red-100 text-red-800 border-red-200'
+    };
+    
+    return `
+        <div class="bg-slate-50 rounded-lg p-4 border border-slate-200">
+            <div class="flex items-start justify-between mb-3">
+                <div class="flex-1">
+                    <div class="flex items-center space-x-2 mb-1">
+                        <span class="text-lg">🖨️</span>
+                        <h4 class="font-semibold text-slate-800">${printer.brand} ${printer.model}</h4>
+                    </div>
+                    <p class="text-sm text-slate-600">Serial: ${printer.serial_number || 'N/A'}</p>
+                    ${printer.location ? `<p class="text-sm text-slate-600">📍 ${printer.location}</p>` : ''}
+                </div>
+                ${hasService ? `
+                    <span class="px-3 py-1 text-xs font-medium rounded-full border ${statusColors[printer.last_service_status] || 'bg-slate-100 text-slate-800'}">
+                        ${printer.last_service_status === 'pending_coordinator' ? '⏳ Coordinator Review' :
+                          printer.last_service_status === 'pending_requester' ? '⏳ Requester Review' :
+                          printer.last_service_status === 'completed' ? '✅ Completed' :
+                          printer.last_service_status === 'rejected' ? '❌ Rejected' : printer.last_service_status}
+                    </span>
+                ` : `
+                    <span class="px-3 py-1 text-xs font-medium rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                        ⚪ Not Serviced
+                    </span>
+                `}
+            </div>
+            
+            ${hasService ? `
+                <div class="text-sm text-slate-600 mb-3">
+                    <p>Last service: ${new Date(printer.last_service_date).toLocaleDateString()}</p>
+                </div>
+            ` : ''}
+            
+            <button onclick="openServiceModal('${printer.id}', '${institutionId}', '${printer.brand}', '${printer.model}', '${printer.serial_number || ''}')"
+                class="w-full py-2 ${hasService ? 'bg-slate-200 text-slate-700 hover:bg-slate-300' : 'bg-gradient-to-r from-green-600 to-green-700 text-white hover:from-green-700 hover:to-green-800'} rounded-lg font-medium text-sm">
+                ${hasService ? '🔄 Submit New Service' : '➕ Perform Service'}
+            </button>
+        </div>
+    `;
+}
+
+// Open service submission modal
+window.openServiceModal = async function(printerId, institutionId, brand, model, serialNumber) {
+    document.getElementById('modal-printer-id').value = printerId;
+    document.getElementById('modal-institution-id').value = institutionId;
+    document.getElementById('modal-printer-info').innerHTML = `
+        <div class="flex items-center space-x-3">
+            <span class="text-2xl">🖨️</span>
+            <div>
+                <p class="font-semibold text-slate-800">${brand} ${model}</p>
+                <p class="text-sm text-slate-600">Serial: ${serialNumber || 'N/A'}</p>
+            </div>
+        </div>
+    `;
+    
+    // Reset form
+    document.getElementById('serviceForm').reset();
+    
+    // Reset carousel to first part
+    vsCurrentPartIndex = 0;
+    const container = document.getElementById('vs-partsContainer');
+    
+    // Keep only first part entry and reset it
+    while (container.children.length > 1) {
+        container.removeChild(container.lastChild);
+    }
+    const firstPart = container.firstElementChild;
+    firstPart.querySelector('.vs-part-brand').value = '';
+    firstPart.querySelector('.vs-part-name').value = '';
+    firstPart.querySelector('.vs-part-name').disabled = true;
+    firstPart.querySelector('.vs-part-quantity').value = '1';
+    firstPart.querySelector('.vs-part-unit').value = 'pieces';
+    firstPart.querySelector('.vs-part-stock').innerHTML = '';
+    
+    container.style.transform = 'translateX(0)';
+    
+    // Load parts data and update controls
+    await loadPartsData();
+    updateCarouselControls();
+    
+    document.getElementById('serviceModal').classList.remove('hidden');
+}
+
+// Close service modal
+window.closeServiceModal = function() {
+    document.getElementById('serviceModal').classList.add('hidden');
+}
+
+// Parts carousel state
+let vsCurrentPartIndex = 0;
+let vsAllBrands = [];
+let vsAllParts = [];
+
+// Load brands and parts data
+async function loadPartsData() {
+    try {
+        const token = localStorage.getItem('token');
+        console.log('🔄 Loading brands and parts...');
+        
+        const [brandsRes, partsRes] = await Promise.all([
+            fetch('/api/technician/inventory/brands', { 
+                headers: { 'Authorization': `Bearer ${token}` } 
+            }),
+            fetch('/api/technician/inventory', { 
+                headers: { 'Authorization': `Bearer ${token}` } 
+            })
+        ]);
+        
+        console.log('📡 Brands response:', brandsRes.status);
+        console.log('📡 Parts response:', partsRes.status);
+        
+        if (brandsRes.ok && partsRes.ok) {
+            vsAllBrands = await brandsRes.json();
+            vsAllParts = await partsRes.json();
+            
+            console.log('✅ Loaded brands:', vsAllBrands.length);
+            console.log('✅ Loaded parts:', vsAllParts.length);
+            console.log('📦 Sample brands:', vsAllBrands.slice(0, 3));
+            console.log('📦 Sample parts:', vsAllParts.slice(0, 3));
+            
+            // Populate brand dropdowns
+            const brandOptions = '<option value="">Choose brand...</option>' + 
+                vsAllBrands.map(b => `<option value="${b.brand}">${b.brand}</option>`).join('');
+            
+            document.querySelectorAll('.vs-part-brand').forEach(select => {
+                select.innerHTML = brandOptions;
+            });
+            
+            console.log('✅ Brand dropdowns populated');
+        } else {
+            console.error('❌ Failed to load data:', {
+                brands: brandsRes.status,
+                parts: partsRes.status
+            });
+            alert('Failed to load parts inventory. Please try again.');
+        }
+    } catch (error) {
+        console.error('❌ Error loading parts data:', error);
+        alert('Error loading parts: ' + error.message);
+    }
+}
+
+// Load parts for selected brand
+window.loadPartsForBrand = function(brandSelect) {
+    const partEntry = brandSelect.closest('.vs-part-entry');
+    const partNameSelect = partEntry.querySelector('.vs-part-name');
+    const brand = brandSelect.value;
+    
+    console.log('🔍 Loading parts for brand:', brand);
+    
+    if (!brand) {
+        partNameSelect.innerHTML = '<option value="">Select brand first...</option>';
+        partNameSelect.disabled = true;
+        return;
+    }
+    
+    // Filter parts by brand - check field name from API response
+    const brandParts = vsAllParts.filter(p => p.brand === brand);
+    console.log('📦 Found parts for brand:', brandParts.length);
+    
+    if (brandParts.length === 0) {
+        partNameSelect.innerHTML = '<option value="">No parts available for this brand</option>';
+        partNameSelect.disabled = true;
+        return;
+    }
+    
+    partNameSelect.innerHTML = '<option value="">Choose part...</option>' + 
+        brandParts.map(p => `<option value="${p.part_id}" data-stock="${p.assigned_quantity}">${p.name}</option>`).join('');
+    partNameSelect.disabled = false;
+    
+    console.log('✅ Parts dropdown populated');
+}
+
+// Update part stock display
+window.updatePartStock = function(partSelect) {
+    const partEntry = partSelect.closest('.vs-part-entry');
+    const stockDiv = partEntry.querySelector('.vs-part-stock');
+    const selectedOption = partSelect.options[partSelect.selectedIndex];
+    const stock = selectedOption?.dataset.stock || 0;
+    
+    if (partSelect.value) {
+        stockDiv.innerHTML = `<span class="text-${stock > 0 ? 'green' : 'red'}-600">📦 Stock: ${stock}</span>`;
+    } else {
+        stockDiv.innerHTML = '';
+    }
+}
+
+// Add new part entry
+window.addNewPart = function() {
+    const container = document.getElementById('vs-partsContainer');
+    const partCount = container.children.length;
+    
+    const newPart = document.createElement('div');
+    newPart.className = 'vs-part-entry min-w-full bg-white rounded-xl p-5 border-2 border-purple-100 shadow-sm';
+    newPart.innerHTML = `
+        <div class="flex items-center justify-between mb-3 pb-2 border-b border-purple-100">
+            <div class="flex items-center gap-1.5">
+                <div class="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-sm">
+                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                    </svg>
+                </div>
+                <span class="text-sm font-semibold text-slate-700">Part #<span class="vs-part-number">${partCount + 1}</span></span>
+            </div>
+            <button type="button" onclick="removePart(this)" class="text-red-500 hover:text-red-700 p-1.5 hover:bg-red-50 rounded-lg transition-all">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+            </button>
+        </div>
+        <div class="space-y-3">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">
+                    <svg class="w-3.5 h-3.5 text-indigo-500 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
+                    </svg>
+                    Select Brand
+                </label>
+                <select class="vs-part-brand w-full p-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 bg-white font-medium text-slate-700" onchange="loadPartsForBrand(this)">
+                    <option value="">Choose brand...</option>
+                    ${vsAllBrands.map(b => `<option value="${b.brand}">${b.brand}</option>`).join('')}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1.5">
+                    <svg class="w-3.5 h-3.5 text-purple-500 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a2 2 0 012-2z"></path>
+                    </svg>
+                    Select Part
+                </label>
+                <select class="vs-part-name w-full p-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-400 focus:border-purple-400 bg-white font-medium text-slate-700" onchange="updatePartStock(this)" disabled>
+                    <option value="">Select brand first...</option>
+                </select>
+                <div class="vs-part-stock text-sm mt-1.5 font-medium"></div>
+            </div>
+            <div class="grid grid-cols-2 gap-2.5">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">
+                        <svg class="w-3.5 h-3.5 text-blue-500 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path>
+                        </svg>
+                        Quantity
+                    </label>
+                    <input type="number" class="vs-part-quantity w-full p-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 font-semibold text-slate-700" min="1" value="1" max="999">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">
+                        <svg class="w-3.5 h-3.5 text-green-500 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                        </svg>
+                        Unit
+                    </label>
+                    <select class="vs-part-unit w-full p-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-green-400 focus:border-green-400 bg-white font-medium text-slate-700">
+                        <option value="pieces">Pieces</option>
+                        <option value="ml">ML</option>
+                        <option value="liters">Liters</option>
+                        <option value="grams">Grams</option>
+                        <option value="kg">KG</option>
+                        <option value="bottles">Bottles</option>
+                        <option value="cartridges">Cartridges</option>
+                        <option value="rolls">Rolls</option>
+                        <option value="sheets">Sheets</option>
+                        <option value="sets">Sets</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.appendChild(newPart);
+    updateCarouselControls();
+}
+
+// Remove part entry
+window.removePart = function(button) {
+    const container = document.getElementById('vs-partsContainer');
+    if (container.children.length <= 1) {
+        alert('At least one part entry is required');
+        return;
+    }
+    
+    const partEntry = button.closest('.vs-part-entry');
+    partEntry.remove();
+    
+    // Renumber remaining parts
+    container.querySelectorAll('.vs-part-number').forEach((el, idx) => {
+        el.textContent = idx + 1;
+    });
+    
+    if (vsCurrentPartIndex >= container.children.length) {
+        vsCurrentPartIndex = container.children.length - 1;
+    }
+    
+    updateCarouselControls();
+    navigatePart(0);
+}
+
+// Navigate carousel
+window.navigatePart = function(direction) {
+    const container = document.getElementById('vs-partsContainer');
+    const totalParts = container.children.length;
+    
+    vsCurrentPartIndex += direction;
+    if (vsCurrentPartIndex < 0) vsCurrentPartIndex = 0;
+    if (vsCurrentPartIndex >= totalParts) vsCurrentPartIndex = totalParts - 1;
+    
+    container.style.transform = `translateX(-${vsCurrentPartIndex * 100}%)`;
+    updateCarouselControls();
+}
+
+// Update carousel controls
+function updateCarouselControls() {
+    const container = document.getElementById('vs-partsContainer');
+    const totalParts = container.children.length;
+    
+    document.getElementById('vs-currentPartIndex').textContent = vsCurrentPartIndex + 1;
+    document.getElementById('vs-totalParts').textContent = totalParts;
+    
+    // Count parts with selections
+    const selectedParts = Array.from(container.querySelectorAll('.vs-part-name'))
+        .filter(select => select.value).length;
+    document.getElementById('vs-totalPartsSelected').textContent = `${selectedParts} selected`;
+    
+    // Update navigation buttons
+    document.getElementById('vs-prevPartBtn').disabled = vsCurrentPartIndex === 0;
+    document.getElementById('vs-nextPartBtn').disabled = vsCurrentPartIndex === totalParts - 1;
+}
+
+// Submit service with parts carousel data
+window.submitService = async function() {
+    const printerId = document.getElementById('modal-printer-id').value;
+    const institutionId = document.getElementById('modal-institution-id').value;
+    const description = document.getElementById('service-description').value;
+
+    if (!description.trim()) {
+        alert('Please provide a service description');
+        return;
+    }
+
+    try {
+        const token = localStorage.getItem('token');
+        
+        // Collect parts data from carousel
+        const partsUsed = [];
+        document.querySelectorAll('.vs-part-entry').forEach(entry => {
+            const brandSelect = entry.querySelector('.vs-part-brand');
+            const partSelect = entry.querySelector('.vs-part-name');
+            const quantity = entry.querySelector('.vs-part-quantity').value;
+            const unit = entry.querySelector('.vs-part-unit').value;
+            
+            if (partSelect.value && quantity > 0) {
+                const selectedOption = partSelect.options[partSelect.selectedIndex];
+                partsUsed.push({
+                    brand: brandSelect.value,
+                    name: selectedOption.text,
+                    qty: parseInt(quantity),
+                    unit: unit
+                });
+            }
+        });
+        
+        const serviceData = {
+            printer_id: parseInt(printerId),
+            institution_id: institutionId,
+            service_description: description.trim(),
+            parts_used: partsUsed.length > 0 ? partsUsed : null
+        };
+
+        const response = await fetch('/api/voluntary-services', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(serviceData)
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to submit service');
+        }
+
+        alert('✅ Service submitted successfully! Awaiting coordinator approval.');
+        closeServiceModal();
+        
+        // Reload the printers for this school
+        loadSchoolPrinters(institutionId);
+    } catch (error) {
+        console.error('Error submitting service:', error);
+        alert('❌ ' + error.message);
+    }
+}
+
+// Initialize on load
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log('📚 DOM loaded, initializing...');
+        window.loadAssignedSchools();
+    });
+} else {
+    // DOM is already ready
+    console.log('📚 DOM already ready, initializing immediately...');
+    setTimeout(() => window.loadAssignedSchools(), 100);
+}
+
+})(); // End of IIFE
+</script>

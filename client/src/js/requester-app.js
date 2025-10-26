@@ -20,10 +20,6 @@ async function loadTopnav() {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     const firstName = user.first_name || '';
     const lastName = user.last_name || '';
-    const fullName = `${firstName} ${lastName}`.trim() || 'User';
-    
-    const _reqUserName = document.getElementById('req-user-name');
-    if (_reqUserName) _reqUserName.textContent = fullName;
     
     const _reqUserInitials = document.getElementById('req-user-initials');
     if (_reqUserInitials) {
@@ -31,9 +27,69 @@ async function loadTopnav() {
       _reqUserInitials.textContent = initials;
     }
     
+    // Fetch and display requester profile (institution name)
+    await loadRequesterProfile();
+    
     // Setup notification system
     setupNotifications();
   } catch (e) { console.error('loadTopnav', e); }
+}
+
+async function loadRequesterProfile() {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.warn('No token found, skipping profile fetch');
+      return;
+    }
+    
+    const response = await fetch('/api/requester/profile', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (response.ok) {
+      const profile = await response.json();
+      console.log('Requester profile loaded:', profile);
+      
+      // Update institution name in banner
+      const institutionNameEl = document.getElementById('req-institution-name');
+      if (institutionNameEl) {
+        institutionNameEl.textContent = profile.institution_name || 'No Institution';
+      }
+      
+      // Update requester name in banner
+      const requesterNameEl = document.getElementById('req-requester-name');
+      if (requesterNameEl) {
+        const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'User';
+        requesterNameEl.textContent = fullName;
+      }
+    } else {
+      console.error('Failed to load requester profile:', response.status);
+      // Use fallback from localStorage
+      useFallbackProfileData();
+    }
+  } catch (error) {
+    console.error('Error loading requester profile:', error);
+    // Use fallback from localStorage
+    useFallbackProfileData();
+  }
+}
+
+function useFallbackProfileData() {
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  
+  const institutionNameEl = document.getElementById('req-institution-name');
+  if (institutionNameEl) {
+    institutionNameEl.textContent = user.institution_name || 'No Institution';
+  }
+  
+  const requesterNameEl = document.getElementById('req-requester-name');
+  if (requesterNameEl) {
+    const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'User';
+    requesterNameEl.textContent = fullName;
+  }
 }
 
 function setupNotifications() {
@@ -374,11 +430,11 @@ async function initHistoryPage() {
         btn.addEventListener('click', () => {
           // Update active state
           filterBtns.forEach(b => {
-            b.classList.remove('bg-blue-600', 'text-white');
-            b.classList.add('text-gray-600', 'hover:bg-gray-100');
+            b.classList.remove('bg-gradient-to-r', 'from-blue-600', 'to-blue-700', 'text-white', 'shadow-md');
+            b.classList.add('text-gray-700', 'bg-gray-50', 'hover:bg-gray-100');
           });
-          btn.classList.add('bg-blue-600', 'text-white');
-          btn.classList.remove('text-gray-600', 'hover:bg-gray-100');
+          btn.classList.add('bg-gradient-to-r', 'from-blue-600', 'to-blue-700', 'text-white', 'shadow-md');
+          btn.classList.remove('text-gray-700', 'bg-gray-50', 'hover:bg-gray-100');
           
           // Filter requests
           const filter = btn.dataset.filter;

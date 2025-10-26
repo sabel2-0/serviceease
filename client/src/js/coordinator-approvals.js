@@ -374,9 +374,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     confirmBtn.disabled = true;
                     confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Approving...';
 
+                    const token = localStorage.getItem('token');
                     const response = await fetch(`/api/approve-user/${userId}`, {
-                method: 'POST'
-            });
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
                     
                     const data = await response.json();
             
@@ -494,9 +499,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     confirmBtn.disabled = true;
                     confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Rejecting...';
 
+                    const token = localStorage.getItem('token');
                     const response = await fetch(`/api/reject-user/${userId}`, {
-                method: 'POST'
-            });
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
                     
                     const data = await response.json();
             

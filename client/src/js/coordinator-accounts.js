@@ -4,8 +4,8 @@
  */
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Check if user is authenticated and has admin role
-    if (!verifyRole(['admin'])) {
+    // Check if user is authenticated and has admin or operations_officer role
+    if (!verifyRole(['admin', 'operations_officer'])) {
         return; // verifyRole will handle redirect
     }
 
@@ -16,6 +16,14 @@ document.addEventListener('DOMContentLoaded', function() {
 // Global variables
 let currentTab = 'all';
 let allCoordinators = [];
+
+/**
+ * Get current user's role
+ */
+function getUserRole() {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    return user.role;
+}
 
 /**
  * Initialize the page and load coordinators
@@ -283,14 +291,23 @@ function renderCoordinatorTable(coordinators) {
                     <button onclick="viewCoordinatorDetails('${coordinator.id}')" class="p-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg" title="View Details">
                         <i class="fas fa-eye"></i>
                     </button>
-                    <button onclick="changeCoordinatorPassword('${coordinator.id}')" class="p-2 action-password rounded-lg" title="Change Password">
-                        <i class="fas fa-key"></i>
-                    </button>
-                    <button onclick="toggleCoordinatorStatus('${coordinator.id}', '${coordinator.status}')" 
-                        class="p-2 ${coordinator.status === 'active' ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-green-50 text-green-600 hover:bg-green-100'} rounded-lg"
-                        title="${coordinator.status === 'active' ? 'Deactivate Account' : 'Activate Account'}">
-                        <i class="fas fa-${coordinator.status === 'active' ? 'user-slash' : 'user-check'}"></i>
-                    </button>
+                    ${getUserRole() === 'admin' ? `
+                        <button onclick="changeCoordinatorPassword('${coordinator.id}')" class="p-2 action-password rounded-lg" title="Change Password">
+                            <i class="fas fa-key"></i>
+                        </button>
+                        <button onclick="toggleCoordinatorStatus('${coordinator.id}', '${coordinator.status}')" 
+                            class="p-2 ${coordinator.status === 'active' ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-green-50 text-green-600 hover:bg-green-100'} rounded-lg"
+                            title="${coordinator.status === 'active' ? 'Deactivate Account' : 'Activate Account'}">
+                            <i class="fas fa-${coordinator.status === 'active' ? 'user-slash' : 'user-check'}"></i>
+                        </button>
+                    ` : `
+                        <button class="p-2 bg-gray-100 text-gray-400 rounded-lg cursor-not-allowed" title="Requires admin privileges" disabled>
+                            <i class="fas fa-key"></i>
+                        </button>
+                        <button class="p-2 bg-gray-100 text-gray-400 rounded-lg cursor-not-allowed" title="Requires admin privileges" disabled>
+                            <i class="fas fa-${coordinator.status === 'active' ? 'user-slash' : 'user-check'}"></i>
+                        </button>
+                    `}
                 </div>
             </td>
         `;
@@ -361,6 +378,15 @@ function viewCoordinatorDetails(coordinatorId) {
         // Show the modal
         document.getElementById('detailsModal').classList.remove('hidden');
         document.getElementById('loadingState').classList.add('hidden');
+        
+        // Hide deactivate button for operations officers
+        const currentUser = getCurrentUser();
+        if (currentUser && currentUser.role === 'operations_officer') {
+            const toggleBtn = document.getElementById('toggleStatusBtn');
+            if (toggleBtn) {
+                toggleBtn.style.display = 'none';
+            }
+        }
     })
     .catch(error => {
         console.error('Error fetching coordinator details:', error);

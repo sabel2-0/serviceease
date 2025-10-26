@@ -163,7 +163,10 @@ document.addEventListener('DOMContentLoaded', () => {
     async function fetchInstitutions() {
         try {
             showLoadingSkeleton();
-            const res = await fetch('/api/institutions');
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/institutions', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             allInstitutions = await res.json();
             filteredInstitutions = allInstitutions;
             
@@ -205,7 +208,10 @@ document.addEventListener('DOMContentLoaded', () => {
         
         try {
             console.log('Fetching printers for institution:', selectedInstitution.institution_id);
-            const res = await fetch(`/api/institutions/${encodeURIComponent(selectedInstitution.institution_id)}/printers`);
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/institutions/${encodeURIComponent(selectedInstitution.institution_id)}/printers`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             console.log('Response status:', res.status);
             
             if (!res.ok) {
@@ -310,7 +316,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadAvailableInventory() {
         try {
-            const res = await fetch('/api/inventory-items?available=true');
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/inventory-items?available=true', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             availableInventory = await res.json();
         } catch (e) {
             console.error('Failed to load available inventory', e);
@@ -398,9 +407,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             const payload = { inventory_item_id: inventoryId };
             try {
+                const token = localStorage.getItem('token');
                 const res = await fetch(`/api/institutions/${encodeURIComponent(selectedInstitution.institution_id)}/printers`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
                     body: JSON.stringify(payload)
                 });
                 if (!res.ok) throw new Error('Failed to assign');
@@ -423,7 +436,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target.classList.contains('deleteBtn')) {
             if (!confirm('Unassign this printer from the client?')) return;
             try {
-                const res = await fetch(`/api/printers/${encodeURIComponent(id)}`, { method: 'DELETE' });
+                const token = localStorage.getItem('token');
+                const res = await fetch(`/api/printers/${encodeURIComponent(id)}`, { 
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
                 if (!res.ok) throw new Error('Failed to delete');
                 await fetchPrinters();
                 await loadAvailableInventory();

@@ -25,7 +25,7 @@ router.get('/service-requests', authenticateTechnician, async (req, res) => {
         const [rows] = await db.query(`
             SELECT 
                 sr.id,
-                CONCAT('SR-', YEAR(sr.created_at), '-', LPAD(sr.id, 4, '0')) as request_number,
+                sr.request_number,
                 sr.institution_id,
                 i.name as institution_name,
                 sr.status,
@@ -42,14 +42,19 @@ router.get('/service-requests', authenticateTechnician, async (req, res) => {
                 CONCAT(ii.name, ' (', ii.brand, ' ', ii.model, ' SN:', ii.serial_number, ')') as printer_full_details,
                 requester.first_name as requester_first_name,
                 requester.last_name as requester_last_name,
-                requester.email as requester_email
+                requester.email as requester_email,
+                sr.is_walk_in,
+                sr.walk_in_customer_name,
+                sr.printer_brand
             FROM service_requests sr
             LEFT JOIN institutions i ON sr.institution_id = i.institution_id
-            JOIN technician_assignments ta ON sr.institution_id = ta.institution_id
+            LEFT JOIN technician_assignments ta ON sr.institution_id = ta.institution_id AND ta.technician_id = ? AND ta.is_active = TRUE
             LEFT JOIN inventory_items ii ON sr.inventory_item_id = ii.id
             LEFT JOIN users requester ON sr.requested_by_user_id = requester.id
-            WHERE ta.technician_id = ? 
-            AND ta.is_active = TRUE
+            WHERE (
+                (ta.technician_id IS NOT NULL) OR 
+                (sr.is_walk_in = TRUE)
+            )
             ${statusFilter}
             ORDER BY sr.created_at DESC
         `, [technicianId]);
@@ -98,8 +103,11 @@ router.get('/service-requests/:requestId', authenticateTechnician, async (req, r
         // Verify that this technician has access to this request
         const [access] = await db.query(`
             SELECT 1 FROM service_requests sr
-            JOIN technician_assignments ta ON sr.institution_id = ta.institution_id
-            WHERE sr.id = ? AND ta.technician_id = ? AND ta.is_active = TRUE
+            LEFT JOIN technician_assignments ta ON sr.institution_id = ta.institution_id
+            WHERE sr.id = ? AND (
+                (ta.technician_id = ? AND ta.is_active = TRUE) OR
+                (sr.is_walk_in = TRUE)
+            )
         `, [requestId, technicianId]);
         
         if (access.length === 0) {
@@ -180,9 +188,12 @@ router.put('/service-requests/:requestId/status', authenticateTechnician, async 
         // Verify that this technician has access to this request
         console.log('[PUT /status] Checking technician access...');
         const [access] = await db.query(`
-            SELECT sr.status FROM service_requests sr
-            JOIN technician_assignments ta ON sr.institution_id = ta.institution_id
-            WHERE sr.id = ? AND ta.technician_id = ? AND ta.is_active = TRUE
+            SELECT sr.status, sr.is_walk_in FROM service_requests sr
+            LEFT JOIN technician_assignments ta ON sr.institution_id = ta.institution_id
+            WHERE sr.id = ? AND (
+                (ta.technician_id = ? AND ta.is_active = TRUE) OR
+                (sr.is_walk_in = TRUE)
+            )
         `, [requestId, technicianId]);
         
         if (access.length === 0) {
@@ -261,6 +272,56 @@ router.put('/service-requests/:requestId/status', authenticateTechnician, async 
             // Continue without failing - history is optional
         }
         
+        // Send notification to coordinator about status change
+        if (status === 'in_progress' && currentStatus !== 'in_progress') {
+            try {
+                const [techDetails] = await db.query(
+                    'SELECT first_name, last_name FROM users WHERE id = ?',
+                    [technicianId]
+                );
+                const [requestDetails] = await db.query(
+                    'SELECT sr.request_number, sr.requested_by_user_id, sr.institution_id, i.user_id as coordinator_id, i.name as institution_name FROM service_requests sr LEFT JOIN institutions i ON sr.institution_id = i.institution_id WHERE sr.id = ?',
+                    [requestId]
+                );
+                
+                if (techDetails[0] && requestDetails[0]) {
+                    const techName = `${techDetails[0].first_name} ${techDetails[0].last_name}`;
+                    const requestNumber = requestDetails[0].request_number;
+                    
+                    // Notify coordinator
+                    if (requestDetails[0].coordinator_id) {
+                        await createNotification({
+                            title: 'Service Request In Progress',
+                            message: `Technician ${techName} has started working on service request ${requestNumber} at ${requestDetails[0].institution_name}.`,
+                            type: 'service_request',
+                            user_id: requestDetails[0].coordinator_id,
+                            sender_id: technicianId,
+                            reference_type: 'service_request',
+                            reference_id: requestId,
+                            priority: 'medium'
+                        });
+                        console.log('✅ Notification sent to coordinator about service progress');
+                    }
+                    
+                    // Notify requester
+                    if (requestDetails[0].requested_by_user_id) {
+                        await createNotification({
+                            title: 'Service Request In Progress',
+                            message: `Technician ${techName} has started working on your service request ${requestNumber}.`,
+                            type: 'service_request',
+                            user_id: requestDetails[0].requested_by_user_id,
+                            sender_id: technicianId,
+                            reference_type: 'service_request',
+                            reference_id: requestId,
+                            priority: 'medium'
+                        });
+                    }
+                }
+            } catch (notifError) {
+                console.error('❌ Failed to send progress notification:', notifError);
+            }
+        }
+        
         // Get the updated request data to return
         console.log('[PUT /status] Fetching updated request data...');
         const [updatedRequest] = await db.query(
@@ -299,9 +360,12 @@ router.post('/service-requests/:requestId/complete', authenticateTechnician, asy
         
         // Verify that this technician has access to this request
         const [access] = await db.query(`
-            SELECT sr.status FROM service_requests sr
-            JOIN technician_assignments ta ON sr.institution_id = ta.institution_id
-            WHERE sr.id = ? AND ta.technician_id = ? AND ta.is_active = TRUE
+            SELECT sr.status, sr.is_walk_in FROM service_requests sr
+            LEFT JOIN technician_assignments ta ON sr.institution_id = ta.institution_id
+            WHERE sr.id = ? AND (
+                (ta.technician_id = ? AND ta.is_active = TRUE) OR
+                (sr.is_walk_in = TRUE)
+            )
         `, [requestId, technicianId]);
         
         if (access.length === 0) {
@@ -406,36 +470,40 @@ router.post('/service-requests/:requestId/complete', authenticateTechnician, asy
                 [requestId, 'pending_approval', actions]
             );
             
-            // Get coordinator for notification (simplified - skip for now since institutions table structure is different)
-            // TODO: Implement coordinator notification when institution-coordinator relationship is properly set up
-            console.log('ℹ️ Coordinator notification skipped - institution structure needs updating');
-            
-            // Send notification to requester that service is completed and awaiting approval
+            // Get coordinator for notification and send notification ONLY to coordinator
+            // Requester will be notified after coordinator approves the service
             try {
                 const [techDetails] = await db.query(
                     'SELECT first_name, last_name FROM users WHERE id = ?',
                     [technicianId]
                 );
                 const [requestDetails] = await db.query(
-                    'SELECT request_number, requested_by_user_id, description FROM service_requests WHERE id = ?',
+                    'SELECT sr.request_number, sr.requested_by_user_id, sr.description, sr.institution_id, i.user_id as coordinator_id, i.name as institution_name FROM service_requests sr LEFT JOIN institutions i ON sr.institution_id = i.institution_id WHERE sr.id = ?',
                     [requestId]
                 );
                 
-                if (techDetails[0] && requestDetails[0] && requestDetails[0].requested_by_user_id) {
-                    await createNotification({
-                        title: 'Service Completed',
-                        message: `Technician ${techDetails[0].first_name} ${techDetails[0].last_name} has completed your service request ${requestDetails[0].request_number}. Awaiting coordinator approval.`,
-                        type: 'success',
-                        user_id: requestDetails[0].requested_by_user_id,
-                        sender_id: technicianId,
-                        reference_type: 'service_request',
-                        reference_id: requestId,
-                        priority: 'medium'
-                    });
-                    console.log('✅ Notification sent to requester about service completion');
+                if (techDetails[0] && requestDetails[0]) {
+                    const techName = `${techDetails[0].first_name} ${techDetails[0].last_name}`;
+                    const requestNumber = requestDetails[0].request_number;
+                    
+                    // Send notification ONLY to coordinator for approval
+                    // Requester will be notified after coordinator approves
+                    if (requestDetails[0].coordinator_id) {
+                        await createNotification({
+                            title: 'Service Request Pending Your Approval',
+                            message: `Technician ${techName} has completed service request ${requestNumber} at ${requestDetails[0].institution_name}. Please review and approve.`,
+                            type: 'service_request',
+                            user_id: requestDetails[0].coordinator_id,
+                            sender_id: technicianId,
+                            reference_type: 'service_request',
+                            reference_id: requestId,
+                            priority: 'high'
+                        });
+                        console.log('✅ Notification sent to coordinator for approval');
+                    }
                 }
             } catch (notifError) {
-                console.error('❌ Failed to send completion notification to requester:', notifError);
+                console.error('❌ Failed to send completion notifications:', notifError);
             }
             
             // Commit the transaction
@@ -470,8 +538,11 @@ router.post('/service-requests/:requestId/issue', authenticateTechnician, async 
         // Verify that this technician has access to this request
         const [access] = await db.query(`
             SELECT 1 FROM service_requests sr
-            JOIN technician_assignments ta ON sr.institution_id = ta.institution_id
-            WHERE sr.id = ? AND ta.technician_id = ? AND ta.is_active = TRUE
+            LEFT JOIN technician_assignments ta ON sr.institution_id = ta.institution_id
+            WHERE sr.id = ? AND (
+                (ta.technician_id = ? AND ta.is_active = TRUE) OR
+                (sr.is_walk_in = TRUE)
+            )
         `, [requestId, technicianId]);
         
         if (access.length === 0) {
@@ -509,9 +580,12 @@ router.post('/service-requests/:requestId/reassign', authenticateTechnician, asy
         
         // Verify that this technician has access to this request
         const [access] = await db.query(`
-            SELECT sr.status FROM service_requests sr
-            JOIN technician_assignments ta ON sr.institution_id = ta.institution_id
-            WHERE sr.id = ? AND ta.technician_id = ? AND ta.is_active = TRUE
+            SELECT sr.status, sr.is_walk_in FROM service_requests sr
+            LEFT JOIN technician_assignments ta ON sr.institution_id = ta.institution_id
+            WHERE sr.id = ? AND (
+                (ta.technician_id = ? AND ta.is_active = TRUE) OR
+                (sr.is_walk_in = TRUE)
+            )
         `, [requestId, technicianId]);
         
         if (access.length === 0) {

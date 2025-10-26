@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Printer Edit API</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-6">
+        <h1 class="text-2xl font-bold mb-6">Printer Edit API Test</h1>
+        
+        <div class="space-y-4">
+            <button onclick="testFetchInventory()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                1. Fetch Inventory Items
+            </button>
+            
+            <button onclick="testEditPrinter()" class="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700">
+                2. Test Edit Printer (HP Laser Pro 213 → HP LaserJet Pro 214)
+            </button>
+            
+            <button onclick="testRevert()" class="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700">
+                3. Revert Changes
+            </button>
+        </div>
+        
+        <div id="output" class="mt-6 p-4 bg-gray-50 rounded border border-gray-200 min-h-[200px]">
+            <p class="text-gray-500">Test output will appear here...</p>
+        </div>
+    </div>
+    
+    <script>
+        const output = document.getElementById('output');
+        
+        function log(message) {
+            output.innerHTML += `<div class="mb-2">${message}</div>`;
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        function clear() {
+            output.innerHTML = '';
+        }
+        
+        async function testFetchInventory() {
+            clear();
+            log('<strong>Fetching inventory items...</strong>');
+            try {
+                const res = await fetch('/api/inventory-items');
+                const items = await res.json();
+                log(`✅ Found ${items.length} item(s)`);
+                items.forEach(item => {
+                    log(`  - ID ${item.id}: ${item.brand} ${item.model} (${item.serial_number}) - ${item.status}`);
+                });
+            } catch (err) {
+                log(`❌ Error: ${err.message}`);
+            }
+        }
+        
+        async function testEditPrinter() {
+            clear();
+            log('<strong>Testing edit functionality...</strong>');
+            try {
+                // First, get all HP Laser Pro 213 items
+                log('1. Fetching HP Laser Pro 213 items...');
+                const res = await fetch('/api/inventory-items');
+                const items = await res.json();
+                const hpItems = items.filter(item => 
+                    item.brand === 'HP' && item.model === 'Laser Pro 213'
+                );
+                
+                if (hpItems.length === 0) {
+                    log('⚠️ No HP Laser Pro 213 items found');
+                    return;
+                }
+                
+                log(`   Found ${hpItems.length} item(s) to update`);
+                
+                // Update each item
+                log('2. Updating items...');
+                for (const item of hpItems) {
+                    const updateRes = await fetch(`/api/inventory-items/${item.id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            brand: 'HP',
+                            model: 'LaserJet Pro 214'
+                        })
+                    });
+                    
+                    if (updateRes.ok) {
+                        log(`   ✅ Updated item ID ${item.id}`);
+                    } else {
+                        log(`   ❌ Failed to update item ID ${item.id}`);
+                    }
+                }
+                
+                // Verify the update
+                log('3. Verifying update...');
+                const verifyRes = await fetch('/api/inventory-items');
+                const updatedItems = await verifyRes.json();
+                const updatedHpItems = updatedItems.filter(item => 
+                    item.brand === 'HP' && item.model === 'LaserJet Pro 214'
+                );
+                
+                log(`✅ Update successful! Now have ${updatedHpItems.length} HP LaserJet Pro 214 item(s)`);
+                
+            } catch (err) {
+                log(`❌ Error: ${err.message}`);
+            }
+        }
+        
+        async function testRevert() {
+            clear();
+            log('<strong>Reverting changes...</strong>');
+            try {
+                const res = await fetch('/api/inventory-items');
+                const items = await res.json();
+                const hpItems = items.filter(item => 
+                    item.brand === 'HP' && item.model === 'LaserJet Pro 214'
+                );
+                
+                if (hpItems.length === 0) {
+                    log('⚠️ No HP LaserJet Pro 214 items found');
+                    return;
+                }
+                
+                log(`Reverting ${hpItems.length} item(s)...`);
+                
+                for (const item of hpItems) {
+                    const updateRes = await fetch(`/api/inventory-items/${item.id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            brand: 'HP',
+                            model: 'Laser Pro 213'
+                        })
+                    });
+                    
+                    if (updateRes.ok) {
+                        log(`   ✅ Reverted item ID ${item.id}`);
+                    }
+                }
+                
+                log('✅ Revert complete!');
+                
+            } catch (err) {
+                log(`❌ Error: ${err.message}`);
+            }
+        }
+    </script>
+</body>
+</html>

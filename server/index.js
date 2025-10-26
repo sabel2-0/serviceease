@@ -93,6 +93,36 @@ async function ensurePrintersTable() {
     }
 }
 
+// Ensure audit logs table exists
+async function ensureAuditLogsTable() {
+    try {
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS audit_logs (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                user_role ENUM('admin', 'technician', 'operations_officer') NOT NULL,
+                action VARCHAR(255) NOT NULL,
+                action_type ENUM('create', 'read', 'update', 'delete', 'login', 'logout', 'approve', 'reject', 'assign', 'complete', 'other') NOT NULL,
+                target_type VARCHAR(100) NULL,
+                target_id VARCHAR(100) NULL,
+                details TEXT NULL,
+                ip_address VARCHAR(45) NULL,
+                user_agent TEXT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_user_id (user_id),
+                INDEX idx_user_role (user_role),
+                INDEX idx_action_type (action_type),
+                INDEX idx_created_at (created_at),
+                INDEX idx_target (target_type, target_id),
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        `);
+        console.log('Ensured audit logs table exists');
+    } catch (err) {
+        console.error('Failed to ensure audit logs table exists:', err);
+    }
+}
+
 // Ensure inventory tables exist
 async function ensureInventoryTables() {
     try {
@@ -262,6 +292,55 @@ async function ensureUserAssignmentsTable() {
     }
 }
 
+// Ensure walk-in service request fields exist
+async function ensureWalkInServiceRequestFields() {
+    try {
+        // Add walk_in_customer_name column if it doesn't exist
+        await db.query(`
+            ALTER TABLE service_requests 
+            ADD COLUMN IF NOT EXISTS walk_in_customer_name VARCHAR(255) NULL AFTER requested_by_user_id
+        `).catch(() => {});
+        
+        // Add printer_brand column for walk-in requests if it doesn't exist
+        await db.query(`
+            ALTER TABLE service_requests 
+            ADD COLUMN IF NOT EXISTS printer_brand VARCHAR(100) NULL AFTER walk_in_customer_name
+        `).catch(() => {});
+        
+        // Add is_walk_in flag
+        await db.query(`
+            ALTER TABLE service_requests 
+            ADD COLUMN IF NOT EXISTS is_walk_in BOOLEAN DEFAULT FALSE AFTER printer_brand
+        `).catch(() => {});
+        
+        // Add parts_used field for technician completion
+        await db.query(`
+            ALTER TABLE service_requests 
+            ADD COLUMN IF NOT EXISTS parts_used TEXT NULL AFTER resolution_notes
+        `).catch(() => {});
+        
+        // Add approval fields
+        await db.query(`
+            ALTER TABLE service_requests 
+            ADD COLUMN IF NOT EXISTS requires_approval BOOLEAN DEFAULT FALSE AFTER parts_used
+        `).catch(() => {});
+        
+        await db.query(`
+            ALTER TABLE service_requests 
+            ADD COLUMN IF NOT EXISTS approved_by INT NULL AFTER requires_approval
+        `).catch(() => {});
+        
+        await db.query(`
+            ALTER TABLE service_requests 
+            ADD COLUMN IF NOT EXISTS approved_at TIMESTAMP NULL AFTER approved_by
+        `).catch(() => {});
+        
+        console.log('Ensured walk-in service request fields exist');
+    } catch (err) {
+        console.error('Failed to ensure walk-in service request fields:', err);
+    }
+}
+
 // Initialize database tables that must exist
 ensurePrintersTable();
 ensureInventoryTables();
@@ -269,6 +348,113 @@ ensurePrinterPartsTable();
 ensureServiceRequestsTables();
 ensureNotificationsTable();
 ensureUserAssignmentsTable();
+ensureWalkInServiceRequestFields();
+ensureAuditLogsTable();
+
+// Audit logging helper function
+async function logAuditAction(userId, userRole, action, actionType, targetType = null, targetId = null, details = null, req = null) {
+    try {
+        const ipAddress = req ? (req.headers['x-forwarded-for'] || req.connection.remoteAddress || req.socket.remoteAddress) : null;
+        const userAgent = req ? req.headers['user-agent'] : null;
+        
+        await db.query(`
+            INSERT INTO audit_logs (user_id, user_role, action, action_type, target_type, target_id, details, ip_address, user_agent)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [userId, userRole, action, actionType, targetType, targetId, details, ipAddress, userAgent]);
+    } catch (error) {
+        console.error('Failed to log audit action:', error);
+    }
+}
+
+// Audit logging middleware for tracked roles
+function auditMiddleware(req, res, next) {
+    // Only track admin, technician, and operations_officer
+    if (req.user && ['admin', 'technician', 'operations_officer'].includes(req.user.role)) {
+        // Store original json and send methods
+        const originalJson = res.json.bind(res);
+        const originalSend = res.send.bind(res);
+        
+        // Track if response was successful
+        res.json = function(data) {
+            if (res.statusCode >= 200 && res.statusCode < 400) {
+                // Log successful action
+                const action = `${req.method} ${req.path}`;
+                const actionType = getActionType(req.method, req.path);
+                const { targetType, targetId } = extractTarget(req);
+                const details = JSON.stringify({
+                    method: req.method,
+                    path: req.path,
+                    query: req.query,
+                    body: sanitizeBody(req.body)
+                });
+                
+                logAuditAction(req.user.id, req.user.role, action, actionType, targetType, targetId, details, req);
+            }
+            return originalJson(data);
+        };
+    }
+    next();
+}
+
+// Helper to determine action type from HTTP method and path
+function getActionType(method, path) {
+    if (path.includes('/login')) return 'login';
+    if (path.includes('/logout')) return 'logout';
+    if (path.includes('/approve')) return 'approve';
+    if (path.includes('/reject')) return 'reject';
+    if (path.includes('/assign')) return 'assign';
+    if (path.includes('/complete')) return 'complete';
+    
+    switch(method) {
+        case 'POST': return 'create';
+        case 'GET': return 'read';
+        case 'PUT':
+        case 'PATCH': return 'update';
+        case 'DELETE': return 'delete';
+        default: return 'other';
+    }
+}
+
+// Helper to extract target from request
+function extractTarget(req) {
+    const path = req.path;
+    let targetType = null;
+    let targetId = null;
+    
+    if (path.includes('/service-requests') || path.includes('/walk-in-service-requests')) {
+        targetType = 'service_request';
+        targetId = req.params.id || req.body.id || req.query.id;
+    } else if (path.includes('/users')) {
+        targetType = 'user';
+        targetId = req.params.id || req.body.id;
+    } else if (path.includes('/printers')) {
+        targetType = 'printer';
+        targetId = req.params.id || req.body.id;
+    } else if (path.includes('/inventory')) {
+        targetType = 'inventory';
+        targetId = req.params.id || req.body.id;
+    } else if (path.includes('/parts')) {
+        targetType = 'parts';
+        targetId = req.params.id || req.body.id;
+    } else if (path.includes('/coordinator')) {
+        targetType = 'coordinator';
+        targetId = req.params.id || req.body.id;
+    }
+    
+    return { targetType, targetId: targetId ? String(targetId) : null };
+}
+
+// Sanitize request body to remove sensitive data
+function sanitizeBody(body) {
+    if (!body) return null;
+    const sanitized = { ...body };
+    // Remove sensitive fields
+    delete sanitized.password;
+    delete sanitized.token;
+    delete sanitized.oldPassword;
+    delete sanitized.newPassword;
+    return sanitized;
+}
 
 // Route for the root path
 app.get('/', (req, res) => {
@@ -562,6 +748,20 @@ app.post('/api/login', async (req, res) => {
                 institutionAddress: institutionData.institution_address
             }
         });
+        
+        // Log audit action for tracked roles
+        if (['admin', 'technician', 'operations_officer'].includes(user.role)) {
+            await logAuditAction(
+                user.id, 
+                user.role, 
+                'User login', 
+                'login', 
+                'user', 
+                String(user.id),
+                JSON.stringify({ email: user.email }),
+                req
+            );
+        }
     } catch (error) {
         console.error('Login error:', error);
         res.status(500).json({ 
@@ -583,10 +783,42 @@ app.get('/api/pending-users', async (req, res) => {
 });
 
 // API endpoint to approve a user
-app.post('/api/approve-user/:userId', async (req, res) => {
+app.post('/api/approve-user/:userId', authenticateAdmin, async (req, res) => {
     try {
         const { userId } = req.params;
+        
+        // Get user details before approval for audit logging
+        const [user] = await db.query(
+            'SELECT first_name, last_name, email, role, approval_status FROM users WHERE id = ?',
+            [userId]
+        );
+        
+        if (!user[0]) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
         await User.approveUser(userId);
+        
+        // Log audit action
+        await logAuditAction(
+            req.user.id,
+            req.user.role,
+            `Approved ${user[0].role} registration: ${user[0].first_name} ${user[0].last_name} (${user[0].email})`,
+            'approve',
+            'user',
+            userId,
+            JSON.stringify({
+                action: `${user[0].role}_approval`,
+                user_id: userId,
+                user_name: `${user[0].first_name} ${user[0].last_name}`,
+                user_email: user[0].email,
+                user_role: user[0].role,
+                previous_status: user[0].approval_status,
+                new_status: 'approved'
+            }),
+            req
+        );
+        
         res.json({ message: 'User approved successfully' });
     } catch (error) {
         console.error('Error approving user:', error);
@@ -595,9 +827,10 @@ app.post('/api/approve-user/:userId', async (req, res) => {
 });
 
 // API endpoint to reject a user
-app.post('/api/reject-user/:userId', async (req, res) => {
+app.post('/api/reject-user/:userId', authenticateAdmin, async (req, res) => {
     try {
         const { userId } = req.params;
+        const { reason } = req.body;
         
         // Validate userId
         if (!userId || isNaN(userId)) {
@@ -610,7 +843,31 @@ app.post('/api/reject-user/:userId', async (req, res) => {
             return res.status(404).json({ error: 'User not found or already processed' });
         }
 
+        const user = users[0];
+        
         await User.rejectUser(userId);
+        
+        // Log audit action
+        await logAuditAction(
+            req.user.id,
+            req.user.role,
+            `Rejected ${user.role} registration: ${user.first_name} ${user.last_name} (${user.email})`,
+            'reject',
+            'user',
+            userId,
+            JSON.stringify({
+                action: `${user.role}_rejection`,
+                user_id: userId,
+                user_name: `${user.first_name} ${user.last_name}`,
+                user_email: user.email,
+                user_role: user.role,
+                previous_status: user.approval_status,
+                new_status: 'rejected',
+                reason: reason || 'No reason provided'
+            }),
+            req
+        );
+        
         res.json({ message: 'User rejected successfully' });
     } catch (error) {
         console.error('Error rejecting user:', error);
@@ -785,6 +1042,91 @@ app.get('/api/admin/dashboard-stats', authenticateAdmin, async (req, res) => {
     } catch (error) {
         console.error('Error fetching dashboard stats:', error);
         res.status(500).json({ error: 'Failed to fetch dashboard statistics' });
+    }
+});
+
+// Coordinator Profile endpoint with institution information
+app.get('/api/coordinator/profile', authenticateCoordinator, async (req, res) => {
+    try {
+        const coordinatorId = req.user.id;
+        
+        // Get coordinator details with institution
+        const [coordinatorRows] = await db.query(`
+            SELECT 
+                u.id, u.first_name, u.last_name, u.email, u.role,
+                i.institution_id, i.name as institution_name, i.type as institution_type, i.address as institution_address
+            FROM users u
+            LEFT JOIN institutions i ON i.user_id = u.id
+            WHERE u.id = ?
+        `, [coordinatorId]);
+        
+        if (coordinatorRows.length === 0) {
+            return res.status(404).json({ error: 'Coordinator not found' });
+        }
+        
+        const profile = coordinatorRows[0];
+        
+        res.json({
+            id: profile.id,
+            first_name: profile.first_name,
+            last_name: profile.last_name,
+            email: profile.email,
+            role: profile.role,
+            institution_id: profile.institution_id,
+            institution_name: profile.institution_name || 'No Institution Assigned',
+            institution_type: profile.institution_type,
+            institution_address: profile.institution_address
+        });
+        
+    } catch (error) {
+        console.error('Error fetching coordinator profile:', error);
+        res.status(500).json({ error: 'Failed to fetch coordinator profile' });
+    }
+});
+
+// Requester Profile Endpoint
+app.get('/api/requester/profile', auth, async (req, res) => {
+    try {
+        const requesterId = req.user.id;
+        
+        // Verify user is a requester
+        if (req.user.role !== 'requester') {
+            return res.status(403).json({ error: 'Access denied. Requester role required.' });
+        }
+        
+        // Get requester details with institution from user_printer_assignments
+        const [requesterRows] = await db.query(`
+            SELECT 
+                u.id, u.first_name, u.last_name, u.email, u.role,
+                i.institution_id, i.name as institution_name, i.type as institution_type, i.address as institution_address
+            FROM users u
+            LEFT JOIN user_printer_assignments upa ON upa.user_id = u.id
+            LEFT JOIN institutions i ON i.institution_id = upa.institution_id
+            WHERE u.id = ?
+            LIMIT 1
+        `, [requesterId]);
+        
+        if (requesterRows.length === 0) {
+            return res.status(404).json({ error: 'Requester not found' });
+        }
+        
+        const profile = requesterRows[0];
+        
+        res.json({
+            id: profile.id,
+            first_name: profile.first_name,
+            last_name: profile.last_name,
+            email: profile.email,
+            role: profile.role,
+            institution_id: profile.institution_id,
+            institution_name: profile.institution_name || 'No Institution Assigned',
+            institution_type: profile.institution_type,
+            institution_address: profile.institution_address
+        });
+        
+    } catch (error) {
+        console.error('Error fetching requester profile:', error);
+        res.status(500).json({ error: 'Failed to fetch requester profile' });
     }
 });
 
@@ -1094,7 +1436,7 @@ app.post('/api/coordinators/:id/users', authenticateCoordinator, async (req, res
                         await createNotification({
                             title: 'Printer Assigned',
                             message: `Coordinator ${coordInfo[0].first_name} ${coordInfo[0].last_name} has assigned you a printer: ${printerDetails}`,
-                            type: 'printer_assigned',
+                            type: 'info',
                             user_id: newUserId,
                             sender_id: coordinatorId,
                             reference_type: 'inventory_item',
@@ -1373,7 +1715,7 @@ app.put('/api/coordinators/:id/users/:userId', authenticateCoordinator, async (r
                         await createNotification({
                             title: 'Printer Assigned',
                             message: `Coordinator ${coordInfo[0].first_name} ${coordInfo[0].last_name} has assigned you a printer: ${printerDetails}`,
-                            type: 'printer_assigned',
+                            type: 'info',
                             user_id: userId,
                             sender_id: coordinatorId,
                             reference_type: 'inventory_item',
@@ -1674,6 +2016,25 @@ app.post('/api/coordinators/:id/approve', authenticateAdmin, async (req, res) =>
             ['approved', true, id]
         );
 
+        // Log audit action
+        await logAuditAction(
+            req.user.id,
+            req.user.role,
+            `Approved coordinator registration: ${user[0].first_name} ${user[0].last_name} (${user[0].email})`,
+            'approve',
+            'user',
+            id,
+            JSON.stringify({
+                action: 'coordinator_approval',
+                coordinator_id: id,
+                coordinator_name: `${user[0].first_name} ${user[0].last_name}`,
+                coordinator_email: user[0].email,
+                previous_status: user[0].approval_status,
+                new_status: 'approved'
+            }),
+            req
+        );
+
         res.json({ 
             message: 'Coordinator approved successfully',
             coordinator: user[0]
@@ -1688,6 +2049,7 @@ app.post('/api/coordinators/:id/approve', authenticateAdmin, async (req, res) =>
 app.post('/api/coordinators/:id/reject', authenticateAdmin, async (req, res) => {
     try {
         const { id } = req.params;
+        const { reason } = req.body;
         
         // Get current coordinator status
         const [user] = await db.query(
@@ -1707,6 +2069,26 @@ app.post('/api/coordinators/:id/reject', authenticateAdmin, async (req, res) => 
         await db.query(
             'UPDATE users SET approval_status = ?, updated_at = NOW() WHERE id = ?',
             ['rejected', id]
+        );
+
+        // Log audit action
+        await logAuditAction(
+            req.user.id,
+            req.user.role,
+            `Rejected coordinator registration: ${user[0].first_name} ${user[0].last_name} (${user[0].email})`,
+            'reject',
+            'user',
+            id,
+            JSON.stringify({
+                action: 'coordinator_rejection',
+                coordinator_id: id,
+                coordinator_name: `${user[0].first_name} ${user[0].last_name}`,
+                coordinator_email: user[0].email,
+                previous_status: user[0].approval_status,
+                new_status: 'rejected',
+                reason: reason || 'No reason provided'
+            }),
+            req
         );
 
         res.json({ 
@@ -1819,7 +2201,7 @@ app.get('/api/institutions/:institutionId/printers', async (req, res) => {
 });
 
 // Assign a printer (from inventory) to an institution
-app.post('/api/institutions/:institutionId/printers', async (req, res) => {
+app.post('/api/institutions/:institutionId/printers', authenticateAdmin, async (req, res) => {
     try {
         const { institutionId } = req.params;
         const { inventory_item_id, location_note } = req.body;
@@ -1828,14 +2210,20 @@ app.post('/api/institutions/:institutionId/printers', async (req, res) => {
             return res.status(400).json({ error: 'inventory_item_id is required' });
         }
 
-        // Validate institution exists
-        const [inst] = await db.query('SELECT institution_id FROM institutions WHERE institution_id = ?', [institutionId]);
+        // Validate institution exists and get coordinator
+        const [inst] = await db.query(
+            'SELECT institution_id, name, user_id FROM institutions WHERE institution_id = ?', 
+            [institutionId]
+        );
         if (inst.length === 0) {
             return res.status(400).json({ error: 'Invalid institution ID' });
         }
 
         // Validate inventory item exists and is available
-        const [item] = await db.query('SELECT id, status FROM inventory_items WHERE id = ?', [inventory_item_id]);
+        const [item] = await db.query(
+            'SELECT id, name, brand, model, serial_number, status FROM inventory_items WHERE id = ?', 
+            [inventory_item_id]
+        );
         if (item.length === 0) {
             return res.status(400).json({ error: 'Invalid inventory item' });
         }
@@ -1853,6 +2241,29 @@ app.post('/api/institutions/:institutionId/printers', async (req, res) => {
         // Mark item as assigned
         await db.query('UPDATE inventory_items SET status = "assigned" WHERE id = ?', [inventory_item_id]);
 
+        // Send notification to coordinator about new printer assignment
+        if (inst[0].user_id) {
+            try {
+                const printerName = item[0].name || `${item[0].brand} ${item[0].model}`.trim();
+                const printerDetails = item[0].serial_number ? 
+                    `${printerName} (SN: ${item[0].serial_number})` : printerName;
+                
+                await createNotification({
+                    title: 'New Printer Assigned to Your Institution',
+                    message: `A printer has been assigned to ${inst[0].name}: ${printerDetails}. ${location_note ? `Location: ${location_note}` : ''}`,
+                    type: 'info',
+                    user_id: inst[0].user_id,
+                    sender_id: null, // Admin assignment
+                    reference_type: 'inventory_item',
+                    reference_id: inventory_item_id,
+                    priority: 'medium'
+                });
+                console.log('✅ Notification sent to coordinator about printer assignment');
+            } catch (notifError) {
+                console.error('❌ Failed to send printer assignment notification:', notifError);
+            }
+        }
+
         res.status(201).json({ message: 'Printer assigned', assignment_id: result.insertId });
     } catch (error) {
         console.error('Error assigning printer:', error);
@@ -1861,7 +2272,7 @@ app.post('/api/institutions/:institutionId/printers', async (req, res) => {
 });
 
 // Update an assignment's location note
-app.put('/api/printers/:id', async (req, res) => {
+app.put('/api/printers/:id', authenticateAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const { location_note } = req.body;
@@ -1887,7 +2298,7 @@ app.put('/api/printers/:id', async (req, res) => {
 });
 
 // Unassign a printer
-app.delete('/api/printers/:id', async (req, res) => {
+app.delete('/api/printers/:id', authenticateAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const [existing] = await db.query('SELECT inventory_item_id FROM client_printer_assignments WHERE id = ?', [id]);
@@ -1933,7 +2344,7 @@ app.get('/api/staff', async (req, res) => {
 });
 
 // Create a new staff member
-app.post('/api/staff', async (req, res) => {
+app.post('/api/staff', authenticateAdmin, async (req, res) => {
     try {
         console.log('Creating new staff member with data:', req.body);
         
@@ -2001,7 +2412,7 @@ app.post('/api/staff', async (req, res) => {
 
 
 // Update staff member details (first name, last name, department, role, status)
-app.put('/api/staff/:id', async (req, res) => {
+app.put('/api/staff/:id', authenticateAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const { first_name, last_name, role, status } = req.body;
@@ -2277,8 +2688,9 @@ app.get('/api/user/profile', auth, async (req, res) => {
 // Get institutions for registration (public endpoint) - MUST come before /:id route
 app.get('/api/institutions/public', async (req, res) => {
     try {
+        // Only return institutions that are not already assigned to a user (available for registration)
         const [rows] = await db.query(
-            'SELECT institution_id, name, type, address FROM institutions ORDER BY name ASC'
+            'SELECT institution_id, name, type, address FROM institutions WHERE user_id IS NULL AND status = "active" ORDER BY name ASC'
         );
         res.json(rows);
     } catch (error) {
@@ -2320,7 +2732,7 @@ app.get('/api/institutions/:id', async (req, res) => {
 });
 
 // Create a new institution
-app.post('/api/institutions', async (req, res) => {
+app.post('/api/institutions', authenticateAdmin, async (req, res) => {
     try {
         console.log('Received POST request to /api/institutions');
         console.log('Request body:', req.body);
@@ -2371,7 +2783,7 @@ app.post('/api/institutions', async (req, res) => {
 });
 
 // Update an institution
-app.put('/api/institutions/:id', async (req, res) => {
+app.put('/api/institutions/:id', authenticateAdmin, async (req, res) => {
     try {
         const { name, type, address } = req.body;
         const institution_id = req.params.id;
@@ -2411,7 +2823,7 @@ app.put('/api/institutions/:id', async (req, res) => {
 });
 
 // Delete an institution
-app.delete('/api/institutions/:id', async (req, res) => {
+app.delete('/api/institutions/:id', authenticateAdmin, async (req, res) => {
     try {
         const institution_id = req.params.id;
         
@@ -2439,7 +2851,7 @@ app.delete('/api/institutions/:id', async (req, res) => {
 });
 
 // Toggle institution status (activate/deactivate)
-app.patch('/api/institutions/:id/status', async (req, res) => {
+app.patch('/api/institutions/:id/status', authenticateAdmin, async (req, res) => {
     try {
         const institution_id = req.params.id;
         const { status } = req.body;
@@ -2548,7 +2960,7 @@ app.get('/api/institutions/:institutionId/technician', async (req, res) => {
 });
 
 // Assign technician to institution
-app.post('/api/technician-assignments', async (req, res) => {
+app.post('/api/technician-assignments', authenticateAdmin, async (req, res) => {
     try {
         const { technician_id, institution_id, assigned_by } = req.body;
         
@@ -2579,14 +2991,14 @@ app.post('/api/technician-assignments', async (req, res) => {
             return res.status(400).json({ error: 'Invalid institution ID' });
         }
         
-        // Verify assigner is admin
+        // Verify assigner is admin or operations officer
         const [adminCheck] = await db.query(
-            'SELECT id FROM users WHERE id = ? AND role = "admin"',
+            'SELECT id FROM users WHERE id = ? AND role IN ("admin", "operations_officer")',
             [assigned_by]
         );
         
         if (adminCheck.length === 0) {
-            return res.status(403).json({ error: 'Only admins can assign technicians' });
+            return res.status(403).json({ error: 'Only admins and operations officers can assign technicians' });
         }
         
         // Check if this specific technician is already assigned to this institution
@@ -2640,7 +3052,7 @@ app.post('/api/technician-assignments', async (req, res) => {
 });
 
 // Remove technician assignment
-app.delete('/api/technician-assignments/:assignmentId', async (req, res) => {
+app.delete('/api/technician-assignments/:assignmentId', authenticateAdmin, async (req, res) => {
     try {
         const { assignmentId } = req.params;
         
@@ -2847,6 +3259,311 @@ app.post('/api/service-requests/:id/status', async (req, res) => {
     }
 });
 
+// Walk-in Service Request Endpoints (Admin/Operations Officer)
+// Create walk-in service request
+app.post('/api/walk-in-service-requests', authenticateAdmin, async (req, res) => {
+    try {
+        const { walk_in_customer_name, printer_brand, priority, issue, location } = req.body;
+        const created_by = req.user.id;
+        
+        // Validation
+        if (!walk_in_customer_name || !printer_brand || !issue) {
+            return res.status(400).json({ 
+                error: 'Customer name, printer brand, and issue description are required' 
+            });
+        }
+        
+        // Generate request number
+        const [countResult] = await db.query('SELECT COUNT(*) as count FROM service_requests');
+        const requestNumber = `SR-${new Date().getFullYear()}-${String(countResult[0].count + 1).padStart(4, '0')}`;
+        
+        // Create service request
+        const [result] = await db.query(
+            `INSERT INTO service_requests (
+                request_number,
+                walk_in_customer_name,
+                printer_brand,
+                is_walk_in,
+                priority,
+                description,
+                location,
+                status,
+                requested_by_user_id,
+                institution_id,
+                created_at
+            ) VALUES (?, ?, ?, TRUE, ?, ?, ?, 'pending', ?, NULL, NOW())`,
+            [requestNumber, walk_in_customer_name, printer_brand, priority || 'medium', issue, location || '', created_by]
+        );
+        
+        // Get available technicians to notify
+        const [technicians] = await db.query(
+            `SELECT id FROM users WHERE role = 'technician' AND status = 'active' AND approval_status = 'approved'`
+        );
+        
+        // Create notification for all technicians
+        for (const tech of technicians) {
+            try {
+                await createNotification({
+                    title: 'New Walk-In Service Request',
+                    message: `Walk-in customer "${walk_in_customer_name}" needs service for ${printer_brand} printer. Issue: ${issue.substring(0, 100)}...`,
+                    type: 'service_request',
+                    user_id: tech.id,
+                    sender_id: created_by,
+                    reference_type: 'service_request',
+                    reference_id: result.insertId,
+                    priority: priority === 'urgent' ? 'urgent' : priority === 'high' ? 'high' : 'medium'
+                });
+            } catch (notifError) {
+                console.error('Failed to create notification for technician:', tech.id, notifError);
+            }
+        }
+        
+        res.status(201).json({
+            message: 'Walk-in service request created successfully',
+            id: result.insertId,
+            request_number: requestNumber
+        });
+        
+    } catch (error) {
+        console.error('Error creating walk-in service request:', error);
+        res.status(500).json({ error: 'Failed to create walk-in service request' });
+    }
+});
+
+// Get walk-in service requests
+app.get('/api/walk-in-service-requests', authenticateAdmin, async (req, res) => {
+    try {
+        const { status } = req.query;
+        
+        let query = `
+            SELECT 
+                sr.*,
+                creator.first_name as created_by_first_name,
+                creator.last_name as created_by_last_name,
+                tech.first_name as technician_first_name,
+                tech.last_name as technician_last_name,
+                sa.status as approval_status,
+                sa.coordinator_id as approved_by,
+                sa.reviewed_at as approved_at,
+                sa.technician_notes,
+                sa.coordinator_notes,
+                approver.first_name as approved_by_first_name,
+                approver.last_name as approved_by_last_name
+            FROM service_requests sr
+            LEFT JOIN users creator ON sr.requested_by_user_id = creator.id
+            LEFT JOIN users tech ON sr.assigned_technician_id = tech.id
+            LEFT JOIN service_approvals sa ON sr.id = sa.service_request_id
+            LEFT JOIN users approver ON sa.coordinator_id = approver.id
+            WHERE sr.is_walk_in = TRUE
+        `;
+        
+        const params = [];
+        if (status) {
+            query += ' AND sr.status = ?';
+            params.push(status);
+        }
+        
+        query += ' ORDER BY sr.created_at DESC';
+        
+        const [rows] = await db.query(query, params);
+        res.json(rows);
+        
+    } catch (error) {
+        console.error('Error fetching walk-in service requests:', error);
+        res.status(500).json({ error: 'Failed to fetch walk-in service requests' });
+    }
+});
+
+// Technician completes walk-in service request with parts used
+app.post('/api/service-requests/:id/complete', auth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { parts, resolution_notes } = req.body; // Changed from parts_used to parts (array)
+        const technician_id = req.user.id;
+        
+        // Verify user is technician
+        if (req.user.role !== 'technician') {
+            return res.status(403).json({ error: 'Only technicians can complete service requests' });
+        }
+        
+        // Get the service request
+        const [requests] = await db.query(
+            'SELECT * FROM service_requests WHERE id = ?',
+            [id]
+        );
+        
+        if (requests.length === 0) {
+            return res.status(404).json({ error: 'Service request not found' });
+        }
+        
+        const request = requests[0];
+        
+        // Update service request to pending_approval status
+        await db.query(
+            `UPDATE service_requests 
+             SET status = 'pending_approval',
+                 completed_at = NOW(),
+                 resolution_notes = ?,
+                 assigned_technician_id = ?,
+                 updated_at = NOW()
+             WHERE id = ?`,
+            [resolution_notes, technician_id, id]
+        );
+        
+        // Save parts used to service_parts_used table
+        if (parts && Array.isArray(parts) && parts.length > 0) {
+            for (const part of parts) {
+                await db.query(
+                    `INSERT INTO service_parts_used (service_request_id, part_name, quantity, part_brand, notes)
+                     VALUES (?, ?, ?, ?, ?)`,
+                    [id, part.name, part.quantity || 1, part.brand || null, part.notes || null]
+                );
+            }
+        }
+        
+        // Create service approval record
+        await db.query(
+            `INSERT INTO service_approvals (service_request_id, status, technician_notes, submitted_at)
+             VALUES (?, 'pending_approval', ?, NOW())`,
+            [id, resolution_notes]
+        );
+        
+        // If it's a walk-in request, notify admins and operations officers for approval
+        if (request.is_walk_in) {
+            const [admins] = await db.query(
+                `SELECT id FROM users WHERE role IN ('admin', 'operations_officer') AND status = 'active'`
+            );
+            
+            const customerName = request.walk_in_customer_name || 'Unknown Customer';
+            const partsText = parts && parts.length > 0 
+                ? parts.map(p => `${p.name} (x${p.quantity || 1})`).join(', ')
+                : 'None';
+            
+            for (const admin of admins) {
+                try {
+                    await createNotification({
+                        title: 'Service Request Completed - Requires Approval',
+                        message: `Technician ${req.user.first_name} ${req.user.last_name} completed service for walk-in customer "${customerName}". Parts used: ${partsText}. Please review and approve.`,
+                        type: 'service_request',
+                        user_id: admin.id,
+                        sender_id: technician_id,
+                        reference_type: 'service_request',
+                        reference_id: id,
+                        priority: 'high'
+                    });
+                } catch (notifError) {
+                    console.error('Failed to create notification:', notifError);
+                }
+            }
+        }
+        
+        res.json({
+            message: 'Service request completed successfully and submitted for approval',
+            requires_approval: request.is_walk_in,
+            status: 'pending_approval'
+        });
+        
+    } catch (error) {
+        console.error('Error completing service request:', error);
+        res.status(500).json({ error: 'Failed to complete service request' });
+    }
+});
+
+// Admin/Operations Officer approves completed service request
+app.post('/api/service-requests/:id/approve-completion', authenticateAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { approved, notes } = req.body;
+        const approver_id = req.user.id;
+        
+        // Get the service request
+        const [requests] = await db.query(
+            'SELECT * FROM service_requests WHERE id = ?',
+            [id]
+        );
+        
+        if (requests.length === 0) {
+            return res.status(404).json({ error: 'Service request not found' });
+        }
+        
+        const request = requests[0];
+        
+        if (request.status !== 'pending_approval') {
+            return res.status(400).json({ error: 'Service request must be in pending_approval status' });
+        }
+        
+        // Update service_approvals table
+        const approvalStatus = approved ? 'approved' : 'revision_requested';
+        await db.query(
+            `UPDATE service_approvals 
+             SET status = ?,
+                 coordinator_id = ?,
+                 coordinator_notes = ?,
+                 reviewed_at = NOW()
+             WHERE service_request_id = ? AND status = 'pending_approval'`,
+            [approvalStatus, approver_id, notes || null, id]
+        );
+        
+        // Update service request status
+        const newStatus = approved ? 'completed' : 'in_progress';
+        await db.query(
+            `UPDATE service_requests 
+             SET status = ?,
+                 resolved_at = ${approved ? 'NOW()' : 'NULL'},
+                 updated_at = NOW()
+             WHERE id = ?`,
+            [newStatus, id]
+        );
+        
+        // Notify technician
+        if (request.assigned_technician_id) {
+            try {
+                await createNotification({
+                    title: approved ? 'Service Request Approved' : 'Service Request Needs Revision',
+                    message: approved 
+                        ? `Your completed service request for "${request.walk_in_customer_name}" has been approved.`
+                        : `Your completed service request for "${request.walk_in_customer_name}" needs revision. ${notes ? `Admin notes: ${notes}` : 'Please review.'}`,
+                    type: approved ? 'success' : 'warning',
+                    user_id: request.assigned_technician_id,
+                    sender_id: approver_id,
+                    reference_type: 'service_request',
+                    reference_id: id,
+                    priority: 'medium'
+                });
+            } catch (notifError) {
+                console.error('Failed to create notification:', notifError);
+            }
+        }
+        
+        res.json({
+            message: approved ? 'Service request approved successfully' : 'Service request sent back for revision'
+        });
+        
+    } catch (error) {
+        console.error('Error approving service request:', error);
+        res.status(500).json({ error: 'Failed to approve service request' });
+    }
+});
+
+// Get parts used for a service request
+app.get('/api/service-parts-used/:requestId', auth, async (req, res) => {
+    try {
+        const { requestId } = req.params;
+        
+        const [parts] = await db.query(
+            `SELECT * FROM service_parts_used 
+             WHERE service_request_id = ? 
+             ORDER BY created_at ASC`,
+            [requestId]
+        );
+        
+        res.json(parts);
+    } catch (error) {
+        console.error('Error fetching parts used:', error);
+        res.status(500).json({ error: 'Failed to fetch parts used' });
+    }
+});
+
 // Service requests are handled in the dedicated router at `server/routes/service-requests.js`
 // (Duplicate inline POST handler removed to avoid double-creation of requests.)
 
@@ -2979,7 +3696,7 @@ app.get('/api/inventory-items/:id', async (req, res) => {
 });
 
 // Create inventory item (printer)
-app.post('/api/inventory-items', async (req, res) => {
+app.post('/api/inventory-items', authenticateAdmin, async (req, res) => {
     try {
         const { name, brand, model, serial_number, location, quantity } = req.body;
         const composedName = (name && String(name).trim()) || [brand, model].filter(Boolean).join(' ').trim();
@@ -3002,7 +3719,7 @@ app.post('/api/inventory-items', async (req, res) => {
 });
 
 // Update inventory item
-app.put('/api/inventory-items/:id', async (req, res) => {
+app.put('/api/inventory-items/:id', authenticateAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const { name, brand, model, serial_number, location, status, quantity } = req.body;
@@ -3037,7 +3754,7 @@ app.put('/api/inventory-items/:id', async (req, res) => {
 });
 
 // Delete inventory item (only if not assigned)
-app.delete('/api/inventory-items/:id', async (req, res) => {
+app.delete('/api/inventory-items/:id', authenticateAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const [assigned] = await db.query('SELECT id FROM client_printer_assignments WHERE inventory_item_id = ?', [id]);
@@ -3099,6 +3816,180 @@ app.use('/api/coordinator/service-approvals', coordinatorServiceApprovalsRouter)
 // Association Rule Mining Routes
 const armRouter = require('./routes/arm');
 app.use('/api/arm', armRouter);
+
+// Voluntary Services Routes
+const voluntaryServicesRouter = require('./routes/voluntary-services');
+app.use('/api/voluntary-services', voluntaryServicesRouter);
+
+// ============================================
+// AUDIT LOGS API ENDPOINTS
+// ============================================
+
+// Get audit logs (admin only)
+app.get('/api/audit-logs', authenticateAdmin, async (req, res) => {
+    try {
+        const { 
+            user_role, 
+            action_type, 
+            start_date, 
+            end_date, 
+            search,
+            page = 1, 
+            limit = 50 
+        } = req.query;
+        
+        const offset = (page - 1) * limit;
+        
+        let whereConditions = [];
+        let queryParams = [];
+        
+        // Filter by user role
+        if (user_role) {
+            whereConditions.push('al.user_role = ?');
+            queryParams.push(user_role);
+        }
+        
+        // Filter by action type
+        if (action_type) {
+            whereConditions.push('al.action_type = ?');
+            queryParams.push(action_type);
+        }
+        
+        // Filter by date range
+        if (start_date) {
+            whereConditions.push('al.created_at >= ?');
+            queryParams.push(start_date);
+        }
+        
+        if (end_date) {
+            whereConditions.push('al.created_at <= ?');
+            queryParams.push(end_date);
+        }
+        
+        // Search in action or details
+        if (search) {
+            whereConditions.push('(al.action LIKE ? OR al.details LIKE ? OR u.first_name LIKE ? OR u.last_name LIKE ?)');
+            const searchTerm = `%${search}%`;
+            queryParams.push(searchTerm, searchTerm, searchTerm, searchTerm);
+        }
+        
+        const whereClause = whereConditions.length > 0 ? 'WHERE ' + whereConditions.join(' AND ') : '';
+        
+        // Get total count
+        const [countResult] = await db.query(`
+            SELECT COUNT(*) as total
+            FROM audit_logs al
+            INNER JOIN users u ON al.user_id = u.id
+            ${whereClause}
+        `, queryParams);
+        
+        const total = countResult[0].total;
+        
+        // Get paginated logs
+        const [logs] = await db.query(`
+            SELECT 
+                al.*,
+                u.first_name,
+                u.last_name,
+                u.email
+            FROM audit_logs al
+            INNER JOIN users u ON al.user_id = u.id
+            ${whereClause}
+            ORDER BY al.created_at DESC
+            LIMIT ? OFFSET ?
+        `, [...queryParams, parseInt(limit), parseInt(offset)]);
+        
+        res.json({
+            logs,
+            pagination: {
+                page: parseInt(page),
+                limit: parseInt(limit),
+                total,
+                totalPages: Math.ceil(total / limit)
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error fetching audit logs:', error);
+        res.status(500).json({ error: 'Failed to fetch audit logs' });
+    }
+});
+
+// Get audit log statistics (admin only)
+app.get('/api/audit-logs/stats', authenticateAdmin, async (req, res) => {
+    try {
+        const { start_date, end_date } = req.query;
+        
+        let dateFilter = '';
+        let queryParams = [];
+        
+        if (start_date && end_date) {
+            dateFilter = 'WHERE created_at BETWEEN ? AND ?';
+            queryParams = [start_date, end_date];
+        }
+        
+        // Get action counts by type
+        const [actionStats] = await db.query(`
+            SELECT 
+                action_type,
+                COUNT(*) as count
+            FROM audit_logs
+            ${dateFilter}
+            GROUP BY action_type
+            ORDER BY count DESC
+        `, queryParams);
+        
+        // Get user role activity
+        const [roleStats] = await db.query(`
+            SELECT 
+                user_role,
+                COUNT(*) as count
+            FROM audit_logs
+            ${dateFilter}
+            GROUP BY user_role
+            ORDER BY count DESC
+        `, queryParams);
+        
+        // Get most active users
+        const [userStats] = await db.query(`
+            SELECT 
+                al.user_id,
+                u.first_name,
+                u.last_name,
+                u.email,
+                u.role,
+                COUNT(*) as action_count
+            FROM audit_logs al
+            INNER JOIN users u ON al.user_id = u.id
+            ${dateFilter}
+            GROUP BY al.user_id, u.first_name, u.last_name, u.email, u.role
+            ORDER BY action_count DESC
+            LIMIT 10
+        `, queryParams);
+        
+        // Get recent activity (last 24 hours)
+        const [recentActivity] = await db.query(`
+            SELECT 
+                DATE_FORMAT(created_at, '%Y-%m-%d %H:00:00') as hour,
+                COUNT(*) as count
+            FROM audit_logs
+            WHERE created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+            GROUP BY hour
+            ORDER BY hour ASC
+        `);
+        
+        res.json({
+            actionStats,
+            roleStats,
+            userStats,
+            recentActivity
+        });
+        
+    } catch (error) {
+        console.error('Error fetching audit log statistics:', error);
+        res.status(500).json({ error: 'Failed to fetch audit log statistics' });
+    }
+});
 
 // Generic HTML fallback: serve any page from client/src/pages if it exists
 app.get('/:page.html', (req, res, next) => {

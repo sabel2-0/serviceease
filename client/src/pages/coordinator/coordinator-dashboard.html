@@ -20,16 +20,15 @@
 </head>
 <body class="bg-gray-100">
     <div class="flex h-screen">
-        <!-- Dynamic Sidebar -->
-        <div id="dynamic-sidebar"></div>
+        <!-- Sidebar Container -->
+        <div id="sidebar-container" class="flex-shrink-0 w-64 bg-gray-900 text-white"></div>
 
         <!-- Main Content Area -->
         <main class="flex-1 overflow-y-auto">
+            <!-- Unified Header -->
+            <div id="coordinator-header-container"></div>
+            
             <div class="p-8">
-                <div class="mb-8">
-                    <h2 class="text-3xl font-bold text-gray-900">Welcome Back, <span id="welcome-name">John</span></h2>
-                    <p class="text-gray-600">Here's what's happening with your service requests</p>
-                </div>
 
                 <!-- Stats Overview -->
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -96,8 +95,19 @@
     </div>
 
     <script src="../../js/auth.js"></script>
-    <script src="../../js/dynamic-sidebar-loader.js"></script>
-    <script src="../../js/coordinator-sidebar.js"></script>
+    <script src="../../js/coordinator-sidenav.js"></script>
+    <script src="../../js/coordinator-header-loader.js"></script>
     <script src="../../js/coordinator-app.js"></script>
+    <script>
+        // Load header with page-specific content
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.loadCoordinatorHeader) {
+                window.loadCoordinatorHeader({
+                    title: 'Dashboard',
+                    subtitle: "Here's what's happening with your service requests"
+                });
+            }
+        });
+    </script>
 </body>
 </html>

@@ -3,6 +3,26 @@ const router = express.Router();
 const db = require('../config/database');
 const { authenticateTechnician } = require('../middleware/auth');
 
+// Get unique brands from technician's inventory
+router.get('/inventory/brands', authenticateTechnician, async (req, res) => {
+    try {
+        const technicianId = req.user.id;
+        
+        const [rows] = await db.query(`
+            SELECT DISTINCT pp.brand
+            FROM technician_inventory ti
+            JOIN printer_parts pp ON ti.part_id = pp.id
+            WHERE ti.technician_id = ? AND ti.quantity > 0 AND pp.brand IS NOT NULL
+            ORDER BY pp.brand ASC
+        `, [technicianId]);
+        
+        res.json(rows);
+    } catch (error) {
+        console.error('Error fetching brands:', error);
+        res.status(500).json({ error: 'Failed to fetch brands' });
+    }
+});
+
 // Get technician's personal inventory
 router.get('/inventory', authenticateTechnician, async (req, res) => {
     try {

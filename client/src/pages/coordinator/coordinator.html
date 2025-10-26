@@ -226,34 +226,8 @@
         
         <!-- Main Content -->
         <div class="flex-1 overflow-auto">
-            <!-- Top Navigation -->
-            <header class="bg-white shadow-sm">
-                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div class="flex justify-between items-center py-4">
-                        <h1 class="text-2xl font-semibold text-gray-900">Coordinator Dashboard</h1>
-                        <div class="flex items-center space-x-4">
-                            <!-- Notification Bell -->
-                            <button id="notifications-button" class="p-2 rounded-full hover:bg-gray-200 relative">
-                                <i class="fas fa-bell text-gray-600"></i>
-                                <span class="notification-badge absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">0</span>
-                            </button>
-                            
-                            <!-- Profile Dropdown -->
-                            <div class="relative">
-                                <button id="profile-menu-button" class="flex items-center space-x-3 focus:outline-none">
-                                    <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white">
-                                        <span id="user-initials">CC</span>
-                                    </div>
-                                    <div class="hidden md:block text-left">
-                                        <span class="block text-sm font-medium text-gray-900">Welcome, <span id="welcome-name">Coordinator</span></span>
-                                        <span class="block text-sm text-gray-500">Institutional Coordinator</span>
-                                    </div>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </header>
+            <!-- Unified Header -->
+            <div id="coordinator-header-container"></div>
 
             <!-- Main Dashboard Content -->
             <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -727,6 +701,7 @@
         }, true);
     </script>
     <script src="../../js/auth.js"></script>
+    <script src="../../js/coordinator-header-loader.js"></script>
     <script src="../../js/coordinator-ui.js" type="module"></script>
     <script src="../../js/coordinator-sidenav.js"></script>
     <script src="../../js/client-service-management.js"></script>
@@ -770,10 +745,16 @@
     </script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Load unified coordinator header
+            if (window.loadCoordinatorHeader) {
+                window.loadCoordinatorHeader({
+                    title: 'Coordinator Dashboard',
+                    subtitle: 'Overview and statistics'
+                });
+            }
+            
             // Initialize user data
             const user = JSON.parse(localStorage.getItem('user')) || { first_name: 'Coordinator', last_name: 'User' };
-            document.getElementById('welcome-name').textContent = user.first_name;
-            document.getElementById('user-initials').textContent = `${user.first_name?.charAt(0) || 'C'}${user.last_name?.charAt(0) || 'C'}`;
             
             // Check approval status
             checkApprovalStatus();

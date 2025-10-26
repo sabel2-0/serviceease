@@ -67,6 +67,26 @@ function verifySectionAccess() {
     const pathInfo = getCurrentPathInfo();
     if (!pathInfo) return true; // Skip check if not in a section
 
+    // Define shared pages that operations officers can access from admin section
+    const sharedAdminPages = [
+        'walk-in-service-requests.html',
+        'parts-requests.html',
+        'service-history.html',
+        'client-management.html',
+        'client-printers.html',
+        'inventory-items.html',
+        'inventory-parts.html',
+        'coordinator-accounts.html',
+        'coordinator-approvals.html'
+    ];
+
+    // Allow operations officers to access certain admin pages
+    if (user.role === 'operations_officer' && 
+        pathInfo.section === 'admin' && 
+        sharedAdminPages.includes(pathInfo.page)) {
+        return true; // Allow access to shared pages
+    }
+
     const allowedSection = (() => {
         switch (user.role) {
             case 'admin': return 'admin';

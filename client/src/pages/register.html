@@ -848,10 +848,33 @@
 
             // Handle institution type selection
             const institutionTypeSelect = document.getElementById('institutionType');
+            
+            // Add event listener to filter institutions when type changes
+            institutionTypeSelect.addEventListener('change', function() {
+                const searchInput = document.getElementById('institutionSearch');
+                // Clear current search
+                searchInput.value = '';
+                selectedInstitution = null;
+                document.getElementById('selectedInstitutionDetails').classList.add('hidden');
+                
+                // Filter and show institutions for selected type
+                if (this.value) {
+                    const filteredByType = getFilteredInstitutionsByType(this.value);
+                    showDropdown(filteredByType);
+                } else {
+                    hideDropdown();
+                }
+            });
 
             // Institution search functionality
             let availableInstitutions = [];
             let selectedInstitution = null;
+            
+            // Function to filter institutions by type
+            function getFilteredInstitutionsByType(type) {
+                if (!type) return availableInstitutions;
+                return availableInstitutions.filter(inst => inst.type === type);
+            }
             
             // Load institutions from API
             async function loadInstitutions() {
@@ -883,13 +906,20 @@
             function setupInstitutionSearch() {
                 const searchInput = document.getElementById('institutionSearch');
                 const dropdown = document.getElementById('institutionDropdown');
+                const typeSelect = document.getElementById('institutionType');
                 
                 searchInput.addEventListener('input', function() {
                     const searchTerm = this.value.toLowerCase().trim();
+                    const selectedType = typeSelect.value;
+                    
+                    // First filter by type if selected
+                    let baseInstitutions = selectedType ? 
+                        getFilteredInstitutionsByType(selectedType) : 
+                        availableInstitutions;
                     
                     if (searchTerm.length === 0) {
-                        // Show all institutions when search is empty
-                        showDropdown(availableInstitutions);
+                        // Show institutions filtered by type when search is empty
+                        showDropdown(baseInstitutions);
                         return;
                     }
                     
@@ -898,9 +928,9 @@
                         return;
                     }
                     
-                    const filteredInstitutions = availableInstitutions.filter(inst => 
+                    // Filter by search term within the type-filtered list
+                    const filteredInstitutions = baseInstitutions.filter(inst => 
                         inst.name.toLowerCase().includes(searchTerm) ||
-                        inst.type.toLowerCase().includes(searchTerm) ||
                         inst.address.toLowerCase().includes(searchTerm)
                     );
                     
@@ -908,14 +938,21 @@
                 });
                 
                 searchInput.addEventListener('focus', function() {
-                    // Show all institutions when user clicks the search bar
+                    const selectedType = typeSelect.value;
+                    
+                    // Get institutions filtered by type
+                    let baseInstitutions = selectedType ? 
+                        getFilteredInstitutionsByType(selectedType) : 
+                        availableInstitutions;
+                    
+                    // Show institutions filtered by type when user clicks the search bar
                     if (this.value.length === 0) {
-                        showDropdown(availableInstitutions);
-                    } else if (this.value.length >= 2) {
+                        showDropdown(baseInstitutions);
+                    } else {
                         const searchTerm = this.value.toLowerCase().trim();
-                        const filteredInstitutions = availableInstitutions.filter(inst => 
+                        const filteredInstitutions = baseInstitutions.filter(inst => 
                             inst.name.toLowerCase().includes(searchTerm) ||
-                            inst.type.toLowerCase().includes(searchTerm)
+                            inst.address.toLowerCase().includes(searchTerm)
                         );
                         showDropdown(filteredInstitutions);
                     }

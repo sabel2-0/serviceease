@@ -54,8 +54,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function fetchInventory() {
         try {
+            const token = localStorage.getItem('token');
             const q = filterAvailable.checked ? '?available=true' : '';
-            const res = await fetch(`/api/inventory-items${q}`);
+            const res = await fetch(`/api/inventory-items${q}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             const items = await res.json();
             currentItems = items;
             render(items);
@@ -205,10 +208,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function addItem() {
         try {
+            const token = localStorage.getItem('token');
             const quantity = 1; // Single printer unit
             const res = await fetch('/api/inventory-items', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({
                     brand: modalBrand.value,
                     model: modalModel.value,
@@ -280,8 +287,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         try {
+            const token = localStorage.getItem('token');
             // Fetch all items with the old brand/model
-            const res = await fetch('/api/inventory-items');
+            const res = await fetch('/api/inventory-items', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             const items = await res.json();
             const itemsToUpdate = items.filter(item => 
                 item.brand === oldBrand && item.model === oldModel
@@ -297,7 +307,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const updatePromises = itemsToUpdate.map(item => 
                 fetch(`/api/inventory-items/${item.id}`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
                     body: JSON.stringify({
                         brand: newBrand,
                         model: newModel
@@ -335,9 +348,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         try {
+            const token = localStorage.getItem('token');
             const res = await fetch(`/api/inventory-items/${unitId}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({
                     serial_number: newSerial
                 })
@@ -509,8 +526,11 @@ window.loadPrintersForModel = async function(brand, model, status = 'all') {
         // Show loading state
         document.getElementById('printersListTbody').innerHTML = '<tr><td colspan="4" class="text-center py-4">Loading...</td></tr>';
         
+        const token = localStorage.getItem('token');
         // Fetch inventory items with assignment information
-        const res = await fetch('/api/inventory-items?assignments=true');
+        const res = await fetch('/api/inventory-items?assignments=true', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
         if (!res.ok) {
             throw new Error(`HTTP error! status: ${res.status}`);
         }

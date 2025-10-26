@@ -189,14 +189,17 @@ function initializeOperationsOfficerSidebar() {
                 return;
             }
             
-            // Allow access to specific admin pages
+            // Allow access to specific admin pages that operations officers can access
             const allowedAdminPages = [
                 'coordinator-accounts.html',
                 'coordinator-approvals.html',
                 'client-management.html',
                 'client-printers.html',
                 'inventory-items.html',
-                'inventory-parts.html'
+                'inventory-parts.html',
+                'parts-requests.html',
+                'walk-in-service-requests.html',
+                'service-history.html'
             ];
             
             // Check if the link is to an allowed admin page

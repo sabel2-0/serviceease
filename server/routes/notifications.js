@@ -121,7 +121,7 @@ router.get('/', async (req, res) => {
             return res.status(500).json({ error: 'Notifications table missing expected user columns' });
         }
 
-        let query = `SELECT ${selectCols} FROM notifications n ${joinSender} WHERE (${userCol} = ? OR (${userCol} IS NULL AND ? = 'admin'))`;
+        let query = `SELECT ${selectCols} FROM notifications n ${joinSender} WHERE (${userCol} = ? OR (${userCol} IS NULL AND ? IN ('admin', 'operations_officer')))`;
         const params = [userId, userRole];
 
         if (is_read !== undefined) {
@@ -170,7 +170,7 @@ router.get('/count/unread', async (req, res) => {
         const [rows] = await db.query(`
             SELECT COUNT(*) as unread_count
             FROM notifications
-            WHERE (${userCol} = ? OR (${userCol} IS NULL AND ? = 'admin'))
+            WHERE (${userCol} = ? OR (${userCol} IS NULL AND ? IN ('admin', 'operations_officer')))
             AND is_read = FALSE
         `, [userId, userRole]);
 
@@ -195,7 +195,7 @@ router.patch('/:id/read', async (req, res) => {
         const [result] = await db.query(`
             UPDATE notifications
             SET is_read = TRUE, updated_at = CURRENT_TIMESTAMP
-            WHERE id = ? AND (${userCol} = ? OR (${userCol} IS NULL AND ? = 'admin'))
+            WHERE id = ? AND (${userCol} = ? OR (${userCol} IS NULL AND ? IN ('admin', 'operations_officer')))
         `, [notificationId, userId, userRole]);
 
         if (result.affectedRows === 0) {
@@ -222,7 +222,7 @@ router.patch('/read-all', async (req, res) => {
         const [result] = await db.query(`
             UPDATE notifications
             SET is_read = TRUE, updated_at = CURRENT_TIMESTAMP
-            WHERE (${userCol} = ? OR (${userCol} IS NULL AND ? = 'admin'))
+            WHERE (${userCol} = ? OR (${userCol} IS NULL AND ? IN ('admin', 'operations_officer')))
             AND is_read = FALSE
         `, [userId, userRole]);
 
@@ -246,7 +246,7 @@ router.delete('/:id', async (req, res) => {
 
         const [result] = await db.query(`
             DELETE FROM notifications
-            WHERE id = ? AND (${userCol} = ? OR (${userCol} IS NULL AND ? = 'admin'))
+            WHERE id = ? AND (${userCol} = ? OR (${userCol} IS NULL AND ? IN ('admin', 'operations_officer')))
         `, [notificationId, userId, userRole]);
 
         if (result.affectedRows === 0) {

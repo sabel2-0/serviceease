@@ -190,166 +190,127 @@ class AdminPartsRequestsManager {
         container.classList.remove('hidden');
         
         container.innerHTML = this.filteredRequests.map(request => this.createRequestCard(request)).join('');
-        
-        // Attach event listeners
-        this.attachRequestEventListeners();
     }
     
     createRequestCard(request) {
         const priorityClass = `priority-${request.priority}`;
         const statusClass = `status-${request.status}`;
         const technicianName = `${request.technician_first_name || ''} ${request.technician_last_name || ''}`.trim();
-        const formattedDate = new Date(request.created_at).toLocaleDateString();
-        const formattedTime = new Date(request.created_at).toLocaleTimeString();
+        const formattedDate = new Date(request.created_at).toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric',
+            year: 'numeric'
+        });
+        const formattedTime = new Date(request.created_at).toLocaleTimeString('en-US', { 
+            hour: '2-digit',
+            minute: '2-digit'
+        });
         
         return `
-            <div class="parts-request-card ${priorityClass} bg-white border-b border-gray-200 p-6 hover:bg-gray-50 cursor-pointer" 
-                 data-request-id="${request.id}">
-                <div class="flex justify-between items-start mb-4">
-                    <div class="flex-1">
-                        <div class="flex items-center gap-3 mb-2">
-                            <h3 class="text-lg font-semibold text-gray-800">${this.escapeHtml(request.part_name)}</h3>
-                            <span class="px-3 py-1 rounded-full text-xs font-medium ${statusClass}">
+            <div class="parts-request-card ${priorityClass} rounded-xl group hover:shadow-lg cursor-pointer h-[460px]" 
+                 data-request-id="${request.id}"
+                 onclick="window.partsRequestsManager.viewRequestDetails(${request.id})">
+                <!-- Fixed Layout Container -->
+                <div class="h-full flex flex-col p-6">
+                    <!-- Header Section -->
+                    <div class="flex items-start space-x-4 mb-4 h-[102px]">
+                        <div class="card-icon priority-icon-${request.priority} p-3 rounded-xl text-white flex-shrink-0">
+                            <i class="fas fa-tools text-lg"></i>
+                        </div>
+                        <div class="flex-1 min-w-0 overflow-hidden">
+                            <!-- Part Name -->
+                            <div class="h-[54px] flex items-start mb-2 overflow-hidden">
+                                <h3 class="font-bold text-lg text-gray-900 transition-colors leading-tight line-clamp-2">
+                                    ${this.escapeHtml(request.part_name)}
+                                </h3>
+                            </div>
+                            <!-- Part Number Row -->
+                            <div class="flex items-center gap-2 h-[44px]">
+                                ${request.part_number ? `
+                                <div class="part-number text-xs px-2 py-1 rounded-md font-medium border truncate">
+                                    ${this.escapeHtml(request.part_number)}
+                                </div>
+                                ` : '<div class="h-6"></div>'}
+                            </div>
+                        </div>
+                        <!-- Status and Priority Section -->
+                        <div class="flex flex-col items-end space-y-2">
+                            <span class="status-badge px-3 py-1 rounded-full text-xs font-semibold ${statusClass}">
                                 ${this.formatStatus(request.status)}
                             </span>
-                        </div>
-                        <div class="text-sm text-gray-600 mb-2">
-                            <strong>Requested by:</strong> ${this.escapeHtml(technicianName)} 
-                            <span class="text-gray-400">(${this.escapeHtml(request.technician_email)})</span>
-                        </div>
-                        <div class="text-sm text-gray-600 mb-3">
-                            <strong>Quantity:</strong> ${request.quantity_requested} units
-                            ${request.part_number ? `<span class="ml-4"><strong>Part #:</strong> ${this.escapeHtml(request.part_number)}</span>` : ''}
-                        </div>
-                    </div>
-                    <div class="text-right">
-                        <div class="text-xs text-gray-500 mb-1">${formattedDate}</div>
-                        <div class="text-xs text-gray-400">${formattedTime}</div>
-                        <div class="mt-2">
                             <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${this.getPriorityClass(request.priority)}">
                                 <i class="fas ${this.getPriorityIcon(request.priority)} mr-1"></i>
                                 ${this.formatPriority(request.priority)}
                             </span>
                         </div>
                     </div>
-                </div>
-                
-                <div class="mb-4">
-                    <div class="text-sm font-medium text-gray-700 mb-1">Reason:</div>
-                    <div class="text-sm text-gray-600 line-clamp-2">${this.escapeHtml(request.reason)}</div>
-                </div>
-                
-                ${request.admin_response ? `
-                <div class="mb-4 p-3 bg-blue-50 rounded-lg">
-                    <div class="text-sm font-medium text-blue-800 mb-1">Admin Response:</div>
-                    <div class="text-sm text-blue-700">${this.escapeHtml(request.admin_response)}</div>
-                    ${request.approved_by_first_name ? `
-                    <div class="text-xs text-blue-600 mt-1">
-                        By: ${this.escapeHtml(request.approved_by_first_name)} ${this.escapeHtml(request.approved_by_last_name)}
-                        ${request.approved_at ? `on ${new Date(request.approved_at).toLocaleDateString()}` : ''}
+                    
+                    <!-- Technician and Quantity Information -->
+                    <div class="space-y-2 mb-4 h-[84px] overflow-hidden">
+                        <div class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-user-cog text-gray-400 mr-3 w-4 flex-shrink-0"></i>
+                            <span class="font-medium truncate">${this.escapeHtml(technicianName)}</span>
+                        </div>
+                        <div class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-boxes text-gray-400 mr-3 w-4 flex-shrink-0"></i>
+                            <span>Qty: <span class="font-semibold text-gray-900">${request.quantity_requested}</span> units</span>
+                            <span class="mx-2 text-gray-400">|</span>
+                            <span>Stock: <span class="font-semibold ${request.available_stock > 0 ? 'text-green-600' : 'text-red-600'}">${request.available_stock}</span></span>
+                        </div>
                     </div>
-                    ` : ''}
-                </div>
-                ` : ''}
-                
-                <div class="flex justify-between items-center">
-                    <div class="text-sm text-gray-500">
-                        Available Stock: <span class="font-medium ${request.available_stock > 0 ? 'text-green-600' : 'text-red-600'}">
-                            ${request.available_stock} units
-                        </span>
+                    
+                    <!-- Reason Section -->
+                    <div class="mb-4 h-[68px] overflow-hidden">
+                        <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 h-full">
+                            <div class="text-xs font-medium text-gray-500 mb-1">Reason:</div>
+                            <div class="text-sm text-gray-700 line-clamp-2">${this.escapeHtml(request.reason)}</div>
+                        </div>
                     </div>
-                    <div class="flex gap-2">
-                        ${this.getActionButtons(request)}
+                    
+                    <!-- Footer Section -->
+                    <div class="mt-auto">
+                        <div class="flex justify-between items-center pt-4 border-t border-gray-100">
+                            <!-- Action Buttons -->
+                            <div class="flex space-x-1">
+                                ${request.status === 'pending' ? `
+                                    <button onclick="event.stopPropagation(); window.partsRequestsManager.openResponseModal(${request.id}, 'approve')" 
+                                        class="action-button p-2.5 text-green-600 bg-green-50 hover:bg-green-600 hover:text-white rounded-lg transition-all relative z-1 w-[36px] h-[36px] flex items-center justify-center" 
+                                        title="Approve">
+                                        <i class="fas fa-check text-sm relative z-1"></i>
+                                    </button>
+                                    <button onclick="event.stopPropagation(); window.partsRequestsManager.openResponseModal(${request.id}, 'deny')" 
+                                        class="action-button p-2.5 text-red-600 bg-red-50 hover:bg-red-600 hover:text-white rounded-lg transition-all relative z-1 w-[36px] h-[36px] flex items-center justify-center" 
+                                        title="Deny">
+                                        <i class="fas fa-times text-sm relative z-1"></i>
+                                    </button>
+                                ` : request.status === 'approved' ? `
+                                    <button onclick="event.stopPropagation(); window.partsRequestsManager.openResponseModal(${request.id}, 'fulfill')" 
+                                        class="action-button p-2.5 text-purple-600 bg-purple-50 hover:bg-purple-600 hover:text-white rounded-lg transition-all relative z-1 w-[36px] h-[36px] flex items-center justify-center" 
+                                        title="Mark Fulfilled">
+                                        <i class="fas fa-check-double text-sm relative z-1"></i>
+                                    </button>
+                                ` : ''}
+                                <button onclick="event.stopPropagation(); window.partsRequestsManager.viewRequestDetails(${request.id})" 
+                                    class="action-button p-2.5 text-blue-600 bg-blue-50 hover:bg-blue-600 hover:text-white rounded-lg transition-all relative z-1 w-[36px] h-[36px] flex items-center justify-center" 
+                                    title="View Details">
+                                    <i class="fas fa-eye text-sm relative z-1"></i>
+                                </button>
+                            </div>
+                            
+                            <!-- Date Section -->
+                            <div class="text-right">
+                                <div class="text-xs text-gray-400 font-medium">Requested</div>
+                                <div class="text-xs text-gray-600 font-semibold">${formattedDate}</div>
+                                <div class="text-xs text-gray-500">${formattedTime}</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         `;
     }
-    
-    getActionButtons(request) {
-        const buttons = [];
-        
-        // View Details button (always available)
-        buttons.push(`
-            <button class="view-request action-button bg-blue-100 text-blue-700 px-3 py-1 rounded-md text-sm hover:bg-blue-200" 
-                    data-request-id="${request.id}">
-                <i class="fas fa-eye mr-1"></i>View
-            </button>
-        `);
-        
-        if (request.status === 'pending') {
-            buttons.push(`
-                <button class="approve-request action-button bg-green-100 text-green-700 px-3 py-1 rounded-md text-sm hover:bg-green-200" 
-                        data-request-id="${request.id}">
-                    <i class="fas fa-check mr-1"></i>Approve
-                </button>
-            `);
-            buttons.push(`
-                <button class="deny-request action-button bg-red-100 text-red-700 px-3 py-1 rounded-md text-sm hover:bg-red-200" 
-                        data-request-id="${request.id}">
-                    <i class="fas fa-times mr-1"></i>Deny
-                </button>
-            `);
-        } else if (request.status === 'approved') {
-            buttons.push(`
-                <button class="fulfill-request action-button bg-purple-100 text-purple-700 px-3 py-1 rounded-md text-sm hover:bg-purple-200" 
-                        data-request-id="${request.id}">
-                    <i class="fas fa-check-double mr-1"></i>Fulfill
-                </button>
-            `);
-        }
-        
-        return buttons.join('');
-    }
-    
-    attachRequestEventListeners() {
-        // View request details
-        document.querySelectorAll('.view-request').forEach(button => {
-            button.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const requestId = parseInt(e.target.closest('[data-request-id]').dataset.requestId);
-                this.viewRequestDetails(requestId);
-            });
-        });
-        
-        // Approve request
-        document.querySelectorAll('.approve-request').forEach(button => {
-            button.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const requestId = parseInt(e.target.closest('[data-request-id]').dataset.requestId);
-                this.openResponseModal(requestId, 'approve');
-            });
-        });
-        
-        // Deny request
-        document.querySelectorAll('.deny-request').forEach(button => {
-            button.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const requestId = parseInt(e.target.closest('[data-request-id]').dataset.requestId);
-                this.openResponseModal(requestId, 'deny');
-            });
-        });
-        
-        // Fulfill request
-        document.querySelectorAll('.fulfill-request').forEach(button => {
-            button.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const requestId = parseInt(e.target.closest('[data-request-id]').dataset.requestId);
-                this.openResponseModal(requestId, 'fulfill');
-            });
-        });
-        
-        // Click on card to view details
-        document.querySelectorAll('.parts-request-card').forEach(card => {
-            card.addEventListener('click', (e) => {
-                // Don't trigger if clicking on a button
-                if (e.target.closest('button')) return;
-                
-                const requestId = parseInt(card.dataset.requestId);
-                this.viewRequestDetails(requestId);
-            });
-        });
-    }
+
+
     
     viewRequestDetails(requestId) {
         const request = this.allRequests.find(r => r.id === requestId);
@@ -793,11 +754,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     const userData = JSON.parse(user);
-    if (userData.role !== 'admin') {
+    if (userData.role !== 'admin' && userData.role !== 'operations_officer') {
         window.location.href = '/pages/login.html';
         return;
     }
     
     // Initialize the admin parts requests manager
+    window.partsRequestsManager = new AdminPartsRequestsManager();
     window.AdminPartsRequestsManager = AdminPartsRequestsManager;
 });

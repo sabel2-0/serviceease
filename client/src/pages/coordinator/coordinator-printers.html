@@ -14,26 +14,8 @@
         
         <!-- Main Content -->
         <div class="flex-1 flex flex-col overflow-hidden">
-            <!-- Top Navigation -->
-            <header class="bg-white shadow">
-                <div class="px-4 sm:px-6 lg:px-8 py-4">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h1 class="text-2xl font-semibold text-gray-900">Printer Management</h1>
-                            <p class="text-sm text-gray-500">Manage printers assigned to your institution</p>
-                        </div>
-                        <div class="flex items-center space-x-4">
-                            <div class="text-right">
-                                <div class="text-sm text-gray-500">Institution</div>
-                                <div id="welcome-name" class="text-sm font-medium text-gray-900">Coordinator</div>
-                            </div>
-                            <button id="user-menu-button" class="bg-gray-100 p-2 rounded-full">
-                                <i class="fas fa-user text-gray-600"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </header>
+            <!-- Unified Header -->
+            <div id="coordinator-header-container"></div>
             
             <!-- Page Content -->
             <main class="flex-1 overflow-x-hidden overflow-y-auto p-6 bg-gray-100">
@@ -237,6 +219,18 @@
     <!-- Scripts -->
     <script src="../../js/auth.js"></script>
     <script src="../../js/coordinator-sidenav.js"></script>
+    <script src="../../js/coordinator-header-loader.js"></script>
     <script src="../../js/coordinator-printers.js"></script>
+    <script>
+        // Load header with page-specific content
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.loadCoordinatorHeader) {
+                window.loadCoordinatorHeader({
+                    title: 'Printer Management',
+                    subtitle: 'Manage printers assigned to your institution'
+                });
+            }
+        });
+    </script>
 </body>
 </html>

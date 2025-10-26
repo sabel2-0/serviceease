@@ -705,13 +705,13 @@ function createRequestCard(request) {
                     </div>
                     ${request.status === 'pending_approval' ? `
                         <div class="flex space-x-2">
-                            <button class="view-approval-btn px-4 py-2 bg-gradient-to-r from-orange-600 to-orange-700 text-white text-sm font-medium rounded-lg hover:from-orange-700 hover:to-orange-800 focus:outline-none focus:ring-2 focus:ring-orange-500 transform hover:scale-105 transition-all duration-200 shadow-md hover:shadow-lg" data-id="${request.id}">
-                                <i class="fas fa-clipboard-check mr-2"></i>Review & Approve
+                            <button class="view-approval-btn px-4 py-2 text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 transform hover:scale-105 transition-all duration-200 shadow-md hover:shadow-lg" data-id="${request.id}" style="background: linear-gradient(to right, #ea580c, #c2410c); color: #ffffff !important;">
+                                <i class="fas fa-clipboard-check mr-2" style="color: #ffffff !important;"></i>Review & Approve
                             </button>
                         </div>
                     ` : `
-                        <button class="view-details-btn px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm font-medium rounded-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transform hover:scale-105 transition-all duration-200 shadow-md hover:shadow-lg" data-id="${request.id}">
-                            <i class="fas fa-eye mr-2"></i>View Details
+                        <button class="view-details-btn px-6 py-2 text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transform hover:scale-105 transition-all duration-200 shadow-md hover:shadow-lg" data-id="${request.id}" style="background: linear-gradient(to right, #2563eb, #1d4ed8); color: #ffffff !important;">
+                            <i class="fas fa-eye mr-2" style="color: #ffffff !important;"></i>View Details
                         </button>
                     `}
                 </div>
@@ -1080,80 +1080,68 @@ async function viewApprovalDetails(requestId) {
         
         const approvalModalContent = document.getElementById('approvalModalContent');
         approvalModalContent.innerHTML = `
-            <div class="space-y-6">
-                <!-- Service Request Information -->
-                <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                    <h4 class="text-lg font-semibold text-blue-900 mb-3 flex items-center">
+            <div class="space-y-4">
+                <!-- Service Request Information - Compact -->
+                <div class="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                    <h4 class="text-sm font-semibold text-blue-900 mb-2 flex items-center">
                         <i class="fas fa-info-circle mr-2"></i>Service Request Information
                     </h4>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <p class="text-sm text-blue-700"><span class="font-medium">Request ID:</span> #${request.id}</p>
-                            <p class="text-sm text-blue-700"><span class="font-medium">Priority:</span> <span class="capitalize">${request.priority}</span></p>
-                            <p class="text-sm text-blue-700"><span class="font-medium">Created:</span> ${new Date(request.created_at).toLocaleDateString()}</p>
+                    <div class="grid grid-cols-2 gap-3 text-xs">
+                        <div class="space-y-1">
+                            <p class="text-blue-700"><span class="font-medium">Request ID:</span> #${request.id}</p>
+                            <p class="text-blue-700"><span class="font-medium">Priority:</span> <span class="capitalize">${request.priority}</span></p>
                         </div>
-                        <div>
-                            <p class="text-sm text-blue-700"><span class="font-medium">Printer:</span> ${printerInfo.model}</p>
-                            <p class="text-sm text-blue-700"><span class="font-medium">Serial:</span> ${printerInfo.serial_number}</p>
-                            <p class="text-sm text-blue-700"><span class="font-medium">Location:</span> ${printerInfo.location_note}</p>
+                        <div class="space-y-1">
+                            <p class="text-blue-700"><span class="font-medium">Printer:</span> ${printerInfo.model}</p>
+                            <p class="text-blue-700"><span class="font-medium">Serial:</span> ${printerInfo.serial_number}</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- Original Issue -->
+                <!-- Original Issue - Compact -->
                 <div>
-                    <h4 class="text-lg font-semibold text-gray-900 mb-2 flex items-center">
-                        <i class="fas fa-exclamation-triangle mr-2 text-red-500"></i>Original Issue Description
+                    <h4 class="text-sm font-semibold text-gray-900 mb-1 flex items-center">
+                        <i class="fas fa-exclamation-triangle mr-2 text-red-500"></i>Original Issue
                     </h4>
-                    <div class="bg-gray-50 p-4 rounded-lg border">
-                        <p class="text-sm text-gray-700">${request.description}</p>
+                    <div class="bg-gray-50 p-3 rounded-lg border text-xs text-gray-700">
+                        ${request.description}
                     </div>
                 </div>
 
-                <!-- Technician Information -->
-                <div class="bg-green-50 rounded-lg p-4 border border-green-200">
-                    <h4 class="text-lg font-semibold text-green-900 mb-3 flex items-center">
-                        <i class="fas fa-user-cog mr-2"></i>Service Completion Details
+                <!-- Technician & Resolution - Combined and Compact -->
+                <div class="bg-green-50 rounded-lg p-3 border border-green-200">
+                    <h4 class="text-sm font-semibold text-green-900 mb-2 flex items-center">
+                        <i class="fas fa-user-cog mr-2"></i>Service Completion
                     </h4>
-                    <div class="space-y-2">
-                        <p class="text-sm text-green-700"><span class="font-medium">Technician:</span> ${approval.technician_first_name} ${approval.technician_last_name}</p>
-                        <p class="text-sm text-green-700"><span class="font-medium">Submitted for Approval:</span> ${submittedTime.toLocaleDateString()} at ${submittedTime.toLocaleTimeString()}</p>
-                        ${approvalDetails.resolved_at ? `<p class="text-sm text-green-700"><span class="font-medium">Service Completed:</span> ${new Date(approvalDetails.resolved_at).toLocaleDateString()} at ${new Date(approvalDetails.resolved_at).toLocaleTimeString()}</p>` : ''}
+                    <div class="space-y-1 text-xs text-green-700 mb-3">
+                        <p><span class="font-medium">Technician:</span> ${approval.technician_first_name} ${approval.technician_last_name}</p>
+                        <p><span class="font-medium">Submitted:</span> ${submittedTime.toLocaleDateString()} at ${submittedTime.toLocaleTimeString()}</p>
                     </div>
+                    ${(approvalDetails.resolution_notes || approval.actions_performed) ? `
+                    <div class="bg-white p-2 rounded border border-green-200 text-xs text-gray-700">
+                        <p class="font-medium text-green-800 mb-1">Resolution:</p>
+                        ${approvalDetails.resolution_notes || approval.actions_performed || 'No notes provided'}
+                    </div>
+                    ` : ''}
                 </div>
 
-                <!-- Resolution Notes -->
-                ${(approvalDetails.resolution_notes || approval.actions_performed) ? `
+                <!-- Parts Used - Compact -->
                 <div>
-                    <h4 class="text-lg font-semibold text-gray-900 mb-2 flex items-center">
-                        <i class="fas fa-clipboard-check mr-2 text-blue-500"></i>Resolution Notes
+                    <h4 class="text-sm font-semibold text-gray-900 mb-1 flex items-center">
+                        <i class="fas fa-cogs mr-2 text-orange-500"></i>Parts Used
                     </h4>
-                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                        <p class="text-sm text-gray-700">${approvalDetails.resolution_notes || approval.actions_performed || 'No resolution notes provided'}</p>
-                    </div>
-                </div>
-                ` : ''}
-
-                <!-- Parts Used -->
-                <div>
-                    <h4 class="text-lg font-semibold text-gray-900 mb-2 flex items-center">
-                        <i class="fas fa-cogs mr-2 text-orange-500"></i>Parts/Consumables Used
-                    </h4>
-                    <div class="bg-orange-50 p-4 rounded-lg border border-orange-200">
-                        <ul class="space-y-1">
+                    <div class="bg-orange-50 p-3 rounded-lg border border-orange-200">
+                        <ul class="space-y-1 text-xs">
                             ${partsUsedDisplay}
                         </ul>
                     </div>
                 </div>
 
-                <!-- Approval Actions Guide -->
-                <div class="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
-                    <h4 class="text-lg font-semibold text-yellow-900 mb-2 flex items-center">
-                        <i class="fas fa-lightbulb mr-2"></i>Approval Actions
-                    </h4>
-                    <div class="text-sm text-yellow-800 space-y-1">
-                        <p><strong>✅ Approve:</strong> Accept the service completion. Parts will be deducted from technician inventory.</p>
-                        <p><strong>❌ Reject:</strong> Return the request to technician for revision. Parts usage will be cleared.</p>
+                <!-- Approval Actions Guide - Compact -->
+                <div class="bg-yellow-50 rounded-lg p-3 border border-yellow-200">
+                    <div class="text-xs text-yellow-800 space-y-1">
+                        <p><strong>✅ Approve:</strong> Parts will be deducted from technician inventory</p>
+                        <p><strong>❌ Reject:</strong> Request returns to technician; parts usage cleared</p>
                     </div>
                 </div>
             </div>

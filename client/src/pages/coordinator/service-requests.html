@@ -79,34 +79,8 @@
         
         <!-- Main Content -->
         <div class="flex-1 overflow-auto">
-            <!-- Top Navigation -->
-            <header class="bg-white shadow-sm">
-                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div class="flex justify-between items-center py-4">
-                        <h1 class="text-2xl font-semibold text-gray-900">Service Requests</h1>
-                        <div class="flex items-center space-x-4">
-                            <!-- Notification Bell -->
-                            <button id="notifications-button" class="p-2 rounded-full hover:bg-gray-200 relative">
-                                <i class="fas fa-bell text-gray-600"></i>
-                                <span class="notification-badge absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">0</span>
-                            </button>
-                            
-                            <!-- Profile Dropdown -->
-                            <div class="relative">
-                                <button id="profile-menu-button" class="flex items-center space-x-3 focus:outline-none">
-                                    <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white">
-                                        <span id="user-initials">CC</span>
-                                    </div>
-                                    <div class="hidden md:block text-left">
-                                        <span class="block text-sm font-medium text-gray-900">Welcome, <span id="welcome-name">Coordinator</span></span>
-                                        <span class="block text-sm text-gray-500">Institutional Coordinator</span>
-                                    </div>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </header>
+            <!-- Unified Header -->
+            <div id="coordinator-header-container"></div>
 
             <!-- Main Content Area -->
             <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -309,8 +283,8 @@
     <!-- Service Approval Modal -->
     <div id="approvalModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
-        <div class="relative bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 ease-in-out">
-            <div class="px-6 py-4 border-b flex justify-between items-center sticky top-0 bg-white z-10">
+        <div class="relative bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[85vh] overflow-hidden transform transition-all duration-300 ease-in-out">
+            <div class="px-6 py-4 border-b flex justify-between items-center bg-white">
                 <h3 class="text-lg font-semibold text-gray-800 flex items-center">
                     <i class="fas fa-check-circle mr-2 text-orange-600"></i>
                     Service Completion Approval
@@ -319,16 +293,16 @@
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <div id="approvalModalContent" class="p-6">
+            <div id="approvalModalContent" class="p-6 overflow-y-auto" style="max-height: calc(85vh - 140px);">
                 <!-- Approval details will be loaded here -->
             </div>
             <div class="px-6 py-4 border-t bg-gray-50 flex justify-between">
                 <div class="flex space-x-3">
-                    <button id="rejectServiceBtn" class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105">
-                        <i class="fas fa-times mr-2"></i>Reject Service
+                    <button id="rejectServiceBtn" class="bg-red-600 text-white px-5 py-2 rounded-lg hover:bg-red-700 transition-all duration-200 shadow-md hover:shadow-lg">
+                        <i class="fas fa-times mr-2"></i>Reject
                     </button>
-                    <button id="approveServiceBtn" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105">
-                        <i class="fas fa-check mr-2"></i>Approve Service
+                    <button id="approveServiceBtn" class="bg-green-600 text-white px-5 py-2 rounded-lg hover:bg-green-700 transition-all duration-200 shadow-md hover:shadow-lg">
+                        <i class="fas fa-check mr-2"></i>Approve
                     </button>
                 </div>
                 <button id="closeApprovalModalBtn" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300 transition-colors">
@@ -389,26 +363,28 @@
     <!-- JavaScript -->
     <script src="/js/auth.js"></script>
     <script src="/js/coordinator-sidenav.js"></script>
+    <script src="../../js/coordinator-header-loader.js"></script>
     <script src="/js/coordinator-service-requests.js"></script>
     
     <script>
+        // Load header with page-specific content
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.loadCoordinatorHeader) {
+                window.loadCoordinatorHeader({
+                    title: 'Service Requests',
+                    subtitle: 'Monitor and manage all service requests for your institution'
+                });
+            }
+        });
+    </script>
+    
+    <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Initialize user data
-            const user = JSON.parse(localStorage.getItem('user')) || { first_name: 'Coordinator', last_name: 'User' };
-            document.getElementById('welcome-name').textContent = user.first_name;
-            document.getElementById('user-initials').textContent = `${user.first_name?.charAt(0) || 'C'}${user.last_name?.charAt(0) || 'C'}`;
-            
             // Set the active sidebar item
             window.location.hash = '#service-requests';
             
-            // Notification Center Toggle
-            document.getElementById('notifications-button').addEventListener('click', () => {
-                const notificationCenter = document.getElementById('notification-center');
-                notificationCenter.classList.toggle('translate-x-full');
-                notificationCenter.classList.toggle('translate-x-0');
-            });
-            
-            document.getElementById('close-notifications').addEventListener('click', () => {
+            // Close notification center (if exists) when clicking outside
+            document.getElementById('close-notifications')?.addEventListener('click', () => {
                 document.getElementById('notification-center').classList.add('translate-x-full');
                 document.getElementById('notification-center').classList.remove('translate-x-0');
             });

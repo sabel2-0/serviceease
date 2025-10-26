@@ -335,9 +335,17 @@ function createMobileRequestCard(request) {
                 </span>
             </div>
             
-            <!-- Institution -->
+            <!-- Institution or Walk-In Customer -->
             <div class="px-5 pb-2">
-                <h3 class="font-bold text-lg text-slate-900 leading-tight">${request.institution_name || 'Institution'}</h3>
+                ${request.is_walk_in ? 
+                    `<div class="flex items-center gap-2 mb-1">
+                        <span class="bg-purple-100 text-purple-700 px-2 py-1 rounded-md text-xs font-bold">WALK-IN</span>
+                    </div>
+                    <h3 class="font-bold text-lg text-slate-900 leading-tight">${request.walk_in_customer_name || 'Walk-In Customer'}</h3>
+                    <p class="text-sm text-slate-600 mt-1">Printer: ${request.printer_brand || 'N/A'}</p>` 
+                    : 
+                    `<h3 class="font-bold text-lg text-slate-900 leading-tight">${request.institution_name || 'Institution'}</h3>`
+                }
             </div>
             
             <!-- Description -->
@@ -384,7 +392,14 @@ function createDesktopRequestRow(request) {
             </td>
             <td class="px-6 py-4">
                 <div class="font-medium text-slate-800">${request.issue || 'Service Request'}</div>
-                <div class="text-sm text-slate-500">${request.institution_name}</div>
+                ${request.is_walk_in ? 
+                    `<div class="text-sm text-slate-500">
+                        <span class="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-xs font-bold mr-1">WALK-IN</span>
+                        ${request.walk_in_customer_name || 'Walk-In Customer'}
+                    </div>` 
+                    : 
+                    `<div class="text-sm text-slate-500">${request.institution_name}</div>`
+                }
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
                 <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${displayStatusClass}">
@@ -574,7 +589,8 @@ function setupSearchFunctionality() {
         const filteredRequests = currentServiceRequests.filter(request => 
             request.request_number.toLowerCase().includes(query) ||
             request.issue?.toLowerCase().includes(query) ||
-            request.institution_name?.toLowerCase().includes(query) ||
+            (request.is_walk_in ? request.walk_in_customer_name?.toLowerCase().includes(query) : request.institution_name?.toLowerCase().includes(query)) ||
+            (request.is_walk_in && request.printer_brand?.toLowerCase().includes(query)) ||
             request.location?.toLowerCase().includes(query)
         );
         
@@ -609,7 +625,14 @@ function displaySearchResults(results, query) {
                 <div class="flex-1">
                     <div class="font-medium text-slate-800">${request.request_number}</div>
                     <div class="text-sm text-slate-600 line-clamp-1">${request.issue || 'Service Request'}</div>
-                    <div class="text-xs text-slate-500">${request.institution_name}</div>
+                    ${request.is_walk_in ? 
+                        `<div class="text-xs text-slate-500">
+                            <span class="bg-purple-100 text-purple-700 px-1 py-0.5 rounded text-xs font-bold mr-1">WALK-IN</span>
+                            ${request.walk_in_customer_name || 'Walk-In Customer'}
+                        </div>` 
+                        : 
+                        `<div class="text-xs text-slate-500">${request.institution_name}</div>`
+                    }
                 </div>
                 <div class="ml-2">
                     <span class="inline-flex px-2 py-1 text-xs rounded-full ${getStatusClass(request.status)}">
@@ -1044,8 +1067,6 @@ function populateServiceRequestModal(request) {
     if (content) {
         // Priority badge left of request number
         const priorityClass = getPriorityClass(request.priority);
-        const institution = request.institution_name || '';
-        const address = request.location || '';
         const description = request.issue || 'Service Request';
         const isLong = description.length > 120;
         const shortDesc = isLong ? description.slice(0, 120) + '…' : description;
@@ -1065,19 +1086,35 @@ function populateServiceRequestModal(request) {
                 <span class="rounded px-2 py-1 font-bold text-xs ${priorityClass}">${request.priority?.toUpperCase() || ''}</span>
             </div>
             <div class="px-6 pb-2">
-                <div class="font-bold text-lg text-slate-800 mb-1">${institution}</div>
-                <div class="text-sm text-slate-600 mb-3">${address}</div>
-                
-                <!-- Printer Information Section -->
-                <div class="mb-3">
-                    <div class="text-sm font-medium text-slate-700 mb-2">Printer Information:</div>
-                    <div class="space-y-1">
-                        <div class="text-sm text-slate-600"><span class="font-medium">Name:</span> ${request.printer_name || 'N/A'}</div>
-                        <div class="text-sm text-slate-600"><span class="font-medium">Model:</span> ${request.model || 'N/A'}</div>
-                        <div class="text-sm text-slate-600"><span class="font-medium">Brand:</span> ${request.brand || 'N/A'}</div>
-                        <div class="text-sm text-slate-600"><span class="font-medium">Serial Number:</span> ${request.serial_number || 'N/A'}</div>
+                ${request.is_walk_in ? 
+                    `<div class="flex items-center gap-2 mb-2">
+                        <span class="bg-purple-100 text-purple-700 px-2 py-1 rounded-md text-xs font-bold">WALK-IN REQUEST</span>
                     </div>
-                </div>
+                    <div class="font-bold text-lg text-slate-800 mb-1">${request.walk_in_customer_name || 'Walk-In Customer'}</div>
+                    <div class="text-sm text-slate-600 mb-3">${request.location || ''}</div>
+                    
+                    <!-- Printer Information Section -->
+                    <div class="mb-3">
+                        <div class="text-sm font-medium text-slate-700 mb-2">Printer Information:</div>
+                        <div class="space-y-1">
+                            <div class="text-sm text-slate-600"><span class="font-medium">Brand:</span> ${request.printer_brand || 'N/A'}</div>
+                        </div>
+                    </div>` 
+                    : 
+                    `<div class="font-bold text-lg text-slate-800 mb-1">${request.institution_name || 'Institution'}</div>
+                    <div class="text-sm text-slate-600 mb-3">${request.location || ''}</div>
+                    
+                    <!-- Printer Information Section -->
+                    <div class="mb-3">
+                        <div class="text-sm font-medium text-slate-700 mb-2">Printer Information:</div>
+                        <div class="space-y-1">
+                            <div class="text-sm text-slate-600"><span class="font-medium">Name:</span> ${request.printer_name || 'N/A'}</div>
+                            <div class="text-sm text-slate-600"><span class="font-medium">Model:</span> ${request.model || 'N/A'}</div>
+                            <div class="text-sm text-slate-600"><span class="font-medium">Brand:</span> ${request.brand || 'N/A'}</div>
+                            <div class="text-sm text-slate-600"><span class="font-medium">Serial Number:</span> ${request.serial_number || 'N/A'}</div>
+                        </div>
+                    </div>`
+                }
                 
                 <!-- Requester Information Section -->
                 <div class="mb-3 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
@@ -1191,20 +1228,35 @@ function populateJobCompletionModal(request) {
                     <span class="font-medium text-slate-600">Issue:</span>
                     <span class="text-slate-800">${request.issue || 'Service Request'}</span>
                 </div>
-                <div class="flex justify-between">
-                    <span class="font-medium text-slate-600">Location:</span>
-                    <span class="text-slate-800">${request.institution_name} - ${request.location || 'N/A'}</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="font-medium text-slate-600">Equipment:</span>
-                    <span class="text-slate-800">${request.printer_name || 'N/A'}</span>
-                </div>
-                ${request.serial_number ? `
-                    <div class="flex justify-between">
-                        <span class="font-medium text-slate-600">Serial Number:</span>
-                        <span class="text-slate-800 font-mono text-sm">${request.serial_number}</span>
+                ${request.is_walk_in ? 
+                    `<div class="flex justify-between">
+                        <span class="font-medium text-slate-600">Customer:</span>
+                        <span class="text-slate-800">${request.walk_in_customer_name || 'Walk-In Customer'}</span>
                     </div>
-                ` : ''}
+                    <div class="flex justify-between">
+                        <span class="font-medium text-slate-600">Printer Brand:</span>
+                        <span class="text-slate-800">${request.printer_brand || 'N/A'}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="font-medium text-slate-600">Location:</span>
+                        <span class="text-slate-800">${request.location || 'N/A'}</span>
+                    </div>` 
+                    : 
+                    `<div class="flex justify-between">
+                        <span class="font-medium text-slate-600">Location:</span>
+                        <span class="text-slate-800">${request.institution_name} - ${request.location || 'N/A'}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="font-medium text-slate-600">Equipment:</span>
+                        <span class="text-slate-800">${request.printer_name || 'N/A'}</span>
+                    </div>
+                    ${request.serial_number ? `
+                        <div class="flex justify-between">
+                            <span class="font-medium text-slate-600">Serial Number:</span>
+                            <span class="text-slate-800 font-mono text-sm">${request.serial_number}</span>
+                        </div>
+                    ` : ''}`
+                }
                 <div class="flex justify-between">
                     <span class="font-medium text-slate-600">Priority:</span>
                     <span class="text-slate-800 font-semibold ${getPriorityColorClass(request.priority)}">${request.priority?.toUpperCase()}</span>

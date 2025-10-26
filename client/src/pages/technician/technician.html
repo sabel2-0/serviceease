@@ -4392,8 +4392,17 @@
             }
         };
         
+        // Track loaded components to avoid reloading
+        const loadedComponents = {};
+        
         // Component loading function
         async function loadComponent(componentName, containerId) {
+            // Check if component is already loaded
+            if (loadedComponents[containerId]) {
+                console.log(`✓ Component ${componentName} already loaded in ${containerId}`);
+                return;
+            }
+            
             try {
                 const response = await fetch(`../../components/${componentName}.html`);
                 if (!response.ok) {
@@ -4405,13 +4414,20 @@
                     container.innerHTML = html;
                     console.log(`✓ Component ${componentName} loaded into ${containerId}`);
                     
+                    // Mark as loaded
+                    loadedComponents[containerId] = true;
+                    
                     // Execute any scripts in the loaded component
                     const scripts = container.querySelectorAll('script');
-                    scripts.forEach(script => {
+                    scripts.forEach(oldScript => {
                         const newScript = document.createElement('script');
-                        newScript.textContent = script.textContent;
-                        document.head.appendChild(newScript);
-                        document.head.removeChild(newScript);
+                        if (oldScript.src) {
+                            newScript.src = oldScript.src;
+                        } else {
+                            newScript.textContent = oldScript.textContent;
+                        }
+                        // Replace the old script with new one to execute it
+                        oldScript.parentNode.replaceChild(newScript, oldScript);
                     });
                 } else {
                     console.error(`Container ${containerId} not found`);

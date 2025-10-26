@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Edit Unit API</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-6">
+        <h1 class="text-2xl font-bold mb-6 text-purple-700">Edit Printer Unit API Test</h1>
+        
+        <div class="space-y-4">
+            <button onclick="testFetchPrinter()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                1. Fetch Printer Unit (ID: 15)
+            </button>
+            
+            <button onclick="testEditSerial()" class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">
+                2. Test Edit Serial Number (ABC1234 → TEST-SERIAL-123)
+            </button>
+            
+            <button onclick="testRevert()" class="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700">
+                3. Revert Serial Number Back
+            </button>
+        </div>
+        
+        <div id="output" class="mt-6 p-4 bg-gray-50 rounded border border-gray-200 min-h-[200px] font-mono text-sm">
+            <p class="text-gray-500">Test output will appear here...</p>
+        </div>
+    </div>
+    
+    <script>
+        const output = document.getElementById('output');
+        let originalSerial = '';
+        
+        function log(message, color = 'text-gray-800') {
+            output.innerHTML += `<div class="mb-2 ${color}">${message}</div>`;
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        function clear() {
+            output.innerHTML = '';
+        }
+        
+        async function testFetchPrinter() {
+            clear();
+            log('<strong>Fetching printer unit ID 15...</strong>', 'text-blue-700');
+            try {
+                const res = await fetch('/api/inventory-items/15');
+                const printer = await res.json();
+                
+                originalSerial = printer.serial_number;
+                
+                log('✅ Printer found:', 'text-green-600');
+                log(`   ID: ${printer.id}`);
+                log(`   Brand: ${printer.brand}`);
+                log(`   Model: ${printer.model}`);
+                log(`   Serial Number: ${printer.serial_number}`);
+                log(`   Status: ${printer.status}`);
+                
+            } catch (err) {
+                log(`❌ Error: ${err.message}`, 'text-red-600');
+            }
+        }
+        
+        async function testEditSerial() {
+            clear();
+            log('<strong>Testing edit serial number functionality...</strong>', 'text-purple-700');
+            
+            try {
+                // First get current state
+                log('1. Getting current printer state...');
+                let res = await fetch('/api/inventory-items/15');
+                let before = await res.json();
+                originalSerial = before.serial_number;
+                
+                log(`   Current: Brand=${before.brand}, Model=${before.model}, Serial=${before.serial_number}`);
+                
+                // Update only serial number
+                log('\\n2. Updating serial number to TEST-SERIAL-123...');
+                const updateRes = await fetch('/api/inventory-items/15', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        serial_number: 'TEST-SERIAL-123'
+                    })
+                });
+                
+                if (!updateRes.ok) {
+                    throw new Error('Failed to update');
+                }
+                
+                log('   ✅ Update request successful', 'text-green-600');
+                
+                // Verify the update
+                log('\\n3. Verifying update...');
+                res = await fetch('/api/inventory-items/15');
+                let after = await res.json();
+                
+                log(`   After: Brand=${after.brand}, Model=${after.model}, Serial=${after.serial_number}`);
+                
+                // Check what changed
+                log('\\n4. Verification Results:', 'text-purple-700');
+                if (before.brand === after.brand) {
+                    log(`   ✅ Brand unchanged: ${after.brand}`, 'text-green-600');
+                } else {
+                    log(`   ❌ Brand changed: ${before.brand} → ${after.brand}`, 'text-red-600');
+                }
+                
+                if (before.model === after.model) {
+                    log(`   ✅ Model unchanged: ${after.model}`, 'text-green-600');
+                } else {
+                    log(`   ❌ Model changed: ${before.model} → ${after.model}`, 'text-red-600');
+                }
+                
+                if (before.serial_number !== after.serial_number && after.serial_number === 'TEST-SERIAL-123') {
+                    log(`   ✅ Serial number updated: ${before.serial_number} → ${after.serial_number}`, 'text-green-600');
+                } else {
+                    log(`   ❌ Serial number not updated correctly`, 'text-red-600');
+                }
+                
+                log('\\n✓ Test completed!', 'text-green-700');
+                
+            } catch (err) {
+                log(`❌ Error: ${err.message}`, 'text-red-600');
+            }
+        }
+        
+        async function testRevert() {
+            clear();
+            log('<strong>Reverting serial number...</strong>', 'text-orange-700');
+            
+            try {
+                if (!originalSerial) {
+                    log('⚠️ Original serial not found. Run test 1 first.', 'text-yellow-600');
+                    return;
+                }
+                
+                log(`Reverting to: ${originalSerial}`);
+                
+                const res = await fetch('/api/inventory-items/15', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        serial_number: originalSerial
+                    })
+                });
+                
+                if (!res.ok) {
+                    throw new Error('Failed to revert');
+                }
+                
+                // Verify
+                const verifyRes = await fetch('/api/inventory-items/15');
+                const printer = await verifyRes.json();
+                
+                log('\\n✅ Reverted successfully!', 'text-green-600');
+                log(`   Current serial number: ${printer.serial_number}`);
+                
+            } catch (err) {
+                log(`❌ Error: ${err.message}`, 'text-red-600');
+            }
+        }
+    </script>
+</body>
+</html>

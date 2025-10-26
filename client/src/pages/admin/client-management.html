@@ -659,11 +659,16 @@
                 `;
 
                 // Load institutions
-                const response = await fetch('/api/institutions');
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/institutions', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
                 allInstitutions = await response.json();
 
                 // Load technician assignments
-                const assignmentsResponse = await fetch('/api/technician-assignments');
+                const assignmentsResponse = await fetch('/api/technician-assignments', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
                 allAssignments = await assignmentsResponse.json();
 
                 // Display clients and update counts
@@ -997,6 +1002,21 @@
                     window.pendingHighlight = null;
                 }, 100);
             }
+            
+            // Hide edit and deactivate buttons for operations officers
+            hideButtonsForOperationsOfficer();
+        }
+        
+        function hideButtonsForOperationsOfficer() {
+            const currentUser = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
+            if (currentUser && currentUser.role === 'operations_officer') {
+                // Hide edit buttons on client cards
+                document.querySelectorAll('.action-button').forEach(btn => {
+                    if (btn.title === 'Edit Client' || btn.title === 'Deactivate Client') {
+                        btn.style.display = 'none';
+                    }
+                });
+            }
         }
 
         function updateTabCounts() {
@@ -1032,7 +1052,10 @@
             
             try {
                 // Load institution details
-                const response = await fetch(`/api/institutions/${clientId}`);
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/institutions/${clientId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
                 const institution = await response.json();
                 
                 if (!response.ok) {
@@ -1139,6 +1162,15 @@
                 // Show modal
                 document.getElementById('viewClientModal').classList.remove('hidden');
                 
+                // Hide edit and deactivate buttons for operations officers
+                const currentUser = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
+                if (currentUser && currentUser.role === 'operations_officer') {
+                    const editBtn = document.getElementById('editClientBtn');
+                    const toggleBtn = document.getElementById('toggleStatusBtn');
+                    if (editBtn) editBtn.style.display = 'none';
+                    if (toggleBtn) toggleBtn.style.display = 'none';
+                }
+                
             } catch (error) {
                 console.error('Error loading client details:', error);
                 alert('Error loading client details. Please try again.');
@@ -1185,10 +1217,12 @@
             const action = isDeactivating ? 'deactivate' : 'reactivate';
             
             try {
+                const token = localStorage.getItem('token');
                 const response = await fetch(`/api/institutions/${clientId}/status`, {
                     method: 'PATCH',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify({ status: newStatus })
                 });
@@ -1320,7 +1354,10 @@
             console.log('editClient called with clientId:', clientId);
             try {
                 console.log('Fetching institution data...');
-                const response = await fetch(`/api/institutions/${clientId}`);
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/institutions/${clientId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
                 console.log('Response status:', response.status);
                 
                 if (!response.ok) {
@@ -1386,10 +1423,12 @@
                     payload = { name, type, address, status: 'active' };
                 }
                 
+                const token = localStorage.getItem('token');
                 const response = await fetch(url, {
                     method: method,
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify(payload)
                 });
@@ -1432,11 +1471,16 @@
             
             try {
                 // Load institution details
-                const instResponse = await fetch(`/api/institutions/${institutionId}`);
+                const token = localStorage.getItem('token');
+                const instResponse = await fetch(`/api/institutions/${institutionId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
                 const institution = await instResponse.json();
                 
                 // Load available technicians
-                const techResponse = await fetch('/api/staff');
+                const techResponse = await fetch('/api/staff', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
                 const staff = await techResponse.json();
                 const technicians = staff.filter(s => s.role === 'technician' && s.status === 'active');
                 
@@ -1492,14 +1536,19 @@
             
             try {
                 // Load institution details
-                const instResponse = await fetch(`/api/institutions/${institutionId}`);
+                const token = localStorage.getItem('token');
+                const instResponse = await fetch(`/api/institutions/${institutionId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
                 const institution = await instResponse.json();
                 
                 // Load current assignment
                 const currentAssignment = allAssignments.find(a => a.id === assignmentId);
                 
                 // Load available technicians
-                const techResponse = await fetch('/api/staff');
+                const techResponse = await fetch('/api/staff', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
                 const staff = await techResponse.json();
                 const technicians = staff.filter(s => s.role === 'technician' && s.status === 'active');
                 
@@ -1549,10 +1598,12 @@
             try {
                 console.log('Removing technician assignment:', { institutionId, assignmentId });
                 
+                const token = localStorage.getItem('token');
                 const response = await fetch(`/api/technician-assignments/${assignmentId}`, {
                     method: 'DELETE',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
                     }
                 });
                 
@@ -1589,7 +1640,10 @@
             
             try {
                 // Re-load the updated assignment data
-                const assignmentsResponse = await fetch('/api/technician-assignments');
+                const token = localStorage.getItem('token');
+                const assignmentsResponse = await fetch('/api/technician-assignments', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
                 if (assignmentsResponse.ok) {
                     allAssignments = await assignmentsResponse.json();
                 }
@@ -1624,6 +1678,7 @@
                 
                 let response, result;
                 let requestData;
+                const token = localStorage.getItem('token');
                 
                 if (currentAssignmentId) {
                     // Update existing assignment
@@ -1638,6 +1693,7 @@
                         method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
                         },
                         body: JSON.stringify(requestData)
                     });
@@ -1659,6 +1715,7 @@
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
                         },
                         body: JSON.stringify(requestData)
                     });

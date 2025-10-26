@@ -53,8 +53,8 @@ router.get('/', async (req, res) => {
             params.push(user.id);
         }
         
-        // If admin specifies technician_id filter
-        if (technician_id && user.role === 'admin') {
+        // If admin or operations officer specifies technician_id filter
+        if (technician_id && (user.role === 'admin' || user.role === 'operations_officer')) {
             conditions.push('pr.technician_id = ?');
             params.push(technician_id);
         }
@@ -221,13 +221,13 @@ router.post('/', async (req, res) => {
         );
         const userDetails = userRows[0] || { first_name: 'Unknown', last_name: 'User' };
         
-        // Create notification for admins about new parts request
+        // Create notification for admins and operations officers about new parts request
         try {
             await createNotification({
                 title: 'New Parts Request',
                 message: `${userDetails.first_name} ${userDetails.last_name} has requested ${quantity_requested} units of ${part.name}`,
                 type: 'parts_request',
-                user_id: null, // null means all admins
+                user_id: null, // null means all admins and operations officers
                 sender_id: user.id,
                 reference_type: 'parts_request',
                 reference_id: result.insertId,
@@ -260,9 +260,9 @@ router.patch('/:id', async (req, res) => {
         const user = req.user;
         const { status, admin_response } = req.body;
         
-        // Only admins can update parts requests
-        if (user.role !== 'admin') {
-            return res.status(403).json({ error: 'Only admins can update parts requests' });
+        // Only admins and operations officers can update parts requests
+        if (user.role !== 'admin' && user.role !== 'operations_officer') {
+            return res.status(403).json({ error: 'Only admins and operations officers can update parts requests' });
         }
         
         // Validate status
@@ -461,7 +461,7 @@ router.delete('/:id', async (req, res) => {
                 return res.status(403).json({ error: 'You can only delete pending requests' });
             }
         }
-        // Admins can delete any request
+        // Admins and operations officers can delete any request
         
         await db.query('DELETE FROM parts_requests WHERE id = ?', [id]);
         
