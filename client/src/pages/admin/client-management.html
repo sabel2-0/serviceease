@@ -1402,6 +1402,8 @@
             const type = document.getElementById('type').value;
             const address = document.getElementById('address').value.trim();
             
+            console.log('Form submission data:', { name, type, address });
+            
             if (!name || !type || !address) {
                 alert('Please fill in all fields');
                 return;
@@ -1420,10 +1422,17 @@
                 } else {
                     url = '/api/institutions';
                     method = 'POST';
-                    payload = { name, type, address, status: 'active' };
+                    payload = { name, type, address };
                 }
                 
+                console.log('Request details:', { url, method, payload });
+                
                 const token = localStorage.getItem('token');
+                if (!token) {
+                    throw new Error('Authentication token not found. Please log in again.');
+                }
+                
+                console.log('Sending request with token...');
                 const response = await fetch(url, {
                     method: method,
                     headers: {
@@ -1433,7 +1442,9 @@
                     body: JSON.stringify(payload)
                 });
                 
+                console.log('Response status:', response.status);
                 const result = await response.json();
+                console.log('Response data:', result);
                 
                 if (!response.ok) {
                     throw new Error(result.error || 'Failed to save institution');

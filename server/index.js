@@ -2318,7 +2318,7 @@ app.delete('/api/printers/:id', authenticateAdmin, async (req, res) => {
 // Staff Management API endpoints
 
 // Get all staff members (operations officers and technicians)
-app.get('/api/staff', async (req, res) => {
+app.get('/api/staff', authenticateAdmin, async (req, res) => {
     try {
         const [rows] = await db.query(
             `SELECT 

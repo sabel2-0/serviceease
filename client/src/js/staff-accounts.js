@@ -44,8 +44,18 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             showLoading(true);
             
+            // Get authentication token
+            const token = localStorage.getItem('token');
+            if (!token) {
+                throw new Error('Authentication token not found. Please log in again.');
+            }
+            
             // Load staff members
-            const response = await fetch('/api/staff');
+            const response = await fetch('/api/staff', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
             if (!response.ok) {
                 throw new Error('Failed to fetch staff members');
             }
@@ -53,11 +63,19 @@ document.addEventListener('DOMContentLoaded', function() {
             allStaff = await response.json();
             
             // Load technician assignments
-            const assignmentsResponse = await fetch('/api/technician-assignments');
+            const assignmentsResponse = await fetch('/api/technician-assignments', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
             const assignments = await assignmentsResponse.json();
             
             // Load institutions
-            const institutionsResponse = await fetch('/api/institutions');
+            const institutionsResponse = await fetch('/api/institutions', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
             const institutions = await institutionsResponse.json();
             
             // Create assignment map for quick lookup
@@ -226,10 +244,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 role: formData.get('role')
             };
 
+            // Get authentication token
+            const token = localStorage.getItem('token');
+            if (!token) {
+                throw new Error('Authentication token not found. Please log in again.');
+            }
+
             const response = await fetch('/api/staff', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify(staffData)
             });
@@ -575,10 +600,20 @@ document.addEventListener('DOMContentLoaded', function() {
             const status = document.getElementById('editStaffStatus').value;
             // Email is not editable
             const data = { first_name: firstName, last_name: lastName, department, role, status };
+            
+            // Get authentication token
+            const token = localStorage.getItem('token');
+            if (!token) {
+                throw new Error('Authentication token not found. Please log in again.');
+            }
+            
             try {
                 const res = await fetch(`/api/staff/${id}`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
                     body: JSON.stringify(data)
                 });
                 if (res.ok) {
@@ -712,11 +747,18 @@ document.addEventListener('DOMContentLoaded', function() {
             status: newStatus
         };
 
+        // Get authentication token
+        const token = localStorage.getItem('token');
+        if (!token) {
+            throw new Error('Authentication token not found. Please log in again.');
+        }
+
         try {
             const response = await fetch(`/api/staff/${staffId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify(data)
             });
@@ -1142,9 +1184,19 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
+        // Get authentication token
+        const token = localStorage.getItem('token');
+        if (!token) {
+            showError('Authentication token not found. Please log in again.');
+            return;
+        }
+
         try {
             const response = await fetch(`/api/technician-assignments/${assignmentId}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
             });
 
             const result = await response.json();
