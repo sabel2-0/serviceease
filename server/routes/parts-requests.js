@@ -266,7 +266,7 @@ router.patch('/:id', async (req, res) => {
         }
         
         // Validate status
-        const validStatuses = ['pending', 'approved', 'denied', 'fulfilled'];
+        const validStatuses = ['pending', 'approved', 'denied'];
         if (!validStatuses.includes(status)) {
             return res.status(400).json({ 
                 error: 'Invalid status. Must be one of: ' + validStatuses.join(', ') 
@@ -351,23 +351,6 @@ router.patch('/:id', async (req, res) => {
                 console.log(`Added ${currentRequest.quantity_requested} units of part ${currentRequest.part_id} to technician ${currentRequest.technician_id} inventory`);
             }
             
-            // If fulfilled (for backward compatibility), only update if not already processed
-            if (status === 'fulfilled' && currentRequest.status !== 'approved') {
-                await db.query(
-                    'UPDATE printer_parts SET quantity = quantity - ? WHERE id = ? AND quantity >= ?',
-                    [currentRequest.quantity_requested, currentRequest.part_id, currentRequest.quantity_requested]
-                );
-                
-                // Check if update was successful
-                const [updateResult] = await db.query(
-                    'SELECT ROW_COUNT() as affected_rows'
-                );
-                
-                if (updateResult[0].affected_rows === 0) {
-                    throw new Error('Insufficient inventory to fulfill request');
-                }
-            }
-            
             await db.query('COMMIT');
             
             console.log('Parts request updated:', {
@@ -391,10 +374,6 @@ router.patch('/:id', async (req, res) => {
                     notificationTitle = 'Parts Request Denied';
                     notificationMessage = `Your request for ${currentRequest.quantity_requested} units has been denied.`;
                     notificationType = 'parts_denied';
-                } else if (status === 'fulfilled') {
-                    notificationTitle = 'Parts Request Fulfilled';
-                    notificationMessage = `Your request for ${currentRequest.quantity_requested} units has been fulfilled.`;
-                    notificationType = 'success';
                 }
                 
                 if (notificationTitle) {
@@ -496,7 +475,7 @@ router.get('/stats/summary', async (req, res) => {
                 SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_requests,
                 SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved_requests,
                 SUM(CASE WHEN status = 'denied' THEN 1 ELSE 0 END) as denied_requests,
-                SUM(CASE WHEN status = 'fulfilled' THEN 1 ELSE 0 END) as fulfilled_requests,
+                SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved_requests,
                 SUM(CASE WHEN priority = 'urgent' THEN 1 ELSE 0 END) as urgent_requests,
                 SUM(CASE WHEN created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) as recent_requests
             FROM parts_requests 

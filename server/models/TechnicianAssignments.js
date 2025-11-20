@@ -8,7 +8,9 @@ class TechnicianAssignments {
 				SELECT i.institution_id, i.name, i.type, i.address
 				FROM technician_assignments ta
 				JOIN institutions i ON ta.institution_id = i.institution_id
-				WHERE ta.technician_id = ? AND ta.is_active = TRUE
+				WHERE ta.technician_id = ? 
+				AND ta.is_active = TRUE
+				AND i.status = 'active'
 			`, [technicianId]);
 			return rows;
 		} catch (error) {

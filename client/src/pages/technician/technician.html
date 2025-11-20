@@ -2420,11 +2420,9 @@
         <div id="parts-content" class="tab-content">
             <div class="px-4 py-8 pb-40">
                 <div class="max-w-4xl mx-auto">
-                    <h1 class="text-2xl md:text-3xl font-bold text-slate-800 mb-8">Parts & Inventory</h1>
                     
                     <!-- Option Selection -->
                     <div id="partsOptions" class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6 mb-6">
-                        <h2 class="text-lg font-semibold text-slate-700 mb-4">What would you like to do?</h2>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <button id="viewInventoryBtn" class="flex flex-col items-center p-6 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200 transform hover:scale-105 shadow-lg">
                                 <svg class="w-8 h-8 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2446,19 +2444,32 @@
                     
                     <!-- Inventory View -->
                     <div id="inventoryView" class="hidden">
-                        <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-6 mb-6">
-                            <div class="flex justify-between items-center mb-4">
-                                <h2 class="text-lg font-semibold text-slate-700">Parts Inventory</h2>
-                                <button id="backToOptionsBtn" class="px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                                    ← Back to Options
+                        <div class="bg-white rounded-2xl shadow-lg border-2 border-emerald-100 p-5 mb-5">
+                            <div class="flex justify-between items-center mb-5 pb-4 border-b-2 border-emerald-50">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-gradient-to-br from-emerald-500 to-green-600 rounded-lg flex items-center justify-center shadow-md">
+                                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h2 class="text-lg font-bold text-gray-900">My Inventory</h2>
+                                        <p class="text-xs text-emerald-600">Parts assigned to you by administrators</p>
+                                    </div>
+                                </div>
+                                <button id="backToOptionsBtn" class="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors font-medium text-sm shadow-md hover:shadow-lg flex items-center space-x-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                                    </svg>
+                                    <span>Back</span>
                                 </button>
                             </div>
-                            <div class="flex flex-col gap-4">
-                                <input type="text" id="partsSearchInput" placeholder="Search parts by name or category..." 
-                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <div class="flex flex-col gap-3">
+                                <input type="text" id="partsSearchInput" placeholder="Search parts by name, category, or SKU" 
+                                       class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
                                 
-                                <div class="grid grid-cols-2 gap-3 sm:flex sm:gap-4">
-                                    <select id="categoryFilter" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
+                                <div class="grid grid-cols-2 gap-3">
+                                    <select id="categoryFilter" class="px-3 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 text-sm font-medium">
                                         <option value="">All Categories</option>
                                         <option value="ink-bottle">Ink Bottle</option>
                                         <option value="toner">Toner</option>
@@ -2467,34 +2478,61 @@
                                         <option value="other">Other</option>
                                     </select>
                                     
-                                    <select id="stockFilter" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
+                                    <select id="stockFilter" class="px-3 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 text-sm font-medium">
                                         <option value="">All Stock Levels</option>
                                         <option value="in_stock">In Stock</option>
                                         <option value="low_stock">Low Stock</option>
                                         <option value="out_of_stock">Out of Stock</option>
                                     </select>
-                                    
-                                    <button id="refreshPartsBtn" class="col-span-2 sm:col-span-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm">
-                                        🔄 Refresh
-                                    </button>
                                 </div>
+                                
+                                <button id="refreshPartsBtn" class="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 font-semibold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-2">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                    </svg>
+                                    <span>Refresh</span>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Stock Summary Stats -->
+                        <div class="grid grid-cols-2 gap-3 mb-5">
+                            <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border-2 border-blue-200">
+                                <div class="text-3xl font-bold text-blue-600" id="totalItemsCount">5</div>
+                                <div class="text-sm font-medium text-blue-700">Total Items</div>
+                            </div>
+                            <div class="bg-gradient-to-br from-green-50 to-emerald-100 rounded-xl p-4 border-2 border-green-200">
+                                <div class="text-3xl font-bold text-green-600" id="inStockCount">5</div>
+                                <div class="text-sm font-medium text-green-700">In Stock</div>
+                            </div>
+                            <div class="bg-gradient-to-br from-yellow-50 to-amber-100 rounded-xl p-4 border-2 border-yellow-200">
+                                <div class="text-3xl font-bold text-yellow-600" id="lowStockCount">3</div>
+                                <div class="text-sm font-medium text-yellow-700">Low Stock</div>
+                            </div>
+                            <div class="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-4 border-2 border-red-200">
+                                <div class="text-3xl font-bold text-red-600" id="outOfStockCount">0</div>
+                                <div class="text-sm font-medium text-red-700">Out of Stock</div>
                             </div>
                         </div>
                         
                         <!-- Parts List -->
-                        <div id="partsLoadingState" class="text-center py-8">
-                            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                            <p class="mt-2 text-gray-600">Loading parts inventory...</p>
+                        <div id="partsLoadingState" class="text-center py-12">
+                            <div class="inline-flex items-center space-x-2">
+                                <div class="w-3 h-3 bg-emerald-500 rounded-full animate-bounce" style="animation-delay: 0s;"></div>
+                                <div class="w-3 h-3 bg-green-500 rounded-full animate-bounce" style="animation-delay: 0.1s;"></div>
+                                <div class="w-3 h-3 bg-teal-500 rounded-full animate-bounce" style="animation-delay: 0.2s;"></div>
+                            </div>
+                            <p class="mt-4 text-emerald-700 font-semibold">Loading parts inventory...</p>
                         </div>
                         
-                        <div id="partsEmptyState" class="hidden text-center py-12">
-                            <div class="text-gray-400 mb-4">
-                                <svg class="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <div id="partsEmptyState" class="hidden bg-white rounded-xl border-2 border-emerald-100 p-8 text-center">
+                            <div class="text-emerald-200 mb-4">
+                                <svg class="mx-auto h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                                 </svg>
                             </div>
-                            <h3 class="text-lg font-medium text-gray-900 mb-2">No Parts Found</h3>
-                            <p class="text-gray-500">No parts match your current search criteria.</p>
+                            <h3 class="text-lg font-bold text-gray-900 mb-2">No Parts Found</h3>
+                            <p class="text-gray-600">No parts match your current search criteria.</p>
                         </div>
                         
                         <div id="partsGrid" class="hidden grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -3210,22 +3248,37 @@
         
         // Load service requests in the modal
         async function loadServiceRequestsInModal() {
+            console.log('🔄 Loading service requests in modal...');
             const loadingEl = document.getElementById('serviceRequestsLoading');
             const emptyEl = document.getElementById('serviceRequestsEmpty');
             const listEl = document.getElementById('serviceRequestsList');
             const countEl = document.getElementById('requestsCount');
             
+            console.log('📍 Elements found:', {
+                loadingEl: !!loadingEl,
+                emptyEl: !!emptyEl,
+                listEl: !!listEl,
+                countEl: !!countEl
+            });
+            
             // Show loading state
-            if (loadingEl) loadingEl.classList.remove('hidden');
+            if (loadingEl) {
+                loadingEl.classList.remove('hidden');
+                console.log('⏳ Showing loading state');
+            }
             if (emptyEl) emptyEl.classList.add('hidden');
             
             try {
                 const token = localStorage.getItem('token');
+                console.log('🔑 Token exists:', !!token);
+                
                 const response = await fetch('/api/technician/service-requests', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
                 });
+                
+                console.log('📡 API Response status:', response.status, response.statusText);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -3233,24 +3286,34 @@
                 
                 const requests = await response.json();
                 console.log(`📋 Loaded ${requests.length} service requests for modal`);
+                console.log('📋 Requests data:', requests);
                 
                 // Hide loading
-                if (loadingEl) loadingEl.classList.add('hidden');
+                if (loadingEl) {
+                    loadingEl.classList.add('hidden');
+                    console.log('✅ Hidden loading state');
+                }
                 
                 // Update count
                 if (countEl) {
                     countEl.textContent = `${requests.length} ${requests.length === 1 ? 'request' : 'requests'}`;
+                    console.log('🔢 Updated count to:', countEl.textContent);
                 }
                 
                 if (requests.length === 0) {
-                    if (emptyEl) emptyEl.classList.remove('hidden');
+                    if (emptyEl) {
+                        emptyEl.classList.remove('hidden');
+                        console.log('📭 Showing empty state');
+                    }
                     return;
                 }
                 
                 // Render requests
                 if (listEl) {
                     const requestsHTML = requests.map(request => createServiceRequestCard(request)).join('');
+                    console.log('🎨 Generated HTML for', requests.length, 'cards');
                     listEl.innerHTML = requestsHTML;
+                    console.log('✅ Cards rendered to listEl');
                 }
                 
             } catch (error) {
@@ -3308,7 +3371,7 @@
                     <div class="space-y-2 text-sm text-gray-600">
                         <p><strong>Institution:</strong> ${request.institution_name || 'N/A'}</p>
                         <p><strong>Location:</strong> ${request.location || 'N/A'}</p>
-                        <p><strong>Issue:</strong> ${request.description || 'No description provided'}</p>
+                        <p><strong>Issue:</strong> ${request.issue || request.description || 'No description provided'}</p>
                         <p><strong>Created:</strong> ${new Date(request.created_at).toLocaleDateString()}</p>
                     </div>
                     
@@ -3613,6 +3676,10 @@
                                 try { window.refreshRequestsPage(); } catch (e) { console.error(e); }
                             }
                             checkAllComponentsLoaded();
+                            
+                            // Dispatch event to notify that search elements are ready
+                            console.log('🎉 Dispatching searchElementsReady event');
+                            document.dispatchEvent(new CustomEvent('searchElementsReady'));
                         }, 300);
                     };
                     requestsScript.onerror = (error) => {

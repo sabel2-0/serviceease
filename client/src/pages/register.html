@@ -411,7 +411,7 @@
                                         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent 
                                         transition-all duration-200 ease-in-out"
                                         placeholder="John"
-                                        pattern="[A-Za-z]{2,}"
+                                            pattern="[A-Za-z ]{2,}"
                                         title="Please enter at least 2 letters">
                                     <p class="mt-1 text-sm text-red-600 hidden"></p>
                                 </div>
@@ -423,7 +423,7 @@
                                         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent 
                                         transition-all duration-200 ease-in-out"
                                         placeholder="Doe"
-                                        pattern="[A-Za-z]{2,}"
+                                            pattern="[A-Za-z ]{2,}"
                                         title="Please enter at least 2 letters">
                                     <p class="mt-1 text-sm text-red-600 hidden"></p>
                                 </div>
@@ -1177,7 +1177,7 @@
 
                     // Additional validation for specific fields
                     if (field.id === 'firstName' || field.id === 'lastName') {
-                        if (!field.value.match(/^[A-Za-z]{2,}$/)) {
+                        if (!field.value.match(/^[A-Za-z ]{2,}$/)) {
                             isValid = false;
                             field.classList.add('border-red-500');
                             if (errorMessage) {

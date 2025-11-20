@@ -213,21 +213,41 @@ router.post('/:approvalId/approve', authenticateCoordinator, async (req, res) =>
                 VALUES (?, ?, ?, ?, ?)
             `, [serviceRequestId, 'pending_approval', 'completed', coordinatorId, `Service completion approved by coordinator. ${notes || ''}`]);
             
+            // Get coordinator and institution information for notification
+            const [coordinatorInfo] = await db.query(`
+                SELECT u.first_name, u.last_name
+                FROM users u
+                WHERE u.id = ?
+            `, [coordinatorId]);
+            
+            const [institutionInfo] = await db.query(`
+                SELECT i.name as institution_name
+                FROM service_requests sr
+                JOIN institutions i ON sr.institution_id = i.institution_id
+                WHERE sr.id = ?
+            `, [serviceRequestId]);
+            
+            const coordinatorName = coordinatorInfo.length > 0 
+                ? `${coordinatorInfo[0].first_name} ${coordinatorInfo[0].last_name}`
+                : 'coordinator';
+            const institutionName = institutionInfo.length > 0 
+                ? institutionInfo[0].institution_name
+                : 'your institution';
+            
             // Create notification for technician
             await db.query(`
                 INSERT INTO notifications 
-                (related_user_id, type, title, message, related_data, created_at)
-                VALUES (?, ?, ?, ?, ?, NOW())
+                (user_id, sender_id, type, reference_type, reference_id, title, message, priority, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
             `, [
                 technicianId,
+                coordinatorId,
+                'service_approved',
                 'service_request',
+                serviceRequestId,
                 'Service Completion Approved',
-                `Your service completion for request #${serviceRequestId} has been approved by the coordinator.`,
-                JSON.stringify({ 
-                    service_request_id: serviceRequestId, 
-                    coordinator_id: coordinatorId,
-                    approval_id: approvalId
-                })
+                `Your service completion for request #${serviceRequestId} has been approved by ${coordinatorName} at ${institutionName}. ${notes ? 'Notes: ' + notes : ''}`,
+                'low'
             ]);
             
             // Commit transaction
@@ -308,22 +328,41 @@ router.post('/:approvalId/reject', authenticateCoordinator, async (req, res) => 
                 VALUES (?, ?, ?, ?, ?)
             `, [serviceRequestId, 'pending_approval', 'in_progress', coordinatorId, `Service completion rejected by coordinator. Reason: ${notes}`]);
             
+            // Get coordinator and institution information for notification
+            const [coordinatorInfo] = await db.query(`
+                SELECT u.first_name, u.last_name
+                FROM users u
+                WHERE u.id = ?
+            `, [coordinatorId]);
+            
+            const [institutionInfo] = await db.query(`
+                SELECT i.name as institution_name
+                FROM service_requests sr
+                JOIN institutions i ON sr.institution_id = i.institution_id
+                WHERE sr.id = ?
+            `, [serviceRequestId]);
+            
+            const coordinatorName = coordinatorInfo.length > 0 
+                ? `${coordinatorInfo[0].first_name} ${coordinatorInfo[0].last_name}`
+                : 'coordinator';
+            const institutionName = institutionInfo.length > 0 
+                ? institutionInfo[0].institution_name
+                : 'your institution';
+            
             // Create notification for technician
             await db.query(`
                 INSERT INTO notifications 
-                (related_user_id, type, title, message, related_data, created_at)
-                VALUES (?, ?, ?, ?, ?, NOW())
+                (user_id, sender_id, type, reference_type, reference_id, title, message, priority, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
             `, [
                 technicianId,
+                coordinatorId,
+                'service_revision_requested',
                 'service_request',
-                'Service Completion Rejected',
-                `Your service completion for request #${serviceRequestId} was rejected. Please review and resubmit. Reason: ${notes}`,
-                JSON.stringify({ 
-                    service_request_id: serviceRequestId, 
-                    coordinator_id: coordinatorId,
-                    approval_id: approvalId,
-                    rejection_reason: notes
-                })
+                serviceRequestId,
+                'Service Completion Rejected - Revision Required',
+                `Your service completion for request #${serviceRequestId} was rejected by ${coordinatorName} at ${institutionName}. Please review and resubmit. Reason: ${notes}`,
+                'high'
             ]);
             
             // Commit transaction

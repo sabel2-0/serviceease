@@ -86,22 +86,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Select a client card
     function selectClient(institution) {
+        // Keep selection in state for other actions (assigner etc.)
         selectedInstitution = institution;
-        
-        // Update UI
-        selectedClientName.textContent = institution.name;
-        selectedClientId.textContent = `ID: ${institution.institution_id}`;
-        
+
         // Update hidden select for compatibility
         institutionSelect.value = institution.institution_id;
-        
-        // Show selected client section
-        selectedClientSection.classList.remove('hidden');
-        
-        // Scroll to selected section
-        selectedClientSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        
-        // Update card selection visual state
+
+        // Visually mark selected card
         document.querySelectorAll('.client-card').forEach(card => {
             if (card.dataset.id == institution.institution_id) {
                 card.classList.add('selected');
@@ -109,9 +100,218 @@ document.addEventListener('DOMContentLoaded', () => {
                 card.classList.remove('selected');
             }
         });
-        
-        // Load printers for this client
-        fetchPrinters();
+
+        // Instead of revealing a section below, open a modal with the client's printers.
+        // This keeps the page in place and prevents scrolling while modal is active.
+        openPrintersModal(institution);
+    }
+
+    // Open a modal showing assigned printers for the given institution.
+    // Modal shows up to `pageSize` rows per view and provides left/right arrows to paginate.
+    async function openPrintersModal(institution) {
+        const pageSize = 3; // show at least 3 rows per screen
+        let currentPage = 0;
+        let printers = [];
+
+        // Disable page scrolling
+        const prevOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+
+        // Create modal container
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4';
+        modal.innerHTML = `
+            <div class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+            <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+                <div class="p-4 sm:p-6 bg-gradient-to-r from-green-50 to-green-100 border-b border-green-200 flex items-start justify-between">
+                    <div>
+                        <h2 class="text-lg sm:text-xl font-bold text-green-900">${escapeHtml(institution.name)}</h2>
+                        <p class="text-sm text-green-600 mt-1">ID: ${institution.institution_id}</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button class="assignInModalBtn inline-flex items-center px-3 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold rounded-lg shadow hover:from-green-700 hover:to-green-800 transition-all duration-200">
+                            <i class="fas fa-plus mr-2"></i> Assign
+                        </button>
+                        <button class="closeModalBtn text-green-700 hover:text-white hover:bg-green-600 p-2 rounded-lg" title="Close modal">
+                            <i class="fa-solid fa-xmark text-lg"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="p-4 sm:p-6 overflow-y-auto">
+                    <div class="mb-4 flex items-center justify-between">
+                        <div class="relative w-64">
+                            <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 text-sm"></i>
+                            <input id="modalPrinterSearch" placeholder="Search printers..." class="w-full pl-12 pr-4 py-2 border-2 border-slate-200 rounded-xl text-slate-900" />
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button class="prevPageBtn px-3 py-2 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200" title="Previous">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <button class="nextPageBtn px-3 py-2 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200" title="Next">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-sm border-collapse">
+                            <thead class="bg-gradient-to-r from-slate-50 to-slate-100 border-b-2 border-slate-200">
+                                <tr>
+                                    <th class="text-left px-3 sm:px-6 py-3 font-semibold text-slate-700">Printer Name</th>
+                                    <th class="text-left px-3 sm:px-6 py-3 font-semibold text-slate-700">Model</th>
+                                    <th class="text-left px-3 sm:px-6 py-3 font-semibold text-slate-700">Serial Number</th>
+                                    <th class="text-right px-3 sm:px-6 py-3 font-semibold text-slate-700">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="modalPrintersTbody" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                        <div id="modalEmptyState" class="text-center py-8 hidden">
+                            <div class="flex flex-col items-center">
+                                <i class="fas fa-inbox text-4xl text-slate-300 mb-4"></i>
+                                <p class="text-lg font-medium text-slate-400">No printers assigned yet</p>
+                                <p class="text-sm text-slate-400 mt-1">Use Assign to add printers to this client</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-4 sm:p-6 bg-slate-50 border-t border-slate-100 text-right">
+                    <span id="modalTotalCount" class="text-sm text-slate-600 mr-4">0 printers</span>
+                    <button class="closeModalBtn px-4 py-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-100">Close</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        const modalPrintersTbody = modal.querySelector('#modalPrintersTbody');
+        const modalEmptyState = modal.querySelector('#modalEmptyState');
+        const modalTotalCount = modal.querySelector('#modalTotalCount');
+        const prevBtn = modal.querySelector('.prevPageBtn');
+        const nextBtn = modal.querySelector('.nextPageBtn');
+        const searchInput = modal.querySelector('#modalPrinterSearch');
+        const closeBtns = modal.querySelectorAll('.closeModalBtn');
+        const assignInModalBtn = modal.querySelector('.assignInModalBtn');
+
+        function closeModal() {
+            if (modal && modal.parentNode) modal.parentNode.removeChild(modal);
+            document.body.style.overflow = prevOverflow || '';
+        }
+
+        closeBtns.forEach(b => b.addEventListener('click', closeModal));
+
+        // Assign in modal should open the existing assign flow
+        assignInModalBtn.addEventListener('click', async () => {
+            // close printers modal first to reuse addPrinter which also appends a modal
+            closeModal();
+            // ensure selectedInstitution is set (it already is)
+            await addPrinter();
+        });
+
+        // Fetch printers for this institution
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/institutions/${encodeURIComponent(institution.institution_id)}/printers`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            printers = res.ok ? await res.json() : [];
+        } catch (err) {
+            console.error('Failed to load printers for modal', err);
+            printers = [];
+        }
+
+        // Filtering
+        let filtered = [...printers];
+
+        function renderModalPage() {
+            const start = currentPage * pageSize;
+            const pageItems = filtered.slice(start, start + pageSize);
+
+            if (!pageItems.length) {
+                modalPrintersTbody.innerHTML = '';
+                modalEmptyState.classList.remove('hidden');
+                modalTotalCount.textContent = `${filtered.length} printer${filtered.length === 1 ? '' : 's'}`;
+            } else {
+                modalEmptyState.classList.add('hidden');
+                modalPrintersTbody.innerHTML = pageItems.map((p, idx) => `
+                    <tr data-id="${p.assignment_id}" class="hover:bg-gradient-to-r hover:from-green-50 hover:to-blue-50 transition-all duration-200 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}">
+                        <td class="px-3 sm:px-6 py-4">
+                            <div class="flex items-center space-x-3">
+                                <div class="flex-shrink-0"><i class="fas fa-printer text-slate-400 text-lg"></i></div>
+                                <div class="font-semibold text-slate-900 text-sm">${escapeHtml(p.name || 'Unknown Printer')}</div>
+                            </div>
+                        </td>
+                        <td class="px-3 sm:px-6 py-4">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                                <i class="fas fa-tag mr-2 text-xs"></i>
+                                ${escapeHtml(p.model || 'Unknown Model')}
+                            </span>
+                        </td>
+                        <td class="px-3 sm:px-6 py-4"><span class="font-mono text-sm text-slate-600 bg-slate-100 px-2 py-1 rounded">${escapeHtml(p.serial_number || 'N/A')}</span></td>
+                        <td class="px-3 sm:px-6 py-4 text-right">
+                            <button class="modalUnassignBtn inline-flex items-center px-3 py-2 border border-red-300 rounded-lg text-sm font-medium text-red-700 bg-red-50 hover:bg-red-100 hover:border-red-400 transition-all duration-200 shadow-sm">
+                                <i class="fas fa-unlink mr-2 text-xs"></i> Unassign
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+                modalTotalCount.textContent = `${filtered.length} printer${filtered.length === 1 ? '' : 's'}`;
+            }
+
+            // Update nav button states
+            prevBtn.disabled = currentPage === 0;
+            nextBtn.disabled = (currentPage + 1) * pageSize >= filtered.length;
+        }
+
+        // Pagination handlers
+        prevBtn.addEventListener('click', () => {
+            if (currentPage === 0) return;
+            currentPage--;
+            renderModalPage();
+        });
+        nextBtn.addEventListener('click', () => {
+            if ((currentPage + 1) * pageSize >= filtered.length) return;
+            currentPage++;
+            renderModalPage();
+        });
+
+        // Search in modal
+        searchInput.addEventListener('input', (e) => {
+            const term = e.target.value.trim().toLowerCase();
+            if (!term) filtered = [...printers];
+            else filtered = printers.filter(pr =>
+                (pr.name && pr.name.toLowerCase().includes(term)) ||
+                (pr.model && pr.model.toLowerCase().includes(term)) ||
+                (pr.serial_number && pr.serial_number.toLowerCase().includes(term))
+            );
+            currentPage = 0;
+            renderModalPage();
+        });
+
+        // Delegate unassign inside modal
+        modalPrintersTbody.addEventListener('click', async (ev) => {
+            const row = ev.target.closest('tr[data-id]');
+            if (!row) return;
+            if (ev.target.closest('.modalUnassignBtn')) {
+                const id = row.getAttribute('data-id');
+                if (!confirm('Unassign this printer from the client?')) return;
+                try {
+                    const token = localStorage.getItem('token');
+                    const res = await fetch(`/api/printers/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+                    if (!res.ok) throw new Error('Failed to unassign');
+                    // remove from local arrays and re-render
+                    printers = printers.filter(p => p.assignment_id != id);
+                    filtered = filtered.filter(p => p.assignment_id != id);
+                    if (currentPage * pageSize >= filtered.length && currentPage > 0) currentPage--;
+                    renderModalPage();
+                } catch (err) {
+                    console.error(err);
+                    alert('Failed to unassign printer');
+                }
+            }
+        });
+
+        // initial render
+        renderModalPage();
     }
 
     // Deselect client

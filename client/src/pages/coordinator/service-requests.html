@@ -49,14 +49,33 @@
             box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
         }
         
-        /* Card hover effects */
+        /* Enhanced card styles */
         .service-card {
-            transition: all 0.3s ease;
+            animation: fadeInUp 0.5s ease-out;
         }
         
-        .service-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Line clamp utility */
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        /* Glassmorphism effect */
+        .backdrop-blur-sm {
+            backdrop-filter: blur(4px);
         }
         
         /* Smooth animations */
@@ -67,6 +86,11 @@
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Button hover effects */
+        button:active {
+            transform: scale(0.98);
         }
     </style>
 </head>
@@ -82,27 +106,28 @@
             <!-- Unified Header -->
             <div id="coordinator-header-container"></div>
 
-            <!-- Main Content Area -->
-            <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-                <!-- Service Requests Content -->
-                <div class="bg-white rounded-xl shadow-lg border border-gray-200">
-                    <div class="px-8 py-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-xl">
+            <!-- Main Content Area - Full Width -->
+            <main class="w-full">
+                <!-- Service Requests Header -->
+                <div class="bg-white border-b border-gray-200 shadow-sm">
+                    <div class="px-6 py-4">
                         <div class="flex justify-between items-center">
-                            <div>
-                                <h2 class="text-2xl font-bold text-gray-800 flex items-center">
-                                    <i class="fas fa-clipboard-list mr-3 text-blue-600"></i>
-                                    Service Request Management
-                                </h2>
-                                <p class="text-gray-600 mt-1">Monitor and manage all service requests for your institution</p>
-                            </div>
+                            <h2 class="text-2xl font-bold text-gray-800 flex items-center">
+                                <i class="fas fa-clipboard-list mr-3 text-blue-600"></i>
+                                Service Requests
+                            </h2>
                             <button id="new-service-request-btn" class="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105">
                                 <i class="fas fa-plus mr-2"></i>New Request
                             </button>
                         </div>
                     </div>
-                    <div class="p-8">
+                </div>
+
+                <!-- Content Area -->
+                <div class="bg-white">
+                    <div class="px-6 py-6">
                         <!-- Filter Controls -->
-                        <div class="mb-8 bg-gray-50 rounded-xl p-6 border border-gray-200">
+                        <div class="mb-6 bg-gray-50 rounded-xl p-5 border border-gray-200">
                             <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                                 <i class="fas fa-filter mr-2 text-blue-600"></i>
                                 Filter & Search
@@ -130,31 +155,38 @@
                             </div>
                         </div>
                         
-                        <!-- Tabs Navigation -->
-                        <div class="mb-8">
-                            <div class="flex space-x-1 bg-gray-100 p-1 rounded-xl">
-                                <button id="tab-all" class="tab-button flex-1 px-6 py-3 rounded-lg font-medium transition-all duration-200 text-sm bg-white text-blue-600 shadow-sm">
-                                    <i class="fas fa-list mr-2"></i>All Requests
-                                    <span id="all-count" class="ml-2 bg-blue-100 text-blue-600 px-2 py-1 rounded-full text-xs font-bold">0</span>
+                        <!-- Tabs Navigation - Modern Design -->
+                        <div class="mb-6">
+                            <div class="flex overflow-x-auto gap-2 pb-1">
+                                <button id="tab-all" class="tab-button flex-shrink-0 group relative px-5 py-3 rounded-xl font-semibold transition-all duration-300 text-sm flex items-center space-x-2 bg-white text-blue-600 shadow-md border-2 border-blue-500">
+                                    <div class="absolute inset-0 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl opacity-0 group-hover:opacity-10 transition-opacity"></div>
+                                    <i class="fas fa-list-ul relative z-10"></i>
+                                    <span class="relative z-10">All Requests</span>
+                                    <span id="all-count" class="relative z-10 ml-1 min-w-[24px] h-6 flex items-center justify-center bg-blue-600 text-white px-2 rounded-full text-xs font-bold shadow-sm">0</span>
                                 </button>
-                                <button id="tab-new" class="tab-button flex-1 px-6 py-3 rounded-lg font-medium transition-all duration-200 text-sm text-gray-600 hover:text-blue-600">
-                                    <i class="fas fa-plus mr-2"></i>New
-                                    <span id="new-count" class="ml-2 bg-blue-100 text-blue-600 px-2 py-1 rounded-full text-xs font-bold">0</span>
+                                <button id="tab-new" class="tab-button flex-shrink-0 group relative px-5 py-3 rounded-xl font-semibold transition-all duration-300 text-sm flex items-center space-x-2 bg-gray-50 text-gray-600 hover:bg-white hover:shadow-md border-2 border-transparent hover:border-blue-200">
+                                    <div class="absolute inset-0 bg-gradient-to-r from-blue-400 to-blue-500 rounded-xl opacity-0 group-hover:opacity-10 transition-opacity"></div>
+                                    <i class="fas fa-plus-circle relative z-10"></i>
+                                    <span class="relative z-10">New</span>
+                                    <span id="new-count" class="relative z-10 ml-1 min-w-[24px] h-6 flex items-center justify-center bg-blue-100 text-blue-700 px-2 rounded-full text-xs font-bold">0</span>
                                 </button>
-                                <button id="tab-in-progress" class="tab-button flex-1 px-6 py-3 rounded-lg font-medium transition-all duration-200 text-sm text-gray-600 hover:text-yellow-600">
-                                    <i class="fas fa-cogs mr-2"></i>In Progress
-                                    <span id="progress-count" class="ml-2 bg-yellow-100 text-yellow-600 px-2 py-1 rounded-full text-xs font-bold">0</span>
+                                <button id="tab-in-progress" class="tab-button flex-shrink-0 group relative px-5 py-3 rounded-xl font-semibold transition-all duration-300 text-sm flex items-center space-x-2 bg-gray-50 text-gray-600 hover:bg-white hover:shadow-md border-2 border-transparent hover:border-yellow-200">
+                                    <div class="absolute inset-0 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-xl opacity-0 group-hover:opacity-10 transition-opacity"></div>
+                                    <i class="fas fa-sync-alt relative z-10"></i>
+                                    <span class="relative z-10">In Progress</span>
+                                    <span id="progress-count" class="relative z-10 ml-1 min-w-[24px] h-6 flex items-center justify-center bg-yellow-100 text-yellow-700 px-2 rounded-full text-xs font-bold">0</span>
                                 </button>
-                                <button id="tab-pending-approval" class="tab-button flex-1 px-6 py-3 rounded-lg font-medium transition-all duration-200 text-sm text-gray-600 hover:text-orange-600">
-                                    <i class="fas fa-clock mr-2"></i>Pending Approval
-                                    <span id="pending-approval-count" class="ml-2 bg-orange-100 text-orange-600 px-2 py-1 rounded-full text-xs font-bold">0</span>
+                                <button id="tab-pending-approval" class="tab-button flex-shrink-0 group relative px-5 py-3 rounded-xl font-semibold transition-all duration-300 text-sm flex items-center space-x-2 bg-gray-50 text-gray-600 hover:bg-white hover:shadow-md border-2 border-transparent hover:border-orange-200">
+                                    <div class="absolute inset-0 bg-gradient-to-r from-orange-400 to-orange-500 rounded-xl opacity-0 group-hover:opacity-10 transition-opacity"></div>
+                                    <i class="fas fa-hourglass-half relative z-10"></i>
+                                    <span class="relative z-10">Pending Approval</span>
+                                    <span id="pending-approval-count" class="relative z-10 ml-1 min-w-[24px] h-6 flex items-center justify-center bg-orange-100 text-orange-700 px-2 rounded-full text-xs font-bold">0</span>
                                 </button>
-                                <button id="tab-completed" class="tab-button flex-1 px-6 py-3 rounded-lg font-medium transition-all duration-200 text-sm text-gray-600 hover:text-green-600">
-                                    <i class="fas fa-check mr-2"></i>Completed
-                                    <span id="completed-count" class="ml-2 bg-green-100 text-green-600 px-2 py-1 rounded-full text-xs font-bold">0</span>
-                                </button>
-                            </div>
-                                    <span id="completed-count" class="ml-2 bg-green-100 text-green-600 px-2 py-1 rounded-full text-xs font-bold">0</span>
+                                <button id="tab-completed" class="tab-button flex-shrink-0 group relative px-5 py-3 rounded-xl font-semibold transition-all duration-300 text-sm flex items-center space-x-2 bg-gray-50 text-gray-600 hover:bg-white hover:shadow-md border-2 border-transparent hover:border-green-200">
+                                    <div class="absolute inset-0 bg-gradient-to-r from-green-400 to-green-500 rounded-xl opacity-0 group-hover:opacity-10 transition-opacity"></div>
+                                    <i class="fas fa-check-circle relative z-10"></i>
+                                    <span class="relative z-10">Completed</span>
+                                    <span id="completed-count" class="relative z-10 ml-1 min-w-[24px] h-6 flex items-center justify-center bg-green-100 text-green-700 px-2 rounded-full text-xs font-bold">0</span>
                                 </button>
                             </div>
                         </div>
@@ -180,12 +212,12 @@
                         </div>
                         
                         <!-- Service Request Cards -->
-                        <div id="loadingState" class="py-16 text-center">
+                        <div id="loadingState" class="py-12 text-center">
                             <i class="fas fa-spinner fa-spin text-3xl text-gray-400 mb-3"></i>
                             <p class="text-gray-500">Loading service requests...</p>
                         </div>
                         
-                        <div id="emptyState" class="py-16 text-center hidden">
+                        <div id="emptyState" class="py-12 text-center hidden">
                             <i class="fas fa-clipboard-list text-5xl text-gray-300 mb-3"></i>
                             <p class="text-lg text-gray-500">No service requests found</p>
                             <p class="text-gray-400">Try adjusting your filters or create a new request</p>
@@ -193,6 +225,24 @@
                         
                         <div id="requestsContainer" class="space-y-4 hidden">
                             <!-- Service request cards will be loaded here -->
+                        </div>
+                        
+                        <!-- Pagination Controls -->
+                        <div id="paginationControls" class="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 hidden">
+                            <div class="flex items-center gap-2">
+                                <button id="prevPageBtn" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium shadow-sm hover:shadow-md">
+                                    <i class="fas fa-chevron-left mr-2"></i>Previous
+                                </button>
+                                <div id="pageNumbers" class="flex items-center gap-1">
+                                    <!-- Page numbers will be generated here -->
+                                </div>
+                                <button id="nextPageBtn" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium shadow-sm hover:shadow-md">
+                                    Next<i class="fas fa-chevron-right ml-2"></i>
+                                </button>
+                            </div>
+                            <div id="pageInfo" class="text-sm text-gray-600 font-medium">
+                                <!-- Page info will be displayed here -->
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -366,17 +416,16 @@
     <script src="../../js/coordinator-header-loader.js"></script>
     <script src="/js/coordinator-service-requests.js"></script>
     
-    <script>
+    <!-- <script>
         // Load header with page-specific content
         document.addEventListener('DOMContentLoaded', () => {
             if (window.loadCoordinatorHeader) {
                 window.loadCoordinatorHeader({
-                    title: 'Service Requests',
-                    subtitle: 'Monitor and manage all service requests for your institution'
+                    title: 'Service Requests'
                 });
             }
         });
-    </script>
+    </script> -->
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {

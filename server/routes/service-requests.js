@@ -184,10 +184,21 @@ router.post('/', auth, async (req, res) => {
         const normalizedStatus = status ? (statusMap[String(status).toLowerCase()] || 'pending') : 'pending';
         const normalizedPriority = priority ? (priorityMap[String(priority).toLowerCase()] || 'medium') : 'medium';
 
-        // Generate a new request number (e.g., INST-004-YYYYMMDD-HHMMSS)
+        // Generate a new request number in format: SR-YYYY-###### (e.g., SR-2025-000001)
         const now = new Date();
-        const dateStr = now.toISOString().replace(/[-:T]/g, '').slice(0, 14); // YYYYMMDDHHMMSS
-        const requestNumber = `${institution_id}-${dateStr}`;
+        const year = now.getFullYear();
+        
+        // Get the highest request number for this year
+        const [maxResult] = await db.query(
+            `SELECT MAX(CAST(SUBSTRING_INDEX(request_number, '-', -1) AS UNSIGNED)) as max_num 
+             FROM service_requests 
+             WHERE request_number LIKE ?`,
+            [`SR-${year}-%`]
+        );
+        
+        const maxNum = maxResult[0]?.max_num || 0;
+        const nextNum = maxNum + 1;
+        const requestNumber = `SR-${year}-${String(nextNum).padStart(6, '0')}`;
 
         // Log the generated request number and all inserted data
         console.log('Generated request_number:', requestNumber);

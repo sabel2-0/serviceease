@@ -1,45 +1,57 @@
 
 <!-- Home Tab Content Component -->
-<div class="container mx-auto px-4 py-8 pb-40">
+<div class="container mx-auto px-4 py-8 pb-40 bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 min-h-screen">
     <div class="max-w-4xl mx-auto">
-    <h1 class="text-2xl md:text-3xl font-bold text-gray-900 mb-6 tracking-tight">Institutions Assigned</h1>
         <!-- Loading State -->
-    <div id="loading-state" class="bg-white/90 backdrop-blur-sm rounded-xl shadow border border-blue-100 p-4 text-center">
+    <div id="loading-state" class="bg-white rounded-2xl shadow-lg border-2 border-emerald-100 p-6 text-center">
             <div class="flex items-center justify-center space-x-3 mb-4">
-                <div class="w-4 h-4 bg-blue-500 rounded-full animate-bounce"></div>
-                <span class="text-blue-700 font-semibold text-lg">Loading institutions...</span>
+                <div class="w-5 h-5 bg-emerald-500 rounded-full animate-bounce" style="animation-delay: 0s;"></div>
+                <div class="w-5 h-5 bg-green-500 rounded-full animate-bounce" style="animation-delay: 0.1s;"></div>
+                <div class="w-5 h-5 bg-teal-500 rounded-full animate-bounce" style="animation-delay: 0.2s;"></div>
             </div>
+            <span class="text-emerald-700 font-semibold text-lg">Loading your institutions...</span>
         </div>
         <!-- Error State -->
-    <div id="error-state" class="bg-white/90 backdrop-blur-sm rounded-xl shadow border border-red-200 p-4 text-center hidden">
+    <div id="error-state" class="bg-white rounded-2xl shadow-lg border-2 border-red-200 p-6 text-center hidden">
             <div class="text-red-500 mb-4">
-                <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-20 h-20 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
                 </svg>
             </div>
-            <h3 class="text-xl font-bold text-red-700 mb-2">Error Loading Institutions</h3>
-            <p class="text-red-600 mb-4 text-base" id="error-message">Failed to load institutions. Please try again.</p>
-            <button onclick="loadInstitutions()" class="bg-red-600 text-white px-6 py-2 rounded-xl hover:bg-red-700 transition-colors font-semibold">
+            <h3 class="text-2xl font-bold text-red-700 mb-3">Error Loading Institutions</h3>
+            <p class="text-red-600 mb-6 text-base" id="error-message">Failed to load institutions. Please try again.</p>
+            <button onclick="loadInstitutions()" class="bg-gradient-to-r from-red-600 to-red-700 text-white px-8 py-3 rounded-xl hover:from-red-700 hover:to-red-800 transition-all font-semibold shadow-lg hover:shadow-xl transform hover:scale-105">
+                <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
                 Retry
             </button>
         </div>
         <!-- Empty State -->
-    <div id="empty-state" class="bg-white/90 backdrop-blur-sm rounded-xl shadow border border-gray-200 p-4 text-center hidden">
-            <div class="text-gray-500 mb-4">
-                <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+    <div id="empty-state" class="bg-white rounded-2xl shadow-lg border-2 border-emerald-100 p-8 text-center hidden">
+            <div class="text-emerald-200 mb-6">
+                <svg class="w-24 h-24 mx-auto mb-4 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
                 </svg>
             </div>
-            <h3 class="text-xl font-bold text-gray-700 mb-2">No Institutions Assigned</h3>
-            <p class="text-gray-500 text-base">You haven't been assigned to any institutions yet.</p>
+            <h3 class="text-2xl font-bold text-gray-800 mb-3">No Institutions Assigned</h3>
+            <p class="text-gray-600 text-base">You haven't been assigned to any institutions yet.</p>
+            <p class="text-emerald-600 text-sm mt-2">Contact your coordinator for assignments</p>
         </div>
         <!-- Institution List -->
-        <div id="institution-container" class="bg-white/90 backdrop-blur-sm rounded-xl shadow border border-blue-100 p-4 hidden">
-            <div class="flex items-center justify-center space-x-2 mb-4">
-                <div class="w-3 h-3 bg-blue-500 rounded-full animate-bounce"></div>
-                <span class="text-blue-700 font-medium text-base">Institutions assigned to you as a technician:</span>
+        <div id="institution-container" class="bg-white rounded-xl shadow-lg border border-emerald-100 p-5 hidden">
+            <div class="flex items-center mb-5 pb-3 border-b border-emerald-50">
+                <div class="w-10 h-10 bg-gradient-to-br from-emerald-500 to-green-600 rounded-lg flex items-center justify-center mr-3 shadow-md">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <span class="text-emerald-700 font-bold text-base block">Institutions assigned to you</span>
+                    <span class="text-emerald-600 text-xs">Ready to service</span>
+                </div>
             </div>
-            <ul id="institution-list" class="space-y-2">
+            <ul id="institution-list" class="space-y-3">
                 <!-- List will be populated by JS -->
             </ul>
         </div>
@@ -80,12 +92,38 @@ async function loadInstitutions() {
             showElement('institution-container');
             data.institutions.forEach(inst => {
                 const li = document.createElement('li');
-                li.className = 'bg-gradient-to-r from-blue-100 to-blue-50 rounded-lg p-3 text-left shadow hover:shadow-md transition-shadow border border-blue-100';
+                li.className = 'bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 rounded-lg p-4 text-left shadow-md hover:shadow-lg transition-all border border-emerald-100 hover:border-emerald-200 transform hover:scale-[1.01] cursor-pointer';
                 // Format type: remove underscores and capitalize words
                 const formattedType = inst.type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-                li.innerHTML = `<div class="font-semibold text-base text-gray-800 mb-1">${inst.name}</div>
-                    <div class="text-xs text-gray-700 mb-0.5"><span class="font-medium text-blue-600">Type:</span> ${formattedType}</div>
-                    <div class="text-xs text-gray-700"><span class="font-medium text-blue-600">Address:</span> ${inst.address}</div>`;
+                li.innerHTML = `
+                    <div class="flex items-start">
+                        <div class="w-10 h-10 bg-gradient-to-br from-emerald-500 to-green-600 rounded-lg flex items-center justify-center mr-3 flex-shrink-0 shadow-sm">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                            </svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="font-bold text-base text-gray-900 mb-2">${inst.name}</div>
+                            <div class="flex items-center text-xs text-gray-700 mb-1">
+                                <svg class="w-3.5 h-3.5 text-emerald-600 mr-1.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                                </svg>
+                                <span class="font-medium text-emerald-700">Type:</span>
+                                <span class="ml-1">${formattedType}</span>
+                            </div>
+                            <div class="flex items-start text-xs text-gray-700">
+                                <svg class="w-3.5 h-3.5 text-emerald-600 mr-1.5 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                </svg>
+                                <div class="flex-1">
+                                    <span class="font-medium text-emerald-700">Address:</span>
+                                    <span class="ml-1">${inst.address}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
                 list.appendChild(li);
             });
         } else {

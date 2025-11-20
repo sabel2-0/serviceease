@@ -1,10 +1,10 @@
 <!-- Clients Tab Content Component - Voluntary Services -->
-<div class="container mx-auto px-4 py-8 pb-40">
+<div class="container mx-auto px-4 py-6 pb-24">
     <div class="max-w-4xl mx-auto">
         <!-- Header -->
-        <div class="mb-6">
-            <h1 class="text-2xl md:text-3xl font-bold text-slate-800 mb-2">📚 Public Schools</h1>
-            <p class="text-slate-600">View assigned schools and perform voluntary printer services</p>
+        <div class="mb-4">
+            <h1 class="text-xl md:text-2xl font-bold text-slate-800 mb-1">📚 Public Schools</h1>
+            <p class="text-sm text-slate-600">View assigned schools and perform voluntary printer services</p>
         </div>
 
         <!-- Loading State -->
@@ -14,17 +14,52 @@
         </div>
 
         <!-- Schools List -->
-        <div id="schools-list" class="space-y-4 hidden">
+        <div id="schools-list" class="space-y-3 hidden">
             <!-- Schools will be dynamically inserted here -->
         </div>
 
         <!-- Empty State -->
-        <div id="schools-empty" class="hidden bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-8 text-center">
-            <div class="w-16 h-16 bg-gradient-to-br from-slate-100 to-slate-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span class="text-3xl">🏫</span>
+        <div id="schools-empty" class="hidden bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-6 text-center">
+            <div class="w-12 h-12 bg-gradient-to-br from-slate-100 to-slate-200 rounded-full flex items-center justify-center mx-auto mb-3">
+                <span class="text-2xl">🏫</span>
             </div>
-            <h3 class="text-lg font-semibold text-slate-800 mb-2">No Public Schools Assigned</h3>
-            <p class="text-slate-600">You don't have any public schools assigned yet.</p>
+            <h3 class="text-base font-semibold text-slate-800 mb-1">No Public Schools Assigned</h3>
+            <p class="text-sm text-slate-600">You don't have any public schools assigned yet.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Printers Modal - Fullscreen -->
+<div id="printersModal" class="hidden fixed inset-0 bg-black/50 z-50 overflow-y-auto">
+    <div class="min-h-screen flex items-start justify-center p-0">
+        <div class="bg-white w-full h-screen flex flex-col">
+            <!-- Header -->
+            <div class="p-4 border-b border-slate-200 flex-shrink-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <button onclick="closePrintersModal()" class="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-all">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path>
+                            </svg>
+                        </button>
+                        <div>
+                            <h2 class="text-lg font-bold" id="modal-school-name">School Printers</h2>
+                            <p class="text-blue-100 text-xs" id="modal-school-id">INST-000</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-xl font-bold" id="modal-printer-count">0</div>
+                        <div class="text-xs text-blue-100">Printers</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Content - Scrollable -->
+            <div class="flex-1 overflow-y-auto p-4 bg-slate-50">
+                <div id="modal-printers-list" class="space-y-3 max-w-4xl mx-auto">
+                    <!-- Printers will be loaded here -->
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -171,29 +206,31 @@
                                     </div>
 
                                     <div class="space-y-3">
-                                        <!-- Brand Selection -->
+                                        <!-- Part Type Selection -->
                                         <div>
                                             <label class="block text-sm font-semibold text-slate-700 mb-1.5">
                                                 <svg class="w-3.5 h-3.5 text-indigo-500 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path>
                                                 </svg>
-                                                Select Brand
+                                                Part Type <span class="text-red-500">*</span>
                                             </label>
-                                            <select class="vs-part-brand w-full p-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 bg-white font-medium text-slate-700" onchange="loadPartsForBrand(this)">
-                                                <option value="">Choose brand...</option>
+                                            <select class="vs-part-type w-full p-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 bg-white font-medium text-slate-700" onchange="updatePartTypeFilter(this)">
+                                                <option value="">Choose type first...</option>
+                                                <option value="consumable">Consumable (Universal)</option>
+                                                <option value="printer_part">Printer Part (Brand-Specific)</option>
                                             </select>
                                         </div>
-
-                                        <!-- Part Selection -->
+                                        
+                                        <!-- Part Selection (Auto-filtered by Printer Brand) -->
                                         <div>
                                             <label class="block text-sm font-semibold text-slate-700 mb-1.5">
                                                 <svg class="w-3.5 h-3.5 text-purple-500 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a2 2 0 012-2z"></path>
                                                 </svg>
-                                                Select Part
+                                                Select Part <span class="text-xs text-purple-600">(Filtered by Type & Brand)</span>
                                             </label>
                                             <select class="vs-part-name w-full p-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-400 focus:border-purple-400 bg-white font-medium text-slate-700" onchange="updatePartStock(this)" disabled>
-                                                <option value="">Select brand first...</option>
+                                                <option value="">Select part type first...</option>
                                             </select>
                                             <div class="vs-part-stock text-sm mt-1.5 font-medium"></div>
                                         </div>
@@ -357,68 +394,68 @@
 window.renderSchools = function() {
     const container = document.getElementById('schools-list');
     container.innerHTML = schoolsData.map(school => `
-        <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 overflow-hidden">
-            <div class="bg-gradient-to-r from-blue-600 to-blue-700 p-4 text-white">
+        <div class="bg-white shadow-md border-l-4 border-l-blue-600 border border-slate-200 overflow-hidden hover:shadow-lg transition-all">
+            <div class="bg-blue-600 p-4">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-3">
-                        <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                        <div class="w-12 h-12 bg-white/10 flex items-center justify-center">
                             <span class="text-2xl">🏫</span>
                         </div>
                         <div>
-                            <h3 class="font-bold text-lg">${school.institution_name}</h3>
-                            <p class="text-blue-100 text-sm">${school.institution_id}</p>
+                            <h3 class="font-bold text-lg text-white">${school.institution_name}</h3>
+                            <p class="text-blue-100 text-xs font-mono">${school.institution_id}</p>
                         </div>
                     </div>
-                    <div class="text-right">
-                        <div class="text-2xl font-bold">${school.total_printers}</div>
-                        <div class="text-xs text-blue-100">Printers</div>
+                    <div class="text-right bg-white/10 px-3 py-2">
+                        <div class="text-2xl font-bold text-white">${school.total_printers}</div>
+                        <div class="text-[10px] text-blue-100 uppercase tracking-wider">Printers</div>
                     </div>
                 </div>
             </div>
             
-            <div class="p-4">
-                <div class="grid grid-cols-3 gap-4 mb-4">
-                    <div class="text-center">
+            <div class="p-4 bg-slate-50">
+                <div class="grid grid-cols-3 gap-3 mb-4">
+                    <div class="text-center border-l-4 border-l-green-500 bg-white p-3 shadow-sm">
                         <div class="text-xl font-bold text-green-600">${school.serviced_count || 0}</div>
-                        <div class="text-xs text-slate-600">Serviced</div>
+                        <div class="text-[10px] text-slate-600 uppercase tracking-wide mt-1">Serviced</div>
                     </div>
-                    <div class="text-center">
+                    <div class="text-center border-l-4 border-l-orange-500 bg-white p-3 shadow-sm">
                         <div class="text-xl font-bold text-orange-600">${school.pending_count || 0}</div>
-                        <div class="text-xs text-slate-600">Pending</div>
+                        <div class="text-[10px] text-slate-600 uppercase tracking-wide mt-1">Pending</div>
                     </div>
-                    <div class="text-center">
-                        <div class="text-xl font-bold text-slate-600">${Math.max(0, school.total_printers - (school.serviced_count || 0))}</div>
-                        <div class="text-xs text-slate-600">Remaining</div>
+                    <div class="text-center border-l-4 border-l-slate-400 bg-white p-3 shadow-sm">
+                        <div class="text-xl font-bold text-slate-700">${Math.max(0, school.total_printers - (school.serviced_count || 0))}</div>
+                        <div class="text-[10px] text-slate-600 uppercase tracking-wide mt-1">Remaining</div>
                     </div>
                 </div>
                 
-                <button onclick="loadSchoolPrinters('${school.institution_id}')"
-                    class="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 font-medium">
+                <button onclick="loadSchoolPrinters('${school.institution_id}', '${school.institution_name.replace(/'/g, "\\'")}', ${school.total_printers})"
+                    class="w-full py-3 bg-blue-600 text-white hover:bg-blue-700 font-semibold text-sm transition-all shadow-sm uppercase tracking-wide">
                     View Printers →
                 </button>
             </div>
-            
-            <div id="printers-${school.institution_id}" class="hidden border-t border-slate-200"></div>
         </div>
     `).join('');
 }
 
-// Load printers for a specific school
-window.loadSchoolPrinters = async function(institutionId) {
-    const container = document.getElementById(`printers-${institutionId}`);
+// Load printers for a specific school in modal
+window.loadSchoolPrinters = async function(institutionId, schoolName, printerCount) {
+    const modal = document.getElementById('printersModal');
+    const modalList = document.getElementById('modal-printers-list');
     
-    if (!container.classList.contains('hidden')) {
-        container.classList.add('hidden');
-        return;
-    }
+    // Set modal header info
+    document.getElementById('modal-school-name').textContent = schoolName;
+    document.getElementById('modal-school-id').textContent = institutionId;
+    document.getElementById('modal-printer-count').textContent = printerCount;
     
-    container.innerHTML = `
-        <div class="p-4 text-center">
-            <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+    // Show modal with loading state
+    modal.classList.remove('hidden');
+    modalList.innerHTML = `
+        <div class="text-center py-12">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             <p class="text-slate-600 text-sm mt-2">Loading printers...</p>
         </div>
     `;
-    container.classList.remove('hidden');
 
     try {
         const token = localStorage.getItem('token');
@@ -434,73 +471,84 @@ window.loadSchoolPrinters = async function(institutionId) {
         currentSchoolPrinters[institutionId] = printers;
         
         if (printers.length === 0) {
-            container.innerHTML = `
-                <div class="p-4 text-center text-slate-600">
-                    <p>No printers found for this school</p>
+            modalList.innerHTML = `
+                <div class="text-center py-12 text-slate-600">
+                    <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <span class="text-3xl">🖨️</span>
+                    </div>
+                    <p class="font-medium">No printers found for this school</p>
                 </div>
             `;
         } else {
-            container.innerHTML = `
-                <div class="p-4 space-y-3">
-                    ${printers.map(printer => window.renderPrinterCard(printer, institutionId)).join('')}
-                </div>
-            `;
+            modalList.innerHTML = printers.map(printer => window.renderPrinterCard(printer, institutionId)).join('');
         }
     } catch (error) {
         console.error('Error loading printers:', error);
-        container.innerHTML = `
-            <div class="p-4 text-center text-red-600">
-                <p>⚠️ Failed to load printers</p>
-                <button onclick="loadSchoolPrinters('${institutionId}')" class="mt-2 text-blue-600 hover:underline">Retry</button>
+        modalList.innerHTML = `
+            <div class="text-center py-12 text-red-600">
+                <p class="font-medium">⚠️ Failed to load printers</p>
+                <button onclick="loadSchoolPrinters('${institutionId}', '${schoolName.replace(/'/g, "\\'")}', ${printerCount})" 
+                    class="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Retry</button>
             </div>
         `;
     }
+}
+
+// Close printers modal
+window.closePrintersModal = function() {
+    document.getElementById('printersModal').classList.add('hidden');
 }
 
 // Render printer card
 window.renderPrinterCard = function(printer, institutionId) {
     const hasService = printer.last_service_status !== null;
     const statusColors = {
-        'pending_coordinator': 'bg-yellow-100 text-yellow-800 border-yellow-200',
-        'pending_requester': 'bg-blue-100 text-blue-800 border-blue-200',
-        'completed': 'bg-green-100 text-green-800 border-green-200',
-        'rejected': 'bg-red-100 text-red-800 border-red-200'
+        'pending_coordinator': 'bg-amber-100 text-amber-800 border-l-amber-500',
+        'pending_requester': 'bg-blue-100 text-blue-800 border-l-blue-500',
+        'completed': 'bg-green-100 text-green-800 border-l-green-500',
+        'rejected': 'bg-red-100 text-red-800 border-l-red-500'
+    };
+    
+    const statusText = {
+        'pending_coordinator': 'COORDINATOR REVIEW',
+        'pending_requester': 'REQUESTER REVIEW',
+        'completed': 'COMPLETED',
+        'rejected': 'REJECTED'
     };
     
     return `
-        <div class="bg-slate-50 rounded-lg p-4 border border-slate-200">
+        <div class="bg-white p-4 border border-slate-200 shadow hover:shadow-md transition-all ${hasService ? 'border-l-4 ' + statusColors[printer.last_service_status]?.split(' ').pop() : 'border-l-4 border-l-slate-300'}">
             <div class="flex items-start justify-between mb-3">
-                <div class="flex-1">
-                    <div class="flex items-center space-x-2 mb-1">
-                        <span class="text-lg">🖨️</span>
-                        <h4 class="font-semibold text-slate-800">${printer.brand} ${printer.model}</h4>
+                <div class="flex items-start space-x-3 flex-1">
+                    <div class="w-12 h-12 bg-slate-100 flex items-center justify-center flex-shrink-0">
+                        <span class="text-xl">🖨️</span>
                     </div>
-                    <p class="text-sm text-slate-600">Serial: ${printer.serial_number || 'N/A'}</p>
-                    ${printer.location ? `<p class="text-sm text-slate-600">📍 ${printer.location}</p>` : ''}
+                    <div class="flex-1 min-w-0">
+                        <h4 class="font-bold text-slate-800 text-base truncate">${printer.brand} ${printer.model}</h4>
+                        <p class="text-xs text-slate-500 font-mono mt-1">S/N: ${printer.serial_number || 'N/A'}</p>
+                        ${printer.location ? `<p class="text-xs text-slate-600 truncate mt-1">📍 ${printer.location}</p>` : ''}
+                    </div>
                 </div>
                 ${hasService ? `
-                    <span class="px-3 py-1 text-xs font-medium rounded-full border ${statusColors[printer.last_service_status] || 'bg-slate-100 text-slate-800'}">
-                        ${printer.last_service_status === 'pending_coordinator' ? '⏳ Coordinator Review' :
-                          printer.last_service_status === 'pending_requester' ? '⏳ Requester Review' :
-                          printer.last_service_status === 'completed' ? '✅ Completed' :
-                          printer.last_service_status === 'rejected' ? '❌ Rejected' : printer.last_service_status}
+                    <span class="px-3 py-1.5 text-[10px] font-bold ${statusColors[printer.last_service_status] || 'bg-slate-100 text-slate-700'} border-l-4 whitespace-nowrap flex-shrink-0 ml-2 uppercase tracking-wider shadow-sm">
+                        ${statusText[printer.last_service_status] || printer.last_service_status}
                     </span>
                 ` : `
-                    <span class="px-3 py-1 text-xs font-medium rounded-full bg-slate-100 text-slate-600 border border-slate-200">
-                        ⚪ Not Serviced
+                    <span class="px-3 py-1.5 text-[10px] font-bold bg-slate-100 text-slate-600 border-l-4 border-l-slate-300 whitespace-nowrap flex-shrink-0 ml-2 uppercase tracking-wider shadow-sm">
+                        NOT SERVICED
                     </span>
                 `}
             </div>
             
             ${hasService ? `
-                <div class="text-sm text-slate-600 mb-3">
-                    <p>Last service: ${new Date(printer.last_service_date).toLocaleDateString()}</p>
+                <div class="text-xs text-slate-600 mb-3 bg-slate-50 px-3 py-2 border-l-2 border-slate-300">
+                    Last service: ${new Date(printer.last_service_date).toLocaleDateString()}
                 </div>
             ` : ''}
             
-            <button onclick="openServiceModal('${printer.id}', '${institutionId}', '${printer.brand}', '${printer.model}', '${printer.serial_number || ''}')"
-                class="w-full py-2 ${hasService ? 'bg-slate-200 text-slate-700 hover:bg-slate-300' : 'bg-gradient-to-r from-green-600 to-green-700 text-white hover:from-green-700 hover:to-green-800'} rounded-lg font-medium text-sm">
-                ${hasService ? '🔄 Submit New Service' : '➕ Perform Service'}
+            <button onclick="closePrintersModal(); setTimeout(() => openServiceModal('${printer.id}', '${institutionId}', '${printer.brand}', '${printer.model}', '${printer.serial_number || ''}'), 100)"
+                class="w-full py-3 ${hasService ? 'bg-slate-700 text-white hover:bg-slate-800' : 'bg-green-600 text-white hover:bg-green-700'} font-bold text-sm transition-all shadow-sm uppercase tracking-wider">
+                ${hasService ? 'SUBMIT NEW SERVICE' : 'PERFORM SERVICE'}
             </button>
         </div>
     `;
@@ -510,6 +558,11 @@ window.renderPrinterCard = function(printer, institutionId) {
 window.openServiceModal = async function(printerId, institutionId, brand, model, serialNumber) {
     document.getElementById('modal-printer-id').value = printerId;
     document.getElementById('modal-institution-id').value = institutionId;
+    
+    // Store the printer brand for filtering parts
+    window.vsCurrentPrinterBrand = brand;
+    console.log('🖨️ Walk-in printer brand:', brand);
+    
     document.getElementById('modal-printer-info').innerHTML = `
         <div class="flex items-center space-x-3">
             <span class="text-2xl">🖨️</span>
@@ -532,9 +585,7 @@ window.openServiceModal = async function(printerId, institutionId, brand, model,
         container.removeChild(container.lastChild);
     }
     const firstPart = container.firstElementChild;
-    firstPart.querySelector('.vs-part-brand').value = '';
     firstPart.querySelector('.vs-part-name').value = '';
-    firstPart.querySelector('.vs-part-name').disabled = true;
     firstPart.querySelector('.vs-part-quantity').value = '1';
     firstPart.querySelector('.vs-part-unit').value = 'pieces';
     firstPart.querySelector('.vs-part-stock').innerHTML = '';
@@ -553,10 +604,70 @@ window.closeServiceModal = function() {
     document.getElementById('serviceModal').classList.add('hidden');
 }
 
+// Update part dropdown based on selected type
+window.updatePartTypeFilter = function(typeSelect) {
+    const partEntry = typeSelect.closest('.vs-part-entry');
+    const partNameSelect = partEntry.querySelector('.vs-part-name');
+    const selectedType = typeSelect.value;
+    
+    if (!selectedType) {
+        partNameSelect.innerHTML = '<option value="">Select part type first...</option>';
+        partNameSelect.disabled = true;
+        return;
+    }
+    
+    // Map UI values to database values
+    const dbPartType = selectedType === 'consumable' ? 'universal' : 'brand_specific';
+    console.log(`🔍 Filtering parts: Type=${selectedType} (DB: ${dbPartType})`);
+    
+    const printerBrand = window.vsCurrentPrinterBrand;
+    if (!printerBrand) {
+        console.warn('⚠️ No printer brand set');
+        alert('Printer brand not available. Please try again.');
+        return;
+    }
+    
+    // Check if vsAllParts is loaded
+    if (!window.vsAllParts || window.vsAllParts.length === 0) {
+        console.warn('⚠️ Parts data not loaded yet');
+        partNameSelect.innerHTML = '<option value="">Loading parts...</option>';
+        partNameSelect.disabled = true;
+        return;
+    }
+    
+    // Filter parts by type and brand
+    const filteredParts = window.vsAllParts.filter(part => {
+        const typeMatch = part.part_type === dbPartType;
+        const brandMatch = part.brand?.trim().toLowerCase() === printerBrand.trim().toLowerCase();
+        return typeMatch && brandMatch;
+    });
+    
+    console.log(`📦 Found ${filteredParts.length} ${selectedType} parts for brand: ${printerBrand}`);
+    
+    if (filteredParts.length === 0) {
+        partNameSelect.innerHTML = `<option value="">No ${selectedType} parts available for ${printerBrand}</option>`;
+        partNameSelect.disabled = true;
+        return;
+    }
+    
+    // Populate dropdown with filtered parts
+    const partOptions = '<option value="">Choose part...</option>' + 
+        filteredParts.map(p => {
+            const stockStatus = p.assigned_quantity > 5 ? '✓' : p.assigned_quantity > 0 ? '⚠' : '✗';
+            return `<option value="${p.part_id}" data-stock="${p.assigned_quantity}" data-unit="${p.unit || 'pieces'}">${stockStatus} ${p.name} (Stock: ${p.assigned_quantity})</option>`;
+        }).join('');
+    
+    partNameSelect.innerHTML = partOptions;
+    partNameSelect.disabled = false;
+}
+
 // Parts carousel state
 let vsCurrentPartIndex = 0;
 let vsAllBrands = [];
 let vsAllParts = [];
+
+// Make vsAllParts globally accessible
+window.vsAllParts = vsAllParts;
 
 // Load brands and parts data
 async function loadPartsData() {
@@ -579,21 +690,19 @@ async function loadPartsData() {
         if (brandsRes.ok && partsRes.ok) {
             vsAllBrands = await brandsRes.json();
             vsAllParts = await partsRes.json();
+            window.vsAllParts = vsAllParts; // Make globally accessible
             
             console.log('✅ Loaded brands:', vsAllBrands.length);
             console.log('✅ Loaded parts:', vsAllParts.length);
-            console.log('📦 Sample brands:', vsAllBrands.slice(0, 3));
-            console.log('📦 Sample parts:', vsAllParts.slice(0, 3));
+            console.log('🖨️ Current printer brand:', window.vsCurrentPrinterBrand);
             
-            // Populate brand dropdowns
-            const brandOptions = '<option value="">Choose brand...</option>' + 
-                vsAllBrands.map(b => `<option value="${b.brand}">${b.brand}</option>`).join('');
-            
-            document.querySelectorAll('.vs-part-brand').forEach(select => {
-                select.innerHTML = brandOptions;
+            // Parts will be loaded when user selects type
+            document.querySelectorAll('.vs-part-name').forEach(select => {
+                select.innerHTML = '<option value="">Select part type first...</option>';
+                select.disabled = true;
             });
             
-            console.log('✅ Brand dropdowns populated');
+            console.log('✅ Parts data ready for filtering');
         } else {
             console.error('❌ Failed to load data:', {
                 brands: brandsRes.status,
@@ -607,35 +716,26 @@ async function loadPartsData() {
     }
 }
 
-// Load parts for selected brand
-window.loadPartsForBrand = function(brandSelect) {
-    const partEntry = brandSelect.closest('.vs-part-entry');
-    const partNameSelect = partEntry.querySelector('.vs-part-name');
-    const brand = brandSelect.value;
-    
-    console.log('🔍 Loading parts for brand:', brand);
-    
-    if (!brand) {
-        partNameSelect.innerHTML = '<option value="">Select brand first...</option>';
-        partNameSelect.disabled = true;
-        return;
+// Helper function to get filtered parts options
+function getFilteredPartsOptions() {
+    const printerBrand = window.vsCurrentPrinterBrand;
+    if (!printerBrand || !vsAllParts) {
+        return '<option value="">Loading parts...</option>';
     }
     
-    // Filter parts by brand - check field name from API response
-    const brandParts = vsAllParts.filter(p => p.brand === brand);
-    console.log('📦 Found parts for brand:', brandParts.length);
-    
+    const brandParts = vsAllParts.filter(p => p.brand === printerBrand);
     if (brandParts.length === 0) {
-        partNameSelect.innerHTML = '<option value="">No parts available for this brand</option>';
-        partNameSelect.disabled = true;
-        return;
+        return `<option value="">No parts available for ${printerBrand}</option>`;
     }
     
-    partNameSelect.innerHTML = '<option value="">Choose part...</option>' + 
-        brandParts.map(p => `<option value="${p.part_id}" data-stock="${p.assigned_quantity}">${p.name}</option>`).join('');
-    partNameSelect.disabled = false;
-    
-    console.log('✅ Parts dropdown populated');
+    return '<option value="">Choose part...</option>' + 
+        brandParts.map(p => `<option value="${p.part_id}" data-stock="${p.assigned_quantity}" data-unit="${p.unit || 'pieces'}">${p.name} (Stock: ${p.assigned_quantity})</option>`).join('');
+}
+
+// Load parts for selected brand (no longer used - kept for compatibility)
+window.loadPartsForBrand = function(brandSelect) {
+    console.log('⚠️ loadPartsForBrand called but no longer used - parts filtered by printer brand');
+    return;
 }
 
 // Update part stock display
@@ -679,13 +779,14 @@ window.addNewPart = function() {
             <div>
                 <label class="block text-sm font-semibold text-slate-700 mb-1.5">
                     <svg class="w-3.5 h-3.5 text-indigo-500 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path>
                     </svg>
-                    Select Brand
+                    Part Type <span class="text-red-500">*</span>
                 </label>
-                <select class="vs-part-brand w-full p-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 bg-white font-medium text-slate-700" onchange="loadPartsForBrand(this)">
-                    <option value="">Choose brand...</option>
-                    ${vsAllBrands.map(b => `<option value="${b.brand}">${b.brand}</option>`).join('')}
+                <select class="vs-part-type w-full p-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 bg-white font-medium text-slate-700" onchange="updatePartTypeFilter(this)">
+                    <option value="">Choose type first...</option>
+                    <option value="consumable">Consumable (Universal)</option>
+                    <option value="printer_part">Printer Part (Brand-Specific)</option>
                 </select>
             </div>
             <div>
@@ -693,10 +794,10 @@ window.addNewPart = function() {
                     <svg class="w-3.5 h-3.5 text-purple-500 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a2 2 0 012-2z"></path>
                     </svg>
-                    Select Part
+                    Select Part <span class="text-xs text-purple-600">(Filtered by Type & Brand)</span>
                 </label>
                 <select class="vs-part-name w-full p-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-400 focus:border-purple-400 bg-white font-medium text-slate-700" onchange="updatePartStock(this)" disabled>
-                    <option value="">Select brand first...</option>
+                    <option value="">Select part type first...</option>
                 </select>
                 <div class="vs-part-stock text-sm mt-1.5 font-medium"></div>
             </div>
@@ -810,15 +911,15 @@ window.submitService = async function() {
         // Collect parts data from carousel
         const partsUsed = [];
         document.querySelectorAll('.vs-part-entry').forEach(entry => {
-            const brandSelect = entry.querySelector('.vs-part-brand');
+            const partTypeSelect = entry.querySelector('.vs-part-type');
             const partSelect = entry.querySelector('.vs-part-name');
             const quantity = entry.querySelector('.vs-part-quantity').value;
             const unit = entry.querySelector('.vs-part-unit').value;
             
-            if (partSelect.value && quantity > 0) {
+            if (partSelect && partSelect.value && quantity > 0) {
                 const selectedOption = partSelect.options[partSelect.selectedIndex];
                 partsUsed.push({
-                    brand: brandSelect.value,
+                    brand: window.vsCurrentPrinterBrand || 'Unknown',
                     name: selectedOption.text,
                     qty: parseInt(quantity),
                     unit: unit

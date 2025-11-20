@@ -37,6 +37,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     setupModalHandlers();
+    setupPaginationHandlers(); // Add pagination handlers
     console.log('[DEBUG] DOMContentLoaded - initializing coordinator service requests page');
     loadCoordinatorData();
     initServiceRequestsPage();
@@ -368,6 +369,12 @@ let currentRequestId = null;
 let currentApprovalId = null;
 let currentTab = 'all'; // Track current active tab
 
+// Pagination variables
+let currentPage = 1;
+const itemsPerPage = 6; // 2 rows of 3 cards each
+let filteredRequests = [];
+let totalPages = 0;
+
 /**
  * Load service requests for the coordinator's institution
  */
@@ -451,21 +458,80 @@ function updateStats(requests) {
  */
 function filterAndDisplayByTab(tab) {
     currentTab = tab;
+    currentPage = 1; // Reset to first page when changing tabs
     
-    // Update tab appearance
+    // Update tab appearance with new modern design
     document.querySelectorAll('.tab-button').forEach(btn => {
-        btn.classList.remove('bg-white', 'text-blue-600', 'shadow-sm');
-        btn.classList.add('text-gray-600');
+        btn.classList.remove('bg-white', 'text-blue-600', 'shadow-md', 'border-blue-500', 'text-yellow-600', 'border-yellow-500', 'text-orange-600', 'border-orange-500', 'text-green-600', 'border-green-500');
+        btn.classList.add('bg-gray-50', 'text-gray-600', 'border-transparent');
+        
+        // Reset all count badges to default style with better visibility
+        const countBadge = btn.querySelector('span[id$="-count"]');
+        if (countBadge) {
+            countBadge.classList.remove('bg-blue-600', 'text-white', 'bg-yellow-600', 'bg-orange-600', 'bg-green-600', 'bg-blue-100', 'text-blue-600', 'bg-yellow-100', 'text-yellow-700', 'bg-orange-100', 'text-orange-700', 'bg-green-100', 'text-green-700');
+            // Default inactive state
+            const btnId = btn.id;
+            if (btnId.includes('all') || btnId.includes('new')) {
+                countBadge.classList.add('bg-blue-100', 'text-blue-700');
+            } else if (btnId.includes('progress')) {
+                countBadge.classList.add('bg-yellow-100', 'text-yellow-700');
+            } else if (btnId.includes('pending')) {
+                countBadge.classList.add('bg-orange-100', 'text-orange-700');
+            } else if (btnId.includes('completed')) {
+                countBadge.classList.add('bg-green-100', 'text-green-700');
+            }
+        }
     });
     
     const activeTab = document.getElementById(`tab-${tab}`);
     if (activeTab) {
-        activeTab.classList.add('bg-white', 'text-blue-600', 'shadow-sm');
-        activeTab.classList.remove('text-gray-600');
+        activeTab.classList.remove('bg-gray-50', 'text-gray-600', 'border-transparent');
+        activeTab.classList.add('bg-white', 'shadow-md');
+        
+        // Style active tab based on type with high contrast badges
+        const countBadge = activeTab.querySelector('span[id$="-count"]');
+        
+        switch(tab) {
+            case 'all':
+                activeTab.classList.add('text-blue-600', 'border-blue-500');
+                if (countBadge) {
+                    countBadge.classList.remove('bg-blue-100', 'text-blue-700');
+                    countBadge.classList.add('bg-blue-600', 'text-white', 'shadow-md');
+                }
+                break;
+            case 'new':
+                activeTab.classList.add('text-blue-600', 'border-blue-500');
+                if (countBadge) {
+                    countBadge.classList.remove('bg-blue-100', 'text-blue-700');
+                    countBadge.classList.add('bg-blue-600', 'text-white', 'shadow-md');
+                }
+                break;
+            case 'in-progress':
+                activeTab.classList.add('text-yellow-600', 'border-yellow-500');
+                if (countBadge) {
+                    countBadge.classList.remove('bg-yellow-100', 'text-yellow-700');
+                    countBadge.classList.add('bg-yellow-600', 'text-white', 'shadow-md');
+                }
+                break;
+            case 'pending-approval':
+                activeTab.classList.add('text-orange-600', 'border-orange-500');
+                if (countBadge) {
+                    countBadge.classList.remove('bg-orange-100', 'text-orange-700');
+                    countBadge.classList.add('bg-orange-600', 'text-white', 'shadow-md');
+                }
+                break;
+            case 'completed':
+                activeTab.classList.add('text-green-600', 'border-green-500');
+                if (countBadge) {
+                    countBadge.classList.remove('bg-green-100', 'text-green-700');
+                    countBadge.classList.add('bg-green-600', 'text-white', 'shadow-md');
+                }
+                break;
+        }
     }
     
     // Filter requests based on tab
-    let filteredRequests = serviceRequests;
+    filteredRequests = serviceRequests;
     
     switch (tab) {
         case 'new':
@@ -489,10 +555,15 @@ function filterAndDisplayByTab(tab) {
     // Apply additional filters (search, priority)
     filteredRequests = applyFilters(filteredRequests);
     
+    // Calculate total pages
+    totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
+    
     if (filteredRequests.length === 0) {
         showEmptyState();
+        hidePagination();
     } else {
         displayRequests(filteredRequests);
+        updatePaginationUI();
     }
 }
 
@@ -548,10 +619,30 @@ function displayRequests(requests) {
     
     requestsContainer.innerHTML = '';
     
-    requests.forEach(request => {
+    // Calculate pagination
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedRequests = requests.slice(startIndex, endIndex);
+    
+    console.log(`[PAGINATION] Displaying page ${currentPage} of ${totalPages}, showing ${paginatedRequests.length} items (${startIndex}-${endIndex} of ${requests.length})`);
+    
+    // Create a grid container for 3 columns
+    const gridContainer = document.createElement('div');
+    gridContainer.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4';
+    
+    paginatedRequests.forEach(request => {
         const requestCard = createRequestCard(request);
-        requestsContainer.appendChild(requestCard);
+        gridContainer.appendChild(requestCard);
     });
+    
+    requestsContainer.appendChild(gridContainer);
+    
+    // Show pagination controls if needed
+    if (requests.length > itemsPerPage) {
+        showPagination();
+    } else {
+        hidePagination();
+    }
 }
 
 /**
@@ -561,7 +652,7 @@ function createRequestCard(request) {
     console.log('[DEBUG] Creating card for request:', request.id, 'started_at:', request.started_at);
     
     const card = document.createElement('div');
-    card.className = 'service-card bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 mb-6 fade-in';
+    card.className = 'service-card transform transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl cursor-pointer';
     
     const statusColors = {
         new: 'bg-blue-100 text-blue-800',
@@ -607,111 +698,123 @@ function createRequestCard(request) {
         `;
     }
     
-    // Debugging: log assignedPrinters and request.inventory_item_id
-    console.log('[DEBUG] assignedPrinters:', assignedPrinters);
-    console.log('[DEBUG] request.inventory_item_id:', request.inventory_item_id);
-    let printerInfo = assignedPrinters.find(p => String(p.inventory_item_id) === String(request.inventory_item_id));
-    if (!printerInfo) {
-        console.warn('[DEBUG] No matching printer found for inventory_item_id:', request.inventory_item_id);
-        printerInfo = {
-            name: 'Unknown Printer',
-            model: 'Unknown Model',
-            serial_number: 'Unknown Serial',
-            location_note: request.location || 'Unknown Location'
-        };
+    // Use printer info from the request itself (includes brand, model, serial_number)
+    // Fallback to assignedPrinters lookup if needed
+    let printerInfo = {
+        name: request.equipment_name || request.printer_name || 'Unknown Printer',
+        brand: request.brand || request.printer_brand || '',
+        model: request.model || request.printer_model || '',
+        serial_number: request.serial_number || request.equipment_serial || request.printer_serial_number || 'Unknown Serial',
+        location_note: request.location || 'Unknown Location'
+    };
+    
+    // If we don't have printer info from request, try to find it in assignedPrinters
+    if (!request.equipment_name && !request.printer_name && !request.brand) {
+        console.log('[DEBUG] assignedPrinters:', assignedPrinters);
+        console.log('[DEBUG] request.inventory_item_id:', request.inventory_item_id);
+        const foundPrinter = assignedPrinters.find(p => String(p.inventory_item_id) === String(request.inventory_item_id));
+        if (foundPrinter) {
+            printerInfo = {
+                name: foundPrinter.name || 'Unknown Printer',
+                brand: foundPrinter.brand || '',
+                model: foundPrinter.model || '',
+                serial_number: foundPrinter.serial_number || 'Unknown Serial',
+                location_note: request.location || foundPrinter.location_note || 'Unknown Location'
+            };
+        } else {
+            console.warn('[DEBUG] No matching printer found for inventory_item_id:', request.inventory_item_id);
+        }
     }
+    
     card.innerHTML = `
-        <div class="relative overflow-hidden">
-            <!-- Status indicator bar -->
-            <div class="absolute top-0 left-0 right-0 h-1 ${getStatusBarColor(request.status)}"></div>
+        <div class="relative overflow-hidden rounded-xl border-2 border-gray-300 hover:border-blue-500 transition-all duration-300 shadow-lg hover:shadow-2xl bg-gradient-to-br from-gray-100 to-gray-50">
+            <!-- Gradient status bar -->
+            <div class="absolute top-0 left-0 right-0 h-2 ${getStatusGradient(request.status)}"></div>
             
-            <div class="p-6 bg-gradient-to-br from-white to-gray-50">
-                <!-- Header Section -->
-                <div class="flex items-start justify-between mb-4">
-                    <div class="flex-1">
-                        <div class="flex items-center space-x-3 mb-2">
-                            <div class="flex items-center space-x-2">
-                                <div class="p-2 rounded-lg ${getStatusIconBg(request.status)}">
-                                    <i class="${getStatusIcon(request.status)} ${getStatusIconColor(request.status)}"></i>
-                                </div>
-                                <div>
-                                    <h3 class="text-lg font-bold text-gray-900">
-                                        ${printerInfo.model}
-                                    </h3>
-                                    <p class="text-sm text-gray-500">SN: ${printerInfo.serial_number}</p>
-                                </div>
+            <!-- Card content -->
+            <div class="relative">
+                <div class="p-6 pt-8">
+                    <!-- Header -->
+                    <div class="flex items-center justify-between mb-5">
+                        <div class="flex items-center space-x-4 flex-1 min-w-0">
+                            <!-- Icon badge -->
+                            <div class="flex-shrink-0 p-3 ${getStatusIconBg(request.status)} rounded-xl shadow-md border-2 border-gray-300">
+                                <i class="${getStatusIcon(request.status)} ${getStatusIconColor(request.status)} text-lg"></i>
+                            </div>
+                            
+                            <!-- Printer info -->
+                            <div class="flex-1 min-w-0">
+                                <h3 class="text-lg font-bold text-gray-900 truncate mb-1">
+                                    ${printerInfo.name || printerInfo.model || 'Unknown Printer'}
+                                </h3>
+                                <p class="text-sm text-gray-700 truncate">
+                                    ${printerInfo.brand && printerInfo.model ? `${printerInfo.brand} ${printerInfo.model} • ` : ''}<span class="text-gray-600">Serial: ${printerInfo.serial_number}</span>
+                                </p>
                             </div>
                         </div>
-                        <div class="flex items-center space-x-4 text-sm">
-                            <span class="px-3 py-1 ${statusColor} rounded-full font-medium capitalize shadow-sm">
-                                ${request.status.replace('_', ' ')}
-                            </span>
-                            <span class="text-gray-600 flex items-center">
-                                <i class="fas fa-hashtag mr-1"></i>ID: ${request.id}
-                            </span>
+                        
+                        <!-- Priority badge -->
+                        <div class="flex-shrink-0 ml-3">
+                            ${(() => {
+                                console.log('[DEBUG] Request #' + request.id + ' priority:', request.priority, 'type:', typeof request.priority);
+                                return getPriorityBadgeMedium(request.priority);
+                            })()}
                         </div>
                     </div>
-                    <div class="text-right">
-                        <p class="text-xs text-gray-500 mb-1">Requested</p>
-                        <p class="text-sm font-semibold text-gray-700">${formattedDate}</p>
-                        <div class="mt-1">
-                            ${getPriorityBadge(request.priority)}
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Information Grid -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <div class="bg-white rounded-lg p-3 border border-gray-100 shadow-sm">
-                        <div class="text-center md:text-left">
-                            <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Last Updated</h4>
-                            <p class="text-sm font-medium text-gray-700">${new Date(request.updated_at || request.last_updated).toLocaleDateString()}</p>
-                            <p class="text-xs text-gray-500">${new Date(request.updated_at || request.last_updated).toLocaleTimeString()}</p>
-                        </div>
+                    <!-- Status and ID badges -->
+                    <div class="flex items-center gap-3 mb-5">
+                        <span class="inline-flex items-center px-4 py-2 rounded-lg font-bold text-sm shadow-md" style="background-color: ${getStatusBadgeColor(request.status)} !important; color: white !important;">
+                            ${request.status.replace('_', ' ').toUpperCase()}
+                        </span>
+                        <span class="inline-flex items-center px-3 py-1.5 rounded-lg font-semibold text-sm" style="background-color: #dbeafe !important; color: #1e3a8a !important; border: 2px solid #93c5fd;">
+                            <i class="fas fa-hashtag mr-1.5"></i>#${request.id}
+                        </span>
+                        <span class="ml-auto text-sm font-semibold" style="color: #374151 !important;">
+                            <i class="far fa-calendar-alt mr-1.5"></i>${formattedDate}
+                        </span>
                     </div>
-                    
-                    <div class="bg-white rounded-lg p-3 border border-gray-100 shadow-sm">
-                        <div class="text-center md:text-left">
-                            ${startTimeDisplay}
-                        </div>
-                    </div>
-                    
-                    <div class="bg-white rounded-lg p-3 border border-gray-100 shadow-sm">
-                        <div class="text-center md:text-left">
-                            <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Location</h4>
-                            <p class="text-sm font-medium text-gray-700 flex items-center">
-                                <i class="fas fa-map-marker-alt mr-1 text-gray-400"></i>
-                                ${request.location || 'Not specified'}
+
+                    <!-- Description -->
+                    <div class="mb-5 p-4 bg-gradient-to-r from-gray-200 to-blue-100 rounded-xl border-2 border-gray-300 shadow-sm">
+                        <div class="flex items-start space-x-3">
+                            <div class="flex-shrink-0 mt-0.5">
+                                <i class="fas fa-tools text-red-600 text-base"></i>
+                            </div>
+                            <p class="text-sm text-gray-900 font-medium leading-relaxed break-words line-clamp-2 flex-1">
+                                ${request.description}
                             </p>
                         </div>
                     </div>
-                </div>
 
-                <!-- Description Section -->
-                <div class="bg-white rounded-lg p-4 border border-gray-100 shadow-sm mb-4">
-                    <h4 class="text-sm font-semibold text-gray-700 mb-2 flex items-center">
-                        <i class="fas fa-tools mr-2 text-red-500"></i>Issue Description
-                    </h4>
-                    <p class="text-sm text-gray-600 leading-relaxed">
-                        ${request.description.length > 120 ? request.description.substring(0, 120) + '...' : request.description}
-                    </p>
-                </div>
-
-                <!-- Action Section -->
-                <div class="flex justify-between items-center pt-2 border-t border-gray-100">
-                    <div class="text-sm text-gray-500">
-                        <i class="fas fa-calendar mr-1"></i>
-                        Created ${formatTimeAgo(request.created_at)}
-                    </div>
-                    ${request.status === 'pending_approval' ? `
-                        <div class="flex space-x-2">
-                            <button class="view-approval-btn px-4 py-2 text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 transform hover:scale-105 transition-all duration-200 shadow-md hover:shadow-lg" data-id="${request.id}" style="background: linear-gradient(to right, #ea580c, #c2410c); color: #ffffff !important;">
-                                <i class="fas fa-clipboard-check mr-2" style="color: #ffffff !important;"></i>Review & Approve
-                            </button>
+                    <!-- Info grid -->
+                    <div class="grid grid-cols-2 gap-4 mb-5">
+                        <div class="flex items-center p-3 bg-purple-200 rounded-xl border-2 border-purple-400 shadow-sm">
+                            <i class="fas fa-map-marker-alt text-purple-800 mr-3 flex-shrink-0 text-base"></i>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm text-purple-900 font-bold truncate">${request.location || 'Not specified'}</p>
+                            </div>
                         </div>
+                        <div class="flex items-center p-3 ${request.started_at ? 'bg-green-200 border-green-400' : 'bg-gray-200 border-gray-400'} rounded-xl border-2 shadow-sm">
+                            <i class="far fa-clock ${request.started_at ? 'text-green-800' : 'text-gray-800'} mr-3 flex-shrink-0 text-base"></i>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm ${request.started_at ? 'text-green-900' : 'text-gray-900'} font-bold truncate">
+                                    ${request.started_at ? new Date(request.started_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Pending'}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action button -->
+                    ${request.status === 'pending_approval' ? `
+                        <button class="view-approval-btn w-full px-5 py-3 rounded-xl shadow-lg hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-200 flex items-center justify-center space-x-2 text-base font-bold" style="background: linear-gradient(to right, #ea580c, #c2410c) !important; color: white !important;" data-id="${request.id}">
+                            <i class="fas fa-clipboard-check" style="color: white !important;"></i>
+                            <span style="color: white !important;">Review & Approve</span>
+                        </button>
                     ` : `
-                        <button class="view-details-btn px-6 py-2 text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transform hover:scale-105 transition-all duration-200 shadow-md hover:shadow-lg" data-id="${request.id}" style="background: linear-gradient(to right, #2563eb, #1d4ed8); color: #ffffff !important;">
-                            <i class="fas fa-eye mr-2" style="color: #ffffff !important;"></i>View Details
+                        <button class="view-details-btn w-full px-5 py-3 rounded-xl shadow-lg hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-200 flex items-center justify-center space-x-2 text-base font-bold" style="background: linear-gradient(to right, #2563eb, #1d4ed8) !important; color: white !important;" data-id="${request.id}">
+                            <i class="fas fa-eye" style="color: white !important;"></i>
+                            <span style="color: white !important;">View Details</span>
                         </button>
                     `}
                 </div>
@@ -747,17 +850,73 @@ function getStatusBarColor(status) {
 }
 
 /**
+ * Get status gradient for top bar
+ */
+function getStatusGradient(status) {
+    const gradients = {
+        'new': 'bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600',
+        'in_progress': 'bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600',
+        'pending_approval': 'bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600',
+        'completed': 'bg-gradient-to-r from-green-400 via-green-500 to-green-600',
+        'cancelled': 'bg-gradient-to-r from-red-400 via-red-500 to-red-600'
+    };
+    return gradients[status] || 'bg-gradient-to-r from-gray-400 via-gray-500 to-gray-600';
+}
+
+/**
+ * Get status gradient classes for badges
+ */
+function getStatusGradientClasses(status) {
+    const gradients = {
+        'new': 'from-blue-500 to-blue-600',
+        'in_progress': 'from-yellow-500 to-yellow-600',
+        'pending_approval': 'from-orange-500 to-orange-600',
+        'completed': 'from-green-500 to-green-600',
+        'cancelled': 'from-red-500 to-red-600'
+    };
+    return gradients[status] || 'from-gray-500 to-gray-600';
+}
+
+/**
+ * Get status badge classes with high contrast text
+ */
+function getStatusBadgeClasses(status) {
+    const badges = {
+        'new': 'bg-blue-700 text-white',
+        'in_progress': 'bg-orange-600 text-white',
+        'pending_approval': 'bg-orange-700 text-white',
+        'completed': 'bg-green-700 text-white',
+        'cancelled': 'bg-red-700 text-white'
+    };
+    return badges[status] || 'bg-gray-700 text-white';
+}
+
+/**
+ * Get status badge background color (hex values)
+ */
+function getStatusBadgeColor(status) {
+    const colors = {
+        'new': '#1d4ed8',
+        'in_progress': '#ea580c',
+        'pending_approval': '#c2410c',
+        'completed': '#15803d',
+        'cancelled': '#b91c1c'
+    };
+    return colors[status] || '#374151';
+}
+
+/**
  * Get status icon
  */
 function getStatusIcon(status) {
     const icons = {
-        'new': 'fas fa-plus',
-        'in_progress': 'fas fa-cogs',
-        'pending_approval': 'fas fa-clock',
-        'completed': 'fas fa-check',
-        'cancelled': 'fas fa-times'
+        'new': 'fas fa-plus-circle',
+        'in_progress': 'fas fa-sync-alt',
+        'pending_approval': 'fas fa-hourglass-half',
+        'completed': 'fas fa-check-circle',
+        'cancelled': 'fas fa-times-circle'
     };
-    return icons[status] || 'fas fa-question';
+    return icons[status] || 'fas fa-question-circle';
 }
 
 /**
@@ -799,6 +958,131 @@ function getPriorityBadge(priority) {
         'low': '<span class="px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full uppercase">Low</span>'
     };
     return badges[priority] || '<span class="px-2 py-1 bg-gray-100 text-gray-700 text-xs font-bold rounded-full uppercase">Unknown</span>';
+}
+
+/**
+ * Get compact priority badge
+ */
+function getPriorityBadgeCompact(priority) {
+    const badges = {
+        'urgent': `
+            <div class="inline-flex items-center px-2 py-1 bg-gradient-to-r from-red-500 to-red-600 rounded-md shadow-sm">
+                <i class="fas fa-exclamation-triangle text-white text-xs mr-1"></i>
+                <span class="text-white font-bold text-xs">URGENT</span>
+            </div>
+        `,
+        'high': `
+            <div class="inline-flex items-center px-2 py-1 bg-gradient-to-r from-orange-500 to-orange-600 rounded-md shadow-sm">
+                <i class="fas fa-arrow-up text-white text-xs mr-1"></i>
+                <span class="text-white font-bold text-xs">HIGH</span>
+            </div>
+        `,
+        'medium': `
+            <div class="inline-flex items-center px-2 py-1 bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-md shadow-sm">
+                <i class="fas fa-minus text-white text-xs mr-1"></i>
+                <span class="text-white font-bold text-xs">MED</span>
+            </div>
+        `,
+        'low': `
+            <div class="inline-flex items-center px-2 py-1 bg-gradient-to-r from-green-500 to-green-600 rounded-md shadow-sm">
+                <i class="fas fa-arrow-down text-white text-xs mr-1"></i>
+                <span class="text-white font-bold text-xs">LOW</span>
+            </div>
+        `
+    };
+    return badges[priority] || `
+        <div class="inline-flex items-center px-2 py-1 bg-gradient-to-r from-gray-500 to-gray-600 rounded-md shadow-sm">
+            <i class="fas fa-question text-white text-xs mr-1"></i>
+            <span class="text-white font-bold text-xs">N/A</span>
+        </div>
+    `;
+}
+
+/**
+ * Get medium priority badge
+ */
+function getPriorityBadgeMedium(priority) {
+    // Handle null, undefined, or empty priority
+    if (!priority || priority === 'null' || priority === 'undefined') {
+        return `
+            <div class="inline-flex items-center px-3 py-1.5 bg-gray-600 rounded-lg shadow-md" style="background-color: #4b5563 !important;">
+                <i class="fas fa-question text-white text-sm mr-1.5" style="color: white !important;"></i>
+                <span class="text-white font-bold text-xs uppercase tracking-wide" style="color: white !important;">No Priority</span>
+            </div>
+        `;
+    }
+    
+    const badges = {
+        'urgent': `
+            <div class="inline-flex items-center px-3 py-1.5 bg-red-600 rounded-lg shadow-md" style="background-color: #dc2626 !important;">
+                <i class="fas fa-exclamation-triangle text-white text-sm mr-1.5" style="color: white !important;"></i>
+                <span class="text-white font-bold text-xs uppercase tracking-wide" style="color: white !important;">Urgent</span>
+            </div>
+        `,
+        'high': `
+            <div class="inline-flex items-center px-3 py-1.5 bg-orange-600 rounded-lg shadow-md" style="background-color: #ea580c !important;">
+                <i class="fas fa-arrow-up text-white text-sm mr-1.5" style="color: white !important;"></i>
+                <span class="text-white font-bold text-xs uppercase tracking-wide" style="color: white !important;">High</span>
+            </div>
+        `,
+        'medium': `
+            <div class="inline-flex items-center px-3 py-1.5 bg-yellow-600 rounded-lg shadow-md" style="background-color: #ca8a04 !important;">
+                <i class="fas fa-minus text-white text-sm mr-1.5" style="color: white !important;"></i>
+                <span class="text-white font-bold text-xs uppercase tracking-wide" style="color: white !important;">Medium</span>
+            </div>
+        `,
+        'low': `
+            <div class="inline-flex items-center px-3 py-1.5 bg-green-600 rounded-lg shadow-md" style="background-color: #16a34a !important;">
+                <i class="fas fa-arrow-down text-white text-sm mr-1.5" style="color: white !important;"></i>
+                <span class="text-white font-bold text-xs uppercase tracking-wide" style="color: white !important;">Low</span>
+            </div>
+        `
+    };
+    
+    return badges[priority.toLowerCase()] || `
+        <div class="inline-flex items-center px-3 py-1.5 bg-gray-600 rounded-lg shadow-md" style="background-color: #4b5563 !important;">
+            <i class="fas fa-question text-white text-sm mr-1.5" style="color: white !important;"></i>
+            <span class="text-white font-bold text-xs uppercase tracking-wide" style="color: white !important;">Unknown</span>
+        </div>
+    `;
+}
+
+/**
+ * Get enhanced priority badge with modern styling
+ */
+function getPriorityBadgeEnhanced(priority) {
+    const badges = {
+        'urgent': `
+            <div class="inline-flex items-center px-3 py-2 bg-gradient-to-r from-red-500 to-red-600 rounded-xl shadow-lg">
+                <i class="fas fa-exclamation-triangle text-white mr-2"></i>
+                <span class="text-white font-bold text-xs uppercase tracking-wide">Urgent</span>
+            </div>
+        `,
+        'high': `
+            <div class="inline-flex items-center px-3 py-2 bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl shadow-lg">
+                <i class="fas fa-arrow-up text-white mr-2"></i>
+                <span class="text-white font-bold text-xs uppercase tracking-wide">High</span>
+            </div>
+        `,
+        'medium': `
+            <div class="inline-flex items-center px-3 py-2 bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-xl shadow-lg">
+                <i class="fas fa-minus text-white mr-2"></i>
+                <span class="text-white font-bold text-xs uppercase tracking-wide">Medium</span>
+            </div>
+        `,
+        'low': `
+            <div class="inline-flex items-center px-3 py-2 bg-gradient-to-r from-green-500 to-green-600 rounded-xl shadow-lg">
+                <i class="fas fa-arrow-down text-white mr-2"></i>
+                <span class="text-white font-bold text-xs uppercase tracking-wide">Low</span>
+            </div>
+        `
+    };
+    return badges[priority] || `
+        <div class="inline-flex items-center px-3 py-2 bg-gradient-to-r from-gray-500 to-gray-600 rounded-xl shadow-lg">
+            <i class="fas fa-question text-white mr-2"></i>
+            <span class="text-white font-bold text-xs uppercase tracking-wide">Unknown</span>
+        </div>
+    `;
 }
 
 /**
@@ -1314,6 +1598,155 @@ function hideApprovalModal() {
     document.getElementById('approvalModal').classList.add('hidden');
     document.getElementById('approvalModalContent').innerHTML = '';
     currentApprovalId = null;
+}
+
+/**
+ * Show pagination controls
+ */
+function showPagination() {
+    const paginationControls = document.getElementById('paginationControls');
+    if (paginationControls) {
+        paginationControls.classList.remove('hidden');
+    }
+}
+
+/**
+ * Hide pagination controls
+ */
+function hidePagination() {
+    const paginationControls = document.getElementById('paginationControls');
+    if (paginationControls) {
+        paginationControls.classList.add('hidden');
+    }
+}
+
+/**
+ * Update pagination UI
+ */
+function updatePaginationUI() {
+    const prevBtn = document.getElementById('prevPageBtn');
+    const nextBtn = document.getElementById('nextPageBtn');
+    const pageInfo = document.getElementById('pageInfo');
+    const pageNumbers = document.getElementById('pageNumbers');
+    
+    // Update button states
+    if (prevBtn) {
+        prevBtn.disabled = currentPage === 1;
+    }
+    
+    if (nextBtn) {
+        nextBtn.disabled = currentPage === totalPages;
+    }
+    
+    // Update page info
+    if (pageInfo) {
+        const startItem = (currentPage - 1) * itemsPerPage + 1;
+        const endItem = Math.min(currentPage * itemsPerPage, filteredRequests.length);
+        pageInfo.textContent = `Showing ${startItem}-${endItem} of ${filteredRequests.length}`;
+    }
+    
+    // Generate page numbers
+    if (pageNumbers) {
+        pageNumbers.innerHTML = '';
+        
+        // Show max 5 page numbers
+        const maxVisiblePages = 5;
+        let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+        let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+        
+        // Adjust if we're near the end
+        if (endPage - startPage < maxVisiblePages - 1) {
+            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+        }
+        
+        // Add first page and ellipsis if needed
+        if (startPage > 1) {
+            addPageButton(pageNumbers, 1);
+            if (startPage > 2) {
+                const ellipsis = document.createElement('span');
+                ellipsis.className = 'px-2 text-gray-400';
+                ellipsis.textContent = '...';
+                pageNumbers.appendChild(ellipsis);
+            }
+        }
+        
+        // Add page numbers
+        for (let i = startPage; i <= endPage; i++) {
+            addPageButton(pageNumbers, i);
+        }
+        
+        // Add ellipsis and last page if needed
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) {
+                const ellipsis = document.createElement('span');
+                ellipsis.className = 'px-2 text-gray-400';
+                ellipsis.textContent = '...';
+                pageNumbers.appendChild(ellipsis);
+            }
+            addPageButton(pageNumbers, totalPages);
+        }
+    }
+}
+
+/**
+ * Add page button to pagination
+ */
+function addPageButton(container, pageNum) {
+    const button = document.createElement('button');
+    button.className = `px-3 py-1 rounded-lg font-medium text-sm transition-all duration-200 ${
+        pageNum === currentPage
+            ? 'bg-blue-600 text-white shadow-md'
+            : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+    }`;
+    button.textContent = pageNum;
+    button.onclick = () => goToPage(pageNum);
+    container.appendChild(button);
+}
+
+/**
+ * Go to specific page
+ */
+function goToPage(pageNum) {
+    if (pageNum < 1 || pageNum > totalPages || pageNum === currentPage) {
+        return;
+    }
+    
+    currentPage = pageNum;
+    console.log(`[PAGINATION] Going to page ${currentPage}`);
+    displayRequests(filteredRequests);
+    updatePaginationUI();
+    
+    // Scroll to top of requests container
+    const container = document.getElementById('requestsContainer');
+    if (container) {
+        container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+
+/**
+ * Set up pagination event listeners
+ */
+function setupPaginationHandlers() {
+    const prevBtn = document.getElementById('prevPageBtn');
+    const nextBtn = document.getElementById('nextPageBtn');
+    
+    if (prevBtn && !prevBtn.dataset.listenerSet) {
+        prevBtn.addEventListener('click', () => {
+            if (currentPage > 1) {
+                goToPage(currentPage - 1);
+            }
+        });
+        prevBtn.dataset.listenerSet = 'true';
+    }
+    
+    if (nextBtn && !nextBtn.dataset.listenerSet) {
+        nextBtn.addEventListener('click', () => {
+            if (currentPage < totalPages) {
+                goToPage(currentPage + 1);
+            }
+        });
+        nextBtn.dataset.listenerSet = 'true';
+    }
 }
 
 // Make functions accessible to the HTML page

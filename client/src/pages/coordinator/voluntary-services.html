@@ -79,9 +79,9 @@
                             <div>
                                 <h2 class="text-2xl font-bold text-gray-800 flex items-center">
                                     <i class="fas fa-hand-holding-heart mr-3 text-purple-600"></i>
-                                    Voluntary Service Requests
+                                    Voluntary Services
                                 </h2>
-                                <p class="text-gray-600 mt-1">Review and approve voluntary services performed by technicians</p>
+                                <p class="text-gray-600 mt-1">Review and track voluntary services performed by technicians</p>
                             </div>
                             <div class="flex items-center space-x-4">
                                 <div class="text-right">
@@ -89,6 +89,20 @@
                                     <div class="text-2xl font-bold text-purple-600" id="pending-count">0</div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabs -->
+                    <div class="px-8 pt-4">
+                        <div class="border-b border-gray-200">
+                            <nav class="-mb-px flex space-x-4" aria-label="Tabs">
+                                <button id="pending-tab" onclick="switchTab('pending')" class="tab-button border-b-2 border-purple-500 text-purple-600 whitespace-nowrap py-3 px-1 text-sm font-semibold">
+                                    Pending Reviews
+                                </button>
+                                <button id="history-tab" onclick="switchTab('history')" class="tab-button border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-3 px-1 text-sm font-semibold">
+                                    Service History
+                                </button>
+                            </nav>
                         </div>
                     </div>
 
@@ -165,7 +179,75 @@
     <script src="../../js/coordinator-header-loader.js"></script>
     <script>
         let allServices = [];
+        let allHistory = [];
+        let currentTab = 'pending';
         let currentFilter = 'pending_coordinator';
+
+        // Tab switching
+        window.switchTab = function(tab) {
+            currentTab = tab;
+            
+            // Update tab styles
+            const tabs = document.querySelectorAll('.tab-button');
+            tabs.forEach(t => {
+                if (t.id === tab + '-tab') {
+                    t.classList.add('border-purple-500', 'text-purple-600');
+                    t.classList.remove('border-transparent', 'text-gray-500');
+                } else {
+                    t.classList.remove('border-purple-500', 'text-purple-600');
+                    t.classList.add('border-transparent', 'text-gray-500');
+                }
+            });
+            
+            // Load appropriate data
+            if (tab === 'pending') {
+                document.getElementById('status-filter').innerHTML = `
+                    <option value="all">All Status</option>
+                    <option value="pending_coordinator" selected>Pending Coordinator Approval</option>
+                    <option value="pending_requester">Pending Requester Approval</option>
+                    <option value="completed">Completed</option>
+                    <option value="rejected">Rejected</option>
+                `;
+                currentFilter = 'pending_coordinator';
+                displayServices();
+            } else if (tab === 'history') {
+                document.getElementById('status-filter').innerHTML = `
+                    <option value="all">All Status</option>
+                    <option value="completed">Completed</option>
+                    <option value="rejected">Rejected</option>
+                `;
+                currentFilter = 'all';
+                loadHistory();
+            }
+        }
+
+        async function loadHistory() {
+            try {
+                showLoading(true);
+                
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/voluntary-services/coordinator/history', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load history');
+                }
+
+                const data = await response.json();
+                allHistory = data.services || [];
+                allServices = allHistory; // Use same display function
+                
+                displayServices();
+                showLoading(false);
+            } catch (error) {
+                console.error('Error loading history:', error);
+                showLoading(false);
+                showNotification('Error', 'Failed to load history', 'error');
+            }
+        }
 
         async function loadVoluntaryServices() {
             try {

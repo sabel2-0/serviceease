@@ -21,14 +21,21 @@ router.get('/service-history', authenticateTechnician, async (req, res) => {
                 sr.started_at,
                 sr.completed_at,
                 sr.resolution_notes,
+                sr.inventory_item_id,
                 i.name as institution_name,
                 i.type as institution_type,
                 requester.first_name as requester_first_name,
                 requester.last_name as requester_last_name,
-                requester.role as requester_role
+                requester.role as requester_role,
+                ii.name as printer_name,
+                ii.brand as printer_brand,
+                ii.model as printer_model,
+                ii.serial_number as printer_serial_number,
+                CONCAT(ii.name, ' (', ii.brand, ' ', ii.model, ' SN:', ii.serial_number, ')') as printer_full_details
             FROM service_requests sr
             LEFT JOIN institutions i ON sr.institution_id = i.institution_id
             LEFT JOIN users requester ON sr.requested_by_user_id = requester.id
+            LEFT JOIN inventory_items ii ON sr.inventory_item_id = ii.id
             WHERE sr.assigned_technician_id = ?
             ORDER BY sr.created_at DESC
         `, [technicianId]);
@@ -100,10 +107,16 @@ router.get('/service-history/:requestId', authenticateTechnician, async (req, re
                 requester.first_name as requester_first_name,
                 requester.last_name as requester_last_name,
                 requester.email as requester_email,
-                requester.role as requester_role
+                requester.role as requester_role,
+                ii.name as printer_name,
+                ii.brand as printer_brand,
+                ii.model as printer_model,
+                ii.serial_number as printer_serial_number,
+                CONCAT(ii.name, ' (', ii.brand, ' ', ii.model, ' SN:', ii.serial_number, ')') as printer_full_details
             FROM service_requests sr
             LEFT JOIN institutions i ON sr.institution_id = i.institution_id
             LEFT JOIN users requester ON sr.requested_by_user_id = requester.id
+            LEFT JOIN inventory_items ii ON sr.inventory_item_id = ii.id
             WHERE sr.id = ? AND sr.assigned_technician_id = ?
         `, [requestId, technicianId]);
         

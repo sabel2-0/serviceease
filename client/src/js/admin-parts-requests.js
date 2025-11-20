@@ -33,7 +33,7 @@ class AdminPartsRequestsManager {
         document.getElementById('cancelResponse')?.addEventListener('click', this.closeResponseModal.bind(this));
         document.getElementById('approveRequest')?.addEventListener('click', this.approveRequest.bind(this));
         document.getElementById('denyRequest')?.addEventListener('click', this.denyRequest.bind(this));
-        document.getElementById('fulfillRequest')?.addEventListener('click', this.fulfillRequest.bind(this));
+
         
         // Close modals on backdrop click
         document.getElementById('requestModal')?.addEventListener('click', (e) => {
@@ -283,12 +283,6 @@ class AdminPartsRequestsManager {
                                         title="Deny">
                                         <i class="fas fa-times text-sm relative z-1"></i>
                                     </button>
-                                ` : request.status === 'approved' ? `
-                                    <button onclick="event.stopPropagation(); window.partsRequestsManager.openResponseModal(${request.id}, 'fulfill')" 
-                                        class="action-button p-2.5 text-purple-600 bg-purple-50 hover:bg-purple-600 hover:text-white rounded-lg transition-all relative z-1 w-[36px] h-[36px] flex items-center justify-center" 
-                                        title="Mark Fulfilled">
-                                        <i class="fas fa-check-double text-sm relative z-1"></i>
-                                    </button>
                                 ` : ''}
                                 <button onclick="event.stopPropagation(); window.partsRequestsManager.viewRequestDetails(${request.id})" 
                                     class="action-button p-2.5 text-blue-600 bg-blue-50 hover:bg-blue-600 hover:text-white rounded-lg transition-all relative z-1 w-[36px] h-[36px] flex items-center justify-center" 
@@ -466,9 +460,7 @@ class AdminPartsRequestsManager {
             `);
         } else if (request.status === 'approved') {
             buttons.push(`
-                <button class="modal-fulfill bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
-                    <i class="fas fa-check-double mr-2"></i>Mark Fulfilled
-                </button>
+
             `);
         }
         
@@ -486,10 +478,7 @@ class AdminPartsRequestsManager {
             this.openResponseModal(request.id, 'deny');
         });
         
-        document.querySelector('.modal-fulfill')?.addEventListener('click', () => {
-            this.closeModal();
-            this.openResponseModal(request.id, 'fulfill');
-        });
+
     }
     
     openResponseModal(requestId, action) {
@@ -515,7 +504,7 @@ class AdminPartsRequestsManager {
         // Show/hide relevant buttons
         document.getElementById('approveRequest').style.display = action === 'approve' ? 'inline-flex' : 'none';
         document.getElementById('denyRequest').style.display = action === 'deny' ? 'inline-flex' : 'none';
-        document.getElementById('fulfillRequest').style.display = action === 'fulfill' ? 'inline-flex' : 'none';
+
         
         document.getElementById('responseModal').classList.remove('hidden');
         document.body.style.overflow = 'hidden';
@@ -529,9 +518,7 @@ class AdminPartsRequestsManager {
         await this.updateRequestStatus('denied');
     }
     
-    async fulfillRequest() {
-        await this.updateRequestStatus('fulfilled');
-    }
+
     
     async updateRequestStatus(status) {
         if (!this.currentRequest) {
@@ -563,7 +550,7 @@ class AdminPartsRequestsManager {
             console.log('Request status updated:', result);
             
             this.showToast('success', 'Success', 
-                `Request has been ${status === 'fulfilled' ? 'marked as fulfilled' : status}`);
+                `Request has been ${status}`);
             
             this.closeResponseModal();
             
@@ -639,7 +626,7 @@ class AdminPartsRequestsManager {
             'pending': 'Pending',
             'approved': 'Approved',
             'denied': 'Denied',
-            'fulfilled': 'Fulfilled'
+
         };
         return statusMap[status] || status;
     }

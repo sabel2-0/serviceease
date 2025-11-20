@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS parts_requests (
     quantity_requested INT NOT NULL DEFAULT 1,
     reason TEXT NOT NULL,
     priority ENUM('low', 'medium', 'high', 'urgent') DEFAULT 'medium',
-    status ENUM('pending', 'approved', 'denied', 'fulfilled') DEFAULT 'pending',
+    status ENUM('pending', 'approved', 'denied') DEFAULT 'pending',
     admin_response TEXT NULL,
     approved_by INT NULL,
     approved_at TIMESTAMP NULL,

@@ -1061,10 +1061,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 throw new Error('You must be logged in to assign technicians.');
             }
 
+            // Include auth token when calling backend
+            const token = typeof getAuthToken === 'function' ? getAuthToken() : localStorage.getItem('token');
+            if (!token) throw new Error('Authentication token not found. Please log in again.');
+
             const response = await fetch('/api/technician-assignments', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
                     technician_id: currentTechnicianId,
@@ -1136,6 +1141,8 @@ document.addEventListener('DOMContentLoaded', function() {
     window.confirmAddAssignment = async function() {
         const selectedInstitutionId = document.getElementById('availableClients').value;
         
+        console.log('[ASSIGN] confirmAddAssignment called, selected institution:', selectedInstitutionId);
+        
         if (!selectedInstitutionId) {
             alert('Please select a client to assign');
             return;
@@ -1143,14 +1150,30 @@ document.addEventListener('DOMContentLoaded', function() {
 
         try {
             const currentUser = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
+            console.log('[ASSIGN] Current user:', currentUser);
+            
             if (!currentUser || currentUser.role !== 'admin') {
                 throw new Error('Only admins can assign clients. Please log in as an admin.');
             }
 
+            // Include auth token when calling backend
+            const token = typeof getAuthToken === 'function' ? getAuthToken() : localStorage.getItem('token');
+            console.log('[ASSIGN] Token exists:', !!token);
+            
+            if (!token) throw new Error('Authentication token not found. Please log in again.');
+
+            console.log('[ASSIGN] Sending POST request to /api/technician-assignments');
+            console.log('[ASSIGN] Request body:', {
+                technician_id: currentTechnicianId,
+                institution_id: selectedInstitutionId,
+                assigned_by: currentUser.id
+            });
+            
             const response = await fetch('/api/technician-assignments', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
                     technician_id: currentTechnicianId,
@@ -1159,12 +1182,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 })
             });
 
-            const result = await response.json();
+            console.log('[ASSIGN] Response status:', response.status);
+            console.log('[ASSIGN] Response OK:', response.ok);
+            
+            let result = {};
+            try { result = await response.json(); } catch (e) { /* ignore parse errors */ }
 
+            console.log('[ASSIGN] Response body:', result);
+            
             if (!response.ok) {
-                throw new Error(result.error || 'Failed to assign client');
+                throw new Error(result.error || result.message || 'Failed to assign client');
             }
 
+            console.log('[ASSIGN] ✓ Assignment successful!');
             showSuccessMessage('Client assigned successfully!');
             hideAddAssignmentForm();
             

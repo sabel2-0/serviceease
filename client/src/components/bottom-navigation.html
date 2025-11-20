@@ -5,15 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Advanced Mobile Bottom Navigation</title>
     <style>
-        /* Enhanced highlight for active Service Requests button with white background */
+        /* Enhanced highlight for active Service Requests button with new color scheme */
         .center-button.enhanced-request-highlight {
-            box-shadow: 0 0 0 4px #5B63F5, 0 8px 32px rgba(91,99,245,0.25);
+            box-shadow: 0 0 0 4px #10b981, 0 8px 32px rgba(16, 185, 129, 0.35);
             border: 2.5px solid #fff;
-            background: #fff;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             transition: box-shadow 0.3s, border 0.3s, background 0.3s;
         }
         .nav-item.nav-center.active .center-button {
-            background: #5B63F5 !important;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.3), 0 8px 32px rgba(16, 185, 129, 0.4);
         }
         * {
             margin: 0;
@@ -27,8 +28,8 @@
             /* Design tokens for consistency */
             --nav-height: 75px;
             --nav-safe-area: env(safe-area-inset-bottom, 0px);
-            --primary-color: #5B63F5;
-            --primary-dark: #4147D5;
+            --primary-color: #10b981;
+            --primary-dark: #059669;
             --text-primary: #696c79;
             --text-secondary: #94abd8;
             --text-muted: #9CA3AF;
@@ -38,7 +39,7 @@
             --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
             --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.08);
             --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.12);
-            --shadow-colored: 0 8px 32px rgba(91, 99, 245, 0.25);
+            --shadow-colored: 0 8px 32px rgba(16, 185, 129, 0.35);
             --easing-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
             --easing-smooth: cubic-bezier(0.4, 0, 0.2, 1);
         }
@@ -57,11 +58,11 @@
             left: 0;
             right: 0;
             height: calc(var(--nav-height) + var(--nav-safe-area));
-            /* background: var(--surface-glass); */
+            background: linear-gradient(to top, #1e293b 0%, #334155 100%);
             backdrop-filter: saturate(180%) blur(20px);
             -webkit-backdrop-filter: saturate(180%) blur(20px);
-            border-top: 0.5px solid var(--border-light);
-            box-shadow: var(--shadow-md);
+            border-top: 0.5px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
             z-index: 10;
             transform: translateZ(0);
             will-change: transform;
@@ -106,7 +107,7 @@
             justify-content: center;
             height: 100%;
             text-decoration: none;
-            color: var(--text-muted);
+            color: #94a3b8;
             position: relative;
             cursor: pointer;
             -webkit-tap-highlight-color: transparent;
@@ -147,7 +148,7 @@
 
         /* Active state - Clear visual feedback */
         .nav-item.active {
-            color: var(--primary-color);
+            color: #6ee7b7;
         }
 
         .nav-item.active .icon-container {
@@ -156,7 +157,7 @@
 
         .nav-item.active svg {
             stroke-width: 2.2;
-            filter: drop-shadow(0 2px 4px rgba(91, 99, 245, 0.2));
+            filter: drop-shadow(0 2px 4px rgba(110, 231, 183, 0.3));
         }
 
         .nav-item.active .label {
@@ -172,7 +173,7 @@
             transform: translateX(-50%) scaleX(0);
             width: 20px;
             height: 3px;
-            background: var(--primary-color);
+            background: #6ee7b7;
             border-radius: 2px 2px 0 0;
             transition: transform 0.3s var(--easing-spring);
         }
@@ -188,20 +189,21 @@
         }
 
         .nav-center .center-button {
-            width: 52px;
-            height: 52px;
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             border-radius: 16px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             color: white;
-            box-shadow: var(--shadow-colored);
+            box-shadow: 0 8px 24px rgba(16, 185, 129, 0.35), 0 4px 12px rgba(0, 0, 0, 0.2);
             transition: all 0.3s var(--easing-spring);
-            transform: translateY(-6px);
+            transform: translateY(0px);
             position: relative;
             overflow: hidden;
+            border: 2px solid rgba(255, 255, 255, 0.2);
         }
 
         /* Subtle gradient overlay for depth */
@@ -210,30 +212,47 @@
             position: absolute;
             inset: 0;
             background: linear-gradient(135deg, 
-                rgba(255,255,255,0.25) 0%, 
+                rgba(255,255,255,0.3) 0%, 
                 transparent 50%,
-                rgba(0,0,0,0.1) 100%
+                rgba(0,0,0,0.15) 100%
             );
-            opacity: 0.6;
+            opacity: 0.7;
             transition: opacity 0.3s;
         }
   
         .nav-center:active .center-button {
-            transform: translateY(-4px) scale(0.96);
-            box-shadow: 0 4px 16px rgba(91, 99, 245, 0.2);
+            transform: translateY(0px) scale(0.95);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4), 0 3px 10px rgba(0, 0, 0, 0.25);
+        }
+
+        .nav-center:active .center-button::before {
+            opacity: 0.9;
         }
 
         .nav-center:active .center-button::after {
             transform: scale(1);
         }
+
+        /* Hover effect for desktop */
+        @media (hover: hover) {
+            .nav-center .center-button:hover {
+                transform: translateY(-2px) scale(1.05);
+                box-shadow: 0 12px 32px rgba(16, 185, 129, 0.45), 0 6px 16px rgba(0, 0, 0, 0.25);
+            }
+            
+            .nav-center .center-button:hover::before {
+                opacity: 0.85;
+            }
+        }
     
 
         .nav-center svg {
-            width: 22px;
-            height: 22px;
-            stroke-width: 2.2;
+            width: 30px;
+            height: 30px;
+            stroke-width: 2.6;
             position: relative;
             z-index: 10;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
         }
 
         .nav-center .label {
@@ -244,7 +263,7 @@
         .nav-item .ripple {
             position: absolute;
             border-radius: 50%;
-            background: rgba(91, 99, 245, 0.15);
+            background: rgba(16, 185, 129, 0.2);
             transform: scale(0);
             animation: ripple 0.6s ease-out;
             pointer-events: none;
@@ -266,7 +285,7 @@
             height: 8px;
             background: #EF4444;
             border-radius: 50%;
-            border: 2px solid var(--surface-bg);
+            border: 2px solid #1e293b;
             animation: pulse-dot 2s infinite;
         }
 
@@ -325,7 +344,7 @@
             content: '';
             position: absolute;
             inset: 4px;
-            border: 2px solid var(--primary-color);
+            border: 2px solid #10b981;
             border-radius: 12px;
             opacity: 0.5;
         }
@@ -438,11 +457,11 @@
             <!-- Center Service Requests Button -->
             <a href="#requests" class="nav-item nav-center active" data-tab="requests" aria-label="Service Requests">
                 <div class="center-button enhanced-request-highlight">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#5B63F5" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="w-7 h-7">
-                        <rect x="6" y="4" width="12" height="16" rx="3" fill="#fff" stroke="#5B63F5" stroke-width="2.2"/>
-                        <line x1="9" y1="8" x2="15" y2="8" stroke="#5B63F5" stroke-width="2.2"/>
-                        <line x1="9" y1="12" x2="15" y2="12" stroke="#5B63F5" stroke-width="2.2"/>
-                        <line x1="9" y1="16" x2="13" y2="16" stroke="#5B63F5" stroke-width="2.2"/>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="w-7 h-7">
+                        <rect x="6" y="4" width="12" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="2.2"/>
+                        <line x1="9" y1="8" x2="15" y2="8" stroke="currentColor" stroke-width="2.2"/>
+                        <line x1="9" y1="12" x2="15" y2="12" stroke="currentColor" stroke-width="2.2"/>
+                        <line x1="9" y1="16" x2="13" y2="16" stroke="currentColor" stroke-width="2.2"/>
                     </svg>
                 </div>
                 <span class="label">Service Requests</span>
@@ -452,10 +471,10 @@
             <a href="#parts" class="nav-item" data-tab="parts" aria-label="Parts">
                 <div class="icon-container">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M4 17v-2a4 4 0 014-4h8a4 4 0 014 4v2" stroke="#5B63F5"/>
-                        <rect x="4" y="7" width="16" height="8" rx="4" fill="#fff" stroke="#5B63F5"/>
-                        <circle cx="8" cy="11" r="1.5" fill="#5B63F5"/>
-                        <circle cx="16" cy="11" r="1.5" fill="#5B63F5"/>
+                        <path d="M4 17v-2a4 4 0 014-4h8a4 4 0 014 4v2" stroke="currentColor"/>
+                        <rect x="4" y="7" width="16" height="8" rx="4" fill="none" stroke="currentColor"/>
+                        <circle cx="8" cy="11" r="1.5" fill="currentColor"/>
+                        <circle cx="16" cy="11" r="1.5" fill="currentColor"/>
                     </svg>
                 </div>
       

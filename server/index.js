@@ -123,6 +123,35 @@ async function ensureAuditLogsTable() {
     }
 }
 
+// Ensure technician_assignments table exists
+async function ensureTechnicianAssignmentsTable() {
+    try {
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS technician_assignments (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                technician_id INT NOT NULL,
+                institution_id VARCHAR(50) NOT NULL,
+                assigned_by INT NOT NULL,
+                assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                is_active BOOLEAN DEFAULT TRUE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                FOREIGN KEY (technician_id) REFERENCES users(id) ON DELETE CASCADE,
+                FOREIGN KEY (institution_id) REFERENCES institutions(institution_id) ON DELETE CASCADE,
+                FOREIGN KEY (assigned_by) REFERENCES users(id) ON DELETE CASCADE,
+                INDEX idx_technician_id (technician_id),
+                INDEX idx_institution_id (institution_id),
+                INDEX idx_is_active (is_active),
+                INDEX idx_technician_institution (technician_id, institution_id),
+                INDEX idx_institution_active (institution_id, is_active)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        `);
+        console.log('Ensured technician_assignments table exists');
+    } catch (err) {
+        console.error('Failed to ensure technician_assignments table exists:', err);
+    }
+}
+
 // Ensure inventory tables exist
 async function ensureInventoryTables() {
     try {
@@ -350,6 +379,7 @@ ensureNotificationsTable();
 ensureUserAssignmentsTable();
 ensureWalkInServiceRequestFields();
 ensureAuditLogsTable();
+ensureTechnicianAssignmentsTable();
 
 // Audit logging helper function
 async function logAuditAction(userId, userRole, action, actionType, targetType = null, targetId = null, details = null, req = null) {
@@ -2761,11 +2791,21 @@ app.post('/api/institutions', authenticateAdmin, async (req, res) => {
         }
         
         // Generate institution_id
-        const [maxId] = await db.query(
+        console.log('Querying for max institution_id...');
+        const [maxIdRows] = await db.query(
             'SELECT MAX(CAST(SUBSTRING(institution_id, 6) AS UNSIGNED)) as max_num FROM institutions WHERE institution_id LIKE "INST-%"'
         );
-        const nextNum = (maxId[0].max_num || 0) + 1;
+        
+        console.log('Max ID query result:', maxIdRows);
+        
+        // Handle case where there are no existing institutions or max_num is null
+        let nextNum = 1;
+        if (maxIdRows && maxIdRows.length > 0 && maxIdRows[0].max_num !== null) {
+            nextNum = maxIdRows[0].max_num + 1;
+        }
+        
         const institution_id = `INST-${String(nextNum).padStart(3, '0')}`;
+        console.log('Generated institution_id:', institution_id);
         
         console.log('About to execute INSERT query...');
         
@@ -2775,12 +2815,17 @@ app.post('/api/institutions', authenticateAdmin, async (req, res) => {
             [institution_id, name, type, address]
         );
         
+        console.log('Institution created successfully with ID:', institution_id);
+        
         res.status(201).json({ 
             message: 'Institution created successfully',
             institution_id: institution_id
         });
     } catch (error) {
-        console.error('Error creating institution:', error);
+        console.error('========= ERROR CREATING INSTITUTION =========');
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+        console.error('==============================================');
         res.status(500).json({ error: 'Failed to create institution' });
     }
 });
@@ -2967,6 +3012,8 @@ app.post('/api/technician-assignments', authenticateAdmin, async (req, res) => {
     try {
         const { technician_id, institution_id, assigned_by } = req.body;
         
+        console.log(`[INSTITUTION ASSIGNMENT] POST request received - Technician: ${technician_id}, Institution: ${institution_id}, Assigned by: ${assigned_by}`);
+        
         // Validate required fields
         if (!technician_id || !institution_id || !assigned_by) {
             return res.status(400).json({ 
@@ -3025,6 +3072,34 @@ app.post('/api/technician-assignments', authenticateAdmin, async (req, res) => {
             [technician_id, institution_id, assigned_by]
         );
         
+        // Get institution name for notification
+        console.log(`[INSTITUTION ASSIGNMENT] Getting institution name for ${institution_id}`);
+        const [institutionRows] = await db.query(
+            'SELECT name FROM institutions WHERE institution_id = ?',
+            [institution_id]
+        );
+        const institutionName = institutionRows.length > 0 ? institutionRows[0].name : institution_id;
+        console.log(`[INSTITUTION ASSIGNMENT] Institution name: ${institutionName}`);
+        
+        // Create notification for the technician using the helper function
+        console.log(`[INSTITUTION ASSIGNMENT] Creating notification for technician ${technician_id}`);
+        try {
+            await createNotification({
+                title: 'New Institution Assigned',
+                message: `You have been assigned to ${institutionName}`,
+                type: 'institution_assigned',
+                user_id: technician_id,
+                sender_id: assigned_by,
+                reference_type: 'institution',
+                reference_id: institution_id,
+                priority: 'medium'
+            });
+            console.log(`[INSTITUTION ASSIGNMENT] ✓ Notification created successfully! Technician: ${technician_id}, Institution: ${institutionName}`);
+        } catch (notifError) {
+            console.error('[INSTITUTION ASSIGNMENT] ✗ Failed to create notification:', notifError);
+            // Don't fail the assignment if notification fails
+        }
+        
         res.status(201).json({ 
             message: 'Technician assigned successfully',
             assignment_id: result.insertId 
@@ -3058,36 +3133,86 @@ app.post('/api/technician-assignments', authenticateAdmin, async (req, res) => {
 app.delete('/api/technician-assignments/:assignmentId', authenticateAdmin, async (req, res) => {
     try {
         const { assignmentId } = req.params;
+        const removedBy = req.user.id; // Admin who is removing the assignment
         
-        console.log('DELETE /api/technician-assignments/:assignmentId called with ID:', assignmentId);
+        console.log('[INSTITUTION UNASSIGNMENT] DELETE request received - Assignment ID:', assignmentId, 'Removed by:', removedBy);
         
-        // Check if assignment exists
+        // Check if assignment exists and get details
         const [existing] = await db.query(
             'SELECT id, technician_id, institution_id FROM technician_assignments WHERE id = ?',
             [assignmentId]
         );
         
-        console.log('Assignment lookup result:', existing);
+        console.log('[INSTITUTION UNASSIGNMENT] Assignment lookup result:', existing);
         
         if (existing.length === 0) {
-            console.log('Assignment not found');
+            console.log('[INSTITUTION UNASSIGNMENT] Assignment not found');
             return res.status(404).json({ error: 'Assignment not found' });
         }
         
-        // Completely delete the assignment from the database
+        const assignment = existing[0];
+        
+        // Get institution name for notification
+        const [institutionRows] = await db.query(
+            'SELECT name FROM institutions WHERE institution_id = ?',
+            [assignment.institution_id]
+        );
+        const institutionName = institutionRows.length > 0 ? institutionRows[0].name : assignment.institution_id;
+        
+        // Delete the assignment from the database
         const [result] = await db.query(
             'DELETE FROM technician_assignments WHERE id = ?',
             [assignmentId]
         );
         
-        console.log('Delete result:', result);
-        console.log(`Assignment ${assignmentId} permanently deleted from database`);
+        console.log('[INSTITUTION UNASSIGNMENT] Delete result:', result);
+        console.log(`[INSTITUTION UNASSIGNMENT] Assignment ${assignmentId} permanently deleted from database`);
+        
+        // Create notification for the technician about being unassigned
+        try {
+            await createNotification({
+                title: 'Institution Assignment Removed',
+                message: `You have been unassigned from ${institutionName}`,
+                type: 'institution_unassigned',
+                user_id: assignment.technician_id,
+                sender_id: removedBy,
+                reference_type: 'institution',
+                reference_id: assignment.institution_id,
+                priority: 'medium'
+            });
+            console.log(`[INSTITUTION UNASSIGNMENT] ✓ Notification created for technician ${assignment.technician_id}`);
+        } catch (notifError) {
+            console.error('[INSTITUTION UNASSIGNMENT] ✗ Failed to create notification:', notifError);
+            // Don't fail the unassignment if notification fails
+        }
         
         res.json({ message: 'Technician assignment removed successfully' });
         
     } catch (error) {
         console.error('Error removing technician assignment:', error);
         res.status(500).json({ error: 'Failed to remove assignment' });
+    }
+});
+
+// TEST endpoint to verify notification creation works
+app.post('/api/test-notification', authenticateAdmin, async (req, res) => {
+    try {
+        console.log('[TEST NOTIFICATION] Attempting to create test notification...');
+        const notificationId = await createNotification({
+            title: 'Test Notification',
+            message: 'This is a test notification for institution assignment',
+            type: 'institution_assigned',
+            user_id: 57, // Tek Nishian
+            sender_id: req.user.id,
+            reference_type: 'institution',
+            reference_id: 'INST-017',
+            priority: 'medium'
+        });
+        console.log('[TEST NOTIFICATION] ✓ Notification created successfully! ID:', notificationId);
+        res.json({ success: true, notificationId, message: 'Test notification created' });
+    } catch (error) {
+        console.error('[TEST NOTIFICATION] ✗ Failed:', error);
+        res.status(500).json({ error: error.message });
     }
 });
 
@@ -3158,9 +3283,11 @@ app.get('/api/institutions/:institutionId/service-requests', async (req, res) =>
                 sr.completed_at,
                 sr.resolved_at,
                 sr.resolution_notes,
-                ii.model as equipment_model,
-                ii.serial_number as equipment_serial,
-                ii.name as equipment_name
+                ii.name as equipment_name,
+                ii.brand,
+                ii.model,
+                ii.serial_number,
+                CONCAT(ii.name, ' (', ii.brand, ' ', ii.model, ' SN:', ii.serial_number, ')') as printer_full_details
             FROM service_requests sr
             LEFT JOIN inventory_items ii ON sr.inventory_item_id = ii.id
             WHERE sr.institution_id = ?
@@ -3479,9 +3606,16 @@ app.post('/api/service-requests/:id/approve-completion', authenticateAdmin, asyn
         const { approved, notes } = req.body;
         const approver_id = req.user.id;
         
-        // Get the service request
+        // Get the service request with requester info
         const [requests] = await db.query(
-            'SELECT * FROM service_requests WHERE id = ?',
+            `SELECT sr.*, 
+                    u.first_name as requester_first_name,
+                    u.last_name as requester_last_name,
+                    ii.name as printer_name
+             FROM service_requests sr
+             LEFT JOIN users u ON sr.requested_by_user_id = u.id
+             LEFT JOIN inventory_items ii ON sr.inventory_item_id = ii.id
+             WHERE sr.id = ?`,
             [id]
         );
         
@@ -3490,6 +3624,18 @@ app.post('/api/service-requests/:id/approve-completion', authenticateAdmin, asyn
         }
         
         const request = requests[0];
+        
+        console.log('[APPROVAL DEBUG] Service request details:', {
+            id: request.id,
+            request_number: request.request_number,
+            status: request.status,
+            assigned_technician_id: request.assigned_technician_id,
+            requester_first_name: request.requester_first_name,
+            requester_last_name: request.requester_last_name,
+            printer_name: request.printer_name,
+            is_walk_in: request.is_walk_in,
+            walk_in_customer_name: request.walk_in_customer_name
+        });
         
         if (request.status !== 'pending_approval') {
             return res.status(400).json({ error: 'Service request must be in pending_approval status' });
@@ -3519,23 +3665,48 @@ app.post('/api/service-requests/:id/approve-completion', authenticateAdmin, asyn
         );
         
         // Notify technician
+        console.log('[APPROVAL DEBUG] Checking if should notify technician...', {
+            has_assigned_technician: !!request.assigned_technician_id,
+            assigned_technician_id: request.assigned_technician_id
+        });
+        
         if (request.assigned_technician_id) {
             try {
+                // Determine customer name
+                const customerName = request.is_walk_in 
+                    ? request.walk_in_customer_name 
+                    : (request.requester_first_name ? `${request.requester_first_name} ${request.requester_last_name}` : 'Unknown');
+                
+                const printerInfo = request.printer_name || 'the printer';
+                
+                console.log('[APPROVAL DEBUG] Creating notification with data:', {
+                    title: approved ? 'Service Completion Approved' : 'Service Needs Revision',
+                    user_id: request.assigned_technician_id,
+                    sender_id: approver_id,
+                    customerName,
+                    printerInfo
+                });
+                
                 await createNotification({
-                    title: approved ? 'Service Request Approved' : 'Service Request Needs Revision',
+                    title: approved ? 'Service Completion Approved' : 'Service Needs Revision',
                     message: approved 
-                        ? `Your completed service request for "${request.walk_in_customer_name}" has been approved.`
-                        : `Your completed service request for "${request.walk_in_customer_name}" needs revision. ${notes ? `Admin notes: ${notes}` : 'Please review.'}`,
-                    type: approved ? 'success' : 'warning',
+                        ? `Your completed service for ${customerName}'s ${printerInfo} (Request #${request.request_number}) has been approved by the coordinator.`
+                        : `Your service for ${customerName}'s ${printerInfo} (Request #${request.request_number}) needs revision. ${notes ? `Notes: ${notes}` : 'Please review and resubmit.'}`,
+                    type: approved ? 'service_approved' : 'service_revision_requested',
                     user_id: request.assigned_technician_id,
                     sender_id: approver_id,
                     reference_type: 'service_request',
                     reference_id: id,
-                    priority: 'medium'
+                    priority: 'high'
                 });
+                
+                console.log(`[NOTIFICATION SUCCESS] Sent ${approved ? 'approval' : 'revision'} notification to technician ${request.assigned_technician_id} for service request ${id}`);
             } catch (notifError) {
-                console.error('Failed to create notification:', notifError);
+                console.error('[NOTIFICATION ERROR] Failed to create notification:', notifError);
+                console.error('[NOTIFICATION ERROR] Stack:', notifError.stack);
             }
+        } else {
+            console.warn(`[NOTIFICATION SKIP] No technician assigned to service request ${id}, skipping notification`);
         }
         
         res.json({
@@ -4013,6 +4184,63 @@ app.get('/:page.html', (req, res, next) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', async () => {
     console.log(`Server running on http://0.0.0.0:${PORT}`);
+    
+    // Update notifications table schema
+    try {
+        console.log('Checking notifications table schema...');
+        
+        // Add user_id column if it doesn't exist
+        try {
+            await db.query('ALTER TABLE notifications ADD COLUMN user_id INT NULL AFTER id');
+            console.log('Added user_id column to notifications');
+        } catch (e) {
+            if (!e.message.includes('Duplicate column')) {
+                console.log('user_id column already exists or error:', e.message);
+            }
+        }
+        
+        // Add reference_type column if it doesn't exist
+        try {
+            await db.query('ALTER TABLE notifications ADD COLUMN reference_type VARCHAR(50) NULL AFTER message');
+            console.log('Added reference_type column to notifications');
+        } catch (e) {
+            if (!e.message.includes('Duplicate column')) {
+                console.log('reference_type column already exists or error:', e.message);
+            }
+        }
+        
+        // Add reference_id column if it doesn't exist
+        try {
+            await db.query('ALTER TABLE notifications ADD COLUMN reference_id VARCHAR(50) NULL AFTER reference_type');
+            console.log('Added reference_id column to notifications');
+        } catch (e) {
+            if (!e.message.includes('Duplicate column')) {
+                console.log('reference_id column already exists or error:', e.message);
+            }
+        }
+        
+        // Add sender_id column if it doesn't exist
+        try {
+            await db.query('ALTER TABLE notifications ADD COLUMN sender_id INT NULL AFTER user_id');
+            console.log('Added sender_id column to notifications');
+        } catch (e) {
+            if (!e.message.includes('Duplicate column')) {
+                console.log('sender_id column already exists or error:', e.message);
+            }
+        }
+        
+        // Update type enum to include new types
+        try {
+            await db.query(`ALTER TABLE notifications MODIFY COLUMN type VARCHAR(100) NOT NULL`);
+            console.log('Updated notifications type column to VARCHAR');
+        } catch (e) {
+            console.log('Type column update skipped or error:', e.message);
+        }
+        
+        console.log('Notifications table schema updated');
+    } catch (error) {
+        console.error('Error updating notifications schema:', error);
+    }
     
     // Fix database constraint on startup
     try {

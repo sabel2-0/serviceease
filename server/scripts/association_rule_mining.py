@@ -23,29 +23,25 @@ def connect_db():
     """Connect to MySQL database"""
     try:
         conn = mysql.connector.connect(**DB_CONFIG)
+        print(f"[DEBUG] Connected to database successfully", file=sys.stderr)
         return conn
     except mysql.connector.Error as err:
-        print(f"Database connection error: {err}")
+        print(f"[ERROR] Database connection failed: {err}", file=sys.stderr)
         sys.exit(1)
 
 def fetch_transactions(printer_brand=None, printer_model=None):
-    """
-    Fetch service request transactions with parts used
-    Returns list of transactions (each transaction is a list of parts)
-    """
+    """Fetch service request transactions with parts used"""
     conn = connect_db()
     cursor = conn.cursor(dictionary=True)
     
-    # Build query based on filters
     query = """
         SELECT 
             sr.id as request_id,
             sr.request_number,
             ii.brand as printer_brand,
             ii.model as printer_model,
-            GROUP_CONCAT(pp.name ORDER BY pp.name SEPARATOR '|') as parts_used,
-            GROUP_CONCAT(pp.id ORDER BY pp.name SEPARATOR '|') as part_ids,
-            COUNT(DISTINCT spu.part_id) as num_parts
+            pp.name as part_name,
+            pp.id as part_id
         FROM service_requests sr
         INNER JOIN inventory_items ii ON sr.inventory_item_id = ii.id
         INNER JOIN service_parts_used spu ON sr.id = spu.service_request_id
@@ -61,11 +57,14 @@ def fetch_transactions(printer_brand=None, printer_model=None):
         query += " AND ii.model = %s"
         params.append(printer_model)
     
-    query += " GROUP BY sr.id HAVING num_parts >= 2"
-    query += " ORDER BY sr.created_at DESC"
+    query += " ORDER BY sr.id, pp.name"
+    
+    print(f"[DEBUG] Executing query for {printer_brand} {printer_model}", file=sys.stderr)
     
     cursor.execute(query, params)
     results = cursor.fetchall()
+    
+    print(f"[DEBUG] Query returned {len(results)} rows", file=sys.stderr)
     
     cursor.close()
     conn.close()
@@ -74,62 +73,75 @@ def fetch_transactions(printer_brand=None, printer_model=None):
 
 def prepare_transactions(raw_data):
     """Convert raw data to transaction format"""
-    transactions = []
-    transaction_details = []
+    transactions = {}
     
     for row in raw_data:
-        parts = row['parts_used'].split('|')
-        part_ids = row['part_ids'].split('|')
+        request_id = row['request_id']
+        part_name = row['part_name']
         
-        transactions.append(parts)
-        transaction_details.append({
-            'request_id': row['request_id'],
-            'request_number': row['request_number'],
-            'printer_brand': row['printer_brand'],
-            'printer_model': row['printer_model'],
-            'parts': parts,
-            'part_ids': part_ids
-        })
+        if request_id not in transactions:
+            transactions[request_id] = {
+                'request_number': row['request_number'],
+                'printer_brand': row['printer_brand'],
+                'printer_model': row['printer_model'],
+                'parts': []
+            }
+        
+        # Avoid duplicate parts in same transaction
+        if part_name not in transactions[request_id]['parts']:
+            transactions[request_id]['parts'].append(part_name)
     
-    return transactions, transaction_details
+    transaction_list = [data['parts'] for data in transactions.values()]
+    transaction_details = list(transactions.values())
+    
+    print(f"[DEBUG] Prepared {len(transaction_list)} transactions", file=sys.stderr)
+    print(f"[DEBUG] Transaction details: {transaction_details[:3]}", file=sys.stderr)
+    
+    return transaction_list, transaction_details
 
 def run_apriori(transactions, min_support=0.1, min_confidence=0.5):
-    """
-    Run Apriori algorithm on transactions
-    """
+    """Run Apriori algorithm"""
+    
     if len(transactions) == 0:
         return None, None, "No transactions found"
     
-    if len(transactions) < 10:
-        return None, None, f"Insufficient data: only {len(transactions)} transactions (need at least 10)"
+    if len(transactions) < 2:
+        return None, None, f"Need at least 2 transactions (found {len(transactions)})"
     
-    # Convert to one-hot encoded DataFrame
+    print(f"[DEBUG] Running Apriori with min_support={min_support}, min_confidence={min_confidence}", file=sys.stderr)
+    
     te = TransactionEncoder()
     te_ary = te.fit(transactions).transform(transactions)
     df = pd.DataFrame(te_ary, columns=te.columns_)
     
-    # Find frequent itemsets
+    print(f"[DEBUG] DataFrame shape: {df.shape}", file=sys.stderr)
+    print(f"[DEBUG] Parts found: {list(df.columns)}", file=sys.stderr)
+    
     try:
-        frequent_itemsets = apriori(df, min_support=min_support, use_colnames=True, max_len=4)
+        frequent_itemsets = apriori(df, min_support=min_support, use_colnames=True, max_len=5)
+        
+        print(f"[DEBUG] Frequent itemsets count: {len(frequent_itemsets)}", file=sys.stderr)
         
         if len(frequent_itemsets) == 0:
-            return None, None, f"No frequent itemsets found with min_support={min_support}"
+            return None, None, f"No patterns found with min_support={min_support}. Try 0.05 or lower"
         
-        # Generate association rules
-        rules = association_rules(frequent_itemsets, metric="confidence", min_threshold=min_confidence)
-        
-        if len(rules) == 0:
-            return frequent_itemsets, None, f"No rules found with min_confidence={min_confidence}"
-        
-        # Sort by confidence and lift
-        rules = rules.sort_values(['confidence', 'lift'], ascending=[False, False])
+        rules = pd.DataFrame()
+        try:
+            rules = association_rules(frequent_itemsets, metric="confidence", min_threshold=min_confidence)
+            print(f"[DEBUG] Association rules count: {len(rules)}", file=sys.stderr)
+            
+            if len(rules) > 0:
+                rules = rules.sort_values(['confidence', 'lift'], ascending=[False, False])
+        except ValueError as e:
+            print(f"[DEBUG] No association rules generated: {e}", file=sys.stderr)
         
         return frequent_itemsets, rules, None
         
-    except ValueError as e:
-        return None, None, f"Algorithm error: {str(e)}"
+    except Exception as e:
+        print(f"[ERROR] Apriori failed: {str(e)}", file=sys.stderr)
+        return None, None, f"Analysis error: {str(e)}"
 
-def format_rules_for_ui(rules, transaction_details):
+def format_rules_for_ui(rules):
     """Format rules for UI display"""
     if rules is None or len(rules) == 0:
         return []
@@ -140,207 +152,111 @@ def format_rules_for_ui(rules, transaction_details):
         antecedents = list(rule['antecedents'])
         consequents = list(rule['consequents'])
         
-        formatted_rule = {
+        formatted_rules.append({
             'id': idx + 1,
             'antecedents': antecedents,
             'consequents': consequents,
             'support': round(float(rule['support']), 4),
             'confidence': round(float(rule['confidence']), 4),
             'lift': round(float(rule['lift']), 4),
-            'conviction': round(float(rule['conviction']), 4) if rule['conviction'] != float('inf') else 999,
             'rule_text': f"If {', '.join(antecedents)} → Then {', '.join(consequents)}",
-            'interpretation': generate_interpretation(antecedents, consequents, rule['confidence'], rule['lift'])
-        }
-        
-        formatted_rules.append(formatted_rule)
+            'interpretation': f"When using {', '.join(antecedents)}, {', '.join(consequents)} is also needed in {rule['confidence']*100:.1f}% of cases"
+        })
     
     return formatted_rules
 
-def generate_interpretation(antecedents, consequents, confidence, lift):
-    """Generate human-readable interpretation"""
-    confidence_pct = confidence * 100
+def format_itemsets_for_ui(itemsets):
+    """Format frequent itemsets for UI"""
+    if itemsets is None or len(itemsets) == 0:
+        return []
     
-    if len(antecedents) == 1 and len(consequents) == 1:
-        interpretation = f"When technicians use {antecedents[0]}, they also use {consequents[0]} in {confidence_pct:.1f}% of cases."
-    else:
-        ant_text = " and ".join(antecedents)
-        cons_text = " and ".join(consequents)
-        interpretation = f"When technicians use {ant_text}, they also use {cons_text} in {confidence_pct:.1f}% of cases."
+    formatted = []
+    for idx, row in itemsets.iterrows():
+        items = list(row['itemsets'])
+        formatted.append({
+            'id': idx + 1,
+            'items': items,
+            'support': round(float(row['support']), 4),
+            'item_count': len(items)
+        })
     
-    if lift > 1.5:
-        interpretation += f" (Strong association: {lift:.2f}x more likely)"
-    elif lift > 1.2:
-        interpretation += f" (Moderate association: {lift:.2f}x more likely)"
-    
-    return interpretation
+    formatted.sort(key=lambda x: x['support'], reverse=True)
+    return formatted
 
 def get_recommendations_for_printer(printer_brand, printer_model, min_support=0.1, min_confidence=0.5):
-    """Get part recommendations for a specific printer"""
+    """Get part recommendations for specific printer"""
     
-    # Fetch transactions
+    print(f"[INFO] Analyzing {printer_brand} {printer_model}", file=sys.stderr)
+    
     raw_data = fetch_transactions(printer_brand, printer_model)
-    
-    if len(raw_data) == 0:
-        # Try brand-level if model-specific has no data
-        raw_data = fetch_transactions(printer_brand, None)
     
     if len(raw_data) == 0:
         return {
             'success': False,
             'message': f'No historical data found for {printer_brand} {printer_model}',
+            'detail': 'Based on 0 historical service(s)',
             'total_transactions': 0,
-            'rules': []
+            'rules': [],
+            'frequent_itemsets': []
         }
     
-    # Prepare transactions
     transactions, transaction_details = prepare_transactions(raw_data)
     
-    # Run Apriori
+    if len(transactions) < 2:
+        return {
+            'success': False,
+            'message': f'Not enough data for analysis',
+            'detail': f'Found {len(transactions)} service(s), need at least 2',
+            'total_transactions': len(transactions),
+            'rules': [],
+            'frequent_itemsets': []
+        }
+    
     frequent_itemsets, rules, error = run_apriori(transactions, min_support, min_confidence)
     
     if error:
         return {
             'success': False,
             'message': error,
+            'detail': f'Based on {len(transactions)} historical service(s)',
             'total_transactions': len(transactions),
-            'rules': []
+            'rules': [],
+            'frequent_itemsets': []
         }
     
-    # Format rules
-    formatted_rules = format_rules_for_ui(rules, transaction_details)
+    formatted_rules = format_rules_for_ui(rules)
+    formatted_itemsets = format_itemsets_for_ui(frequent_itemsets)
+    
+    message = f'Found {len(formatted_rules)} association rules' if len(formatted_rules) > 0 else f'Found {len(formatted_itemsets)} frequent patterns'
     
     return {
         'success': True,
-        'message': f'Found {len(formatted_rules)} association rules',
+        'message': message,
+        'detail': f'Based on {len(transactions)} historical service(s)',
         'total_transactions': len(transactions),
         'printer_brand': printer_brand,
         'printer_model': printer_model,
         'rules': formatted_rules,
-        'frequent_itemsets': len(frequent_itemsets) if frequent_itemsets is not None else 0
-    }
-
-def get_all_printer_models():
-    """Get all printer models with completed service requests"""
-    conn = connect_db()
-    cursor = conn.cursor(dictionary=True)
-    
-    query = """
-        SELECT DISTINCT 
-            ii.brand,
-            ii.model,
-            COUNT(DISTINCT sr.id) as request_count
-        FROM service_requests sr
-        INNER JOIN inventory_items ii ON sr.inventory_item_id = ii.id
-        INNER JOIN service_parts_used spu ON sr.id = spu.service_request_id
-        WHERE sr.status = 'completed'
-        GROUP BY ii.brand, ii.model
-        HAVING request_count >= 5
-        ORDER BY request_count DESC
-    """
-    
-    cursor.execute(query)
-    results = cursor.fetchall()
-    
-    cursor.close()
-    conn.close()
-    
-    return results
-
-def analyze_all_printers(min_support=0.1, min_confidence=0.5):
-    """Analyze all printers and generate comprehensive report"""
-    
-    printers = get_all_printer_models()
-    
-    results = {
-        'timestamp': datetime.now().isoformat(),
-        'total_printer_models': len(printers),
+        'frequent_itemsets': formatted_itemsets,
         'min_support': min_support,
-        'min_confidence': min_confidence,
-        'printer_analyses': []
+        'min_confidence': min_confidence
     }
-    
-    for printer in printers:
-        analysis = get_recommendations_for_printer(
-            printer['brand'],
-            printer['model'],
-            min_support,
-            min_confidence
-        )
-        
-        analysis['request_count'] = printer['request_count']
-        results['printer_analyses'].append(analysis)
-    
-    return results
-
-def save_to_database(analysis_results):
-    """Save analysis results to database for quick retrieval"""
-    conn = connect_db()
-    cursor = conn.cursor()
-    
-    # Create table if not exists
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS arm_analysis_cache (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            printer_brand VARCHAR(255),
-            printer_model VARCHAR(255),
-            analysis_data JSON,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE KEY unique_printer (printer_brand, printer_model)
-        )
-    """)
-    
-    # Insert or update analysis
-    for analysis in analysis_results['printer_analyses']:
-        if analysis['success']:
-            cursor.execute("""
-                INSERT INTO arm_analysis_cache (printer_brand, printer_model, analysis_data)
-                VALUES (%s, %s, %s)
-                ON DUPLICATE KEY UPDATE 
-                    analysis_data = VALUES(analysis_data),
-                    created_at = CURRENT_TIMESTAMP
-            """, (
-                analysis['printer_brand'],
-                analysis['printer_model'],
-                json.dumps(analysis)
-            ))
-    
-    conn.commit()
-    cursor.close()
-    conn.close()
 
 if __name__ == "__main__":
-    import sys
+    if len(sys.argv) < 4:
+        print("Usage: python association_rule_mining.py analyze_printer <brand> <model> [min_support] [min_confidence]", file=sys.stderr)
+        sys.exit(1)
     
-    # Parse command line arguments
-    if len(sys.argv) > 1:
-        command = sys.argv[1]
+    command = sys.argv[1]
+    
+    if command == "analyze_printer":
+        brand = sys.argv[2]
+        model = sys.argv[3]
+        min_support = float(sys.argv[4]) if len(sys.argv) > 4 else 0.1
+        min_confidence = float(sys.argv[5]) if len(sys.argv) > 5 else 0.5
         
-        if command == "analyze_printer" and len(sys.argv) >= 4:
-            brand = sys.argv[2]
-            model = sys.argv[3]
-            min_support = float(sys.argv[4]) if len(sys.argv) > 4 else 0.1
-            min_confidence = float(sys.argv[5]) if len(sys.argv) > 5 else 0.5
-            
-            result = get_recommendations_for_printer(brand, model, min_support, min_confidence)
-            print(json.dumps(result, indent=2))
-            
-        elif command == "analyze_all":
-            min_support = float(sys.argv[2]) if len(sys.argv) > 2 else 0.1
-            min_confidence = float(sys.argv[3]) if len(sys.argv) > 3 else 0.5
-            
-            results = analyze_all_printers(min_support, min_confidence)
-            
-            # Save to database
-            save_to_database(results)
-            
-            print(json.dumps(results, indent=2))
-            
-        else:
-            print("Invalid command. Use: analyze_printer <brand> <model> or analyze_all")
-            sys.exit(1)
+        result = get_recommendations_for_printer(brand, model, min_support, min_confidence)
+        print(json.dumps(result, indent=2))
     else:
-        print("Usage: python association_rule_mining.py <command> [args]")
-        print("Commands:")
-        print("  analyze_printer <brand> <model> [min_support] [min_confidence]")
-        print("  analyze_all [min_support] [min_confidence]")
+        print(f"Unknown command: {command}", file=sys.stderr)
         sys.exit(1)

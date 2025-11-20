@@ -3,8 +3,14 @@
  * Enhanced with Start Service, Complete Service, and Job Order functionality
  */
 
-let currentServiceRequests = [];
+// Make these globally accessible for search functionality
+window.currentServiceRequests = [];
 let selectedRequest = null;
+
+// Pagination variables
+let currentPage = 1;
+const itemsPerPage = 5; // Maximum 5 cards per page
+let totalPages = 1;
 
 // Make refresh function globally available
 window.refreshRequestsPage = function() {
@@ -48,8 +54,27 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load service requests immediately
     loadServiceRequests();
     
-    // Set up search functionality
-    setupSearchFunctionality();
+    // Set up search functionality with retry
+    let searchSetupAttempts = 0;
+    const maxAttempts = 10;
+    
+    function trySetupSearch() {
+        const searchInput = document.getElementById('search-input');
+        if (searchInput) {
+            console.log('✅ Search input found, setting up search functionality');
+            setupSearchFunctionality();
+        } else {
+            searchSetupAttempts++;
+            if (searchSetupAttempts < maxAttempts) {
+                console.log(`⏳ Search input not found yet, retrying (${searchSetupAttempts}/${maxAttempts})...`);
+                setTimeout(trySetupSearch, 200);
+            } else {
+                console.error('❌ Search input not found after', maxAttempts, 'attempts');
+            }
+        }
+    }
+    
+    trySetupSearch();
     
     // Set up service request modal
     setupServiceRequestModal();
@@ -59,6 +84,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Set up global modal event handlers
     setupModalEventHandlers();
+    
+    // Set up pagination event handlers
+    setupPaginationHandlers();
     
     // Set up periodic refresh (every 30 seconds)
     setInterval(loadServiceRequests, 30000);
@@ -206,7 +234,7 @@ async function loadServiceRequests() {
         
         const requests = await response.json();
         console.log('📋 Received requests data:', requests);
-        currentServiceRequests = requests;
+        window.currentServiceRequests = requests;
         
         console.log(`✓ Loaded ${requests.length} service requests`);
         
@@ -226,7 +254,7 @@ async function loadServiceRequests() {
         }
         
         // For other errors, show empty state with retry option
-        currentServiceRequests = [];
+        window.currentServiceRequests = [];
         console.log('❌ No service requests available');
         
         displayServiceRequests([]);
@@ -239,9 +267,11 @@ async function loadServiceRequests() {
 
 /**
  * Display service requests in both desktop and mobile views
+ * Made global for search functionality
  */
-function displayServiceRequests(requests) {
+window.displayServiceRequests = function(requests) {
     console.log('🎨 displayServiceRequests called with:', requests);
+    console.log('🎨 currentPage at START of displayServiceRequests:', currentPage);
     
     const mobileContainer = document.getElementById('serviceRequestsCardsMobile');
     const desktopContainer = document.getElementById('serviceRequestsTableDesktop');
@@ -260,26 +290,44 @@ function displayServiceRequests(requests) {
     if (requests.length === 0) {
         console.log('⚠️ No requests to display, showing empty state');
         showEmptyState();
+        hidePagination();
         return;
     }
     
+    // Hide empty state when showing requests
+    const emptyState = document.getElementById('requests-emptyState');
+    const errorState = document.getElementById('requests-errorState');
+    if (emptyState) emptyState.classList.add('hidden');
+    if (errorState) errorState.classList.add('hidden');
+    
     console.log(`🔄 Generating UI for ${requests.length} requests`);
     
-    // Generate mobile cards
+    // Calculate pagination
+    totalPages = Math.ceil(requests.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedRequests = requests.slice(startIndex, endIndex);
+    
+    console.log(`📄 Page ${currentPage} of ${totalPages}, showing ${startIndex + 1}-${Math.min(endIndex, requests.length)} of ${requests.length}`);
+    
+    // Generate mobile cards (with pagination)
     if (mobileContainer) {
-        const mobileHTML = requests.map(request => createMobileRequestCard(request)).join('');
+        const mobileHTML = paginatedRequests.map(request => createMobileRequestCard(request)).join('');
         console.log('📱 Generated mobile HTML length:', mobileHTML.length);
         mobileContainer.innerHTML = mobileHTML;
         console.log('📱 Mobile container updated');
     }
     
-    // Generate desktop table rows
+    // Generate desktop table rows (show all on desktop)
     if (desktopContainer) {
         const desktopHTML = requests.map(request => createDesktopRequestRow(request)).join('');
         console.log('💻 Generated desktop HTML length:', desktopHTML.length);
         desktopContainer.innerHTML = desktopHTML;
         console.log('💻 Desktop container updated');
     }
+    
+    // Update pagination UI
+    updatePaginationUI(requests.length);
     
     // Add click handlers for viewing details
     addRequestClickHandlers();
@@ -312,63 +360,125 @@ function createMobileRequestCard(request) {
     const formattedRequestNumber = formatRequestNumber(request.request_number);
     
     return `
-        <div class="modern-mobile-card group relative overflow-hidden bg-white rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300 mb-4 border border-slate-100" style="--animation-delay: ${Math.random() * 200}ms">
-            <!-- Priority/Status Indicator Strip -->
-            <div class="absolute top-0 left-0 right-0 h-1 ${request.status === 'in_progress' ? getPriorityGradient(request.priority) : getStatusGradient(request.status)}"></div>
+        <div class="modern-mobile-card group relative overflow-hidden bg-white rounded-2xl shadow-md hover:shadow-2xl transition-all duration-500 mb-4 border border-slate-200/60 hover:border-blue-300 cursor-pointer" 
+             data-request-id="${request.id}"
+             style="--animation-delay: ${Math.random() * 200}ms; transform: translateY(0); transition: transform 0.3s ease, box-shadow 0.3s ease;">
             
-            <!-- Card Header -->
-            <div class="flex items-center justify-between p-5 pb-3">
-                <div class="flex items-center gap-3">
-                    <div class="p-2 rounded-2xl bg-blue-50">
-                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                        </svg>
-                    </div>
-                    <div>
-                        <div class="font-bold text-sm text-blue-600 tracking-wide">${formattedRequestNumber}</div>
-                        <div class="text-xs text-slate-500">${formatDate(request.created_at)}</div>
+            <!-- Gradient Background Overlay -->
+            <div class="absolute inset-0 bg-gradient-to-br from-blue-50/30 via-transparent to-purple-50/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            
+            <!-- Top Accent Bar with Animated Gradient -->
+            <div class="absolute top-0 left-0 right-0 h-1.5 ${request.status === 'in_progress' ? getPriorityGradient(request.priority) : getStatusGradient(request.status)} shadow-sm"></div>
+            
+            <!-- Content Wrapper -->
+            <div class="relative z-10">
+                <!-- Header Section -->
+                <div class="p-4 pb-3">
+                    <div class="flex items-start justify-between gap-3">
+                        <!-- Left: Icon + Request Info -->
+                        <div class="flex items-start gap-3 flex-1 min-w-0">
+                            <!-- Animated Icon Container -->
+                            <div class="relative flex-shrink-0">
+                                <div class="absolute inset-0 bg-blue-500 rounded-xl opacity-20 blur-md group-hover:opacity-30 transition-opacity"></div>
+                                <div class="relative p-2.5 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            
+                            <!-- Request Number & Date -->
+                            <div class="flex-1 min-w-0">
+                                <div class="font-extrabold text-base text-slate-800 tracking-tight leading-tight mb-0.5">
+                                    ${formattedRequestNumber}
+                                </div>
+                                <div class="flex items-center gap-1.5 text-xs text-slate-500">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                    </svg>
+                                    <span class="font-medium">${formatDate(request.created_at)}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Right: Status Badge -->
+                        <div class="flex-shrink-0">
+                            <span class="inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-extrabold ${displayStatusClass} shadow-md border-2 backdrop-blur-sm">
+                                <span class="w-1.5 h-1.5 rounded-full bg-current mr-1.5 animate-pulse"></span>
+                                ${displayStatus}
+                            </span>
+                        </div>
                     </div>
                 </div>
-                <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold ${displayStatusClass} border shadow-sm">
-                    <div class="w-1.5 h-1.5 rounded-full bg-current mr-2 animate-pulse"></div>
-                    ${displayStatus}
-                </span>
-            </div>
-            
-            <!-- Institution or Walk-In Customer -->
-            <div class="px-5 pb-2">
-                ${request.is_walk_in ? 
-                    `<div class="flex items-center gap-2 mb-1">
-                        <span class="bg-purple-100 text-purple-700 px-2 py-1 rounded-md text-xs font-bold">WALK-IN</span>
-                    </div>
-                    <h3 class="font-bold text-lg text-slate-900 leading-tight">${request.walk_in_customer_name || 'Walk-In Customer'}</h3>
-                    <p class="text-sm text-slate-600 mt-1">Printer: ${request.printer_brand || 'N/A'}</p>` 
-                    : 
-                    `<h3 class="font-bold text-lg text-slate-900 leading-tight">${request.institution_name || 'Institution'}</h3>`
-                }
-            </div>
-            
-            <!-- Description -->
-            <div class="px-5 pb-4">
-                <div class="bg-gradient-to-r from-slate-50 to-slate-100 rounded-2xl p-4 border border-slate-200/50">
-                    <div class="text-sm text-slate-700 leading-relaxed line-clamp-2">
-                        ${request.issue || 'Service Request'}
+                
+                <!-- Institution/Customer Section -->
+                <div class="px-4 pb-3">
+                    ${request.is_walk_in ? 
+                        `<div class="flex items-center gap-2 mb-2">
+                            <span class="inline-flex items-center gap-1.5 bg-gradient-to-r from-purple-500 to-purple-600 text-white px-3 py-1 rounded-lg text-xs font-bold shadow-md">
+                                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"></path>
+                                </svg>
+                                WALK-IN
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-lg text-slate-900 leading-snug mb-1">
+                            ${request.walk_in_customer_name || 'Walk-In Customer'}
+                        </h3>
+                        <div class="flex items-center gap-1.5 text-sm text-slate-600">
+                            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                            </svg>
+                            <span class="font-medium">${request.printer_brand || 'N/A'}</span>
+                        </div>` 
+                        : 
+                        `<div class="flex items-start gap-2">
+                            <svg class="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                            </svg>
+                            <h3 class="font-bold text-lg text-slate-900 leading-snug flex-1">
+                                ${request.institution_name || 'Institution'}
+                            </h3>
+                        </div>`
+                    }
+                </div>
+                
+                <!-- Issue Description Card -->
+                <div class="px-4 pb-4">
+                    <div class="relative group/issue">
+                        <div class="absolute inset-0 bg-gradient-to-r from-blue-100 to-purple-100 rounded-xl opacity-50 blur-sm group-hover/issue:opacity-70 transition-opacity"></div>
+                        <div class="relative bg-white/80 backdrop-blur-sm rounded-xl p-3.5 border border-slate-200/80 shadow-sm">
+                            <div class="flex items-start gap-2.5">
+                                <svg class="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <p class="text-sm text-slate-700 leading-relaxed font-medium line-clamp-2 break-words flex-1">
+                                    ${request.issue || 'Service Request'}
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-            
-            <!-- Action Section -->
-            <div class="px-5 pb-5">
-                <div class="space-y-3">
-                    <button class="view-details-btn w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3.5 rounded-2xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5" data-request-id="${request.id}">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                
+                <!-- Action Button -->
+                <div class="px-4 pb-4">
+                    <button class="view-details-btn w-full bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 hover:from-blue-700 hover:via-blue-800 hover:to-blue-900 text-white font-bold py-3.5 rounded-xl transition-all duration-300 flex items-center justify-center gap-2.5 shadow-lg hover:shadow-2xl transform hover:scale-[1.02] active:scale-[0.98] group/btn" 
+                            data-request-id="${request.id}">
+                        <svg class="w-5 h-5 group-hover/btn:rotate-12 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
                         </svg>
-                        View Request
+                        <span class="text-sm tracking-wide">View Full Details</span>
+                        <svg class="w-4 h-4 group-hover/btn:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path>
+                        </svg>
                     </button>
-                    <!-- Start button removed from card - Start action is now available inside View Details modal -->
                 </div>
+            </div>
+            
+            <!-- Hover Effect Shine -->
+            <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none">
+                <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
             </div>
         </div>
     `;
@@ -430,11 +540,37 @@ function createDesktopRequestRow(request) {
  * Add click handlers for request interactions
  */
 function addRequestClickHandlers() {
-    // View details buttons and card clicks
-    document.querySelectorAll('.view-details-btn, .modern-card-container').forEach(element => {
+    // View details buttons
+    document.querySelectorAll('.view-details-btn').forEach(element => {
         element.addEventListener('click', (e) => {
-            const requestId = element.getAttribute('data-request-id') || 
-                             element.closest('[data-request-id]')?.getAttribute('data-request-id');
+            e.stopPropagation(); // Prevent card click from firing
+            const requestId = element.getAttribute('data-request-id');
+            if (requestId) {
+                showServiceRequestModal(requestId);
+            }
+        });
+    });
+    
+    // Mobile cards (entire card clickable)
+    document.querySelectorAll('.modern-mobile-card').forEach(card => {
+        card.addEventListener('click', (e) => {
+            // Don't trigger if clicking on button (button has its own handler)
+            if (e.target.closest('.view-details-btn')) return;
+            
+            const requestId = card.getAttribute('data-request-id');
+            if (requestId) {
+                showServiceRequestModal(requestId);
+            }
+        });
+    });
+
+    // Desktop table rows
+    document.querySelectorAll('tr[data-request-id]').forEach(row => {
+        row.addEventListener('click', (e) => {
+            // Don't trigger if clicking on button
+            if (e.target.closest('button')) return;
+            
+            const requestId = row.getAttribute('data-request-id');
             if (requestId) {
                 showServiceRequestModal(requestId);
             }
@@ -496,7 +632,7 @@ async function startService(requestId) {
  * Show service request details modal
  */
 function showServiceRequestModal(requestId) {
-    const request = currentServiceRequests.find(r => r.id == requestId);
+    const request = window.currentServiceRequests.find(r => r.id == requestId);
     if (!request) {
         console.error('Request not found:', requestId);
         return;
@@ -519,7 +655,7 @@ function showServiceRequestModal(requestId) {
  * Show job completion modal
  */
 function showJobCompletionModal(requestId) {
-    const request = currentServiceRequests.find(r => r.id == requestId);
+    const request = window.currentServiceRequests.find(r => r.id == requestId);
     if (!request) {
         console.error('Request not found:', requestId);
         return;
@@ -557,68 +693,147 @@ function showJobCompletionModal(requestId) {
  */
 function setupSearchFunctionality() {
     const searchButtons = document.querySelectorAll('#search-requests-btn, #search-requests-btn-desktop');
-    const searchOverlay = document.getElementById('search-overlay');
+    const searchBarContainer = document.getElementById('search-bar-container');
     const searchInput = document.getElementById('search-input');
-    const closeSearchBtn = document.getElementById('close-search-overlay');
+    const clearSearchBtn = document.getElementById('clear-search-btn');
     
-    // Open search overlay
+    console.log('🔍 Setting up search functionality');
+    console.log('Search buttons found:', searchButtons.length);
+    console.log('Search bar container:', !!searchBarContainer);
+    console.log('Search input:', !!searchInput);
+    
+    // Open search bar (show it)
     searchButtons.forEach(btn => {
-        btn?.addEventListener('click', () => {
-            searchOverlay?.classList.remove('hidden');
-            searchInput?.focus();
+        btn?.addEventListener('click', (e) => {
+            e.preventDefault();
+            console.log('🔍 Search button clicked!');
+            console.log('Search bar container element:', searchBarContainer);
+            console.log('Search bar container exists:', !!searchBarContainer);
+            console.log('Current classes:', searchBarContainer?.className);
+            
+            if (searchBarContainer) {
+                searchBarContainer.classList.remove('hidden');
+                console.log('✅ Removed hidden class');
+                console.log('New classes:', searchBarContainer.className);
+            } else {
+                console.error('❌ Search bar container not found!');
+            }
+            
+            if (searchInput) {
+                searchInput.focus();
+                console.log('✅ Focused on search input');
+            } else {
+                console.error('❌ Search input not found!');
+            }
         });
     });
     
-    // Close search overlay
-    closeSearchBtn?.addEventListener('click', () => {
-        searchOverlay?.classList.add('hidden');
+    // Clear search and hide bar
+    clearSearchBtn?.addEventListener('click', () => {
+        console.log('❌ Clearing search');
         searchInput.value = '';
+        searchBarContainer?.classList.add('hidden');
+        // Reset to show all cards
+        displayServiceRequests(window.currentServiceRequests);
     });
     
     // Close on Escape key
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && !searchOverlay?.classList.contains('hidden')) {
-            searchOverlay.classList.add('hidden');
+        if (e.key === 'Escape' && !searchBarContainer?.classList.contains('hidden')) {
+            console.log('⌨️ ESC pressed, clearing search');
             searchInput.value = '';
+            searchBarContainer.classList.add('hidden');
+            // Reset to show all cards
+            displayServiceRequests(window.currentServiceRequests);
         }
     });
     
-    // Search functionality
-    searchInput?.addEventListener('input', (e) => {
-        const query = e.target.value.toLowerCase();
-        const filteredRequests = currentServiceRequests.filter(request => 
-            request.request_number.toLowerCase().includes(query) ||
-            request.issue?.toLowerCase().includes(query) ||
-            (request.is_walk_in ? request.walk_in_customer_name?.toLowerCase().includes(query) : request.institution_name?.toLowerCase().includes(query)) ||
-            (request.is_walk_in && request.printer_brand?.toLowerCase().includes(query)) ||
-            request.location?.toLowerCase().includes(query)
-        );
-        
-        displaySearchResults(filteredRequests, query);
-    });
+    // Search functionality - filters cards in real-time
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase().trim();
+            const searchCount = document.getElementById('search-count');
+            
+            console.log('🔍 [requests.js] Search query:', query);
+            console.log('📋 [requests.js] Total requests to search:', window.currentServiceRequests.length);
+            console.log('📋 [requests.js] Sample request:', window.currentServiceRequests[0]);
+            
+            if (!query) {
+                // Show all results if search is empty
+                if (searchCount) {
+                    searchCount.textContent = 'Type to filter requests...';
+                }
+                console.log('✅ [requests.js] Showing all requests');
+                displayServiceRequests(window.currentServiceRequests);
+                return;
+            }
+            
+            const filteredRequests = window.currentServiceRequests.filter(request => {
+                const matches = 
+                    request.request_number?.toLowerCase().includes(query) ||
+                    request.issue?.toLowerCase().includes(query) ||
+                    (request.is_walk_in ? request.walk_in_customer_name?.toLowerCase().includes(query) : request.institution_name?.toLowerCase().includes(query)) ||
+                    (request.is_walk_in && request.printer_brand?.toLowerCase().includes(query)) ||
+                    request.location?.toLowerCase().includes(query);
+                
+                if (matches) {
+                    console.log('✓ [requests.js] Match found:', request.request_number);
+                }
+                return matches;
+            });
+            
+            console.log('🎯 [requests.js] Filtered results:', filteredRequests.length);
+            
+            // Update search count
+            if (searchCount) {
+                searchCount.textContent = `${filteredRequests.length} result${filteredRequests.length !== 1 ? 's' : ''} found`;
+            }
+            
+            // Update the main card view with filtered results
+            console.log('🎨 [requests.js] Calling displayServiceRequests with', filteredRequests.length, 'requests');
+            displayServiceRequests(filteredRequests);
+        });
+        console.log('✅ [requests.js] Search input listener attached');
+    } else {
+        console.error('❌ [requests.js] Search input not found!');
+    }
+    
+    console.log('✅ Search functionality initialized');
 }
 
 /**
  * Display search results
  */
 function displaySearchResults(results, query) {
+    console.log('🎨 displaySearchResults called with', results.length, 'results for query:', query);
     const searchResults = document.getElementById('search-results');
     const searchCount = document.getElementById('search-count');
     
-    if (!searchResults || !searchCount) return;
+    if (!searchResults || !searchCount) {
+        console.error('❌ Search elements not found!');
+        return;
+    }
     
-    searchCount.textContent = `${results.length} result${results.length !== 1 ? 's' : ''} found`;
+    // Update count
+    if (query) {
+        searchCount.textContent = `${results.length} result${results.length !== 1 ? 's' : ''} found`;
+    } else {
+        searchCount.textContent = `${results.length} total request${results.length !== 1 ? 's' : ''}`;
+    }
     
-    if (results.length === 0) {
+    console.log('✓ Updated search count to:', searchCount.textContent);
+    
+    if (results.length === 0 && query) {
         searchResults.innerHTML = `
             <div class="p-4 text-center text-slate-500">
                 <p>No requests found for "${query}"</p>
             </div>
         `;
+        console.log('📭 No results, showing empty state');
         return;
     }
     
-    searchResults.innerHTML = results.map(request => `
+    const html = results.map(request => `
         <div class="search-result-item p-3 hover:bg-slate-50 border-b border-slate-100 cursor-pointer" 
              data-request-id="${request.id}">
             <div class="flex justify-between items-start">
@@ -631,7 +846,7 @@ function displaySearchResults(results, query) {
                             ${request.walk_in_customer_name || 'Walk-In Customer'}
                         </div>` 
                         : 
-                        `<div class="text-xs text-slate-500">${request.institution_name}</div>`
+                        `<div class="text-xs text-slate-500">${request.institution_name || 'N/A'}</div>`
                     }
                 </div>
                 <div class="ml-2">
@@ -643,10 +858,14 @@ function displaySearchResults(results, query) {
         </div>
     `).join('');
     
+    searchResults.innerHTML = html;
+    console.log('✓ Rendered', results.length, 'search results');
+    
     // Add click handlers for search results
     searchResults.querySelectorAll('.search-result-item').forEach(item => {
         item.addEventListener('click', () => {
             const requestId = item.getAttribute('data-request-id');
+            console.log('🖱️ Clicked search result:', requestId);
             document.getElementById('search-overlay')?.classList.add('hidden');
             showServiceRequestModal(requestId);
         });
@@ -670,6 +889,12 @@ function showEmptyState() {
     const loadingState = document.getElementById('requests-loadingState');
     const emptyState = document.getElementById('requests-emptyState');
     const errorState = document.getElementById('requests-errorState');
+    const mobileContainer = document.getElementById('serviceRequestsCardsMobile');
+    const desktopContainer = document.getElementById('serviceRequestsTableDesktop');
+    
+    // Clear the containers to remove any existing cards
+    if (mobileContainer) mobileContainer.innerHTML = '';
+    if (desktopContainer) desktopContainer.innerHTML = '';
     
     loadingState?.classList.add('hidden');
     emptyState?.classList.remove('hidden');
@@ -1129,7 +1354,7 @@ function populateServiceRequestModal(request) {
                 
                 <!-- Description with gray background -->
                 <div class="bg-gray-100 rounded-lg px-3 py-2 mb-3">
-                    <span id="modal-description" class="block text-gray-700 text-sm leading-relaxed ${isLong ? 'line-clamp-3' : ''}">${shortDesc}</span>
+                    <span id="modal-description" class="block text-gray-700 text-sm leading-relaxed break-words ${isLong ? 'line-clamp-3' : ''}">${shortDesc}</span>
                     ${isLong ? `<button id="expand-description" class="text-blue-600 text-xs font-medium mt-1 underline">Show more</button>` : ''}
                 </div>
                 
@@ -1306,7 +1531,7 @@ let totalPartSlides = 1;
 async function loadAvailableParts() {
     console.log('🔧 Loading available parts from technician inventory...');
     try {
-        const response = await fetch('/api/technician/parts', {
+        const response = await fetch('/api/technician/inventory', {
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('token')}`
             }
@@ -1315,11 +1540,24 @@ async function loadAvailableParts() {
         console.log('Parts API response status:', response.status);
         
         if (response.ok) {
-            availableParts = await response.json();
-            console.log('✅ Loaded parts:', availableParts);
+            const inventoryData = await response.json();
+            console.log('✅ Loaded inventory data:', inventoryData);
+            
+            // Map inventory data to parts format
+            availableParts = inventoryData.map(item => ({
+                id: item.part_id,
+                name: item.name,
+                brand: item.brand,
+                category: item.category,
+                part_type: item.part_type || 'printer_part',
+                stock: item.assigned_quantity,
+                unit: item.unit || 'pieces'
+            }));
+            
+            console.log('✅ Mapped parts:', availableParts);
             updatePartSelectors();
             updatePartSearchFunctionality();
-            return availableParts; // Return the parts for promise chaining
+            return availableParts;
         } else {
             const errorData = await response.json();
             console.error('❌ Parts API error:', errorData);
@@ -1378,24 +1616,49 @@ function updateBrandSelectors() {
     const brandSelectors = document.querySelectorAll('.part-brand-select');
     console.log('Found', brandSelectors.length, 'brand selectors');
     
-    // Get unique brands from availableParts
-    const brands = [...new Set(availableParts.map(part => part.brand).filter(Boolean))].sort();
+    // Get printer brand from selected service request
+    const printerBrand = selectedRequest?.is_walk_in 
+        ? selectedRequest.printer_brand 
+        : selectedRequest?.brand;
+    
+    console.log('🖨️ Service request printer brand:', printerBrand);
+    
+    // Filter parts by printer brand if available
+    let filteredByBrand = availableParts;
+    if (printerBrand) {
+        filteredByBrand = availableParts.filter(part => 
+            part.brand && part.brand.toLowerCase() === printerBrand.toLowerCase()
+        );
+        console.log(`✅ Filtered ${filteredByBrand.length} parts for brand: ${printerBrand}`);
+    }
+    
+    // Get unique brands from filtered parts
+    const brands = [...new Set(filteredByBrand.map(part => part.brand).filter(Boolean))].sort();
     
     brandSelectors.forEach((selector, index) => {
         console.log(`Updating brand selector ${index + 1}`);
-        selector.innerHTML = '<option value="">Choose brand first...</option>';
         
-        if (brands.length === 0) {
-            selector.innerHTML += '<option value="" disabled>No brands available</option>';
-            return;
+        if (printerBrand && brands.length > 0) {
+            // If we have a printer brand and matching parts, auto-select it
+            selector.innerHTML = `<option value="${printerBrand}">${printerBrand}</option>`;
+            selector.value = printerBrand;
+            selector.disabled = true; // Lock to printer brand
+            
+            // Trigger change event to load parts
+            const event = new Event('change', { bubbles: true });
+            selector.dispatchEvent(event);
+        } else if (brands.length === 0) {
+            selector.innerHTML = '<option value="" disabled>No parts available for this printer brand</option>';
+            selector.disabled = true;
+        } else {
+            selector.innerHTML = '<option value="">Choose brand first...</option>';
+            brands.forEach(brand => {
+                const option = document.createElement('option');
+                option.value = brand;
+                option.textContent = brand;
+                selector.appendChild(option);
+            });
         }
-        
-        brands.forEach(brand => {
-            const option = document.createElement('option');
-            option.value = brand;
-            option.textContent = brand;
-            selector.appendChild(option);
-        });
     });
 }
 
@@ -1404,29 +1667,51 @@ function updatePartsForBrand(brandSelector, selectedBrand) {
     if (!partEntry) return;
     
     const partSelect = partEntry.querySelector('.part-name-select');
+    const typeSelect = partEntry.querySelector('.part-type-select');
     if (!partSelect) return;
     
     console.log('🔧 Updating parts for brand:', selectedBrand);
     
+    // Get selected part type (consumable or printer_part)
+    const selectedType = typeSelect ? typeSelect.value : '';
+    
     // Reset part selector
     partSelect.innerHTML = '<option value="">Select part/consumable...</option>';
-    partSelect.disabled = !selectedBrand;
+    partSelect.disabled = !selectedBrand || !selectedType;
     
-    if (!selectedBrand) {
+    if (!selectedBrand || !selectedType) {
         return;
     }
     
-    // Filter parts by selected brand
-    const partsForBrand = availableParts.filter(part => part.brand === selectedBrand);
+    // Get printer brand from selected service request
+    const printerBrand = selectedRequest?.is_walk_in 
+        ? selectedRequest.printer_brand 
+        : selectedRequest?.brand;
     
-    if (partsForBrand.length === 0) {
-        partSelect.innerHTML += '<option value="" disabled>No parts available for this brand</option>';
+    // Filter parts by brand and type
+    let partsFiltered = availableParts.filter(part => {
+        const brandMatch = part.brand === selectedBrand;
+        const typeMatch = part.part_type === selectedType;
+        return brandMatch && typeMatch;
+    });
+    
+    // If we have a printer brand from the service request, further filter
+    if (printerBrand) {
+        partsFiltered = partsFiltered.filter(part => 
+            part.brand.toLowerCase() === printerBrand.toLowerCase()
+        );
+    }
+    
+    console.log(`🔍 Filtered ${partsFiltered.length} parts (brand: ${selectedBrand}, type: ${selectedType})`);
+    
+    if (partsFiltered.length === 0) {
+        partSelect.innerHTML += '<option value="" disabled>No parts available for this brand and type</option>';
         return;
     }
     
     // Group parts by category for better organization
     const partsByCategory = {};
-    partsForBrand.forEach(part => {
+    partsFiltered.forEach(part => {
         if (!partsByCategory[part.category]) {
             partsByCategory[part.category] = [];
         }
@@ -1453,7 +1738,7 @@ function updatePartsForBrand(brandSelector, selectedBrand) {
         partSelect.appendChild(optgroup);
     });
     
-    console.log('✅ Added', partsForBrand.length, 'parts for brand', selectedBrand);
+    console.log('✅ Added', partsFiltered.length, 'parts for brand', selectedBrand, 'and type', selectedType);
 }
 
 function setupPartManagement() {
@@ -1501,17 +1786,19 @@ function addPartEntry() {
 
         <!-- Form fields - mobile optimized stack layout -->
         <div class="space-y-3">
-            <!-- Brand Selection (First Step) -->
+            <!-- Part Type Selection (First Step) -->
             <div>
                 <label class="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center gap-1">
-                    <svg class="w-3.5 h-3.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
+                    <svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
                     </svg>
-                    Select Brand First
+                    Part Type
                 </label>
                 <div class="relative">
-                    <select class="part-brand-select w-full p-3 pl-3.5 pr-9 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 bg-white text-sm font-medium text-slate-700 appearance-none cursor-pointer hover:border-indigo-300 transition-all">
-                        <option value="">Choose brand first...</option>
+                    <select class="part-type-select w-full p-3 pl-3.5 pr-9 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 bg-white text-sm font-medium text-slate-700 appearance-none cursor-pointer hover:border-emerald-300 transition-all">
+                        <option value="">Choose type first...</option>
+                        <option value="consumable">Consumable</option>
+                        <option value="printer_part">Printer Part</option>
                     </select>
                     <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
                         <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1521,7 +1808,7 @@ function addPartEntry() {
                 </div>
             </div>
 
-            <!-- Part Selection -->
+            <!-- Part Selection (Second Step) -->
             <div>
                 <label class="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center gap-1">
                     <svg class="w-3.5 h-3.5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1531,7 +1818,7 @@ function addPartEntry() {
                 </label>
                 <div class="relative">
                     <select class="part-name-select w-full p-3 pl-3.5 pr-9 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-400 focus:border-purple-400 bg-white text-sm font-medium text-slate-700 appearance-none cursor-pointer hover:border-purple-300 transition-all" disabled>
-                        <option value="">Select brand first...</option>
+                        <option value="">Select type first...</option>
                     </select>
                     <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
                         <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1711,29 +1998,116 @@ function setupCarouselNavigation() {
 }
 
 function setupPartEntryHandlers(entry) {
-    const brandSelect = entry.querySelector('.part-brand-select');
+    const typeSelect = entry.querySelector('.part-type-select');
     const partSelect = entry.querySelector('.part-name-select');
     const quantityInput = entry.querySelector('.part-quantity');
     const unitSelect = entry.querySelector('.part-unit');
     const availabilityText = entry.querySelector('.availability-text');
     const stockInfo = entry.querySelector('.part-stock-info');
     
-    // Brand selection handler - handles when brand is changed
-    if (brandSelect) {
-        brandSelect.addEventListener('change', function() {
-            const selectedBrand = this.value;
-            console.log('Brand selected:', selectedBrand);
+    // Part type selection handler (consumable vs printer_part)
+    if (typeSelect) {
+        typeSelect.addEventListener('change', function() {
+            const selectedType = this.value;
+            console.log('🎯 Part type selected:', selectedType);
+            console.log('📋 Selected request:', selectedRequest);
+            console.log('🔧 Available parts:', availableParts);
             
-            // Reset part selection when brand changes
-            if (partSelect) {
-                partSelect.value = '';
-                stockInfo.innerHTML = '';
-                availabilityText.textContent = '';
-                quantityInput.disabled = true;
+            if (selectedType) {
+                // Get printer brand from service request
+                const printerBrand = selectedRequest?.is_walk_in 
+                    ? selectedRequest.printer_brand 
+                    : selectedRequest?.brand;
+                
+                console.log('🖨️ Printer brand from request:', printerBrand);
+                console.log('📦 Selected type:', selectedType);
+                console.log('🔧 Total available parts:', availableParts.length);
+                
+                // Reset part selector
+                partSelect.innerHTML = '<option value="">Select part/consumable...</option>';
+                partSelect.disabled = true;
+                
+                // Map UI values to database values
+                // consumable -> universal, printer_part -> brand_specific
+                const dbPartType = selectedType === 'consumable' ? 'universal' : 'brand_specific';
+                console.log('🗄️ Database part type to search:', dbPartType);
+                
+                // Filter parts by type and printer brand
+                let partsFiltered = availableParts.filter(part => {
+                    const typeMatch = part.part_type === dbPartType;
+                    const hasBrand = part.brand != null && part.brand !== '';
+                    
+                    // If we have a printer brand, filter by it
+                    if (printerBrand) {
+                        // Trim spaces from brand comparison
+                        const partBrand = part.brand ? part.brand.trim() : '';
+                        const reqBrand = printerBrand.trim();
+                        const brandMatch = partBrand.toLowerCase() === reqBrand.toLowerCase();
+                        console.log(`✓ Part: "${part.name}", db_type: "${part.part_type}", brand: "${part.brand}", typeMatch: ${typeMatch}, brandMatch: ${brandMatch}`);
+                        return typeMatch && hasBrand && brandMatch;
+                    } else {
+                        // No printer brand requirement, just match type
+                        console.log(`✓ Part: "${part.name}", db_type: "${part.part_type}", typeMatch: ${typeMatch}`);
+                        return typeMatch && hasBrand;
+                    }
+                });
+                
+                console.log('✅ Filtered parts:', partsFiltered);
+                
+                if (partsFiltered.length === 0) {
+                    const message = printerBrand 
+                        ? `No ${selectedType === 'consumable' ? 'consumables' : 'printer parts'} available for ${printerBrand}`
+                        : `No ${selectedType === 'consumable' ? 'consumables' : 'printer parts'} available`;
+                    partSelect.innerHTML = `<option value="" disabled>${message}</option>`;
+                    console.log('⚠️', message);
+                } else {
+                    // Group parts by category
+                    const partsByCategory = {};
+                    partsFiltered.forEach(part => {
+                        if (!partsByCategory[part.category]) {
+                            partsByCategory[part.category] = [];
+                        }
+                        partsByCategory[part.category].push(part);
+                    });
+                    
+                    // Add parts grouped by category
+                    Object.keys(partsByCategory).sort().forEach(category => {
+                        const optgroup = document.createElement('optgroup');
+                        optgroup.label = category.charAt(0).toUpperCase() + category.slice(1).replace(/-/g, ' ');
+                        
+                        partsByCategory[category].forEach(part => {
+                            const option = document.createElement('option');
+                            option.value = part.name;
+                            option.dataset.id = part.id;
+                            option.dataset.stock = part.stock;
+                            option.dataset.unit = part.unit || 'pieces';
+                            option.dataset.category = part.category;
+                            option.dataset.brand = part.brand;
+                            option.textContent = `${part.name} - Available: ${part.stock} ${part.unit || 'pieces'}`;
+                            optgroup.appendChild(option);
+                        });
+                        
+                        partSelect.appendChild(optgroup);
+                    });
+                    
+                    partSelect.disabled = false;
+                    console.log(`✅ Added ${partsFiltered.length} parts to dropdown`);
+                }
+            } else {
+                partSelect.innerHTML = '<option value="">Select type first...</option>';
+                partSelect.disabled = true;
             }
             
-            // Update parts based on selected brand
-            updatePartsForBrand(this, selectedBrand);
+            // Reset downstream selections
+            if (stockInfo) {
+                stockInfo.innerHTML = '';
+            }
+            if (availabilityText) {
+                availabilityText.textContent = '';
+            }
+            if (quantityInput) {
+                quantityInput.disabled = true;
+            }
             
             updatePartsSummary();
         });
@@ -2404,6 +2778,180 @@ function displayARMResults(requestId, data) {
     `;
     
     content.innerHTML = html;
+}
+
+/**
+ * Setup pagination event handlers
+ */
+function setupPaginationHandlers() {
+    const prevBtn = document.getElementById('prevPageBtn');
+    const nextBtn = document.getElementById('nextPageBtn');
+    
+    // Clone and replace to remove all old event listeners
+    if (prevBtn) {
+        const newPrevBtn = prevBtn.cloneNode(true);
+        prevBtn.parentNode.replaceChild(newPrevBtn, prevBtn);
+        
+        newPrevBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Prev clicked, currentPage:', currentPage);
+            if (currentPage > 1) {
+                currentPage--;
+                console.log('Moving to page:', currentPage);
+                displayServiceRequests(window.currentServiceRequests);
+                scrollToTop();
+            }
+        });
+    }
+    
+    if (nextBtn) {
+        const newNextBtn = nextBtn.cloneNode(true);
+        nextBtn.parentNode.replaceChild(newNextBtn, nextBtn);
+        
+        newNextBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🔵 Next clicked, currentPage BEFORE:', currentPage, 'totalPages:', totalPages);
+            if (currentPage < totalPages) {
+                currentPage++;
+                console.log('🔵 Moving to page:', currentPage);
+                console.log('🔵 window.currentServiceRequests.length:', window.currentServiceRequests.length);
+                displayServiceRequests(window.currentServiceRequests);
+                console.log('🔵 currentPage AFTER displayServiceRequests:', currentPage);
+                scrollToTop();
+            } else {
+                console.log('Already on last page');
+            }
+        });
+    }
+}
+
+/**
+ * Update pagination UI
+ */
+function updatePaginationUI(totalItems) {
+    const paginationControls = document.getElementById('paginationControls');
+    const pageNumbers = document.getElementById('pageNumbers');
+    const prevBtn = document.getElementById('prevPageBtn');
+    const nextBtn = document.getElementById('nextPageBtn');
+    const currentPageDisplay = document.getElementById('currentPageDisplay');
+    const totalPagesDisplay = document.getElementById('totalPagesDisplay');
+    const showingStart = document.getElementById('showingStart');
+    const showingEnd = document.getElementById('showingEnd');
+    const totalCount = document.getElementById('totalCount');
+    
+    // Show pagination only if more than itemsPerPage
+    if (totalItems <= itemsPerPage) {
+        if (paginationControls) paginationControls.classList.add('hidden');
+        return;
+    }
+    
+    if (paginationControls) paginationControls.classList.remove('hidden');
+    
+    // Update page info
+    if (currentPageDisplay) currentPageDisplay.textContent = currentPage;
+    if (totalPagesDisplay) totalPagesDisplay.textContent = totalPages;
+    
+    const startIndex = (currentPage - 1) * itemsPerPage + 1;
+    const endIndex = Math.min(currentPage * itemsPerPage, totalItems);
+    
+    if (showingStart) showingStart.textContent = startIndex;
+    if (showingEnd) showingEnd.textContent = endIndex;
+    if (totalCount) totalCount.textContent = totalItems;
+    
+    // Enable/disable prev/next buttons
+    if (prevBtn) {
+        prevBtn.disabled = currentPage === 1;
+    }
+    
+    if (nextBtn) {
+        nextBtn.disabled = currentPage === totalPages;
+    }
+    
+    // Generate page numbers (max 5 visible at a time, like Pornhub pagination)
+    if (pageNumbers) {
+        let pagesHTML = '';
+        let startPage = 1;
+        let endPage = totalPages;
+        
+        // Show max 5 page numbers
+        if (totalPages > 5) {
+            if (currentPage <= 3) {
+                // Show 1-5
+                startPage = 1;
+                endPage = 5;
+            } else if (currentPage >= totalPages - 2) {
+                // Show last 5
+                startPage = totalPages - 4;
+                endPage = totalPages;
+            } else {
+                // Show current page in middle with 2 on each side
+                startPage = currentPage - 2;
+                endPage = currentPage + 2;
+            }
+        }
+        
+        // Add first page and ellipsis if needed
+        if (startPage > 1) {
+            pagesHTML += `<button class="page-number-btn" data-page="1">1</button>`;
+            if (startPage > 2) {
+                pagesHTML += `<span class="page-ellipsis">...</span>`;
+            }
+        }
+        
+        // Add page numbers
+        for (let i = startPage; i <= endPage; i++) {
+            const activeClass = i === currentPage ? 'active' : '';
+            pagesHTML += `<button class="page-number-btn ${activeClass}" data-page="${i}">${i}</button>`;
+        }
+        
+        // Add last page and ellipsis if needed
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) {
+                pagesHTML += `<span class="page-ellipsis">...</span>`;
+            }
+            pagesHTML += `<button class="page-number-btn" data-page="${totalPages}">${totalPages}</button>`;
+        }
+        
+        pageNumbers.innerHTML = pagesHTML;
+        
+        // Add click handlers to page number buttons
+        pageNumbers.querySelectorAll('.page-number-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const page = parseInt(btn.dataset.page);
+                console.log('Page number clicked:', page);
+                if (page !== currentPage) {
+                    currentPage = page;
+                    displayServiceRequests(window.currentServiceRequests);
+                    scrollToTop();
+                }
+            });
+        });
+    }
+    
+    // Re-setup pagination handlers to ensure they work after page number regeneration
+    setupPaginationHandlers();
+}
+
+/**
+ * Hide pagination
+ */
+function hidePagination() {
+    const paginationControls = document.getElementById('paginationControls');
+    if (paginationControls) paginationControls.classList.add('hidden');
+}
+
+/**
+ * Scroll to top of page smoothly
+ */
+function scrollToTop() {
+    window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+    });
 }
 
 // Make functions globally accessible

@@ -1,1 +1,0 @@
-notifications table schema mismatch detected, attempting fallback insert Unknown column 'user_id' in 'field list'

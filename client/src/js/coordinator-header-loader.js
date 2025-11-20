@@ -197,13 +197,13 @@
             document.addEventListener('DOMContentLoaded', () => {
                 loadCoordinatorHeader({
                     title: currentScript.dataset.title || 'Dashboard',
-                    subtitle: currentScript.dataset.subtitle || 'Welcome back to your coordinator portal'
+                    subtitle: currentScript.dataset.subtitle || ''
                 });
             });
         } else {
             loadCoordinatorHeader({
                 title: currentScript.dataset.title || 'Dashboard',
-                subtitle: currentScript.dataset.subtitle || 'Welcome back to your coordinator portal'
+                subtitle: currentScript.dataset.subtitle || ''
             });
         }
     }
