@@ -285,7 +285,6 @@ function createFallbackSidenav() {
                         <a href="#new-service-request" class="sidenav-item block px-4 py-2 text-gray-400 rounded-lg hover:bg-gray-800 hover:text-white transition-colors mb-1">New Service Request</a>
                         <a href="#service-requests" class="sidenav-item block px-4 py-2 text-gray-400 rounded-lg hover:bg-gray-800 hover:text-white transition-colors mb-1">Active Requests</a>
                         <a href="#service-approvals" class="sidenav-item block px-4 py-2 text-gray-400 rounded-lg hover:bg-gray-800 hover:text-white transition-colors mb-1">Request Approvals</a>
-                        <a href="#service-history" class="sidenav-item block px-4 py-2 text-gray-400 rounded-lg hover:bg-gray-800 hover:text-white transition-colors mb-1">Service History</a>
                     </div>
                 </div>
                 
