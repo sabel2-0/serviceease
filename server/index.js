@@ -4236,6 +4236,10 @@ app.use('/api/arm', armRouter);
 const voluntaryServicesRouter = require('./routes/voluntary-services');
 app.use('/api/voluntary-services', voluntaryServicesRouter);
 
+// Admin Routes
+const adminRouter = require('./routes/admin');
+app.use('/api/admin', adminRouter);
+
 // ============================================
 // AUDIT LOGS API ENDPOINTS
 // ============================================

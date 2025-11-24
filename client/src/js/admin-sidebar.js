@@ -164,9 +164,13 @@ async function loadNotificationCount() {
 
 // Update notification badge
 function updateNotificationBadge(count) {
-    const badge = document.querySelector('#notifications-link span.bg-red-500');
+    const badge = document.getElementById('admin-notification-badge');
     if (badge) {
         badge.textContent = count;
-        badge.style.display = count > 0 ? 'inline-block' : 'none';
+        if (count > 0) {
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
     }
 }

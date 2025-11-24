@@ -105,6 +105,15 @@ function loadDynamicSidebar(containerId = 'dynamic-sidebar') {
 function initializeSidebarFunctionality(userRole) {
     console.log(`Initializing sidebar functionality for ${userRole}`);
     
+    // Load notification count for admin
+    if (userRole === 'admin') {
+        setTimeout(() => {
+            loadAdminNotificationCount();
+            // Refresh every 30 seconds
+            setInterval(loadAdminNotificationCount, 30000);
+        }, 500);
+    }
+    
     // Initialize dropdown toggles
     const dropdownToggles = document.querySelectorAll('.dropdown-toggle');
     dropdownToggles.forEach(toggle => {
@@ -312,6 +321,36 @@ function loadSidebarScript(scriptPath, userRole) {
     };
     
     document.head.appendChild(script);
+}
+
+// Load admin notification count
+async function loadAdminNotificationCount() {
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        
+        const response = await fetch('/api/admin/notifications/count', {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            const badge = document.getElementById('admin-notification-badge');
+            if (badge) {
+                badge.textContent = data.count || 0;
+                if (data.count > 0) {
+                    badge.classList.remove('hidden');
+                } else {
+                    badge.classList.add('hidden');
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error loading admin notification count:', error);
+    }
 }
 
 // Auto-load sidebar when DOM is ready if container exists

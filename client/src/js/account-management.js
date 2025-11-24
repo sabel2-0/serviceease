@@ -1,4 +1,3 @@
-
 // Account Management Page Logic
 document.addEventListener('DOMContentLoaded', function() {
     // Load current user profile into the form
@@ -9,24 +8,27 @@ document.addEventListener('DOMContentLoaded', function() {
     if (profileForm) {
         profileForm.addEventListener('submit', async function(e) {
             e.preventDefault();
+            const token = localStorage.getItem('token');
             const formData = new FormData(profileForm);
             const data = {
-                firstName: formData.get('firstName'),
-                lastName: formData.get('lastName'),
-                department: formData.get('department')
+                first_name: formData.get('firstName'),
+                last_name: formData.get('lastName')
             };
             try {
-                const res = await fetch('/api/account/profile', {
+                const res = await fetch('/api/admin/profile', {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json' 
+                    },
                     body: JSON.stringify(data)
                 });
                 if (res.ok) {
-                    alert('Profile updated successfully.');
+                    alert('Profile updated successfully!');
                     loadProfile();
                 } else {
                     const err = await res.json();
-                    alert('Error updating profile: ' + (err.message || 'Unknown error'));
+                    alert('Error updating profile: ' + (err.error || 'Unknown error'));
                 }
             } catch (err) {
                 alert('Error updating profile: ' + err.message);
@@ -39,6 +41,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (securityForm) {
         securityForm.addEventListener('submit', async function(e) {
             e.preventDefault();
+            const token = localStorage.getItem('token');
             const formData = new FormData(securityForm);
             const data = {
                 currentPassword: formData.get('currentPassword'),
@@ -46,21 +49,28 @@ document.addEventListener('DOMContentLoaded', function() {
                 confirmPassword: formData.get('confirmPassword')
             };
             if (data.newPassword !== data.confirmPassword) {
-                alert('New passwords do not match.');
+                alert('New passwords do not match!');
+                return;
+            }
+            if (data.newPassword.length < 6) {
+                alert('New password must be at least 6 characters long!');
                 return;
             }
             try {
-                const res = await fetch('/api/account/password', {
+                const res = await fetch('/api/admin/password', {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json' 
+                    },
                     body: JSON.stringify(data)
                 });
                 if (res.ok) {
-                    alert('Password updated successfully.');
+                    alert('Password updated successfully!');
                     securityForm.reset();
                 } else {
                     const err = await res.json();
-                    alert('Error updating password: ' + (err.message || 'Unknown error'));
+                    alert('Error updating password: ' + (err.error || 'Unknown error'));
                 }
             } catch (err) {
                 alert('Error updating password: ' + err.message);
@@ -100,21 +110,30 @@ document.addEventListener('DOMContentLoaded', function() {
 // Load current user profile and fill form
 async function loadProfile() {
     try {
-        const res = await fetch('/api/account/profile');
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/pages/login.html';
+            return;
+        }
+
+        const res = await fetch('/api/admin/profile', {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
         if (res.ok) {
             const user = await res.json();
-            document.getElementById('firstName').value = user.firstName || '';
-            document.getElementById('lastName').value = user.lastName || '';
+            document.getElementById('firstName').value = user.first_name || '';
+            document.getElementById('lastName').value = user.last_name || '';
             document.getElementById('email').value = user.email || '';
-            document.getElementById('department').value = user.department || '';
-            // Optionally load notification preferences if present
-            if (user.notifications) {
-                document.getElementById('email_notifications').checked = !!user.notifications.email;
-                document.getElementById('browser_notifications').checked = !!user.notifications.browser;
-            }
+        } else {
+            alert('Failed to load profile');
         }
     } catch (err) {
         console.error('Error loading profile:', err);
+        alert('Error loading profile: ' + err.message);
     }
 }
 
