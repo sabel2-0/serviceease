@@ -23,6 +23,13 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
+// Verify Cloudinary configuration on startup
+console.log('Cloudinary Configuration:', {
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME ? 'SET' : 'MISSING',
+    api_key: process.env.CLOUDINARY_API_KEY ? 'SET' : 'MISSING',
+    api_secret: process.env.CLOUDINARY_API_SECRET ? 'SET' : 'MISSING'
+});
+
 // Initialize Mailjet
 const mailjetClient = mailjet.apiConnect(
     process.env.MAILJET_API_KEY,
@@ -691,35 +698,47 @@ app.post('/api/register', upload.fields([
             };
 
             try {
+                console.log('Starting Cloudinary upload...');
+                console.log('Cloudinary config status:', {
+                    configured: !!cloudinary.config().cloud_name,
+                    cloud_name: cloudinary.config().cloud_name
+                });
+
                 // Upload frontId to Cloudinary
                 if (req.files.frontId) {
+                    console.log('Uploading frontId to Cloudinary...');
                     const frontIdResult = await cloudinary.uploader.upload(req.files.frontId[0].path, {
                         folder: 'serviceease',
                         resource_type: 'image'
                     });
                     photoPaths.frontIdPhoto = frontIdResult.secure_url;
+                    console.log('frontId uploaded:', frontIdResult.secure_url);
                     // Delete local file after upload
                     fs.unlinkSync(req.files.frontId[0].path);
                 }
 
                 // Upload backId to Cloudinary
                 if (req.files.backId) {
+                    console.log('Uploading backId to Cloudinary...');
                     const backIdResult = await cloudinary.uploader.upload(req.files.backId[0].path, {
                         folder: 'serviceease',
                         resource_type: 'image'
                     });
                     photoPaths.backIdPhoto = backIdResult.secure_url;
+                    console.log('backId uploaded:', backIdResult.secure_url);
                     // Delete local file after upload
                     fs.unlinkSync(req.files.backId[0].path);
                 }
 
                 // Upload selfie to Cloudinary
                 if (req.files.selfie) {
+                    console.log('Uploading selfie to Cloudinary...');
                     const selfieResult = await cloudinary.uploader.upload(req.files.selfie[0].path, {
                         folder: 'serviceease',
                         resource_type: 'image'
                     });
                     photoPaths.selfiePhoto = selfieResult.secure_url;
+                    console.log('selfie uploaded:', selfieResult.secure_url);
                     // Delete local file after upload
                     fs.unlinkSync(req.files.selfie[0].path);
                 }
@@ -729,6 +748,15 @@ app.post('/api/register', upload.fields([
                 console.log('Photos saved successfully for user:', userId);
             } catch (uploadError) {
                 console.error('Error uploading to Cloudinary:', uploadError);
+                console.error('Upload error details:', {
+                    message: uploadError.message,
+                    stack: uploadError.stack,
+                    cloudinaryConfig: {
+                        cloud_name: process.env.CLOUDINARY_CLOUD_NAME ? 'SET' : 'MISSING',
+                        api_key: process.env.CLOUDINARY_API_KEY ? 'SET' : 'MISSING',
+                        api_secret: process.env.CLOUDINARY_API_SECRET ? 'SET' : 'MISSING'
+                    }
+                });
                 // Clean up any uploaded local files
                 if (req.files) {
                     Object.values(req.files).flat().forEach(file => {
