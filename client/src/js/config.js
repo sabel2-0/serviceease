@@ -19,8 +19,9 @@ const getWebSocketUrl = () => {
     return 'wss://serviceease-mkie.onrender.com';
 };
 
-// Export the API base URL
-const API_BASE_URL = getApiUrl();
+// Export the API base URL (with and without /api suffix)
+const API_BASE_URL = getApiUrl() + '/api';  // For files that expect /api in the base URL
+const API_URL = getApiUrl();  // For files that add /api in their fetch calls
 const WS_BASE_URL = getWebSocketUrl();
 
-console.log('API Configuration:', { API_BASE_URL, WS_BASE_URL, hostname: window.location.hostname });
+console.log('API Configuration:', { API_BASE_URL, API_URL, WS_BASE_URL, hostname: window.location.hostname });

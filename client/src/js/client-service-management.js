@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             showLoadingState();
             
-            const response = await fetch('http://localhost:3000/api/service-requests');
+            const response = await fetch(`${API_URL}/api/service-requests`);
             if (!response.ok) {
                 throw new Error('Failed to fetch service requests');
             }

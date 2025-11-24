@@ -83,7 +83,7 @@ function setupWebSocket() {
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user) return;
 
-    const ws = new WebSocket(`ws://localhost:3000/notifications/${user.id}`);
+    const ws = new WebSocket(`${WS_BASE_URL}/notifications/${user.id}`);
     
     ws.onmessage = (event) => {
         const notification = JSON.parse(event.data);

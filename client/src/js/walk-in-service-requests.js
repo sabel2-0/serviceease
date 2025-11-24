@@ -1,5 +1,5 @@
 // Walk-In Service Requests Management
-const API_BASE_URL = 'http://localhost:3000/api';
+// API_BASE_URL is now loaded from config.js
 let currentTab = 'all';
 let allRequests = [];
 
