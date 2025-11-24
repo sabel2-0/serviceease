@@ -94,7 +94,8 @@ router.post('/', async (req, res) => {
             name,
             brand,
             category,
-            quantity
+            quantity,
+            is_universal
         } = req.body;
 
         if (!name) {
@@ -109,13 +110,15 @@ router.post('/', async (req, res) => {
                 name,
                 brand,
                 category,
-                quantity
-            ) VALUES (?, ?, ?, ?)`,
+                quantity,
+                is_universal
+            ) VALUES (?, ?, ?, ?, ?)`,
             [
                 name,
                 brand || null,
                 category,
-                parseInt(quantity) || 0
+                parseInt(quantity) || 0,
+                is_universal ? 1 : 0
             ]
         );
 

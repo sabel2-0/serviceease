@@ -492,7 +492,8 @@ class InventoryPartsManager {
             name: document.getElementById('partName')?.value.trim() || '',
             brand: document.getElementById('partBrand')?.value.trim() || '',
             category: document.getElementById('partCategory')?.value || '',
-            quantity: parseInt(document.getElementById('partStock')?.value) || 0
+            quantity: parseInt(document.getElementById('partStock')?.value) || 0,
+            is_universal: document.getElementById('partUniversal')?.checked ? 1 : 0
         };
     }
 
@@ -523,6 +524,7 @@ class InventoryPartsManager {
         document.getElementById('partBrand').value = part.brand || '';
         document.getElementById('partCategory').value = part.category || '';
         document.getElementById('partStock').value = part.quantity || 0;
+        document.getElementById('partUniversal').checked = part.is_universal === 1;
     }
 
     resetForm() {
