@@ -1550,6 +1550,7 @@ async function loadAvailableParts() {
                 brand: item.brand,
                 category: item.category,
                 part_type: item.part_type || 'printer_part',
+                is_universal: item.is_universal || 0,
                 stock: item.assigned_quantity,
                 unit: item.unit || 'pieces'
             }));
@@ -1689,9 +1690,18 @@ function updatePartsForBrand(brandSelector, selectedBrand) {
         : selectedRequest?.brand;
     
     // Filter parts by brand and type, including universal parts
+    // Consumable categories: ink, ink-bottle, toner, drum-cartridge, maintenance-box, other-consumable, paper, cleaning-supplies, labels
+    // Printer part categories: drum, fuser, roller, printhead, transfer-belt, maintenance-unit, power-board, mainboard, other, tools, cables, batteries, lubricants, replacement-parts, software
+    const consumableCategories = ['ink', 'ink-bottle', 'toner', 'drum-cartridge', 'maintenance-box', 'other-consumable', 'paper', 'cleaning-supplies', 'labels'];
+    
     let partsFiltered = availableParts.filter(part => {
+        // Check if part matches the selected brand OR is universal
         const brandMatch = part.brand === selectedBrand || part.is_universal === 1;
-        const typeMatch = part.part_type === selectedType;
+        
+        // Check if category matches the selected type (consumable vs printer_part)
+        const isConsumable = consumableCategories.includes(part.category);
+        const typeMatch = (selectedType === 'consumable' && isConsumable) || (selectedType === 'printer_part' && !isConsumable);
+        
         return brandMatch && typeMatch;
     });
     
@@ -1702,7 +1712,8 @@ function updatePartsForBrand(brandSelector, selectedBrand) {
         );
     }
     
-    console.log(`🔍 Filtered ${partsFiltered.length} parts (brand: ${selectedBrand}, type: ${selectedType})`);
+    const universalCount = partsFiltered.filter(p => p.is_universal === 1).length;
+    console.log(`🔍 Filtered ${partsFiltered.length} parts (brand: ${selectedBrand}, type: ${selectedType}, universal: ${universalCount})`);
     
     if (partsFiltered.length === 0) {
         partSelect.innerHTML += '<option value="" disabled>No parts available for this brand and type</option>';
