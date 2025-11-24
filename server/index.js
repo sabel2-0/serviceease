@@ -2103,14 +2103,19 @@ app.get('/api/coordinators/pending', authenticateAdmin, async (req, res) => {
                 u.first_name,
                 u.last_name,
                 u.email,
-                COALESCE(i.name, '') as institution,
+                u.role,
+                COALESCE(i.name, '') as institution_name,
                 COALESCE(i.type, '') as institution_type,
                 COALESCE(i.address, '') as institution_address,
                 u.approval_status,
                 u.is_email_verified,
-                u.created_at
+                u.created_at,
+                tp.front_id_photo,
+                tp.back_id_photo,
+                tp.selfie_photo
             FROM users u 
             LEFT JOIN institutions i ON i.user_id = u.id
+            LEFT JOIN temp_user_photos tp ON tp.user_id = u.id
             WHERE u.role = 'coordinator' AND u.approval_status = 'pending'
         `;
         
