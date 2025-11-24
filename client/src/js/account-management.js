@@ -41,12 +41,21 @@ document.addEventListener('DOMContentLoaded', function() {
     if (securityForm) {
         securityForm.addEventListener('submit', async function(e) {
             e.preventDefault();
+            
+            // Check reCAPTCHA
+            const recaptchaResponse = grecaptcha.getResponse();
+            if (!recaptchaResponse) {
+                alert('Please complete the CAPTCHA verification');
+                return;
+            }
+            
             const token = localStorage.getItem('token');
             const formData = new FormData(securityForm);
             const data = {
                 currentPassword: formData.get('currentPassword'),
                 newPassword: formData.get('newPassword'),
-                confirmPassword: formData.get('confirmPassword')
+                confirmPassword: formData.get('confirmPassword'),
+                recaptchaToken: recaptchaResponse
             };
             if (data.newPassword !== data.confirmPassword) {
                 alert('New passwords do not match!');
@@ -66,42 +75,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     body: JSON.stringify(data)
                 });
                 if (res.ok) {
-                    alert('Password updated successfully!');
+                    alert('Password updated successfully! A confirmation email has been sent.');
                     securityForm.reset();
+                    grecaptcha.reset();
                 } else {
                     const err = await res.json();
                     alert('Error updating password: ' + (err.error || 'Unknown error'));
+                    grecaptcha.reset();
                 }
             } catch (err) {
                 alert('Error updating password: ' + err.message);
-            }
-        });
-    }
-
-    // Notification preferences form
-    const notificationsForm = document.getElementById('notifications-form');
-    if (notificationsForm) {
-        notificationsForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const formData = new FormData(notificationsForm);
-            const data = {
-                email_notifications: !!formData.get('email_notifications'),
-                browser_notifications: !!formData.get('browser_notifications')
-            };
-            try {
-                const res = await fetch('/api/account/notifications', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                if (res.ok) {
-                    alert('Notification preferences updated.');
-                } else {
-                    const err = await res.json();
-                    alert('Error updating notification preferences: ' + (err.message || 'Unknown error'));
-                }
-            } catch (err) {
-                alert('Error updating notification preferences: ' + err.message);
+                grecaptcha.reset();
             }
         });
     }
