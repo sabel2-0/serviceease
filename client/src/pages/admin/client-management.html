@@ -445,39 +445,57 @@
     </div>
 
     <!-- Add/Edit Client Modal -->
-    <div id="clientModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[9999]">
-        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white z-[10000]">
-            <div class="mt-3">
-                <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4" id="modalTitle">Add New Client</h3>
-                <form id="clientForm" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Name</label>
-                        <input type="text" id="name" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" placeholder="Enter institution name" required>
+    <div id="clientModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-60 overflow-y-auto h-full w-full z-[9999] backdrop-blur-sm">
+        <div class="relative top-20 mx-auto p-8 border border-gray-200 w-[480px] shadow-2xl rounded-xl bg-white z-[10000]">
+            <div class="mb-6">
+                <h3 class="text-xl font-semibold text-gray-900" id="modalTitle">Add New Client</h3>
+                <div class="h-0.5 bg-gradient-to-r from-blue-600 to-blue-400 mt-2 w-12"></div>
+            </div>
+            <form id="clientForm" class="space-y-5">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Institution Name</label>
+                    <input type="text" id="name" class="block w-full border border-gray-200 rounded-lg shadow-sm px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" placeholder="Enter institution name" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Institution Type</label>
+                    <select id="type" class="block w-full border border-gray-200 rounded-lg shadow-sm px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" required>
+                        <option value="" disabled selected>Select type</option>
+                        <option value="public_school">Public School</option>
+                        <option value="private_school">Private School</option>
+                        <option value="private_company">Private Company</option>
+                        <option value="lgu">Local Government Unit</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Address</label>
+                    <div class="relative">
+                        <textarea id="address" rows="3" class="block w-full border border-gray-200 rounded-lg shadow-sm px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none" placeholder="Auto-suggests based on name, or type manually..." required></textarea>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Type</label>
-                        <select id="type" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" required>
-                            <option value="" disabled selected>Select institution type</option>
-                            <option value="public_school">Public School</option>
-                            <option value="private_school">Private School</option>
-                            <option value="private_company">Private Company</option>
-                            <option value="lgu">Local Government Unit</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Address</label>
-                        <textarea id="address" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" placeholder="Enter institution address" required></textarea>
-                    </div>
-                    <div class="flex justify-end space-x-3 mt-5">
-                        <button type="button" onclick="closeClientModal()" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300">
+                    <div id="addressSuggestions" class="hidden absolute z-20 mt-1 w-[calc(100%-4rem)] bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-auto"></div>
+                    <p class="mt-2 text-xs text-amber-600 bg-amber-50 px-3 py-2 rounded-lg flex items-start gap-2 border border-amber-200">
+                        <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                        </svg>
+                        <span><strong>Note:</strong> Address suggestions from OpenStreetMap may include extra details or slight variations. Please verify and edit if needed before saving.</span>
+                    </p>
+                </div>
+                <div class="flex justify-between items-center gap-3 pt-4 border-t border-gray-100">
+                    <button type="button" onclick="clearClientForm()" class="px-4 py-2.5 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-lg transition-all flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                        Clear All
+                    </button>
+                    <div class="flex gap-3">
+                        <button type="button" onclick="closeClientModal()" class="px-5 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all">
                             Cancel
                         </button>
-                        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                        <button type="submit" class="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-md hover:shadow-lg transition-all">
                             Save Client
                         </button>
                     </div>
-                </form>
-            </div>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -1848,6 +1866,132 @@
             document.getElementById('successModal').classList.add('hidden');
             lastAddedClientId = null;
         }
+
+        // Address Autocomplete using Nominatim (OpenStreetMap)
+        let addressTimeout;
+        const nameInput = document.getElementById('name');
+        const addressInput = document.getElementById('address');
+        const addressSuggestions = document.getElementById('addressSuggestions');
+
+        // Search for address based on institution name
+        nameInput.addEventListener('input', function() {
+            clearTimeout(addressTimeout);
+            const query = this.value.trim();
+
+            if (query.length < 3) {
+                addressSuggestions.classList.add('hidden');
+                return;
+            }
+
+            // Auto-search for address when typing institution name
+            addressTimeout = setTimeout(() => searchAddress(query), 800);
+        });
+
+        // Also allow manual typing in address field
+        addressInput.addEventListener('input', function() {
+            clearTimeout(addressTimeout);
+            const query = this.value.trim();
+
+            if (query.length < 3) {
+                addressSuggestions.classList.add('hidden');
+                return;
+            }
+
+            addressTimeout = setTimeout(() => searchAddress(query), 500);
+        });
+
+        async function searchAddress(query) {
+            try {
+                // Using Nominatim API (OpenStreetMap - free, no API key required)
+                const response = await fetch(
+                    `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ', Philippines')}&countrycodes=ph&limit=8&addressdetails=1`,
+                    {
+                        headers: {
+                            'User-Agent': 'ServiceEase/1.0'
+                        }
+                    }
+                );
+                
+                if (!response.ok) {
+                    throw new Error('Geocoding service unavailable');
+                }
+                
+                const results = await response.json();
+
+                if (results.length > 0) {
+                    displaySuggestions(results);
+                } else {
+                    addressSuggestions.innerHTML = `
+                        <div class="px-4 py-3 text-sm text-gray-500 text-center">
+                            No address suggestions found. Please type manually.
+                        </div>
+                    `;
+                    addressSuggestions.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Address search error:', error);
+                addressSuggestions.classList.add('hidden');
+            }
+        }
+
+        function displaySuggestions(results) {
+            const suggestionHeader = `
+                <div class="px-4 py-2 bg-gray-50 border-b border-gray-200 sticky top-0">
+                    <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide flex items-center gap-2">
+                        <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        AWS Location - High Accuracy Results
+                    </p>
+                </div>
+            `;
+            
+            const suggestionItems = results.map((result, index) => `
+                <div class="px-4 py-3 hover:bg-blue-50 active:bg-blue-100 cursor-pointer border-b border-gray-100 last:border-b-0 transition-all duration-150 group" onclick="selectAddress('${escapeHtml(result.label)}')">
+                    <div class="flex items-start gap-3">
+                        <div class="flex-shrink-0 w-6 h-6 rounded-full bg-gray-100 group-hover:bg-blue-100 flex items-center justify-center text-xs font-semibold text-gray-600 group-hover:text-blue-600 transition-colors">
+                            ${index + 1}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-sm font-medium text-gray-900">${result.label}</div>
+                            ${result.address ? `<div class="text-xs text-gray-500 mt-0.5">${result.address}</div>` : ''}
+                        </div>
+                        <svg class="w-4 h-4 text-gray-400 group-hover:text-blue-600 flex-shrink-0 mt-0.5 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </div>
+                </div>
+            `).join('');
+            
+            addressSuggestions.innerHTML = suggestionHeader + suggestionItems;
+            addressSuggestions.classList.remove('hidden');
+        }
+
+        function selectAddress(address) {
+            addressInput.value = address;
+            addressSuggestions.classList.add('hidden');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Clear entire form
+        function clearClientForm() {
+            document.getElementById('name').value = '';
+            document.getElementById('type').value = '';
+            document.getElementById('address').value = '';
+            addressSuggestions.classList.add('hidden');
+        }
+
+        // Hide suggestions when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!addressInput.contains(e.target) && !addressSuggestions.contains(e.target)) {
+                addressSuggestions.classList.add('hidden');
+            }
+        });
     </script>
 </body>
 </html>
