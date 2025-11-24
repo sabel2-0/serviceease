@@ -177,7 +177,10 @@ class InventoryPartsManager {
                     </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-slate-900">${this.escapeHtml(part.brand || 'N/A')}</div>
+                    <div class="flex items-center gap-2">
+                        <div class="text-sm text-slate-900">${this.escapeHtml(part.brand || 'N/A')}</div>
+                        ${part.is_universal === 1 ? '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700 border border-indigo-200"><i class="fas fa-globe mr-1"></i>Universal</span>' : ''}
+                    </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="flex items-center gap-2">
