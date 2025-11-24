@@ -110,7 +110,7 @@ async function loadAuditLogs() {
             ...currentFilters
         });
 
-        const response = await fetch(`http://localhost:3000/api/audit-logs?${params}`, {
+        const response = await fetch(`${API_BASE_URL}/api/audit-logs?${params}`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -261,7 +261,7 @@ async function loadStatistics() {
         if (currentFilters.start_date) params.append('start_date', currentFilters.start_date);
         if (currentFilters.end_date) params.append('end_date', currentFilters.end_date);
 
-        const response = await fetch(`http://localhost:3000/api/audit-logs/stats?${params}`, {
+        const response = await fetch(`${API_BASE_URL}/api/audit-logs/stats?${params}`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -303,7 +303,7 @@ window.showDetails = async (logId) => {
     try {
         const token = localStorage.getItem('token');
         
-        const response = await fetch(`http://localhost:3000/api/audit-logs?limit=1000`, {
+        const response = await fetch(`${API_BASE_URL}/api/audit-logs?limit=1000`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
