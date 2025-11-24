@@ -1623,13 +1623,13 @@ function updateBrandSelectors() {
     
     console.log('🖨️ Service request printer brand:', printerBrand);
     
-    // Filter parts by printer brand if available
+    // Filter parts by printer brand if available, but always include universal parts
     let filteredByBrand = availableParts;
     if (printerBrand) {
         filteredByBrand = availableParts.filter(part => 
-            part.brand && part.brand.toLowerCase() === printerBrand.toLowerCase()
+            (part.brand && part.brand.toLowerCase() === printerBrand.toLowerCase()) || part.is_universal === 1
         );
-        console.log(`✅ Filtered ${filteredByBrand.length} parts for brand: ${printerBrand}`);
+        console.log(`✅ Filtered ${filteredByBrand.length} parts for brand: ${printerBrand} (including universal parts)`);
     }
     
     // Get unique brands from filtered parts
@@ -1688,17 +1688,17 @@ function updatePartsForBrand(brandSelector, selectedBrand) {
         ? selectedRequest.printer_brand 
         : selectedRequest?.brand;
     
-    // Filter parts by brand and type
+    // Filter parts by brand and type, including universal parts
     let partsFiltered = availableParts.filter(part => {
-        const brandMatch = part.brand === selectedBrand;
+        const brandMatch = part.brand === selectedBrand || part.is_universal === 1;
         const typeMatch = part.part_type === selectedType;
         return brandMatch && typeMatch;
     });
     
-    // If we have a printer brand from the service request, further filter
+    // If we have a printer brand from the service request, further filter but keep universal parts
     if (printerBrand) {
         partsFiltered = partsFiltered.filter(part => 
-            part.brand.toLowerCase() === printerBrand.toLowerCase()
+            part.brand.toLowerCase() === printerBrand.toLowerCase() || part.is_universal === 1
         );
     }
     
@@ -1731,7 +1731,11 @@ function updatePartsForBrand(brandSelector, selectedBrand) {
             option.dataset.unit = part.unit || 'pieces';
             option.dataset.category = part.category;
             option.dataset.brand = part.brand;
-            option.textContent = `${part.name} - Available: ${part.stock} ${part.unit || 'pieces'}`;
+            option.dataset.isUniversal = part.is_universal;
+            
+            // Add universal indicator in the display text
+            const universalTag = part.is_universal === 1 ? ' 🌐 [UNIVERSAL]' : '';
+            option.textContent = `${part.name}${universalTag} - Available: ${part.stock} ${part.unit || 'pieces'}`;
             optgroup.appendChild(option);
         });
         

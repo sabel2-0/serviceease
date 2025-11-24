@@ -41,6 +41,7 @@ router.get('/inventory', authenticateTechnician, async (req, res) => {
                 pp.category,
                 pp.part_type,
                 pp.unit,
+                pp.is_universal,
                 CONCAT(u.first_name, ' ', u.last_name) as assigned_by_name
             FROM technician_inventory ti
             JOIN printer_parts pp ON ti.part_id = pp.id
