@@ -7,6 +7,7 @@ const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
 const mailjet = require('node-mailjet');
+const cloudinary = require('cloudinary').v2;
 const User = require('./models/User');
 const technicianInstitutionsRoute = require('./routes/technician-institutions');
 const db = require('./config/database');
@@ -14,6 +15,13 @@ const { authenticateAdmin, authenticateCoordinator } = require('./middleware/aut
 const { auth } = require('./middleware/auth');
 const { createNotification } = require('./routes/notifications');
 require('dotenv').config();
+
+// Initialize Cloudinary
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
 // Initialize Mailjet
 const mailjetClient = mailjet.apiConnect(
@@ -672,24 +680,65 @@ app.post('/api/register', upload.fields([
         
         const { userId } = await User.createUser(userData);
 
-        // Save temporary photos if uploaded
+        // Save temporary photos if uploaded - upload to Cloudinary
         if (req.files) {
             console.log('Files received:', Object.keys(req.files));
-            console.log('File details:', {
-                frontId: req.files.frontId ? req.files.frontId[0].filename : 'not provided',
-                backId: req.files.backId ? req.files.backId[0].filename : 'not provided',
-                selfie: req.files.selfie ? req.files.selfie[0].filename : 'not provided'
-            });
             
             const photoPaths = {
-                frontIdPhoto: req.files.frontId ? req.files.frontId[0].filename : null,
-                backIdPhoto: req.files.backId ? req.files.backId[0].filename : null,
-                selfiePhoto: req.files.selfie ? req.files.selfie[0].filename : null
+                frontIdPhoto: null,
+                backIdPhoto: null,
+                selfiePhoto: null
             };
 
-            console.log('Saving photos to database:', photoPaths);
-            await User.saveTemporaryPhotos(userId, photoPaths);
-            console.log('Photos saved successfully for user:', userId);
+            try {
+                // Upload frontId to Cloudinary
+                if (req.files.frontId) {
+                    const frontIdResult = await cloudinary.uploader.upload(req.files.frontId[0].path, {
+                        folder: 'serviceease',
+                        resource_type: 'image'
+                    });
+                    photoPaths.frontIdPhoto = frontIdResult.secure_url;
+                    // Delete local file after upload
+                    fs.unlinkSync(req.files.frontId[0].path);
+                }
+
+                // Upload backId to Cloudinary
+                if (req.files.backId) {
+                    const backIdResult = await cloudinary.uploader.upload(req.files.backId[0].path, {
+                        folder: 'serviceease',
+                        resource_type: 'image'
+                    });
+                    photoPaths.backIdPhoto = backIdResult.secure_url;
+                    // Delete local file after upload
+                    fs.unlinkSync(req.files.backId[0].path);
+                }
+
+                // Upload selfie to Cloudinary
+                if (req.files.selfie) {
+                    const selfieResult = await cloudinary.uploader.upload(req.files.selfie[0].path, {
+                        folder: 'serviceease',
+                        resource_type: 'image'
+                    });
+                    photoPaths.selfiePhoto = selfieResult.secure_url;
+                    // Delete local file after upload
+                    fs.unlinkSync(req.files.selfie[0].path);
+                }
+
+                console.log('Saving Cloudinary URLs to database:', photoPaths);
+                await User.saveTemporaryPhotos(userId, photoPaths);
+                console.log('Photos saved successfully for user:', userId);
+            } catch (uploadError) {
+                console.error('Error uploading to Cloudinary:', uploadError);
+                // Clean up any uploaded local files
+                if (req.files) {
+                    Object.values(req.files).flat().forEach(file => {
+                        if (fs.existsSync(file.path)) {
+                            fs.unlinkSync(file.path);
+                        }
+                    });
+                }
+                throw new Error('Failed to upload photos. Please try again.');
+            }
         } else {
             console.log('No files were uploaded with the registration');
         }

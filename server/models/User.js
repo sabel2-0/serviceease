@@ -2,6 +2,7 @@ const db = require('../config/database');
 const bcrypt = require('bcrypt');
 const path = require('path');
 const fs = require('fs');
+const cloudinary = require('cloudinary').v2;
 
 class User {
     static async findByEmail(email) {
@@ -176,7 +177,7 @@ class User {
 
     static async approveUser(userId) {
         try {
-            // First, get the photo paths to delete the actual files
+            // First, get the photo paths/URLs to delete from Cloudinary
             const [photos] = await db.query(
                 'SELECT front_id_photo, back_id_photo, selfie_photo FROM temp_user_photos WHERE user_id = ?',
                 [userId]
@@ -188,18 +189,23 @@ class User {
                 ['approved', true, userId]
             );
 
-            // Delete the photos from filesystem if they exist
+            // Delete the photos from Cloudinary if they exist
             if (photos && photos[0]) {
                 const photoFields = ['front_id_photo', 'back_id_photo', 'selfie_photo'];
                 for (const field of photoFields) {
                     if (photos[0][field]) {
-                        const photoPath = path.join(__dirname, '../temp_photos', photos[0][field]);
                         try {
-                            await fs.promises.unlink(photoPath);
-                            console.log(`Deleted photo file: ${photoPath}`);
+                            // Extract public_id from Cloudinary URL
+                            // Format: https://res.cloudinary.com/{cloud_name}/image/upload/{public_id}.jpg
+                            const urlParts = photos[0][field].split('/');
+                            const filename = urlParts[urlParts.length - 1];
+                            const publicId = filename.split('.')[0];
+                            
+                            await cloudinary.uploader.destroy(`serviceease/${publicId}`);
+                            console.log(`Deleted Cloudinary image: ${publicId}`);
                         } catch (err) {
-                            console.error(`Error deleting photo file ${photoPath}:`, err);
-                            // Continue with approval even if file deletion fails
+                            console.error(`Error deleting Cloudinary image:`, err);
+                            // Continue with approval even if deletion fails
                         }
                     }
                 }
@@ -217,24 +223,28 @@ class User {
 
     static async rejectUser(userId) {
         try {
-            // First, get the photo paths to delete the actual files
+            // First, get the photo paths/URLs to delete from Cloudinary
             const [photos] = await db.query(
                 'SELECT front_id_photo, back_id_photo, selfie_photo FROM temp_user_photos WHERE user_id = ?',
                 [userId]
             );
 
-            // Delete the photos from filesystem if they exist
+            // Delete the photos from Cloudinary if they exist
             if (photos && photos[0]) {
                 const photoFields = ['front_id_photo', 'back_id_photo', 'selfie_photo'];
                 for (const field of photoFields) {
                     if (photos[0][field]) {
-                        const photoPath = path.join(__dirname, '../temp_photos', photos[0][field]);
                         try {
-                            await fs.promises.unlink(photoPath);
-                            console.log(`Deleted photo file: ${photoPath}`);
+                            // Extract public_id from Cloudinary URL
+                            const urlParts = photos[0][field].split('/');
+                            const filename = urlParts[urlParts.length - 1];
+                            const publicId = filename.split('.')[0];
+                            
+                            await cloudinary.uploader.destroy(`serviceease/${publicId}`);
+                            console.log(`Deleted Cloudinary image: ${publicId}`);
                         } catch (err) {
-                            console.error(`Error deleting photo file ${photoPath}:`, err);
-                            // Continue with rejection even if file deletion fails
+                            console.error(`Error deleting Cloudinary image:`, err);
+                            // Continue with rejection even if deletion fails
                         }
                     }
                 }

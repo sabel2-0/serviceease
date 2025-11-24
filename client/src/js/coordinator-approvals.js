@@ -265,28 +265,28 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="document-preview">
                     <h4 class="font-medium text-gray-900 mb-2">Front ID</h4>
                     ${frontId && frontId !== 'null' && frontId !== 'undefined' ? 
-                        `<img src="/temp-photos/${frontId}" 
+                        `<img src="${frontId}" 
                               alt="Front ID" 
                               class="w-full h-auto rounded-lg"
-                              onerror="this.parentElement.innerHTML='<div class=\\'bg-gray-100 rounded-lg p-4 text-center text-gray-500\\'>Photo not available (may have been removed after deployment)</div>'">` : 
+                              onerror="this.parentElement.innerHTML='<div class=\\'bg-gray-100 rounded-lg p-4 text-center text-gray-500\\'>Photo not available</div>'">` : 
                     '<div class="bg-gray-100 rounded-lg p-4 text-center text-gray-500">Not provided</div>'}
                 </div>
                 <div class="document-preview">
                     <h4 class="font-medium text-gray-900 mb-2">Back ID</h4>
                     ${backId && backId !== 'null' && backId !== 'undefined' ? 
-                        `<img src="/temp-photos/${backId}" 
+                        `<img src="${backId}" 
                               alt="Back ID" 
                               class="w-full h-auto rounded-lg"
-                              onerror="this.parentElement.innerHTML='<div class=\\'bg-gray-100 rounded-lg p-4 text-center text-gray-500\\'>Photo not available (may have been removed after deployment)</div>'">` : 
+                              onerror="this.parentElement.innerHTML='<div class=\\'bg-gray-100 rounded-lg p-4 text-center text-gray-500\\'>Photo not available</div>'">` : 
                     '<div class="bg-gray-100 rounded-lg p-4 text-center text-gray-500">Not provided</div>'}
                 </div>
                 <div class="document-preview">
                     <h4 class="font-medium text-gray-900 mb-2">Selfie with ID</h4>
                     ${selfie && selfie !== 'null' && selfie !== 'undefined' ? 
-                        `<img src="/temp-photos/${selfie}" 
+                        `<img src="${selfie}" 
                               alt="Selfie with ID" 
                               class="w-full h-auto rounded-lg"
-                              onerror="this.parentElement.innerHTML='<div class=\\'bg-gray-100 rounded-lg p-4 text-center text-gray-500\\'>Photo not available (may have been removed after deployment)</div>'">` : 
+                              onerror="this.parentElement.innerHTML='<div class=\\'bg-gray-100 rounded-lg p-4 text-center text-gray-500\\'>Photo not available</div>'">` : 
                     '<div class="bg-gray-100 rounded-lg p-4 text-center text-gray-500">Not provided</div>'}
                 </div>
             `;
