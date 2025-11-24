@@ -27,6 +27,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     // Initialize sidebar functionality
                     initializeSidebar();
+                    
+                    // Load notification count
+                    loadNotificationCount();
+                    
+                    // Refresh notification count every 30 seconds
+                    setInterval(loadNotificationCount, 30000);
                 } else {
                     console.error('Could not find sidebar element in admin-sidebar.html');
                 }
@@ -131,5 +137,36 @@ function initializeSidebar() {
                 }, 1000);
             }
         });
+    }
+}
+
+// Load notification count from API
+async function loadNotificationCount() {
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        
+        const response = await fetch('/api/admin/notifications/count', {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            updateNotificationBadge(data.count || 0);
+        }
+    } catch (error) {
+        console.error('Error loading notification count:', error);
+    }
+}
+
+// Update notification badge
+function updateNotificationBadge(count) {
+    const badge = document.querySelector('#notifications-link span.bg-red-500');
+    if (badge) {
+        badge.textContent = count;
+        badge.style.display = count > 0 ? 'inline-block' : 'none';
     }
 }

@@ -47,7 +47,7 @@
             height: 100vh;
             margin: 0;
             overflow: hidden;
-            background: transparent;
+            background: white;
         }
         .form-container {
             position: relative;
@@ -78,22 +78,19 @@
         }
         .progress-bar {
             position: absolute;
-            height: 3px;
+            height: 2px;
             width: 100%;
             background: #e5e7eb;
             top: 50%;
             transform: translateY(-50%);
             z-index: 10;
-            border-radius: 1.5px;
         }
         .progress-bar-fill {
             position: absolute;
             height: 100%;
-            background: #3b82f6;
+            background: #111827;
             transition: width 0.5s ease;
             z-index: 20;
-            border-radius: 1.5px;
-
         }
         .progress-steps {
             position: relative;
@@ -108,63 +105,54 @@
             gap: 0.75rem;
         }
         .step-circle {
-            width: 3rem;
-            height: 3rem;
+            width: 2.5rem;
+            height: 2.5rem;
             background: white;
-            border: 2px solid #e5e7eb;
+            border: 1px solid #d1d5db;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
             z-index: 60;
             position: relative;
         }
         .step-circle i {
-            font-size: 1rem;
+            font-size: 0.875rem;
             color: #9ca3af;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
             z-index: 61;
             position: relative;
         }
         .step-text {
-            font-size: 0.875rem;
-            font-weight: 500;
+            font-size: 0.75rem;
+            font-weight: 400;
             color: #6b7280;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
             white-space: nowrap;
         }
         .progress-step.active .step-circle {
-            border-color: #3b82f6;
-            background: #3b82f6;
-            transform: scale(1.1);
+            border-color: #111827;
+            background: #111827;
             z-index: 65;
         }
         .progress-step.active .step-circle i {
             color: white;
         }
         .progress-step.active .step-text {
-            color: #3b82f6;
-            font-weight: 600;
+            color: #111827;
+            font-weight: 500;
         }
         .progress-step.completed .step-circle {
-            border-color: #10b981;
-            background: #10b981;
+            border-color: #111827;
+            background: #111827;
             z-index: 65;
         }
         .progress-step.completed .step-circle i {
             color: white;
         }
         .progress-step.completed .step-text {
-            color: #10b981;
-        }
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
-            70% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
-        }
-        .progress-step.active .step-circle {
-            animation: pulse 2s infinite;
+            color: #111827;
         }
         .password-strength-meter {
             height: 4px;
@@ -209,30 +197,27 @@
         }
         .form-input {
             width: 100%;
-            padding: 0.875rem 1rem;
-            border: 2px solid #E5E7EB;
-            border-radius: 0;
-            transition: all 0.3s ease;
-            font-size: 1rem;
-            background-color: transparent;
+            padding: 0.625rem 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            transition: all 0.2s ease;
+            font-size: 0.875rem;
+            background-color: white;
         }
         .form-input:hover {
-            border-color: #D1D5DB;
-            background-color: transparent;
+            border-color: #9ca3af;
         }
         .form-input:focus {
-            border-color: #2563EB;
-            background-color: transparent;
-
+            border-color: #111827;
             outline: none;
+            box-shadow: 0 0 0 1px #111827;
         }
         .form-input.error {
-            border-color: #EF4444;
-            background-color: #FEF2F2;
+            border-color: #ef4444;
         }
         .form-input.error:focus {
-            border-color: #EF4444;
-            box-shadow: 0 0 0 1px #EF4444;
+            border-color: #ef4444;
+            box-shadow: 0 0 0 1px #ef4444;
         }
         .error-message {
             position: absolute;
@@ -258,34 +243,31 @@
         }
     </style>
 </head>
-<body class="m-0 p-0">
-    <div class="min-h-screen flex items-center justify-end px-6 lg:px-8 backdrop-blur-sm">
-        <div class="flex w-full max-w-[1400px] justify-between items-start">
+<body class="m-0 p-0 bg-white">
+    <div class="min-h-screen flex">
+        <div class="flex w-full">
             <!-- Left Side Content -->
-            <div class="w-[40%] pl-12">
-                <div class="h-full relative overflow-hidden">
-                    <img src="../images/SE-main.jpg" 
-                         alt="ServiceEase Background" 
-                         class="w-full h-full object-contain scale-110"
-                         style="min-height: 800px; transform: scale(0.85);">
-                    <div class="absolute inset-0 flex items-start p-8">
-                        <div class="mt-8">
-                            <h1 class="text-4xl font-bold mb-4 tracking-tight">
-                                Register to ServiceEase
-                            </h1>
-                            <p class="text-2xl font-medium tracking-wide">
-                                Your trusted platform for efficient printer repair management
-                            </p>
-                        </div>
+            <div class="hidden lg:flex lg:w-1/2 items-center justify-center bg-gray-50">
+                <div class="text-center max-w-md">
+                    <div class="w-64 h-64 mx-auto mb-6 overflow-hidden rounded-lg shadow-sm">
+                        <img src="../images/SE-main.jpg" 
+                             alt="ServiceEase" 
+                             class="w-full h-full object-cover">
                     </div>
+                    <h1 class="text-3xl font-light tracking-tight text-gray-900 mb-3">
+                        ServiceEase
+                    </h1>
+                    <p class="text-gray-500 font-light">
+                        Efficient Service Management
+                    </p>
                 </div>
             </div>
 
             <!-- Right Side Form -->
-            <div class="w-[50%] pr-8">
-                <div>
+            <div class="w-full lg:w-1/2 flex items-center justify-center p-6">
+                <div class="w-full max-w-2xl">
             <!-- Form Container -->
-            <form id="registration-form" class="p-8" style="background: transparent !important;" enctype="multipart/form-data">
+            <form id="registration-form" class="p-6" enctype="multipart/form-data">
                 <!-- Progress Steps -->
                 <div class="progress-container mb-8">
                     <div class="progress-bar">
@@ -329,9 +311,9 @@
                     <!-- Step 1: Institution Selection -->
                     <div class="step" id="step1">
                         <div class="space-y-6">
-                            <div class="text-center mb-8">
-                                <h2 class="text-xl font-semibold text-gray-900">Select Your Institution</h2>
-                                <p class="text-sm text-gray-600 mt-1">Choose the type of institution you belong to</p>
+                            <div class="mb-6">
+                                <h2 class="text-2xl font-light text-gray-900 mb-1">Select Your Institution</h2>
+                                <p class="text-xs text-gray-500">Choose the type of institution you belong to</p>
                             </div>
                             
                             <div class="space-y-6">
@@ -398,9 +380,9 @@
                     <!-- Step 2: Basic Information -->
                     <div class="step hidden" id="step2">
                         <div class="space-y-6">
-                            <div class="text-center mb-8">
-                                <h2 class="text-xl font-semibold text-gray-900">Basic Information</h2>
-                                <p class="text-sm text-gray-600 mt-1">Please provide your personal details</p>
+                            <div class="mb-6">
+                                <h2 class="text-2xl font-light text-gray-900 mb-1">Basic Information</h2>
+                                <p class="text-xs text-gray-500">Please provide your personal details</p>
                             </div>
 
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -435,9 +417,9 @@
                     <!-- Step 3: Email Verification -->
                     <div class="step hidden" id="step3">
                         <div class="space-y-6">
-                            <div class="text-center mb-8">
-                                <h2 class="text-xl font-semibold text-gray-900">Email Verification</h2>
-                                <p class="text-sm text-gray-600 mt-1">Verify your email address to continue</p>
+                            <div class="mb-6">
+                                <h2 class="text-2xl font-light text-gray-900 mb-1">Email Verification</h2>
+                                <p class="text-xs text-gray-500">Verify your email address to continue</p>
                             </div>
                             <div class="form-group">
                                 <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email Address <span class="text-red-500">*</span></label>
@@ -456,9 +438,9 @@
 
                             <div class="flex items-center gap-4">
                                 <button type="button" id="sendCodeBtn"
-                                    class="px-4 py-2 bg-blue-600 text-white font-medium border
-                                    hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
-                                    transition-all duration-200 ease-in-out">
+                                    class="px-4 py-2 bg-gray-900 text-white text-sm rounded-md
+                                    hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900
+                                    transition-all">
                                     Send Verification Code
                                 </button>
                                 <span id="codeSentMessage" class="text-sm text-green-600 hidden">
@@ -481,16 +463,16 @@
                                 <p class="mt-2 text-sm text-gray-500">Enter the 6-digit code sent to your email</p>
                                 <div class="mt-4">
                                     <button type="button" id="verifyCodeBtn" 
-                                        class="px-4 py-2 bg-blue-600 text-white font-medium border
-                                        hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
-                                        transition-all duration-200 ease-in-out">
+                                        class="px-4 py-2 bg-gray-900 text-white text-sm rounded-md
+                                        hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900
+                                        transition-all">
                                         Verify Code
                                     </button>
                                 </div>
-                                <p class="text-sm text-gray-600 mt-4">
-                                    Didn't receive the code? 
-                                    <button type="button" id="resendCodeBtn" class="text-blue-600 hover:text-blue-500 font-medium">
-                                        Resend code
+                                <p class="text-sm text-gray-600 mt-4 flex items-center justify-between">
+                                    <span>Didn't receive the code?</span>
+                                    <button type="button" id="resendCodeBtn" class="px-4 py-2 text-gray-900 hover:text-gray-700 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                                        <i class="fas fa-redo mr-2"></i>Resend code
                                     </button>
                                 </p>
                             </div>
@@ -507,9 +489,9 @@
                     <!-- Step 4: ID Verification -->
                     <div class="step hidden" id="step4">
                         <div class="max-w-3xl mx-auto">
-                            <div class="text-center mb-6">
-                                <h2 class="text-2xl font-semibold text-gray-900">ID Verification</h2>
-                                <p class="mt-2 text-sm text-gray-600">Please provide clear photos of your valid ID</p>
+                            <div class="mb-6">
+                                <h2 class="text-2xl font-light text-gray-900 mb-1">ID Verification</h2>
+                                <p class="text-xs text-gray-500">Please provide clear photos of your valid ID</p>
                             </div>
 
                             <div class="bg-blue-50 border p-4 mb-8">
@@ -664,30 +646,30 @@
                 <div class="flex items-center justify-between mt-4">
                     <div>
                         <button type="button" id="prevBtn" 
-                            class="px-6 py-2 border border-gray-300 text-gray-700 border 
-                            focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
-                            transition-all duration-200 ease-in-out"
+                            class="px-5 py-2 border border-gray-300 text-gray-700 text-sm rounded-md
+                            focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900
+                            transition-all"
                             style="display: none;">
                             <i class="fas fa-arrow-left mr-2"></i>
                             Previous
                         </button>
-                        <p id="signInText" class="text-sm text-gray-600">
+                        <p id="signInText" class="text-xs text-gray-500">
                             Already have an account? 
-                            <a href="/login" class="font-medium text-blue-600 hover:text-blue-500">Sign in</a>
+                            <a href="/login" class="text-gray-900 hover:underline">Sign in</a>
                         </p>
                     </div>
                     <div>
                         <button type="button" id="nextBtn"
-                            class="px-6 py-2 bg-blue-600 text-white font-medium border
-                            hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
-                            transition-all duration-200 ease-in-out">
+                            class="px-5 py-2 bg-gray-900 text-white text-sm rounded-md
+                            hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900
+                            transition-all">
                             Next
                             <i class="fas fa-arrow-right ml-2"></i>
                         </button>
                         <button type="submit" id="submitBtn" 
-                            class="px-6 py-2 bg-blue-600 text-white font-medium border
-                            hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
-                            transition-all duration-200 ease-in-out"
+                            class="px-5 py-2 bg-gray-900 text-white text-sm rounded-md
+                            hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900
+                            transition-all"
                             style="display: none;">
                             Create Account
                             <i class="fas fa-check ml-2"></i>
@@ -742,23 +724,81 @@
                 return Math.floor(100000 + Math.random() * 900000).toString();
             }
 
+            let resendCooldown = 0;
+            let resendInterval = null;
+
+            function startResendCooldown() {
+                resendCooldown = 60; // 60 seconds cooldown
+                resendCodeBtn.disabled = true;
+                
+                resendInterval = setInterval(() => {
+                    resendCooldown--;
+                    if (resendCooldown > 0) {
+                        resendCodeBtn.textContent = `Resend code (${resendCooldown}s)`;
+                    } else {
+                        clearInterval(resendInterval);
+                        resendCodeBtn.disabled = false;
+                        resendCodeBtn.textContent = 'Resend code';
+                    }
+                }, 1000);
+            }
+
             async function sendVerificationCode() {
                 const emailInput = document.getElementById('email');
-                const email = emailInput.value.trim(); // Added trim to remove any whitespace
+                const email = emailInput.value.trim();
                 
-                console.log("Email input element:", emailInput); // Debug log
-                console.log("Email value:", email); // Debug log
-
                 if (!email || !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-                    alert('Please enter a valid email address');
+                    showEmailError('Please enter a valid email address');
+                    return;
+                }
+                
+                // Check if email already exists BEFORE sending verification code
+                try {
+                    sendCodeBtn.disabled = true;
+                    sendCodeBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Checking email...';
+                    
+                    const checkResponse = await fetch('/api/check-email', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email })
+                    });
+                    
+                    if (!checkResponse.ok) {
+                        throw new Error('Server error checking email');
+                    }
+                    
+                    const checkData = await checkResponse.json();
+                    
+                    if (checkData.exists) {
+                        showEmailError('This email is already registered. Please use a different email or log in.');
+                        sendCodeBtn.disabled = false;
+                        sendCodeBtn.innerHTML = 'Send Verification Code';
+                        return;
+                    }
+                    
+                    // Clear any previous errors since email is valid and not taken
+                    clearEmailError();
+                    
+                } catch (error) {
+                    console.error('Email check error:', error);
+                    console.error('Error details:', {
+                        message: error.message,
+                        type: error.name,
+                        stack: error.stack
+                    });
+                    showEmailError('Unable to check email availability. Please ensure you are accessing this page via http://localhost:3000 and the server is running.');
+                    sendCodeBtn.disabled = false;
+                    sendCodeBtn.innerHTML = 'Send Verification Code';
                     return;
                 }
 
+                // Only send verification code if email is available
                 try {
+                    sendCodeBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Sending code...';
                     verificationCode = generateVerificationCode();
                     
                     // Send email using EmailJS
-                    console.log("Sending email to:", email); // Debug log
+                    console.log("Sending email to:", email);
                     // Log the parameters for debugging
                     const templateParams = {
                         email: email,  // This matches the {{email}} in template
@@ -786,9 +826,17 @@
                     
                     // Show verification input section
                     codeSentMessage.classList.remove('hidden');
+                    codeSentMessage.innerHTML = '<i class="fas fa-check-circle mr-2"></i>Verification code sent!';
                     verificationSection.style.display = 'block';
                     sendCodeBtn.disabled = true;
                     sendCodeBtn.classList.add('opacity-50');
+                    sendCodeBtn.innerHTML = 'Code Sent';
+                    
+                    // Start resend cooldown
+                    startResendCooldown();
+                    
+                    // Auto-focus first verification input
+                    setTimeout(() => verificationInputs[0].focus(), 100);
 
                 } catch (error) {
                     console.error('Error:', error);
@@ -834,10 +882,45 @@
                 }
             }
 
+            function showEmailError(message) {
+                const emailInput = document.getElementById('email');
+                const formGroup = emailInput.parentElement.parentElement;
+                let errorEl = formGroup.querySelector('.text-red-600');
+                
+                if (!errorEl) {
+                    errorEl = document.createElement('p');
+                    errorEl.className = 'mt-1 text-sm text-red-600';
+                    formGroup.appendChild(errorEl);
+                }
+                
+                errorEl.textContent = message;
+                errorEl.classList.remove('hidden');
+                emailInput.classList.add('border-red-500');
+            }
+            
+            function clearEmailError() {
+                const emailInput = document.getElementById('email');
+                const formGroup = emailInput.parentElement.parentElement;
+                const errorEl = formGroup.querySelector('.text-red-600');
+                
+                if (errorEl) {
+                    errorEl.classList.add('hidden');
+                }
+                emailInput.classList.remove('border-red-500');
+            }
+            
+            // Clear error when user starts typing
+            document.getElementById('email').addEventListener('input', clearEmailError);
+
             // Event listeners for verification buttons
             sendCodeBtn.addEventListener('click', sendVerificationCode);
             verifyCodeBtn.addEventListener('click', verifyCode);
-            resendCodeBtn.addEventListener('click', sendVerificationCode);
+            resendCodeBtn.addEventListener('click', () => {
+                if (!resendCodeBtn.disabled) {
+                    codeSentMessage.classList.add('hidden');
+                    sendVerificationCode();
+                }
+            });
             // Helper function to add error messages
             function addErrorMessage(field, message) {
                 const errorDiv = document.createElement('div');
@@ -1455,46 +1538,44 @@
                         const successModal = document.createElement('div');
                         successModal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
                         successModal.innerHTML = `
-                            <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4 transform transition-all animate-fade-in-up">
+                            <div class="bg-white rounded-xl p-10 max-w-sm w-full mx-4 shadow-sm">
                                 <div class="text-center">
                                     <!-- Success Icon -->
-                                    <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-6">
-                                        <i class="fas fa-check text-3xl text-green-600"></i>
+                                    <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-gray-100 mb-6">
+                                        <i class="fas fa-check text-xl text-gray-900"></i>
                                     </div>
                                     
                                     <!-- Title -->
-                                    <h2 class="text-2xl font-bold text-gray-900 mb-4">Registration Successful!</h2>
+                                    <h2 class="text-2xl font-light text-gray-900 mb-3">Registration Successful</h2>
                                     
                                     <!-- Message -->
-                                    <div class="mb-6">
-                                        <p class="text-gray-600 mb-2">Your account has been created successfully.</p>
-                                        <p class="text-gray-600">Please wait for admin approval to access your account.</p>
+                                    <div class="mb-8">
+                                        <p class="text-sm text-gray-500 mb-1">Your account has been created successfully.</p>
+                                        <p class="text-sm text-gray-500">Please wait for admin approval.</p>
                                     </div>
                                     
                                     <!-- Progress Indicator -->
-                                    <div class="flex items-center justify-center gap-4 mb-6">
-                                        <div class="flex items-center">
-                                            <div class="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
-                                                <i class="fas fa-check text-white"></i>
+                                    <div class="flex items-center justify-center gap-3 mb-8">
+                                        <div class="flex flex-col items-center">
+                                            <div class="w-7 h-7 rounded-full bg-gray-900 flex items-center justify-center mb-1">
+                                                <i class="fas fa-check text-white text-xs"></i>
                                             </div>
-                                            <div class="ml-2">Registration</div>
+                                            <span class="text-xs text-gray-600">Registration</span>
                                         </div>
-                                        <div class="w-12 h-0.5 bg-gray-200">
-                                            <div class="w-full h-full bg-green-500"></div>
-                                        </div>
-                                        <div class="flex items-center">
-                                            <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center animate-pulse">
-                                                <i class="fas fa-clock text-white"></i>
+                                        <div class="w-16 h-px bg-gray-200 mt-[-20px]"></div>
+                                        <div class="flex flex-col items-center">
+                                            <div class="w-7 h-7 rounded-full border border-gray-300 flex items-center justify-center mb-1">
+                                                <i class="fas fa-clock text-gray-400 text-xs"></i>
                                             </div>
-                                            <div class="ml-2">Approval</div>
+                                            <span class="text-xs text-gray-400">Approval</span>
                                         </div>
                                     </div>
                                     
                                     <!-- Button -->
                                     <button onclick="window.location.href='/login.html'" 
-                                        class="w-full py-3 px-4 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 
-                                        focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 
-                                        transition-all duration-200 ease-in-out">
+                                        class="w-full py-2.5 px-4 bg-gray-900 text-white text-sm rounded-md hover:bg-gray-800 
+                                        focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 
+                                        transition-all">
                                         Go to Login
                                     </button>
                                 </div>

@@ -531,6 +531,43 @@
         </div>
     </div>
 
+    <!-- Success Modal for Client Added -->
+    <div id="successModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-[10000]">
+        <div class="relative bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden transform transition-all animate-slide-up">
+            <!-- Success Icon Circle with Animation -->
+            <div class="relative bg-gradient-to-br from-green-400 to-green-600 pt-12 pb-8">
+                <div class="flex justify-center">
+                    <div class="relative">
+                        <!-- Animated circles -->
+                        <div class="absolute inset-0 bg-white opacity-20 rounded-full animate-ping"></div>
+                        <div class="relative bg-white rounded-full p-4 shadow-lg">
+                            <svg class="w-16 h-16 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Success Message -->
+            <div class="p-8 text-center">
+                <h3 class="text-2xl font-bold text-gray-900 mb-3">Client Added Successfully!</h3>
+                <p class="text-gray-600 mb-2" id="successClientName">The client has been added to your system.</p>
+                <div class="inline-flex items-center px-4 py-2 bg-green-50 border border-green-200 rounded-lg mt-2">
+                    <i class="fas fa-building text-green-600 mr-2"></i>
+                    <span class="text-sm font-semibold text-green-800" id="successClientId">Client ID</span>
+                </div>
+                
+                <!-- Action Button -->
+                <div class="mt-8">
+                    <button onclick="closeSuccessModal()" class="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium shadow-sm">
+                        <i class="fas fa-check mr-2"></i>Done
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="../../js/auth.js"></script>
     <script src="../../js/dynamic-sidebar-loader.js"></script>
     <script>
@@ -539,6 +576,7 @@
         let allInstitutions = [];
         let allAssignments = [];
         let currentViewingClientId = null;
+        let lastAddedClientId = null; // Store the ID of the last added client
         
         // Confirmation modal variables
         let pendingAction = null;
@@ -1450,9 +1488,16 @@
                     throw new Error(result.error || 'Failed to save institution');
                 }
                 
-                alert(isEditing ? 'Client updated successfully!' : 'Client added successfully!');
                 closeClientModal();
                 await loadClients();
+                
+                if (isEditing) {
+                    alert('Client updated successfully!');
+                } else {
+                    // For new client, show success modal
+                    lastAddedClientId = result.institution_id || result.id;
+                    showSuccessModal(name, lastAddedClientId);
+                }
                 
             } catch (error) {
                 console.error('Error saving client:', error);
@@ -1789,6 +1834,19 @@
             document.getElementById('technicianSelect').value = '';
             currentInstitutionId = null;
             currentAssignmentId = null;
+        }
+
+        // Success Modal Functions
+        function showSuccessModal(clientName, clientId) {
+            document.getElementById('successClientName').textContent = clientName;
+            document.getElementById('successClientId').textContent = clientId;
+            lastAddedClientId = clientId;
+            document.getElementById('successModal').classList.remove('hidden');
+        }
+
+        function closeSuccessModal() {
+            document.getElementById('successModal').classList.add('hidden');
+            lastAddedClientId = null;
         }
     </script>
 </body>

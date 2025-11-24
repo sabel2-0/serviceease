@@ -27,39 +27,55 @@ window.TechnicianNotifications = {
 
     createNotificationElement(notif) {
         const type = (notif.type || '').toLowerCase();
+        const title = (notif.title || '').toLowerCase();
         let icon = '<svg class="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01"/></svg>';
         let colorClass = 'text-gray-600';
 
-        if (type.includes('parts') || type.includes('parts_approved')) {
-            icon = '<svg class="w-7 h-7 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-width="2.2"/></svg>';
-            colorClass = 'text-green-600';
+        // Check both type and title for better matching
+        const content = `${type} ${title}`;
+
+        // Institution assigned (purple building)
+        if (content.includes('institution') && content.includes('assigned')) {
+            icon = '<svg class="w-7 h-7 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M3 10V8l9-5 9 5v2"/><rect x="3" y="10" width="18" height="8" rx="2" stroke-width="2.2"/><path stroke-linecap="round" stroke-width="2.2" d="M7 18V12M12 18V12M17 18V12"/></svg>';
+            colorClass = 'text-purple-600';
         }
-        if (type.includes('service_approved')) {
+        // Approved services (green checkmark in circle)
+        else if (content.includes('approved') || content.includes('service_approved')) {
             icon = '<svg class="w-7 h-7 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
             colorClass = 'text-green-600';
         }
-        if (type.includes('service_revision')) {
+        // New service request assigned (blue document/clipboard icon)
+        else if (content.includes('assigned') || content.includes('service_request') || content.includes('new service')) {
+            icon = '<svg class="w-7 h-7 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>';
+            colorClass = 'text-blue-600';
+        }
+        // Parts approved (green checkmark)
+        else if (content.includes('parts') && content.includes('approved')) {
+            icon = '<svg class="w-7 h-7 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-width="2.2"/></svg>';
+            colorClass = 'text-green-600';
+        }
+        // Service revision needed (orange warning)
+        else if (content.includes('revision') || content.includes('needs work')) {
             icon = '<svg class="w-7 h-7 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>';
             colorClass = 'text-orange-600';
         }
-        if (type.includes('service') || type.includes('service_request')) {
-            icon = '<svg class="w-7 h-7 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="6" y="4" width="12" height="16" rx="3" stroke-width="2.2"/></svg>';
-            colorClass = 'text-blue-600';
-        }
-        if (type.includes('institution_assigned')) {
-            icon = '<svg class="w-7 h-7 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>';
+        // Institution assigned (purple building)
+        else if (content.includes('institution') && content.includes('assigned')) {
+            icon = '<svg class="w-7 h-7 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>';
             colorClass = 'text-purple-600';
         }
-        if (type.includes('institution_unassigned')) {
+        // Institution unassigned (orange building with X)
+        else if (content.includes('institution') && content.includes('unassigned')) {
             icon = '<svg class="w-7 h-7 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/><path stroke-linecap="round" stroke-width="2.5" d="M6 8 L18 16 M18 8 L6 16"/></svg>';
             colorClass = 'text-orange-600';
         }
-        if (type.includes('denied') || type.includes('rejected') || notif.priority === 'urgent') {
-            icon = '<svg class="w-7 h-7 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="18" stroke-width="2.2"/><line x1="6" y1="18" x2="18" y2="6" stroke-width="2.2"/></svg>';
+        // Denied/Rejected (red X)
+        else if (content.includes('denied') || content.includes('rejected')) {
+            icon = '<svg class="w-7 h-7 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
             colorClass = 'text-red-600';
         }
 
-        const title = notif.title || (notif.type ? notif.type.replace(/_/g, ' ') : 'Notification');
+        const displayTitle = notif.title || (notif.type ? notif.type.replace(/_/g, ' ') : 'Notification');
         const message = notif.message || '';
         const time = this.formatDate(notif.created_at || notif.submitted_at || notif.read_at);
 
@@ -71,7 +87,7 @@ window.TechnicianNotifications = {
             <div class="flex-shrink-0">${icon}</div>
             <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 mb-1">
-                    <span class="font-semibold text-slate-800">${title}</span>
+                    <span class="font-semibold text-slate-800">${displayTitle}</span>
                     ${notif.is_read ? '' : '<span class="ml-2 px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-xs font-medium">New</span>'}
                 </div>
                 <div class="text-sm text-gray-700 mb-1">${message}</div>

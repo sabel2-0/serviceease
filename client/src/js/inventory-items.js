@@ -657,6 +657,12 @@ function renderPrintersList(printers) {
                         <i class="fas fa-edit mr-2 text-xs"></i>
                         Edit
                     </button>
+                    ${printer.status === 'available' ? 
+                        `<button onclick="goToAssignPrinter('${escapeHtml(printer.brand)}', '${escapeHtml(printer.model)}')" 
+                                class="inline-flex items-center px-4 py-2 border border-green-300 rounded-lg text-sm font-medium text-green-700 bg-green-50 hover:bg-green-100 hover:border-green-400 transition-all duration-200 shadow-sm">
+                            <i class="fas fa-link mr-2 text-xs"></i>
+                            Assign
+                        </button>` : ''}
                 </div>
             </td>
         </tr>
@@ -723,3 +729,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }, 100);
 });
+// Function to navigate to client-printers page
+window.goToAssignPrinter = function(brand, model) {
+    // Navigate to client-printers page
+    window.location.href = '/pages/admin/client-printers.html';
+};

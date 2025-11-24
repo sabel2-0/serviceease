@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let availableInventory = [];
     let allPrinters = []; // Store all printers for filtering
     let filteredPrinters = [];
+    let printerCounts = {}; // Store printer counts per institution
 
     // Initialize loading skeleton
     function showLoadingSkeleton() {
@@ -51,28 +52,44 @@ document.addEventListener('DOMContentLoaded', () => {
         noClientsFound.classList.add('hidden');
         clientCardsGrid.classList.remove('hidden');
         
-        clientCardsGrid.innerHTML = institutions.map((institution, index) => `
-            <div class="client-card bg-white rounded-xl border-2 border-slate-200 p-6 hover:border-green-300 transition-all duration-300 card-fade-in" 
+        clientCardsGrid.innerHTML = institutions.map((institution, index) => {
+            const printerCount = printerCounts[institution.institution_id] || 0;
+            return `
+            <div class="client-card bg-white rounded-xl border-2 border-slate-200 p-6 hover:border-green-300 transition-all duration-300 card-fade-in flex flex-col" 
                  data-id="${institution.institution_id}" 
-                 style="animation-delay: ${index * 50}ms">
-                <div class="flex items-start space-x-4">
+                 style="animation-delay: ${index * 50}ms; min-height: 180px;">
+                <!-- Top Section with Icon and Printer Count -->
+                <div class="flex items-start justify-between mb-3">
                     <div class="w-12 h-12 bg-gradient-to-br from-green-100 to-emerald-100 rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
                         <i class="fas fa-building text-green-600 text-xl"></i>
                     </div>
-                    <div class="flex-1 min-w-0">
-                        <h4 class="font-semibold text-slate-900 text-lg leading-tight break-words">${escapeHtml(institution.name)}</h4>
-                        <p class="text-sm text-slate-500 mt-1">ID: ${institution.institution_id}</p>
-                        <div class="mt-2 flex items-center space-x-1">
-                            <div class="w-2 h-2 bg-green-400 rounded-full"></div>
-                            <span class="text-xs text-slate-600">Active Client</span>
-                        </div>
-                    </div>
-                    <div class="text-slate-400 flex-shrink-0 self-start mt-1">
-                        <i class="fas fa-chevron-right"></i>
+                    <div class="inline-flex items-center px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg flex-shrink-0">
+                        <i class="fas fa-print text-blue-600 text-xs mr-2"></i>
+                        <span class="text-sm font-semibold text-blue-700">${printerCount}</span>
                     </div>
                 </div>
+                
+                <!-- Institution Name Section -->
+                <div class="flex-1 mb-3">
+                    <h4 class="font-semibold text-slate-900 text-lg leading-tight break-words">${escapeHtml(institution.name)}</h4>
+                </div>
+                
+                <!-- Bottom Section - Fixed -->
+                <div class="mt-auto pt-3 border-t border-slate-100 flex items-center justify-between">
+                    <p class="text-xs text-slate-500 font-mono">ID: ${institution.institution_id}</p>
+                    <div class="flex items-center space-x-1">
+                        <div class="w-2 h-2 bg-green-400 rounded-full"></div>
+                        <span class="text-xs text-slate-600">Active</span>
+                    </div>
+                </div>
+                
+                <!-- Chevron Icon -->
+                <div class="absolute top-1/2 right-4 transform -translate-y-1/2 text-slate-400">
+                    <i class="fas fa-chevron-right"></i>
+                </div>
             </div>
-        `).join('');
+            `;
+        }).join('');
 
         // Add click handlers to cards
         document.querySelectorAll('.client-card').forEach(card => {
@@ -370,6 +387,9 @@ document.addEventListener('DOMContentLoaded', () => {
             allInstitutions = await res.json();
             filteredInstitutions = allInstitutions;
             
+            // Fetch printer counts for all institutions
+            await fetchPrinterCounts();
+            
             // Populate hidden select for compatibility
             institutionSelect.innerHTML = '<option value="">Select a client</option>' +
                 allInstitutions.map(i => `<option value="${i.institution_id}">${i.name}</option>`).join('');
@@ -382,6 +402,35 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Failed to load institutions', e);
             clientsLoading.classList.add('hidden');
             noClientsFound.classList.remove('hidden');
+        }
+    }
+
+    // Fetch printer counts for all institutions
+    async function fetchPrinterCounts() {
+        try {
+            const token = localStorage.getItem('token');
+            // Fetch printer counts for each institution
+            const counts = await Promise.all(
+                allInstitutions.map(async (institution) => {
+                    try {
+                        const res = await fetch(`/api/institutions/${encodeURIComponent(institution.institution_id)}/printers`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        const printers = await res.json();
+                        return { id: institution.institution_id, count: printers.length };
+                    } catch (err) {
+                        console.error(`Failed to fetch printers for ${institution.institution_id}`, err);
+                        return { id: institution.institution_id, count: 0 };
+                    }
+                })
+            );
+            
+            // Store counts in the printerCounts object
+            counts.forEach(({ id, count }) => {
+                printerCounts[id] = count;
+            });
+        } catch (e) {
+            console.error('Failed to fetch printer counts', e);
         }
     }
 
@@ -535,7 +584,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         await loadAvailableInventory();
         if (!availableInventory.length) {
-            alert('No available printers in inventory.');
+            showNoPrintersModal();
             return;
         }
 
@@ -661,4 +710,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+// Modal Functions for No Printers Available
+function showNoPrintersModal() {
+    const modal = document.getElementById('noPrintersModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+    }
+}
 
+function closeNoPrintersModal() {
+    const modal = document.getElementById('noPrintersModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+function goToInventoryItems() {
+    // Navigate to inventory items page
+    window.location.href = '/pages/admin/inventory-items.html';
+}

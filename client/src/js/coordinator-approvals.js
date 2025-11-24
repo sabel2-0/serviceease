@@ -236,10 +236,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Log the viewing action (you should implement this on your backend)
             try {
+                const token = localStorage.getItem('token');
                 await fetch('/api/log-document-view', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify({
                         userId,
@@ -389,6 +391,33 @@ document.addEventListener('DOMContentLoaded', function() {
                         throw new Error(data.error || 'Failed to approve user');
                     }
                     
+                    console.log('Approval response data:', data);
+                    
+                    // Send approval email notification using EmailJS
+                    if (data.emailData && typeof emailjs !== 'undefined') {
+                        console.log('Sending email with data:', data.emailData);
+                        try {
+                            const emailResponse = await emailjs.send(
+                                "service_upjalyd",
+                                "template_7bxzg2m",
+                                {
+                                    coordinator_name: data.emailData.coordinator_name,
+                                    coordinator_email: data.emailData.coordinator_email,
+                                    to_email: data.emailData.to_email
+                                }
+                            );
+                            console.log('✅ Approval email sent successfully!', emailResponse);
+                        } catch (emailError) {
+                            console.error('❌ Error sending approval email:', emailError);
+                            alert('User approved but email failed to send: ' + emailError.message);
+                        }
+                    } else {
+                        console.warn('Email not sent. Reasons:', {
+                            hasEmailData: !!data.emailData,
+                            emailjsLoaded: typeof emailjs !== 'undefined'
+                        });
+                    }
+                    
                     // Show success message
                     closeModal();
                     const successModal = document.createElement('div');
@@ -454,25 +483,32 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     window.rejectUser = async function(userId) {
-        // Create and show confirmation modal
+        // Create and show reason input modal
         const confirmModal = document.createElement('div');
         confirmModal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
         confirmModal.innerHTML = `
-            <div class="bg-white rounded-lg p-6 max-w-sm w-full mx-4">
-                <div class="text-center">
+            <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                <div>
                     <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
                         <i class="fas fa-exclamation-triangle text-xl text-red-600"></i>
                     </div>
-                    <h3 class="text-lg font-medium text-gray-900 mb-2">Reject Registration</h3>
-                    <p class="text-sm text-gray-500 mb-6">
-                        Are you sure you want to reject this user registration? This action cannot be undone.
+                    <h3 class="text-lg font-medium text-gray-900 mb-2 text-center">Reject Registration</h3>
+                    <p class="text-sm text-gray-500 mb-4 text-center">
+                        Please provide a reason for rejecting this registration. This will be sent to the coordinator.
                     </p>
+                    <textarea 
+                        id="rejectionReason" 
+                        rows="4" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 mb-4"
+                        placeholder="Enter rejection reason..."
+                        required
+                    ></textarea>
                     <div class="flex justify-center space-x-4">
-                        <button id="confirmReject" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500">
-                            Reject
-                        </button>
                         <button id="cancelReject" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400">
                             Cancel
+                        </button>
+                        <button id="confirmReject" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500">
+                            Reject
                         </button>
                     </div>
                 </div>
@@ -496,6 +532,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
             confirmBtn.addEventListener('click', async () => {
                 try {
+                    const reasonTextarea = confirmModal.querySelector('#rejectionReason');
+                    const reason = reasonTextarea.value.trim();
+                    
+                    if (!reason) {
+                        alert('Please provide a reason for rejection.');
+                        reasonTextarea.focus();
+                        return;
+                    }
+                    
                     confirmBtn.disabled = true;
                     confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Rejecting...';
 
@@ -505,7 +550,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         headers: {
                             'Authorization': `Bearer ${token}`,
                             'Content-Type': 'application/json'
-                        }
+                        },
+                        body: JSON.stringify({ reason })
                     });
                     
                     const data = await response.json();
@@ -513,6 +559,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!response.ok) {
                         throw new Error(data.error || 'Failed to reject user');
                     }
+                    
+                    console.log('✅ User rejected successfully, email sent automatically by server');
                     
                     // Show success message
                     closeModal();

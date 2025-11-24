@@ -365,14 +365,25 @@ async function viewRequestDetails(requestId) {
 
             ${partsUsed.length > 0 ? `
             <div>
-                <h5 class="font-semibold text-slate-900 mb-2">Parts Used</h5>
-                <div class="bg-blue-50 rounded-lg p-4 space-y-2">
+                <h5 class="font-semibold text-slate-900 mb-2">
+                    <i class="fas fa-tools mr-2 text-blue-600"></i>Parts Used
+                </h5>
+                <div class="bg-blue-50 rounded-lg p-4 space-y-3">
                     ${partsUsed.map(part => `
-                        <div class="flex justify-between items-center">
-                            <span class="text-slate-700">${escapeHtml(part.part_name)}${part.part_brand ? ` (${escapeHtml(part.part_brand)})` : ''}</span>
-                            <span class="font-semibold text-slate-900">x${part.quantity}</span>
+                        <div class="bg-white rounded-lg p-3 border border-blue-100">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-slate-900 font-medium">${escapeHtml(part.part_name)}</span>
+                                <span class="font-semibold text-blue-700 bg-blue-100 px-3 py-1 rounded-full text-sm">x${part.quantity}</span>
+                            </div>
+                            ${part.part_brand ? `<p class="text-sm text-slate-600"><span class="font-medium">Brand:</span> ${escapeHtml(part.part_brand)}</p>` : ''}
+                            ${part.notes ? `<p class="text-sm text-slate-600 mt-1"><span class="font-medium">Notes:</span> ${escapeHtml(part.notes)}</p>` : ''}
+                            ${part.used_by_first_name ? `
+                                <p class="text-xs text-slate-500 mt-2">
+                                    <i class="fas fa-user-check mr-1"></i>Used by ${escapeHtml(part.used_by_first_name + ' ' + part.used_by_last_name)}
+                                    ${part.used_at ? ` on ${formatDate(part.used_at)}` : ''}
+                                </p>
+                            ` : ''}
                         </div>
-                        ${part.notes ? `<p class="text-sm text-slate-600 mt-1">${escapeHtml(part.notes)}</p>` : ''}
                     `).join('')}
                 </div>
             </div>
@@ -446,8 +457,24 @@ async function handleCreateRequest(e) {
         });
 
         if (response.ok) {
-            showSuccess('Walk-in service request created successfully!');
+            // Populate success modal with request details
+            document.getElementById('createdCustomerName').textContent = requestData.walk_in_customer_name;
+            document.getElementById('createdPrinterBrand').textContent = requestData.printer_brand;
+            
+            const priorityBadge = {
+                'low': 'Low Priority',
+                'medium': 'Medium Priority',
+                'high': 'High Priority',
+                'urgent': 'Urgent'
+            }[requestData.priority] || requestData.priority;
+            document.getElementById('createdPriority').textContent = priorityBadge;
+            
+            document.getElementById('createdLocation').textContent = requestData.location || 'Not specified';
+            
+            // Close create modal and show success modal
             closeCreateModal();
+            document.getElementById('requestCreatedModal').classList.remove('hidden');
+            
             await loadRequests();
         } else {
             const error = await response.json();
@@ -462,30 +489,79 @@ async function handleCreateRequest(e) {
     }
 }
 
+function closeRequestCreatedModal() {
+    document.getElementById('requestCreatedModal').classList.add('hidden');
+}
+
 // Approve request
+// Approval/Rejection handling with modals
+let currentRequestId = null;
+
 async function approveRequest(requestId, approved) {
-    let notes = null;
+    currentRequestId = requestId;
     
     if (approved) {
-        if (!confirm('Are you sure you want to approve this request?')) return;
+        document.getElementById('approvalModal').classList.remove('hidden');
     } else {
-        notes = prompt('Please provide notes for the technician about what needs to be revised:');
-        if (!notes) return; // User cancelled
+        document.getElementById('rejectionModal').classList.remove('hidden');
+        document.getElementById('rejectionNotes').value = '';
+        document.getElementById('rejectionNotes').focus();
     }
+}
 
+async function confirmApproval() {
+    if (!currentRequestId) return;
+    
     try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/service-requests/${requestId}/approve-completion`, {
+        const response = await fetch(`${API_BASE_URL}/service-requests/${currentRequestId}/approve-completion`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ approved, notes })
+            body: JSON.stringify({ approved: true, notes: null })
         });
 
         if (response.ok) {
-            showSuccess(approved ? 'Request approved successfully!' : 'Request sent back for revision');
+            showSuccess('Request approved successfully! Parts deducted from technician inventory.');
+            closeApprovalModal();
+            closeDetailsModal();
+            await loadRequests();
+        } else {
+            const error = await response.json();
+            showError(error.error || 'Failed to approve request');
+        }
+    } catch (error) {
+        console.error('Error approving request:', error);
+        showError('Error approving request');
+    }
+}
+
+async function confirmRejection() {
+    if (!currentRequestId) return;
+    
+    const notes = document.getElementById('rejectionNotes').value.trim();
+    if (!notes) {
+        showError('Please provide notes explaining what needs to be revised');
+        document.getElementById('rejectionNotes').focus();
+        return;
+    }
+    
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE_URL}/service-requests/${currentRequestId}/approve-completion`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ approved: false, notes })
+        });
+
+        if (response.ok) {
+            showSuccess('Request sent back for revision. Technician has been notified.');
+            closeRejectionModal();
             closeDetailsModal();
             await loadRequests();
         } else {
@@ -496,6 +572,17 @@ async function approveRequest(requestId, approved) {
         console.error('Error processing request:', error);
         showError('Error processing request');
     }
+}
+
+function closeApprovalModal() {
+    document.getElementById('approvalModal').classList.add('hidden');
+    currentRequestId = null;
+}
+
+function closeRejectionModal() {
+    document.getElementById('rejectionModal').classList.add('hidden');
+    document.getElementById('rejectionNotes').value = '';
+    currentRequestId = null;
 }
 
 // Legacy function for backward compatibility - can be removed

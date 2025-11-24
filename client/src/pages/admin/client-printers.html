@@ -154,10 +154,54 @@
         <option value="">Choose a client...</option>
     </select>
 
+    <!-- No Printers Available Modal -->
+    <div id="noPrintersModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-gray-900 bg-opacity-60 backdrop-blur-sm"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden transform transition-all animate-slide-up">
+            <!-- Icon Header -->
+            <div class="relative bg-gradient-to-br from-amber-400 to-orange-500 pt-12 pb-8">
+                <div class="flex justify-center">
+                    <div class="relative">
+                        <!-- Animated circles -->
+                        <div class="absolute inset-0 bg-white opacity-20 rounded-full animate-ping"></div>
+                        <div class="relative bg-white rounded-full p-4 shadow-lg">
+                            <svg class="w-16 h-16 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Message Content -->
+            <div class="p-8 text-center">
+                <h3 class="text-2xl font-bold text-gray-900 mb-3">No Printers Available</h3>
+                <p class="text-gray-600 mb-2 leading-relaxed">
+                    Your printer inventory is empty. You need to add printers to your inventory before you can assign them to clients.
+                </p>
+                <div class="inline-flex items-center px-4 py-2 bg-amber-50 border border-amber-200 rounded-lg mt-4">
+                    <i class="fas fa-info-circle text-amber-600 mr-2"></i>
+                    <span class="text-sm font-medium text-amber-800">Add printers in the Inventory section</span>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="flex gap-3 mt-8">
+                    <button onclick="closeNoPrintersModal()" class="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium">
+                        Cancel
+                    </button>
+                    <button onclick="goToInventoryItems()" class="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-colors font-medium shadow-sm">
+                        <i class="fas fa-box mr-2"></i>Go to Inventory
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <style>
         .client-card {
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             cursor: pointer;
+            position: relative;
         }
         
         .client-card:hover {

@@ -218,34 +218,6 @@ router.put('/service-requests/:requestId/status', authenticateTechnician, async 
         if (status === 'in_progress' && currentStatus !== 'in_progress') {
             updateFields += ', started_at = NOW()';
             console.log('[PUT /status] Adding started_at timestamp');
-            
-            // Send notification to requester that service has started
-            try {
-                const [techDetails] = await db.query(
-                    'SELECT first_name, last_name FROM users WHERE id = ?',
-                    [technicianId]
-                );
-                const [requestDetails] = await db.query(
-                    'SELECT request_number, requested_by_user_id, description FROM service_requests WHERE id = ?',
-                    [requestId]
-                );
-                
-                if (techDetails[0] && requestDetails[0] && requestDetails[0].requested_by_user_id) {
-                    await createNotification({
-                        title: 'Service Started',
-                        message: `Technician ${techDetails[0].first_name} ${techDetails[0].last_name} has started working on your service request ${requestDetails[0].request_number}`,
-                        type: 'info',
-                        user_id: requestDetails[0].requested_by_user_id,
-                        sender_id: technicianId,
-                        reference_type: 'service_request',
-                        reference_id: requestId,
-                        priority: 'medium'
-                    });
-                    console.log('[PUT /status] Notification sent to requester about service start');
-                }
-            } catch (notifError) {
-                console.error('[PUT /status] Failed to send start notification:', notifError);
-            }
         }
         
         // Update the status
@@ -280,7 +252,7 @@ router.put('/service-requests/:requestId/status', authenticateTechnician, async 
                     [technicianId]
                 );
                 const [requestDetails] = await db.query(
-                    'SELECT sr.request_number, sr.requested_by_user_id, sr.institution_id, i.user_id as coordinator_id, i.name as institution_name FROM service_requests sr LEFT JOIN institutions i ON sr.institution_id = i.institution_id WHERE sr.id = ?',
+                    'SELECT sr.request_number, sr.requested_by_user_id, sr.institution_id, sr.is_walk_in, sr.walk_in_customer_name, i.user_id as coordinator_id, i.name as institution_name FROM service_requests sr LEFT JOIN institutions i ON sr.institution_id = i.institution_id WHERE sr.id = ?',
                     [requestId]
                 );
                 
@@ -288,23 +260,50 @@ router.put('/service-requests/:requestId/status', authenticateTechnician, async 
                     const techName = `${techDetails[0].first_name} ${techDetails[0].last_name}`;
                     const requestNumber = requestDetails[0].request_number;
                     
-                    // Notify coordinator
-                    if (requestDetails[0].coordinator_id) {
-                        await createNotification({
-                            title: 'Service Request In Progress',
-                            message: `Technician ${techName} has started working on service request ${requestNumber} at ${requestDetails[0].institution_name}.`,
-                            type: 'service_request',
-                            user_id: requestDetails[0].coordinator_id,
-                            sender_id: technicianId,
-                            reference_type: 'service_request',
-                            reference_id: requestId,
-                            priority: 'medium'
-                        });
-                        console.log('✅ Notification sent to coordinator about service progress');
+                    // If it's a walk-in request, notify admins/operations officers instead of coordinator
+                    if (requestDetails[0].is_walk_in) {
+                        const [admins] = await db.query(
+                            `SELECT id FROM users WHERE role IN ('admin', 'operations_officer') AND status = 'active'`
+                        );
+                        
+                        const customerName = requestDetails[0].walk_in_customer_name || 'Walk-in Customer';
+                        
+                        for (const admin of admins) {
+                            try {
+                                await createNotification({
+                                    title: 'Walk-In Service Request In Progress',
+                                    message: `Technician ${techName} has started working on walk-in service request ${requestNumber} for ${customerName}.`,
+                                    type: 'service_request',
+                                    user_id: admin.id,
+                                    sender_id: technicianId,
+                                    reference_type: 'service_request',
+                                    reference_id: requestId,
+                                    priority: 'medium'
+                                });
+                            } catch (notifError) {
+                                console.error('Failed to create notification for admin:', admin.id, notifError);
+                            }
+                        }
+                        console.log('✅ Notifications sent to admins/operations officers about walk-in service progress');
+                    } else {
+                        // For regular requests, notify coordinator
+                        if (requestDetails[0].coordinator_id) {
+                            await createNotification({
+                                title: 'Service Request In Progress',
+                                message: `Technician ${techName} has started working on service request ${requestNumber} at ${requestDetails[0].institution_name}.`,
+                                type: 'service_request',
+                                user_id: requestDetails[0].coordinator_id,
+                                sender_id: technicianId,
+                                reference_type: 'service_request',
+                                reference_id: requestId,
+                                priority: 'medium'
+                            });
+                            console.log('✅ Notification sent to coordinator about service progress');
+                        }
                     }
                     
-                    // Notify requester
-                    if (requestDetails[0].requested_by_user_id) {
+                    // Notify requester (for non-walk-in requests)
+                    if (requestDetails[0].requested_by_user_id && !requestDetails[0].is_walk_in) {
                         await createNotification({
                             title: 'Service Request In Progress',
                             message: `Technician ${techName} has started working on your service request ${requestNumber}.`,
@@ -478,7 +477,7 @@ router.post('/service-requests/:requestId/complete', authenticateTechnician, asy
                     [technicianId]
                 );
                 const [requestDetails] = await db.query(
-                    'SELECT sr.request_number, sr.requested_by_user_id, sr.description, sr.institution_id, i.user_id as coordinator_id, i.name as institution_name FROM service_requests sr LEFT JOIN institutions i ON sr.institution_id = i.institution_id WHERE sr.id = ?',
+                    'SELECT sr.request_number, sr.requested_by_user_id, sr.description, sr.institution_id, sr.is_walk_in, sr.walk_in_customer_name, i.user_id as coordinator_id, i.name as institution_name FROM service_requests sr LEFT JOIN institutions i ON sr.institution_id = i.institution_id WHERE sr.id = ?',
                     [requestId]
                 );
                 
@@ -486,20 +485,43 @@ router.post('/service-requests/:requestId/complete', authenticateTechnician, asy
                     const techName = `${techDetails[0].first_name} ${techDetails[0].last_name}`;
                     const requestNumber = requestDetails[0].request_number;
                     
-                    // Send notification ONLY to coordinator for approval
-                    // Requester will be notified after coordinator approves
-                    if (requestDetails[0].coordinator_id) {
-                        await createNotification({
-                            title: 'Service Request Pending Your Approval',
-                            message: `Technician ${techName} has completed service request ${requestNumber} at ${requestDetails[0].institution_name}. Please review and approve.`,
-                            type: 'service_request',
-                            user_id: requestDetails[0].coordinator_id,
-                            sender_id: technicianId,
-                            reference_type: 'service_request',
-                            reference_id: requestId,
-                            priority: 'high'
-                        });
-                        console.log('✅ Notification sent to coordinator for approval');
+                    // If it's a walk-in request, notify admins and operations officers
+                    if (requestDetails[0].is_walk_in) {
+                        const [admins] = await db.query(
+                            `SELECT id FROM users WHERE role IN ('admin', 'operations_officer') AND status = 'active'`
+                        );
+                        
+                        const customerName = requestDetails[0].walk_in_customer_name || 'Unknown Customer';
+                        
+                        for (const admin of admins) {
+                            await createNotification({
+                                title: 'Walk-In Service Completed - Requires Approval',
+                                message: `Technician ${techName} has completed walk-in service request ${requestNumber} for customer "${customerName}". Please review and approve.`,
+                                type: 'service_request',
+                                user_id: admin.id,
+                                sender_id: technicianId,
+                                reference_type: 'service_request',
+                                reference_id: requestId,
+                                priority: 'high'
+                            });
+                        }
+                        console.log('✅ Notification sent to admins/operations officers for walk-in approval');
+                    } else {
+                        // Send notification ONLY to coordinator for approval
+                        // Requester will be notified after coordinator approves
+                        if (requestDetails[0].coordinator_id) {
+                            await createNotification({
+                                title: 'Service Request Pending Your Approval',
+                                message: `Technician ${techName} has completed service request ${requestNumber} at ${requestDetails[0].institution_name}. Please review and approve.`,
+                                type: 'service_request',
+                                user_id: requestDetails[0].coordinator_id,
+                                sender_id: technicianId,
+                                reference_type: 'service_request',
+                                reference_id: requestId,
+                                priority: 'high'
+                            });
+                            console.log('✅ Notification sent to coordinator for approval');
+                        }
                     }
                 }
             } catch (notifError) {

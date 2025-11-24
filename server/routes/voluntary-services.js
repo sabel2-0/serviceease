@@ -210,55 +210,7 @@ router.post('/', auth, async (req, res) => {
         
         console.log('✅ Service inserted, ID:', result.insertId);
         
-        // Deduct parts from technician inventory
-        if (parts_used && parts_used.length > 0) {
-            console.log('📦 Deducting parts from inventory...');
-            for (const part of parts_used) {
-                try {
-                    // Clean the part name (remove stock indicators like ✓, ⚠, ✗ and stock info)
-                    let cleanPartName = part.name.replace(/^[✓⚠✗]\s*/, '').trim();
-                    // Remove stock info in parentheses at the end
-                    cleanPartName = cleanPartName.replace(/\s*\(Stock:\s*\d+\)\s*$/, '').trim();
-                    
-                    console.log(`🔍 Looking for part: "${cleanPartName}" brand: "${part.brand}"`);
-                    
-                    // Find the part in technician_inventory by name and brand
-                    const [inventoryItem] = await db.query(
-                        `SELECT ti.id, ti.quantity, pp.name, pp.brand
-                         FROM technician_inventory ti
-                         INNER JOIN printer_parts pp ON ti.part_id = pp.id
-                         WHERE ti.technician_id = ? 
-                         AND pp.name = ? 
-                         AND pp.brand = ?
-                         LIMIT 1`,
-                        [technicianId, cleanPartName, part.brand]
-                    );
-                    
-                    if (inventoryItem.length > 0) {
-                        const currentQty = inventoryItem[0].quantity;
-                        const deductQty = parseInt(part.qty) || 0;
-                        
-                        console.log(`📊 Current qty: ${currentQty}, Deducting: ${deductQty}`);
-                        
-                        if (currentQty >= deductQty) {
-                            const newQty = currentQty - deductQty;
-                            await db.query(
-                                'UPDATE technician_inventory SET quantity = ?, last_updated = NOW() WHERE id = ?',
-                                [newQty, inventoryItem[0].id]
-                            );
-                            console.log(`✅ Deducted ${deductQty} ${cleanPartName} (${part.brand}), new qty: ${newQty}`);
-                        } else {
-                            console.warn(`⚠️ Insufficient inventory for ${cleanPartName} (${part.brand}): has ${currentQty}, needs ${deductQty}`);
-                        }
-                    } else {
-                        console.warn(`⚠️ Part not found in technician inventory: ${cleanPartName} (${part.brand})`);
-                    }
-                } catch (partError) {
-                    console.error(`❌ Error deducting part ${part.name}:`, partError);
-                    // Continue with other parts even if one fails
-                }
-            }
-        }
+        // Parts will be deducted only upon approval (not during submission)
         
         // Create notifications for coordinator and requester
         const notificationQuery = `
@@ -326,8 +278,10 @@ router.get('/my-submissions', auth, async (req, res) => {
                 inv.location,
                 i.name as institution_name,
                 i.type as institution_type,
+                CONCAT(u_req.first_name, ' ', u_req.last_name) as requester_name,
                 u_req.first_name as requester_first_name,
                 u_req.last_name as requester_last_name,
+                CONCAT(u_coord.first_name, ' ', u_coord.last_name) as coordinator_name,
                 u_coord.first_name as coordinator_first_name,
                 u_coord.last_name as coordinator_last_name
             FROM voluntary_services vs
@@ -342,7 +296,7 @@ router.get('/my-submissions', auth, async (req, res) => {
         
         const params = status ? [technicianId, status] : [technicianId];
         
-        const [services] = await db.query(query, [technicianId, technicianId]);
+        const [services] = await db.query(query, params);
         
         // Parse JSON fields
         services.forEach(service => {
@@ -396,15 +350,20 @@ router.get('/coordinator/pending', auth, async (req, res) => {
                 inv.model,
                 inv.location,
                 i.name as institution_name,
+                CONCAT(u_coord.first_name, ' ', u_coord.last_name) as coordinator_name,
                 CONCAT(u_tech.first_name, ' ', u_tech.last_name) as technician_name,
                 u_tech.email as technician_email,
                 CONCAT(u_req.first_name, ' ', u_req.last_name) as requester_name
             FROM voluntary_services vs
             INNER JOIN inventory_items inv ON vs.printer_id = inv.id
             INNER JOIN institutions i ON vs.institution_id COLLATE utf8mb4_unicode_ci = i.institution_id
+            LEFT JOIN users u_coord ON i.user_id = u_coord.id
             INNER JOIN users u_tech ON vs.technician_id = u_tech.id
             LEFT JOIN users u_req ON u_req.id = vs.requester_id
             WHERE vs.institution_id IN (?)
+            AND vs.coordinator_approval_status = 'pending'
+            AND vs.status != 'completed'
+            AND vs.status != 'rejected'
             ORDER BY vs.created_at DESC
         `;
         
@@ -460,12 +419,14 @@ router.get('/coordinator/history', auth, async (req, res) => {
                 inv.model,
                 inv.location,
                 i.name as institution_name,
+                CONCAT(u_coord.first_name, ' ', u_coord.last_name) as coordinator_name,
                 CONCAT(u_tech.first_name, ' ', u_tech.last_name) as technician_name,
                 u_tech.email as technician_email,
                 CONCAT(u_req.first_name, ' ', u_req.last_name) as requester_name
             FROM voluntary_services vs
             INNER JOIN inventory_items inv ON vs.printer_id = inv.id
             INNER JOIN institutions i ON vs.institution_id COLLATE utf8mb4_unicode_ci = i.institution_id
+            LEFT JOIN users u_coord ON i.user_id = u_coord.id
             INNER JOIN users u_tech ON vs.technician_id = u_tech.id
             LEFT JOIN users u_req ON u_req.id = vs.requester_id
             WHERE vs.institution_id IN (?)
@@ -525,29 +486,88 @@ router.patch('/coordinator/:id/approve', auth, async (req, res) => {
         }
         
         if (service[0].coordinator_approval_status !== 'pending') {
-            return res.status(400).json({ error: 'Service has already been reviewed' });
+            return res.status(400).json({ error: 'Service has already been reviewed by coordinator' });
         }
         
-        // For voluntary services, mark as completed after coordinator approval
-        // since there's no requester approval needed
+        if (service[0].status === 'completed') {
+            return res.status(400).json({ error: 'Service has already been completed' });
+        }
+        
+        // Check if requester already approved - if so, this completes the service
+        const alreadyApproved = service[0].requester_approval_status === 'approved';
+        const newStatus = alreadyApproved ? 'completed' : service[0].status;
+        
+        console.log(`📝 Requester already approved: ${alreadyApproved}, new status: ${newStatus}`);
+        
+        // Update coordinator approval status (and complete if requester already approved)
         await db.query(
             `UPDATE voluntary_services 
              SET coordinator_approval_status = 'approved',
                  coordinator_notes = ?,
-                 status = 'completed'
+                 coordinator_reviewed_at = NOW(),
+                 coordinator_reviewed_by = ?,
+                 status = ?,
+                 completed_at = ${alreadyApproved ? 'NOW()' : 'completed_at'}
              WHERE id = ?`,
-            [notes || null, serviceId]
+            [notes || null, coordinatorId, newStatus, serviceId]
         );
+        
+        // Only deduct parts if this approval completes the service (requester already approved OR single approval mode)
+        if (alreadyApproved && service[0].parts_used) {
+            const parts_used = JSON.parse(service[0].parts_used);
+            console.log('📦 Deducting parts from inventory after approval...');
+            
+            for (const part of parts_used) {
+                try {
+                    // Clean the part name
+                    let cleanPartName = part.name.replace(/^[✓⚠✗]\s*/, '').trim();
+                    cleanPartName = cleanPartName.replace(/\s*\(Stock:\s*\d+\)\s*$/, '').trim();
+                    
+                    const [inventoryItem] = await db.query(
+                        `SELECT ti.id, ti.quantity, pp.name, pp.brand
+                         FROM technician_inventory ti
+                         INNER JOIN printer_parts pp ON ti.part_id = pp.id
+                         WHERE ti.technician_id = ? 
+                         AND pp.name = ? 
+                         AND pp.brand = ?
+                         LIMIT 1`,
+                        [service[0].technician_id, cleanPartName, part.brand]
+                    );
+                    
+                    if (inventoryItem.length > 0) {
+                        const currentQty = inventoryItem[0].quantity;
+                        const deductQty = parseInt(part.qty) || 0;
+                        
+                        if (currentQty >= deductQty) {
+                            const newQty = currentQty - deductQty;
+                            await db.query(
+                                'UPDATE technician_inventory SET quantity = ?, last_updated = NOW() WHERE id = ?',
+                                [newQty, inventoryItem[0].id]
+                            );
+                            console.log(`✅ Deducted ${deductQty} ${cleanPartName}, new qty: ${newQty}`);
+                        }
+                    }
+                } catch (partError) {
+                    console.error(`❌ Error deducting part:`, partError);
+                }
+            }
+        }
         
         // Notify technician that service was approved
+        const notificationMessage = alreadyApproved 
+            ? 'Your voluntary service has been approved by the coordinator and is now completed'
+            : 'Your voluntary service has been approved by the coordinator';
+        
         await db.query(
             `INSERT INTO notifications (user_id, type, title, message, reference_id)
-             VALUES (?, 'voluntary_service', 'Voluntary Service Approved', 
-                     'Your voluntary service has been approved by the coordinator', ?)`,
-            [service[0].technician_id, serviceId]
+             VALUES (?, 'voluntary_service', 'Voluntary Service Approved', ?, ?)`,
+            [service[0].technician_id, notificationMessage, serviceId]
         );
         
-        res.json({ message: 'Service approved successfully' });
+        res.json({ 
+            message: alreadyApproved ? 'Service approved and completed successfully' : 'Service approved successfully',
+            completed: alreadyApproved
+        });
     } catch (error) {
         console.error('Error approving service:', error);
         res.status(500).json({ error: 'Failed to approve service' });
@@ -618,58 +638,6 @@ router.patch('/coordinator/:id/reject', auth, async (req, res) => {
     }
 });
 
-// ==================== REQUESTER ENDPOINTS ====================
-
-/**
- * Get pending voluntary services for requester confirmation
- * GET /api/voluntary-services/requester/pending
- */
-router.get('/requester/pending', auth, async (req, res) => {
-    try {
-        const requesterId = req.user.id;
-        
-        const query = `
-            SELECT 
-                vs.*,
-                inv.name as printer_name,
-                inv.brand,
-                inv.model,
-                inv.location,
-                i.name as institution_name,
-                u_tech.first_name as technician_first_name,
-                u_tech.last_name as technician_last_name,
-                u_coord.first_name as coordinator_first_name,
-                u_coord.last_name as coordinator_last_name
-            FROM voluntary_services vs
-            INNER JOIN inventory_items inv ON vs.printer_id = inv.id
-            INNER JOIN institutions i ON vs.institution_id = i.institution_id
-            INNER JOIN users u_tech ON vs.technician_id = u_tech.id
-            LEFT JOIN users u_coord ON u_coord.id = i.user_id
-            WHERE vs.requester_id = ?
-                AND vs.requester_approval_status = 'pending'
-                AND vs.coordinator_approval_status = 'approved'
-            ORDER BY vs.coordinator_reviewed_at ASC
-        `;
-        
-        const [services] = await db.query(query, [requesterId]);
-        
-        // Parse JSON fields
-        services.forEach(service => {
-            if (service.before_photos) {
-                service.before_photos = JSON.parse(service.before_photos);
-            }
-            if (service.after_photos) {
-                service.after_photos = JSON.parse(service.after_photos);
-            }
-        });
-        
-        res.json(services);
-    } catch (error) {
-        console.error('Error fetching pending services for requester:', error);
-        res.status(500).json({ error: 'Failed to fetch pending services' });
-    }
-});
-
 /**
  * Approve voluntary service (Requester)
  * PATCH /api/voluntary-services/requester/:id/approve
@@ -692,25 +660,87 @@ router.patch('/requester/:id/approve', auth, async (req, res) => {
             return res.status(404).json({ error: 'Service not found or unauthorized' });
         }
         
-        // Update service
+        if (service[0].requester_approval_status !== 'pending') {
+            return res.status(400).json({ error: 'Service has already been reviewed by requester' });
+        }
+        
+        if (service[0].status === 'completed') {
+            return res.status(400).json({ error: 'Service has already been completed' });
+        }
+        
+        // Check if coordinator already approved - if so, this completes the service
+        const alreadyApproved = service[0].coordinator_approval_status === 'approved';
+        const newStatus = alreadyApproved ? 'completed' : service[0].status;
+        
+        console.log(`📝 Coordinator already approved: ${alreadyApproved}, new status: ${newStatus}`);
+        
+        // Update requester approval status (and complete if coordinator already approved)
         await db.query(
             `UPDATE voluntary_services 
              SET requester_approval_status = 'approved',
                  requester_notes = ?,
-                 status = 'completed'
+                 status = ?,
+                 completed_at = ${alreadyApproved ? 'NOW()' : 'completed_at'}
              WHERE id = ?`,
-            [notes || null, serviceId]
+            [notes || null, newStatus, serviceId]
         );
+        
+        // Only deduct parts if this approval completes the service (coordinator already approved OR single approval mode)
+        if (alreadyApproved && service[0].parts_used) {
+            const parts_used = JSON.parse(service[0].parts_used);
+            console.log('📦 Deducting parts from inventory after requester approval...');
+            
+            for (const part of parts_used) {
+                try {
+                    // Clean the part name
+                    let cleanPartName = part.name.replace(/^[✓⚠✗]\s*/, '').trim();
+                    cleanPartName = cleanPartName.replace(/\s*\(Stock:\s*\d+\)\s*$/, '').trim();
+                    
+                    const [inventoryItem] = await db.query(
+                        `SELECT ti.id, ti.quantity, pp.name, pp.brand
+                         FROM technician_inventory ti
+                         INNER JOIN printer_parts pp ON ti.part_id = pp.id
+                         WHERE ti.technician_id = ? 
+                         AND pp.name = ? 
+                         AND pp.brand = ?
+                         LIMIT 1`,
+                        [service[0].technician_id, cleanPartName, part.brand]
+                    );
+                    
+                    if (inventoryItem.length > 0) {
+                        const currentQty = inventoryItem[0].quantity;
+                        const deductQty = parseInt(part.qty) || 0;
+                        
+                        if (currentQty >= deductQty) {
+                            const newQty = currentQty - deductQty;
+                            await db.query(
+                                'UPDATE technician_inventory SET quantity = ?, last_updated = NOW() WHERE id = ?',
+                                [newQty, inventoryItem[0].id]
+                            );
+                            console.log(`✅ Deducted ${deductQty} ${cleanPartName}, new qty: ${newQty}`);
+                        }
+                    }
+                } catch (partError) {
+                    console.error(`❌ Error deducting part:`, partError);
+                }
+            }
+        }
         
         // Notify technician
+        const notificationMessage = alreadyApproved
+            ? 'Your voluntary service has been approved by the requester and is now completed'
+            : 'Your voluntary service has been approved by the requester';
+        
         await db.query(
             `INSERT INTO notifications (user_id, type, title, message, reference_id)
-             VALUES (?, 'voluntary_service', 'Service Approved', 
-                     'Your voluntary service has been approved by the requester', ?)`,
-            [service[0].technician_id, serviceId]
+             VALUES (?, 'voluntary_service', 'Service Approved', ?, ?)`,
+            [service[0].technician_id, notificationMessage, serviceId]
         );
         
-        res.json({ message: 'Service approved and completed' });
+        res.json({ 
+            message: alreadyApproved ? 'Service approved and completed successfully' : 'Service approved successfully',
+            completed: alreadyApproved
+        });
     } catch (error) {
         console.error('Error approving service:', error);
         res.status(500).json({ error: 'Failed to approve service' });
@@ -796,18 +826,19 @@ router.get('/history', auth, async (req, res) => {
                 inv.serial_number as printer_serial_number,
                 inv.location,
                 CONCAT('VS-', vs.id) as request_number,
+                CONCAT(requester.first_name, ' ', requester.last_name) as requester_name,
                 requester.first_name as requester_first_name,
                 requester.last_name as requester_last_name,
+                CONCAT(coordinator.first_name, ' ', coordinator.last_name) as coordinator_name,
                 coordinator.first_name as coordinator_first_name,
                 coordinator.last_name as coordinator_last_name
             FROM voluntary_services vs
             INNER JOIN inventory_items inv ON vs.printer_id = inv.id
-            LEFT JOIN user_printer_assignments upa ON upa.inventory_item_id = inv.id
-            LEFT JOIN institutions i ON upa.institution_id = i.institution_id
-            LEFT JOIN users requester ON upa.user_id = requester.id
-            LEFT JOIN technician_assignments ta ON ta.institution_id = i.institution_id AND ta.technician_id = vs.technician_id
-            LEFT JOIN users coordinator ON ta.assigned_by = coordinator.id
+            INNER JOIN institutions i ON vs.institution_id COLLATE utf8mb4_unicode_ci = i.institution_id
+            LEFT JOIN users requester ON vs.requester_id = requester.id
+            LEFT JOIN users coordinator ON i.user_id = coordinator.id
             WHERE vs.technician_id = ?
+            AND vs.status IN ('completed', 'rejected')
             ORDER BY vs.created_at DESC
         `;
         
@@ -830,6 +861,243 @@ router.get('/history', auth, async (req, res) => {
     } catch (error) {
         console.error('Error fetching voluntary service history:', error);
         res.status(500).json({ error: 'Failed to fetch voluntary service history' });
+    }
+});
+
+// ==================== REQUESTER ENDPOINTS ====================
+
+/**
+ * Get voluntary services for requester (their printers)
+ * GET /api/voluntary-services/requester/pending
+ */
+router.get('/requester/pending', auth, async (req, res) => {
+    try {
+        const requesterId = req.user.id;
+        
+        console.log('📋 Fetching voluntary services for requester:', requesterId);
+        
+        const query = `
+            SELECT 
+                vs.*,
+                inv.name as printer_name,
+                inv.brand,
+                inv.model,
+                inv.location,
+                i.name as institution_name,
+                CONCAT(u_coord.first_name, ' ', u_coord.last_name) as coordinator_name,
+                CONCAT(u_tech.first_name, ' ', u_tech.last_name) as technician_name,
+                u_tech.email as technician_email
+            FROM voluntary_services vs
+            INNER JOIN inventory_items inv ON vs.printer_id = inv.id
+            INNER JOIN user_printer_assignments upa ON upa.inventory_item_id = inv.id
+            INNER JOIN institutions i ON vs.institution_id COLLATE utf8mb4_unicode_ci = i.institution_id
+            LEFT JOIN users u_coord ON i.user_id = u_coord.id
+            INNER JOIN users u_tech ON vs.technician_id = u_tech.id
+            WHERE upa.user_id = ?
+            AND vs.technician_id != ?
+            AND vs.requester_approval_status = 'pending'
+            AND vs.status != 'completed'
+            AND vs.status != 'rejected'
+            ORDER BY vs.created_at DESC
+        `;
+        
+        const [services] = await db.query(query, [requesterId, requesterId]);
+        
+        console.log('✅ Found', services.length, 'voluntary services for requester');
+        
+        // Parse JSON fields
+        services.forEach(service => {
+            if (service.parts_used) {
+                try {
+                    service.parts_used = JSON.parse(service.parts_used);
+                } catch (e) {
+                    service.parts_used = [];
+                }
+            }
+        });
+        
+        res.json({ services });
+    } catch (error) {
+        console.error('❌ Error fetching services for requester:', error);
+        res.status(500).json({ error: 'Failed to fetch services' });
+    }
+});
+
+/**
+ * Get requester's voluntary service history
+ * GET /api/voluntary-services/requester/history
+ */
+router.get('/requester/history', auth, async (req, res) => {
+    try {
+        const requesterId = req.user.id;
+        
+        const query = `
+            SELECT 
+                vs.*,
+                inv.name as printer_name,
+                inv.brand,
+                inv.model,
+                inv.location,
+                i.name as institution_name,
+                CONCAT(u_coord.first_name, ' ', u_coord.last_name) as coordinator_name,
+                CONCAT(u_tech.first_name, ' ', u_tech.last_name) as technician_name,
+                u_tech.email as technician_email
+            FROM voluntary_services vs
+            INNER JOIN inventory_items inv ON vs.printer_id = inv.id
+            INNER JOIN user_printer_assignments upa ON upa.inventory_item_id = inv.id
+            INNER JOIN institutions i ON vs.institution_id COLLATE utf8mb4_unicode_ci = i.institution_id
+            LEFT JOIN users u_coord ON i.user_id = u_coord.id
+            INNER JOIN users u_tech ON vs.technician_id = u_tech.id
+            WHERE upa.user_id = ?
+            AND vs.technician_id != ?
+            AND vs.status IN ('completed', 'rejected')
+            ORDER BY vs.created_at DESC
+        `;
+        
+        const [services] = await db.query(query, [requesterId, requesterId]);
+        
+        // Parse JSON fields
+        services.forEach(service => {
+            if (service.parts_used) {
+                try {
+                    service.parts_used = JSON.parse(service.parts_used);
+                } catch (e) {
+                    service.parts_used = [];
+                }
+            }
+        });
+        
+        res.json({ services });
+    } catch (error) {
+        console.error('❌ Error fetching history for requester:', error);
+        res.status(500).json({ error: 'Failed to fetch history' });
+    }
+});
+
+/**
+ * Approve voluntary service (Requester)
+ * PATCH /api/voluntary-services/requester/:id/approve
+ */
+router.patch('/requester/:id/approve', auth, async (req, res) => {
+    try {
+        const serviceId = req.params.id;
+        const requesterId = req.user.id;
+        const { notes } = req.body;
+        
+        console.log('✅ Requester', requesterId, 'approving service', serviceId);
+        
+        // Verify requester owns the printer
+        const [service] = await db.query(
+            `SELECT vs.*, upa.user_id as printer_owner_id
+             FROM voluntary_services vs
+             INNER JOIN user_printer_assignments upa ON upa.inventory_item_id = vs.printer_id
+             WHERE vs.id = ?`,
+            [serviceId]
+        );
+        
+        if (service.length === 0) {
+            return res.status(404).json({ error: 'Service not found' });
+        }
+        
+        if (service[0].printer_owner_id !== requesterId) {
+            return res.status(403).json({ error: 'You do not have permission to approve this service' });
+        }
+        
+        if (service[0].requester_approval_status !== 'pending') {
+            return res.status(400).json({ error: 'Service has already been reviewed by you' });
+        }
+        
+        // Mark as completed when requester approves (either coordinator or requester approval completes it)
+        await db.query(
+            `UPDATE voluntary_services 
+             SET requester_approval_status = 'approved',
+                 requester_notes = ?,
+                 requester_reviewed_at = NOW(),
+                 requester_reviewed_by = ?,
+                 status = 'completed',
+                 completed_at = NOW()
+             WHERE id = ?`,
+            [notes || null, requesterId, serviceId]
+        );
+        
+        // Notify technician
+        await db.query(
+            `INSERT INTO notifications (user_id, type, title, message, reference_id)
+             VALUES (?, 'voluntary_service', 'Voluntary Service Approved', 
+                     'Your voluntary service has been approved by the requester', ?)`,
+            [service[0].technician_id, serviceId]
+        );
+        
+        res.json({ message: 'Service approved successfully' });
+    } catch (error) {
+        console.error('Error approving service:', error);
+        res.status(500).json({ error: 'Failed to approve service' });
+    }
+});
+
+/**
+ * Reject voluntary service (Requester)
+ * PATCH /api/voluntary-services/requester/:id/reject
+ */
+router.patch('/requester/:id/reject', auth, async (req, res) => {
+    try {
+        const serviceId = req.params.id;
+        const requesterId = req.user.id;
+        const { reason, notes } = req.body;
+        
+        const rejectionReason = reason || notes;
+        
+        if (!rejectionReason) {
+            return res.status(400).json({ error: 'Rejection reason is required' });
+        }
+        
+        console.log('❌ Requester', requesterId, 'rejecting service', serviceId);
+        
+        // Verify requester owns the printer
+        const [service] = await db.query(
+            `SELECT vs.*, upa.user_id as printer_owner_id
+             FROM voluntary_services vs
+             INNER JOIN user_printer_assignments upa ON upa.inventory_item_id = vs.printer_id
+             WHERE vs.id = ?`,
+            [serviceId]
+        );
+        
+        if (service.length === 0) {
+            return res.status(404).json({ error: 'Service not found' });
+        }
+        
+        if (service[0].printer_owner_id !== requesterId) {
+            return res.status(403).json({ error: 'You do not have permission to reject this service' });
+        }
+        
+        if (service[0].requester_approval_status !== 'pending') {
+            return res.status(400).json({ error: 'Service has already been reviewed by you' });
+        }
+        
+        // Update service
+        await db.query(
+            `UPDATE voluntary_services 
+             SET requester_approval_status = 'rejected',
+                 requester_notes = ?,
+                 requester_reviewed_at = NOW(),
+                 requester_reviewed_by = ?,
+                 status = 'rejected'
+             WHERE id = ?`,
+            [rejectionReason, requesterId, serviceId]
+        );
+        
+        // Notify technician
+        await db.query(
+            `INSERT INTO notifications (user_id, type, title, message, reference_id)
+             VALUES (?, 'voluntary_service', 'Service Rejected', 
+                     'Your voluntary service has been rejected by the requester', ?)`,
+            [service[0].technician_id, serviceId]
+        );
+        
+        res.json({ message: 'Service rejected' });
+    } catch (error) {
+        console.error('Error rejecting service:', error);
+        res.status(500).json({ error: 'Failed to reject service' });
     }
 });
 

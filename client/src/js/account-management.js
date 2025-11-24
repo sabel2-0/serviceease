@@ -234,7 +234,28 @@ async function approveCoordinator(id) {
         });
 
         if (response.ok) {
-            alert('Coordinator approved successfully');
+            const data = await response.json();
+            
+            // Send approval email notification using EmailJS
+            if (data.emailData && typeof emailjs !== 'undefined') {
+                try {
+                    await emailjs.send(
+                        "service_upjalyd",
+                        "nibfzmc",
+                        {
+                            coordinator_name: data.emailData.coordinator_name,
+                            coordinator_email: data.emailData.coordinator_email,
+                            to_email: data.emailData.to_email
+                        }
+                    );
+                    console.log('Approval email sent successfully');
+                } catch (emailError) {
+                    console.error('Error sending approval email:', emailError);
+                    // Don't fail the approval if email fails
+                }
+            }
+            
+            alert('Coordinator approved successfully! An email notification has been sent.');
             loadPendingCoordinators();
         } else {
             const error = await response.json();

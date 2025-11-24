@@ -564,6 +564,24 @@
                         <div class="text-sm font-medium">${service.technician_name}</div>
                     </div>
 
+                    <!-- Coordinator -->
+                    <div class="bg-purple-50 rounded-lg p-4">
+                        <h4 class="font-semibold text-gray-800 mb-3">
+                            <i class="fas fa-user-tie text-purple-600 mr-2"></i>Coordinator
+                        </h4>
+                        <div class="text-sm font-medium">${service.coordinator_name || 'Not assigned'}</div>
+                    </div>
+
+                    ${service.requester_name ? `
+                    <!-- Requester -->
+                    <div class="bg-blue-50 rounded-lg p-4">
+                        <h4 class="font-semibold text-gray-800 mb-3">
+                            <i class="fas fa-user text-blue-600 mr-2"></i>Requester (Printer Owner)
+                        </h4>
+                        <div class="text-sm font-medium">${service.requester_name}</div>
+                    </div>
+                    ` : ''}
+
                     <!-- Service Description -->
                     <div>
                         <h4 class="font-semibold text-gray-800 mb-2">Service Description</h4>

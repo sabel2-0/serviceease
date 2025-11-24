@@ -1,45 +1,80 @@
 // Load the sidebar component
 async function loadSidebar() {
     try {
-        // Try both files - first try coordinator-sidenav.html
-        let response;
-        try {
-            response = await fetch('../../components/coordinator-sidenav.html');
-            if (!response.ok) throw new Error('Not found');
-        } catch (e) {
-            // If not found, try coordinator-sidebar.html as fallback
-            response = await fetch('../../components/coordinator-sidebar.html');
-        }
-        
+        const response = await fetch('../../components/coordinator-sidebar.html');
         const html = await response.text();
         const tempContainer = document.createElement('div');
         tempContainer.innerHTML = html;
         
-        // Get the sidebar component - try both selectors
-        let sidebarContent = tempContainer.querySelector('.coordinator-sidenav');
-        if (!sidebarContent) {
-            sidebarContent = tempContainer.querySelector('.coordinator-sidebar-component');
-        }
+        const sidebarContent = tempContainer.querySelector('.coordinator-sidebar-component');
         
         // Insert sidebar into the page
         const sidebarContainer = document.getElementById('sidebar-container');
         if (sidebarContainer && sidebarContent) {
             sidebarContainer.appendChild(sidebarContent.cloneNode(true));
+            
+            // Initialize dropdowns after sidebar is loaded
+            initializeDropdowns();
         }
-
-        // Execute the sidebar scripts
-        const scripts = tempContainer.getElementsByTagName('script');
-        Array.from(scripts).forEach(script => {
-            const newScript = document.createElement('script');
-            if (script.src) {
-                newScript.src = script.src;
-            } else {
-                newScript.textContent = script.textContent;
-            }
-            document.body.appendChild(newScript);
-        });
     } catch (error) {
         console.error('Error loading sidebar:', error);
+    }
+}
+
+// Initialize dropdown functionality
+function initializeDropdowns() {
+    // Get current page from URL
+    const currentPage = window.location.pathname.split('/').pop().replace('.html', '');
+    
+    // Handle dropdown toggles
+    document.querySelectorAll('.dropdown-toggle').forEach(toggle => {
+        toggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            const content = this.nextElementSibling;
+            const chevron = this.querySelector('.fa-chevron-down');
+            const isOpen = !content.classList.contains('hidden');
+            
+            if (isOpen) {
+                content.classList.add('hidden');
+                chevron.style.transform = '';
+            } else {
+                content.classList.remove('hidden');
+                chevron.style.transform = 'rotate(180deg)';
+            }
+        });
+    });
+    
+    // Auto-open dropdown if current page is inside it
+    document.querySelectorAll('.nav-item[data-page]').forEach(item => {
+        if (item.dataset.page === currentPage) {
+            // Add active styling
+            item.classList.add('bg-gray-100', 'text-gray-900', 'font-medium');
+            
+            // If inside dropdown, open the parent dropdown
+            const dropdown = item.closest('.dropdown');
+            if (dropdown) {
+                const content = dropdown.querySelector('.dropdown-content');
+                const chevron = dropdown.querySelector('.fa-chevron-down');
+                if (content) {
+                    content.classList.remove('hidden');
+                    if (chevron) {
+                        chevron.style.transform = 'rotate(180deg)';
+                    }
+                }
+            }
+        }
+    });
+    
+    // Setup logout button
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            localStorage.removeItem('user');
+            localStorage.removeItem('isLoggedIn');
+            localStorage.removeItem('token');
+            window.location.href = '../../pages/login.html';
+        });
     }
 }
 

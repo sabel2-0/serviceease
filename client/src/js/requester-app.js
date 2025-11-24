@@ -202,6 +202,7 @@ async function renderRoute() {
     if (hash === 'request') path = '/pages/requester/requester-request.html';
     if (hash === 'settings') path = '/pages/requester/requester-settings.html';
     if (hash === 'history') path = '/pages/requester/requester-history.html';
+    if (hash === 'voluntary') path = '/pages/requester/requester-voluntary.html';
 
     const res = await fetch(path);
     container.innerHTML = await res.text();
@@ -218,6 +219,8 @@ async function renderRoute() {
       });
     } else if (hash === 'history') {
       await initHistoryPage();
+    } else if (hash === 'voluntary') {
+      await initVoluntaryPage();
     }
   } catch (e) {
     console.error('renderRoute', e);
@@ -781,5 +784,376 @@ async function handleApproval(approved) {
 // Make functions globally available
 window.openApprovalModal = openApprovalModal;
 window.closeApprovalModal = closeApprovalModal;
+
+// ==================== VOLUNTARY SERVICES PAGE ====================
+
+let voluntaryServices = [];
+let voluntaryHistory = [];
+let currentVoluntaryTab = 'pending';
+
+async function initVoluntaryPage() {
+  await loadVoluntaryServices();
+}
+
+async function loadVoluntaryServices() {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch('/api/voluntary-services/requester/pending', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      voluntaryServices = data.services || [];
+      updateVoluntaryStats();
+      displayVoluntaryServices();
+    } else {
+      showVoluntaryError('Failed to load voluntary services');
+    }
+  } catch (error) {
+    console.error('Error loading voluntary services:', error);
+    showVoluntaryError('Error loading voluntary services');
+  }
+}
+
+async function loadVoluntaryHistory() {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch('/api/voluntary-services/requester/history', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      voluntaryHistory = data.services || [];
+      displayVoluntaryHistory();
+      updateVoluntaryStats(); // Update stats after loading history
+    } else {
+      showVoluntaryError('Failed to load history');
+    }
+  } catch (error) {
+    console.error('Error loading history:', error);
+    showVoluntaryError('Error loading history');
+  }
+}
+
+function updateVoluntaryStats() {
+  // Pending count from voluntaryServices (pending endpoint)
+  const pendingCount = voluntaryServices.length;
+  
+  // Completed count from history
+  const completedCount = voluntaryHistory.filter(s => s.status === 'completed').length;
+  
+  // Total is pending + history
+  const totalCount = voluntaryServices.length + voluntaryHistory.length;
+  
+  document.getElementById('voluntary-pending-count').textContent = pendingCount;
+  document.getElementById('voluntary-completed-count').textContent = completedCount;
+  document.getElementById('voluntary-total-count').textContent = totalCount;
+}
+
+function displayVoluntaryServices() {
+  const container = document.getElementById('pending-voluntary-list');
+  if (!container) return;
+  
+  const pending = voluntaryServices.filter(s => s.requester_approval_status === 'pending');
+  
+  if (pending.length === 0) {
+    container.innerHTML = `
+      <div class="p-4 text-center text-gray-500">
+        <svg class="w-12 h-12 mx-auto mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+        </svg>
+        <p>No pending voluntary services</p>
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML = pending.map(service => `
+    <div class="p-4 hover:bg-gray-50 transition">
+      <div class="flex justify-between items-start mb-2">
+        <div class="flex-1">
+          <div class="font-medium text-gray-900">${service.printer_name}</div>
+          <div class="text-xs text-gray-500">${service.institution_name}</div>
+        </div>
+        <span class="px-2 py-1 text-xs rounded-full ${getVoluntaryStatusColor(service)} font-medium">
+          ${getVoluntaryStatusText(service)}
+        </span>
+      </div>
+      <div class="text-sm text-gray-600 mb-2">
+        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+        </svg>
+        By: ${service.technician_name}
+      </div>
+      <div class="text-xs text-gray-500 mb-3">
+        ${formatVoluntaryDate(service.created_at)}
+      </div>
+      <div class="flex space-x-2">
+        <button onclick="viewVoluntaryDetails(${service.id})" class="flex-1 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium hover:bg-blue-100 transition">
+          View Details
+        </button>
+        ${service.requester_approval_status === 'pending' ? `
+          <button onclick="approveVoluntaryService(${service.id})" class="flex-1 px-3 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition">
+            ✓ Approve
+          </button>
+        ` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function displayVoluntaryHistory() {
+  const container = document.getElementById('history-voluntary-list');
+  if (!container) return;
+  
+  if (voluntaryHistory.length === 0) {
+    container.innerHTML = `
+      <div class="p-4 text-center text-gray-500">
+        <p>No history yet</p>
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML = voluntaryHistory.map(service => `
+    <div class="p-4">
+      <div class="flex justify-between items-start mb-2">
+        <div class="flex-1">
+          <div class="font-medium text-gray-900">${service.printer_name}</div>
+          <div class="text-xs text-gray-500">${service.institution_name}</div>
+        </div>
+        <span class="px-2 py-1 text-xs rounded-full ${getVoluntaryStatusColor(service)} font-medium">
+          ${service.status}
+        </span>
+      </div>
+      <div class="text-sm text-gray-600 mb-2">By: ${service.technician_name}</div>
+      <div class="text-xs text-gray-500 mb-2">${formatVoluntaryDate(service.created_at)}</div>
+      <button onclick="viewVoluntaryDetails(${service.id})" class="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition w-full">
+        View Details
+      </button>
+    </div>
+  `).join('');
+}
+
+function getVoluntaryStatusColor(service) {
+  if (service.status === 'completed') return 'bg-green-100 text-green-800';
+  if (service.status === 'rejected') return 'bg-red-100 text-red-800';
+  if (service.requester_approval_status === 'pending') return 'bg-yellow-100 text-yellow-800';
+  if (service.coordinator_approval_status === 'approved') return 'bg-blue-100 text-blue-800';
+  return 'bg-gray-100 text-gray-800';
+}
+
+function getVoluntaryStatusText(service) {
+  if (service.requester_approval_status === 'pending') return 'Your Approval Needed';
+  if (service.coordinator_approval_status === 'approved') return 'Approved by Coordinator';
+  if (service.status === 'completed') return 'Completed';
+  if (service.status === 'rejected') return 'Rejected';
+  return 'Pending';
+}
+
+function formatVoluntaryDate(dateString) {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+  
+  if (diffMins < 60) return `${diffMins} min ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+  if (diffDays < 7) return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+  return date.toLocaleDateString();
+}
+
+function switchVoluntaryTab(tab) {
+  currentVoluntaryTab = tab;
+  
+  const pendingTab = document.getElementById('tab-pending-voluntary');
+  const historyTab = document.getElementById('tab-history-voluntary');
+  const pendingList = document.getElementById('pending-voluntary-list');
+  const historyList = document.getElementById('history-voluntary-list');
+  
+  if (tab === 'pending') {
+    pendingTab.classList.add('border-purple-500', 'text-purple-600');
+    pendingTab.classList.remove('border-transparent', 'text-gray-500');
+    historyTab.classList.remove('border-purple-500', 'text-purple-600');
+    historyTab.classList.add('border-transparent', 'text-gray-500');
+    pendingList.classList.remove('hidden');
+    historyList.classList.add('hidden');
+  } else {
+    historyTab.classList.add('border-purple-500', 'text-purple-600');
+    historyTab.classList.remove('border-transparent', 'text-gray-500');
+    pendingTab.classList.remove('border-purple-500', 'text-purple-600');
+    pendingTab.classList.add('border-transparent', 'text-gray-500');
+    historyList.classList.remove('hidden');
+    pendingList.classList.add('hidden');
+    loadVoluntaryHistory();
+  }
+}
+
+function viewVoluntaryDetails(serviceId) {
+  const allServices = [...voluntaryServices, ...voluntaryHistory];
+  const service = allServices.find(s => s.id === serviceId);
+  if (!service) return;
+  
+  const partsUsed = service.parts_used || [];
+  const partsHtml = partsUsed.length > 0 ? partsUsed.map(p => `
+    <div class="bg-gray-50 rounded p-2 text-sm">
+      <div class="font-medium">${p.name}</div>
+      <div class="text-xs text-gray-600">Qty: ${p.qty} ${p.unit || 'pcs'} | Brand: ${p.brand || 'N/A'}</div>
+    </div>
+  `).join('') : '<p class="text-sm text-gray-500">No parts used</p>';
+  
+  const modalContent = `
+    <div class="space-y-4">
+      <div class="bg-purple-50 rounded-lg p-3">
+        <div class="text-xs text-purple-600 font-medium mb-1">Printer</div>
+        <div class="font-bold text-gray-900">${service.printer_name}</div>
+        <div class="text-sm text-gray-600">${service.brand || ''} ${service.model || ''}</div>
+        <div class="text-xs text-gray-500 mt-1">${service.location || ''}</div>
+      </div>
+      
+      <div>
+        <div class="text-xs text-gray-600 font-medium mb-1">Institution</div>
+        <div class="text-sm">${service.institution_name}</div>
+      </div>
+      
+      <div>
+        <div class="text-xs text-gray-600 font-medium mb-1">Technician</div>
+        <div class="text-sm">${service.technician_name}</div>
+      </div>
+      
+      ${service.coordinator_name ? `
+      <div>
+        <div class="text-xs text-gray-600 font-medium mb-1">Coordinator</div>
+        <div class="text-sm">${service.coordinator_name}</div>
+      </div>
+      ` : ''}
+      
+      <div>
+        <div class="text-xs text-gray-600 font-medium mb-1">Service Description</div>
+        <div class="text-sm bg-gray-50 rounded p-3">${service.service_description || 'No description'}</div>
+      </div>
+      
+      <div>
+        <div class="text-xs text-gray-600 font-medium mb-2">Parts Used</div>
+        <div class="space-y-2">${partsHtml}</div>
+      </div>
+      
+      <div>
+        <div class="text-xs text-gray-600 font-medium mb-1">Status</div>
+        <span class="inline-block px-3 py-1 text-sm rounded-full ${getVoluntaryStatusColor(service)} font-medium">
+          ${getVoluntaryStatusText(service)}
+        </span>
+      </div>
+      
+      <div class="text-xs text-gray-500">
+        Submitted: ${new Date(service.created_at).toLocaleString()}
+      </div>
+      
+      ${service.status !== 'completed' && service.status !== 'rejected' && 
+        service.requester_approval_status === 'pending' && 
+        service.coordinator_approval_status === 'pending' ? `
+      <div class="flex space-x-3 pt-4 border-t">
+        <button onclick="rejectVoluntaryService(${service.id})" class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition">
+          Reject
+        </button>
+        <button onclick="approveVoluntaryService(${service.id})" class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition">
+          Approve
+        </button>
+      </div>
+      ` : service.coordinator_approval_status === 'approved' ? `
+      <div class="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-800">
+        <i class="fas fa-check-circle mr-2"></i>Already approved by coordinator
+      </div>
+      ` : service.status === 'completed' ? `
+      <div class="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-800">
+        <i class="fas fa-check-circle mr-2"></i>Service completed
+      </div>
+      ` : ''}
+    </div>
+  `;
+  
+  document.getElementById('voluntary-modal-content').innerHTML = modalContent;
+  document.getElementById('voluntary-details-modal').classList.remove('hidden');
+}
+
+function closeVoluntaryModal() {
+  document.getElementById('voluntary-details-modal').classList.add('hidden');
+}
+
+async function approveVoluntaryService(serviceId) {
+  if (!confirm('Approve this voluntary service?')) return;
+  
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`/api/voluntary-services/requester/${serviceId}/approve`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ notes: 'Approved by requester' })
+    });
+    
+    if (response.ok) {
+      alert('✅ Service approved successfully!');
+      closeVoluntaryModal();
+      await loadVoluntaryServices();
+    } else {
+      const error = await response.json();
+      alert(error.error || 'Failed to approve service');
+    }
+  } catch (error) {
+    console.error('Error approving service:', error);
+    alert('Failed to approve service');
+  }
+}
+
+async function rejectVoluntaryService(serviceId) {
+  const reason = prompt('Please provide a reason for rejection:');
+  if (!reason) return;
+  
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`/api/voluntary-services/requester/${serviceId}/reject`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ reason })
+    });
+    
+    if (response.ok) {
+      alert('Service rejected. Technician has been notified.');
+      closeVoluntaryModal();
+      await loadVoluntaryServices();
+    } else {
+      const error = await response.json();
+      alert(error.error || 'Failed to reject service');
+    }
+  } catch (error) {
+    console.error('Error rejecting service:', error);
+    alert('Failed to reject service');
+  }
+}
+
+function showVoluntaryError(message) {
+  const pending = document.getElementById('pending-voluntary-list');
+  const history = document.getElementById('history-voluntary-list');
+  const errorHtml = `<div class="p-4 text-center text-red-500">${message}</div>`;
+  if (pending) pending.innerHTML = errorHtml;
+  if (history) history.innerHTML = errorHtml;
+}
+
+// Make voluntary functions globally available
+window.switchVoluntaryTab = switchVoluntaryTab;
+window.viewVoluntaryDetails = viewVoluntaryDetails;
+window.closeVoluntaryModal = closeVoluntaryModal;
+window.approveVoluntaryService = approveVoluntaryService;
+window.rejectVoluntaryService = rejectVoluntaryService;
 window.handleApproval = handleApproval;
 

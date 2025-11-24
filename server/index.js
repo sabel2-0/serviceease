@@ -6,6 +6,7 @@ const nodemailer = require('nodemailer');
 const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
+const mailjet = require('node-mailjet');
 const User = require('./models/User');
 const technicianInstitutionsRoute = require('./routes/technician-institutions');
 const db = require('./config/database');
@@ -13,6 +14,12 @@ const { authenticateAdmin, authenticateCoordinator } = require('./middleware/aut
 const { auth } = require('./middleware/auth');
 const { createNotification } = require('./routes/notifications');
 require('dotenv').config();
+
+// Initialize Mailjet
+const mailjetClient = mailjet.apiConnect(
+    process.env.MAILJET_API_KEY,
+    process.env.MAILJET_SECRET_KEY
+);
 
 
 const app = express();
@@ -607,6 +614,27 @@ const transporter = nodemailer.createTransport({
 });
 
 // Routes
+// Check if email is already registered
+app.post('/api/check-email', async (req, res) => {
+    try {
+        const { email } = req.body;
+        
+        if (!email) {
+            return res.status(400).json({ error: 'Email is required' });
+        }
+        
+        const [users] = await db.query(
+            'SELECT id FROM users WHERE email = ?',
+            [email]
+        );
+        
+        res.json({ exists: users.length > 0 });
+    } catch (error) {
+        console.error('Email check error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
 app.post('/api/register', upload.fields([
     { name: 'frontId', maxCount: 1 },
     { name: 'backId', maxCount: 1 },
@@ -812,6 +840,29 @@ app.get('/api/pending-users', async (req, res) => {
     }
 });
 
+// Log document view (for audit trail)
+app.post('/api/log-document-view', authenticateAdmin, async (req, res) => {
+    try {
+        const { userId, action, timestamp } = req.body;
+        
+        await logAuditAction(
+            req.user.id,
+            req.user.role,
+            `Viewed verification documents for user ID: ${userId}`,
+            'view',
+            'user_documents',
+            userId,
+            JSON.stringify({ action, timestamp }),
+            req
+        );
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error logging document view:', error);
+        res.status(500).json({ error: 'Failed to log action' });
+    }
+});
+
 // API endpoint to approve a user
 app.post('/api/approve-user/:userId', authenticateAdmin, async (req, res) => {
     try {
@@ -849,7 +900,17 @@ app.post('/api/approve-user/:userId', authenticateAdmin, async (req, res) => {
             req
         );
         
-        res.json({ message: 'User approved successfully' });
+        // Send email data for coordinator approvals
+        const emailData = user[0].role === 'coordinator' ? {
+            coordinator_name: `${user[0].first_name} ${user[0].last_name}`,
+            coordinator_email: user[0].email,
+            to_email: user[0].email
+        } : null;
+        
+        res.json({ 
+            message: 'User approved successfully',
+            emailData
+        });
     } catch (error) {
         console.error('Error approving user:', error);
         res.status(500).json({ error: 'Server error' });
@@ -898,7 +959,55 @@ app.post('/api/reject-user/:userId', authenticateAdmin, async (req, res) => {
             req
         );
         
-        res.json({ message: 'User rejected successfully' });
+        // Send rejection email via Mailjet for coordinators
+        if (user.role === 'coordinator') {
+            try {
+                const emailPayload = {
+                    Messages: [
+                        {
+                            From: {
+                                Email: 'serviceeaseph@gmail.com',
+                                Name: 'ServiceEase'
+                            },
+                            To: [
+                                {
+                                    Email: user.email,
+                                    Name: `${user.first_name} ${user.last_name}`
+                                }
+                            ],
+                            TemplateID: 7515461,
+                            TemplateLanguage: true,
+                            Subject: 'ServiceEase Coordinator Registration Update',
+                            Variables: {
+                                coordinator_name: `${user.first_name} ${user.last_name}`,
+                                rejection_reason: reason || 'No specific reason provided'
+                            }
+                        }
+                    ]
+                };
+                
+                console.log('📧 Sending rejection email via Mailjet...');
+                console.log('Template ID:', emailPayload.Messages[0].TemplateID);
+                console.log('To:', user.email);
+                console.log('Variables:', emailPayload.Messages[0].Variables);
+                
+                const request = mailjetClient
+                    .post('send', { version: 'v3.1' })
+                    .request(emailPayload);
+                
+                const result = await request;
+                console.log('✅ Rejection email sent successfully via Mailjet to:', user.email);
+                console.log('Mailjet Response:', JSON.stringify(result.body, null, 2));
+            } catch (emailError) {
+                console.error('❌ Failed to send rejection email:', emailError);
+                console.error('Error details:', emailError.response?.body || emailError.message);
+                // Don't fail the rejection if email fails
+            }
+        }
+        
+        res.json({ 
+            message: 'User rejected successfully'
+        });
     } catch (error) {
         console.error('Error rejecting user:', error);
         // Send the actual error message to help with debugging
@@ -941,9 +1050,10 @@ app.get('/api/admin/notifications', authenticateAdmin, async (req, res) => {
                 u.email
             FROM notifications n
             LEFT JOIN users u ON n.related_user_id = u.id
+            WHERE n.user_id = ? OR (n.user_id IS NULL AND n.type IN ('coordinator_registration', 'parts_request'))
             ORDER BY n.created_at DESC
             LIMIT 50
-        `);
+        `, [req.user.id]);
 
         res.json(notifications);
     } catch (error) {
@@ -958,8 +1068,9 @@ app.get('/api/admin/notifications/count', authenticateAdmin, async (req, res) =>
         const [result] = await db.query(`
             SELECT COUNT(*) as unread_count 
             FROM notifications 
-            WHERE is_read = FALSE
-        `);
+            WHERE is_read = FALSE 
+            AND (user_id = ? OR (user_id IS NULL AND type IN ('coordinator_registration', 'parts_request')))
+        `, [req.user.id]);
 
         res.json({ count: result[0].unread_count });
     } catch (error) {
@@ -976,8 +1087,8 @@ app.put('/api/admin/notifications/:id/read', authenticateAdmin, async (req, res)
         await db.query(`
             UPDATE notifications 
             SET is_read = TRUE, updated_at = CURRENT_TIMESTAMP
-            WHERE id = ?
-        `, [id]);
+            WHERE id = ? AND user_id = ?
+        `, [id, req.user.id]);
 
         res.json({ message: 'Notification marked as read' });
     } catch (error) {
@@ -992,8 +1103,9 @@ app.put('/api/admin/notifications/read-all', authenticateAdmin, async (req, res)
         await db.query(`
             UPDATE notifications 
             SET is_read = TRUE, updated_at = CURRENT_TIMESTAMP
-            WHERE is_read = FALSE
-        `);
+            WHERE is_read = FALSE 
+            AND (user_id = ? OR (user_id IS NULL AND type IN ('coordinator_registration', 'parts_request')))
+        `, [req.user.id]);
 
         res.json({ message: 'All notifications marked as read' });
     } catch (error) {
@@ -2065,9 +2177,17 @@ app.post('/api/coordinators/:id/approve', authenticateAdmin, async (req, res) =>
             req
         );
 
+        // Send approval email notification
+        const emailData = {
+            coordinator_name: `${user[0].first_name} ${user[0].last_name}`,
+            coordinator_email: user[0].email,
+            to_email: user[0].email
+        };
+
         res.json({ 
             message: 'Coordinator approved successfully',
-            coordinator: user[0]
+            coordinator: user[0],
+            emailData // Send email data to frontend to trigger EmailJS
         });
     } catch (error) {
         console.error('Error approving coordinator:', error);
@@ -2637,6 +2757,51 @@ app.patch('/api/users/me/service-requests/:id/approve', auth, async (req, res) =
              WHERE id = ?`,
             [newStatus, userId, resolutionNotes, requestId]
         );
+        
+        // Create history entry for the status change
+        await db.query(
+            `INSERT INTO service_request_history (request_id, previous_status, new_status, changed_by, notes, created_at)
+             VALUES (?, ?, ?, ?, ?, NOW())`,
+            [requestId, request.status, newStatus, userId, resolutionNotes]
+        );
+        
+        console.log(`📝 Service request ${requestId} status updated: ${request.status} → ${newStatus} by requester ${userId}`);
+        
+        // If approved, deduct parts from technician inventory
+        if (approved) {
+            try {
+                // Get parts used in this service request with technician and part details
+                const [partsUsed] = await db.query(
+                    `SELECT spu.part_id, spu.quantity_used, spu.used_by as technician_id, 
+                            pp.name, pp.brand, ti.quantity as current_quantity
+                     FROM service_parts_used spu
+                     JOIN printer_parts pp ON spu.part_id = pp.id
+                     JOIN technician_inventory ti ON ti.technician_id = spu.used_by AND ti.part_id = spu.part_id
+                     WHERE spu.service_request_id = ?`,
+                    [requestId]
+                );
+                
+                if (partsUsed && partsUsed.length > 0) {
+                    console.log(`📦 Deducting ${partsUsed.length} parts from technician inventory for service request ${requestId}`);
+                    
+                    for (const part of partsUsed) {
+                        const newQuantity = Math.max(0, part.current_quantity - part.quantity_used);
+                        
+                        await db.query(
+                            'UPDATE technician_inventory SET quantity = ?, last_updated = NOW() WHERE technician_id = ? AND part_id = ?',
+                            [newQuantity, part.technician_id, part.part_id]
+                        );
+                        
+                        console.log(`✅ Deducted ${part.quantity_used} of "${part.name}" (${part.brand || 'Generic'}) from technician ${part.technician_id} inventory. Old: ${part.current_quantity}, New: ${newQuantity}`);
+                    }
+                } else {
+                    console.log(`ℹ️ No parts were used in service request ${requestId}`);
+                }
+            } catch (inventoryError) {
+                console.error('❌ Error deducting parts from inventory:', inventoryError);
+                // Don't fail the approval if inventory deduction fails
+            }
+        }
         
         // Send notification to technician
         if (request.assigned_technician_id) {
@@ -3630,6 +3795,7 @@ app.post('/api/service-requests/:id/approve-completion', authenticateAdmin, asyn
             request_number: request.request_number,
             status: request.status,
             assigned_technician_id: request.assigned_technician_id,
+            resolved_by: request.resolved_by,
             requester_first_name: request.requester_first_name,
             requester_last_name: request.requester_last_name,
             printer_name: request.printer_name,
@@ -3663,6 +3829,67 @@ app.post('/api/service-requests/:id/approve-completion', authenticateAdmin, asyn
              WHERE id = ?`,
             [newStatus, id]
         );
+        
+        // If approved, deduct parts from technician inventory
+        const technicianId = request.assigned_technician_id || request.resolved_by;
+        
+        if (approved && technicianId) {
+            try {
+                console.log(`[INVENTORY DEDUCTION] Starting deduction for technician ${technicianId}, service request ${id}`);
+                
+                // Get all parts used for this service request
+                const [partsUsed] = await db.query(
+                    `SELECT spu.*, pp.name as part_name, pp.brand as part_brand
+                     FROM service_parts_used spu
+                     JOIN printer_parts pp ON spu.part_id = pp.id
+                     WHERE spu.service_request_id = ?`,
+                    [id]
+                );
+                
+                console.log(`[INVENTORY DEDUCTION] Found ${partsUsed.length} parts to deduct for service request ${id}`, partsUsed);
+                
+                // Deduct each part from technician inventory
+                for (const part of partsUsed) {
+                    try {
+                        // Check current inventory
+                        const [inventory] = await db.query(
+                            `SELECT quantity FROM technician_inventory 
+                             WHERE technician_id = ? AND part_id = ?`,
+                            [technicianId, part.part_id]
+                        );
+                        
+                        console.log(`[INVENTORY DEDUCTION] Current inventory for part ${part.part_id}:`, inventory);
+                        
+                        if (inventory.length > 0) {
+                            const currentQty = inventory[0].quantity;
+                            const newQty = currentQty - part.quantity_used;
+                            
+                            if (newQty >= 0) {
+                                await db.query(
+                                    `UPDATE technician_inventory 
+                                     SET quantity = ?, last_updated = NOW()
+                                     WHERE technician_id = ? AND part_id = ?`,
+                                    [newQty, technicianId, part.part_id]
+                                );
+                                console.log(`[INVENTORY DEDUCTION] ✅ Deducted ${part.quantity_used}x ${part.part_name} from technician ${technicianId}. Old: ${currentQty}, New: ${newQty}`);
+                            } else {
+                                console.warn(`[INVENTORY WARNING] ⚠️ Cannot deduct ${part.quantity_used}x ${part.part_name} - insufficient inventory (current: ${currentQty})`);
+                            }
+                        } else {
+                            console.warn(`[INVENTORY WARNING] ⚠️ Part ${part.part_name} (ID: ${part.part_id}) not found in technician ${technicianId}'s inventory`);
+                        }
+                    } catch (partError) {
+                        console.error(`[INVENTORY ERROR] ❌ Failed to deduct part ${part.part_name}:`, partError);
+                        // Continue with other parts even if one fails
+                    }
+                }
+            } catch (inventoryError) {
+                console.error('[INVENTORY ERROR] ❌ Failed to process inventory deduction:', inventoryError);
+                // Don't fail the approval if inventory deduction fails
+            }
+        } else {
+            console.log(`[INVENTORY DEDUCTION] Skipping deduction - approved: ${approved}, technicianId: ${technicianId}`);
+        }
         
         // Notify technician
         console.log('[APPROVAL DEBUG] Checking if should notify technician...', {
@@ -3725,9 +3952,23 @@ app.get('/api/service-parts-used/:requestId', auth, async (req, res) => {
         const { requestId } = req.params;
         
         const [parts] = await db.query(
-            `SELECT * FROM service_parts_used 
-             WHERE service_request_id = ? 
-             ORDER BY created_at ASC`,
+            `SELECT 
+                spu.id,
+                spu.service_request_id,
+                spu.quantity_used as quantity,
+                spu.notes,
+                spu.used_by,
+                spu.used_at,
+                pp.name as part_name,
+                pp.brand as part_brand,
+                pp.category,
+                u.first_name as used_by_first_name,
+                u.last_name as used_by_last_name
+             FROM service_parts_used spu
+             LEFT JOIN printer_parts pp ON spu.part_id = pp.id
+             LEFT JOIN users u ON spu.used_by = u.id
+             WHERE spu.service_request_id = ? 
+             ORDER BY spu.used_at ASC`,
             [requestId]
         );
         
