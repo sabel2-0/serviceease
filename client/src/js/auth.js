@@ -196,6 +196,9 @@ async function loginUser({ email, password }) {
             throw new Error(data.error || 'Login failed');
         }
 
+        // Clear redirect flag - successful login
+        sessionStorage.removeItem('redirecting_to_login');
+
         // Store user data in localStorage
         localStorage.setItem('user', JSON.stringify(data.user));
         localStorage.setItem('isLoggedIn', 'true');

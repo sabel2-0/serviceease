@@ -38,169 +38,38 @@
         }
         
         .client-card {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            background: #ffffff;
+            transition: all 0.2s ease;
+            background: linear-gradient(to bottom, #ffffff, #f9fafb);
             border: 1px solid #e5e7eb;
-            position: relative;
-            overflow: hidden;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
         }
-        
-        /* Text wrapping utilities */
-        .word-wrap { word-wrap: break-word; }
-        .break-word { overflow-wrap: break-word; }
-        .hyphens-auto { hyphens: auto; }
-        .line-height-1\.3 { line-height: 1.3; }
         
         .client-card.highlighted-card {
-            background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+            background: linear-gradient(to bottom, #f0fdf4, #dcfce7);
             border: 2px solid #22c55e;
-            box-shadow: 0 10px 25px rgba(34, 197, 94, 0.15);
-            transform: scale(1.02);
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.1);
         }
         
-        .flash-highlight {
-            animation: flashHighlight 3s ease-in-out;
-        }
-        
-        @keyframes flashHighlight {
-            0%, 100% { box-shadow: 0 10px 25px rgba(34, 197, 94, 0.15); }
-            50% { box-shadow: 0 20px 40px rgba(34, 197, 94, 0.3); }
-        }
-        
-        .client-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, #10b981, #059669);
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-        
-        .client-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-            border-color: #d1fae5;
-        }
-        
-        .client-card:hover::before {
-            opacity: 1;
-        }
-        
-        .client-card.deactivated {
-            background: #fafafa;
-        }
-        
-        .status-badge {
-            backdrop-filter: blur(8px);
-            font-weight: 600;
-            letter-spacing: 0.025em;
-        }
-        
-        .action-button {
-            transition: all 0.2s ease-in-out;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .action-button::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            transition: width 0.3s, height 0.3s;
-        }
-        
-        .action-button:hover::before {
-            width: 100px;
-            height: 100px;
-        }
-        
-        .action-button:hover {
-            transform: translateY(-1px);
-        }
-        
-        .technician-badge {
-            background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
-            border: 1px solid #86efac;
-        }
-        
-        .warning-badge {
-            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-            border: 1px solid #f59e0b;
-        }
-        
-        .multiple-tech-badge {
-            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-            border: 1px solid #60a5fa;
-        }
-        
-        .card-icon {
-            /* Dynamic background color set via JavaScript based on status */
-            box-shadow: 0 4px 14px 0 rgba(16, 185, 129, 0.39);
-        }
-        
-        .card-icon.bg-red-500 {
-            box-shadow: 0 4px 14px 0 rgba(239, 68, 68, 0.39);
-        }
-        
-        /* Deactivated card styling */
-        .client-card.deactivated {
-            background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
-            border: 1px solid #e5e7eb;
-            transition: all 0.3s ease;
-        }
-        
-        .client-card.deactivated::before {
-            background: linear-gradient(90deg, #ef4444, #dc2626);
-        }
-        
-        .client-card.deactivated:hover {
+        .client-card:hover:not(.deactivated) {
+            border-color: #10b981;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(239, 68, 68, 0.15);
-            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-            border: 1px solid #fecaca;
         }
         
-        .client-card.deactivated:hover::before {
-            opacity: 1;
-        }
-        
-        .client-card.deactivated .card-footer {
-            background: linear-gradient(to right, transparent, #f3f4f6, transparent);
-        }
-        
-        .client-card.deactivated:hover .card-footer {
-            background: linear-gradient(to right, transparent, #fee2e2, transparent);
-        }
-        
-        .institution-id {
-            background: #f8fafc;
-            color: #64748b;
-            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
-        }
-        
-        .card-footer {
-            background: linear-gradient(to right, transparent, #f9fafb, transparent);
+        .client-card.deactivated {
+            background: linear-gradient(to bottom, #fafafa, #f5f5f5);
         }
     </style>
 </head>
-<body class="bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
+<body class="bg-slate-50 min-h-screen">
     <div class="flex h-screen">
         <!-- Dynamic Sidebar -->
         <div id="dynamic-sidebar"></div>
 
         <!-- Main Content -->
-        <main class="flex-1 overflow-auto bg-gradient-to-br from-slate-50 to-white">
+        <main class="flex-1 overflow-auto bg-gradient-to-br from-slate-50 via-blue-50/30 to-white">
             <!-- Header Section -->
-            <div class="bg-white shadow-sm border-b border-slate-200 px-8 py-8">
+            <div class="bg-white shadow-sm border-b border-slate-200 px-8 py-5">
                 <div class="flex items-center justify-between">
                     <div class="animate-fade-in flex items-center space-x-4">
                         <div class="p-3 bg-green-100 rounded-xl">
@@ -210,7 +79,7 @@
                             <h1 class="text-3xl font-bold text-gray-900">
                                 Client Management
                             </h1>
-                            <p class="text-slate-600 text-lg">Assign and manage clients for your organization</p>
+        
                         </div>
                     </div>
                 </div>
@@ -219,7 +88,7 @@
             <!-- Main Content Area -->
             <div class="p-8">
                 <!-- Tab Navigation -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-6">
+                <div class="bg-gradient-to-r from-white to-green-50 rounded-xl shadow-lg border border-green-100 mb-6">
                     <div class="border-b border-gray-200">
                         <nav class="-mb-px flex space-x-8 px-8" aria-label="Tabs">
                             <button onclick="switchTab('active')" id="activeTab" class="tab-button active border-b-2 border-blue-500 py-4 px-1 text-sm font-semibold text-blue-600 flex items-center space-x-2">
@@ -261,54 +130,60 @@
                     </div>
                 </div>
 
-                <!-- Clients Grid -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
-                    <div class="flex items-center justify-between mb-8">
-                        <div class="flex items-center space-x-4">
-                            <div class="p-3 bg-green-100 rounded-xl">
-                                <i class="fas fa-building text-green-600 text-xl"></i>
-                            </div>
-                            <div>
-                                <h2 class="text-xl font-bold text-gray-900">Select a Client</h2>
-                                <p class="text-gray-600 mt-1">Click on any client card to view and manage their details</p>
-                            </div>
-                        </div>
-                        <div class="flex items-center space-x-3">
-                            <button onclick="refreshData()" class="p-3 bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-xl transition-all duration-200 border border-gray-200" title="Refresh">
-                                <i class="fas fa-sync-alt"></i>
-                            </button>
-                            <button onclick="openAddClientModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl flex items-center space-x-2 transition-all duration-200 font-semibold shadow-sm">
-                                <i class="fas fa-plus"></i>
-                                <span>Add Client</span>
-                            </button>
+                <!-- Clients Grid with A-Z Sidebar and Pagination -->
+                <div class="bg-gradient-to-r from-white to-green-50 rounded-xl shadow-lg border border-green-100 p-8 flex">
+                    <!-- A-Z Sidebar -->
+                    <div class="flex flex-col items-center mr-8 select-none">
+                        <div class="mb-2 text-xs font-semibold text-gray-500">A-Z</div>
+                        <div id="azSidebar" class="flex flex-col space-y-1">
+                            <!-- Letters will be populated by JS -->
                         </div>
                     </div>
-
-                    <!-- Clients Grid -->
-                    <div id="clientsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <!-- Client cards will be populated dynamically -->
-                    </div>
-
-                    <!-- Empty State -->
-                    <div id="emptyState" class="hidden text-center py-16">
-                        <div class="flex justify-center mb-6">
-                            <div class="relative">
-                                <div class="p-8 bg-gradient-to-br from-gray-50 to-gray-100 rounded-3xl">
-                                    <i class="fas fa-building text-gray-400 text-5xl"></i>
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between mb-8">
+                            <div class="flex items-center space-x-4">
+                                <div class="p-3 bg-green-100 rounded-xl">
+                                    <i class="fas fa-building text-green-600 text-xl"></i>
                                 </div>
-                                <div class="absolute -bottom-2 -right-2 p-2 bg-green-500 rounded-full">
-                                    <i class="fas fa-plus text-white text-sm"></i>
+                                <div>
+                                    <h2 class="text-xl font-bold text-gray-900">Select a Client</h2>
+                                    <p class="text-gray-600 mt-1">Click on any client card to view and manage their details</p>
                                 </div>
                             </div>
+                            <div class="flex items-center space-x-3">
+                                <button onclick="refreshData()" class="p-3 bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-xl transition-all duration-200 border border-gray-200" title="Refresh">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                                <button onclick="openAddClientModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl flex items-center space-x-2 transition-all duration-200 font-semibold shadow-sm">
+                                    <i class="fas fa-plus"></i>
+                                    <span>Add Client</span>
+                                </button>
+                            </div>
                         </div>
-                        <h3 class="text-2xl font-bold text-gray-900 mb-3">No clients found</h3>
-                        <p class="text-gray-600 max-w-md mx-auto mb-8">Get started by adding your first client to begin managing your organization's institutions.</p>
-                        <button onclick="openAddClientModal()" class="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-8 py-4 rounded-xl font-semibold flex items-center space-x-3 mx-auto transition-all duration-200 hover:shadow-lg transform hover:-translate-y-1">
-                            <i class="fas fa-plus"></i>
-                            <span>Add Your First Client</span>
-                        </button>
+                        <!-- Clients Grid -->
+                        <div id="clientsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <!-- Client cards will be populated dynamically -->
+                        </div>
+                        <!-- Pagination Controls -->
+                        <div id="paginationControls" class="flex justify-center items-center mt-8 space-x-2"></div>
+                        <!-- Empty State -->
+                        <div id="emptyState" class="hidden text-center py-16">
+                            <div class="flex justify-center mb-6">
+                                <div class="relative">
+                                    <div class="p-8 bg-gradient-to-br from-gray-50 to-gray-100 rounded-3xl">
+                                        <i class="fas fa-building text-gray-400 text-5xl"></i>
+                                    </div>
+                                    <div class="absolute -bottom-2 -right-2 p-2 bg-green-500 rounded-full">
+                                        <i class="fas fa-plus text-white text-sm"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <h3 class="text-2xl font-bold text-gray-900 mb-3">No clients found</h3>
+                            <p class="text-gray-600 max-w-md mx-auto mb-8">Get started by adding your first client to begin managing your organization's institutions.</p>
+                        </div>
                     </div>
                 </div>
+                
             </div>
         </main>
     </div>
@@ -776,27 +651,118 @@
             filterAndDisplayClients();
         }
 
+        // --- A-Z Sidebar and Pagination State ---
+        var currentAZ = null; // currently selected letter, or null for all
+        var currentPage = 1;
+        const PAGE_SIZE = 6;
+
+        function renderAZSidebar(institutions) {
+            const azSidebar = document.getElementById('azSidebar');
+            if (!azSidebar) return;
+            azSidebar.innerHTML = '';
+            const letters = Array.from({length: 26}, (_, i) => String.fromCharCode(65 + i));
+            letters.forEach(letter => {
+                const btn = document.createElement('button');
+                btn.textContent = letter;
+                btn.className = 'w-7 h-7 rounded text-xs font-bold flex items-center justify-center transition-all ' +
+                    (currentAZ === letter ? 'bg-green-600 text-white shadow' : 'bg-white text-gray-500 hover:bg-green-100 hover:text-green-700');
+                btn.onclick = () => {
+                    currentAZ = (currentAZ === letter) ? null : letter;
+                    currentPage = 1;
+                    filterAndDisplayClients();
+                };
+                // Only enable if at least one institution starts with this letter
+                if (!institutions.some(inst => inst.name && inst.name[0].toUpperCase() === letter)) {
+                    btn.disabled = true;
+                    btn.className += ' opacity-30 cursor-not-allowed';
+                }
+                azSidebar.appendChild(btn);
+            });
+        }
+
+        function renderPaginationControls(total, page, pageSize) {
+            const controls = document.getElementById('paginationControls');
+            if (!controls) return;
+            controls.innerHTML = '';
+            const totalPages = Math.ceil(total / pageSize);
+            if (totalPages <= 1) return;
+            const prevBtn = document.createElement('button');
+            prevBtn.textContent = 'Prev';
+            prevBtn.className = 'px-4 py-2 rounded bg-gray-100 text-gray-700 font-semibold hover:bg-green-100 disabled:opacity-40';
+            prevBtn.disabled = page === 1;
+            prevBtn.onclick = () => {
+                if (page > 1) {
+                    currentPage--;
+                    filterAndDisplayClients();
+                }
+            };
+            controls.appendChild(prevBtn);
+            // Page numbers (show up to 5)
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= page - 1 && i <= page + 1)) {
+                    const pageBtn = document.createElement('button');
+                    pageBtn.textContent = i;
+                    pageBtn.className = 'px-3 py-1 rounded font-semibold mx-1 ' + (i === page ? 'bg-green-600 text-white' : 'bg-white text-gray-700 hover:bg-green-100');
+                    pageBtn.onclick = () => {
+                        currentPage = i;
+                        filterAndDisplayClients();
+                    };
+                    controls.appendChild(pageBtn);
+                } else if (i === page - 2 || i === page + 2) {
+                    const dots = document.createElement('span');
+                    dots.textContent = '...';
+                    dots.className = 'mx-1 text-gray-400';
+                    controls.appendChild(dots);
+                }
+            }
+            const nextBtn = document.createElement('button');
+            nextBtn.textContent = 'Next';
+            nextBtn.className = 'px-4 py-2 rounded bg-gray-100 text-gray-700 font-semibold hover:bg-green-100 disabled:opacity-40';
+            nextBtn.disabled = page === totalPages;
+            nextBtn.onclick = () => {
+                if (page < totalPages) {
+                    currentPage++;
+                    filterAndDisplayClients();
+                }
+            };
+            controls.appendChild(nextBtn);
+        }
+
         function filterAndDisplayClients() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
             const typeFilter = document.getElementById('typeFilter').value;
 
-            // Filter institutions based on current tab
+            // Filter institutions based on current tab, search, type, and A-Z
             let filteredInstitutions = allInstitutions.filter(inst => {
                 const matchesTab = currentTab === 'active' ? 
                     (inst.status === 'active' || !inst.status) : 
                     inst.status === 'deactivated';
-                
                 const matchesSearch = !searchTerm || 
                     inst.name.toLowerCase().includes(searchTerm) ||
                     inst.institution_id.toLowerCase().includes(searchTerm) ||
                     inst.address.toLowerCase().includes(searchTerm);
-                
                 const matchesType = !typeFilter || inst.type === typeFilter;
-                
-                return matchesTab && matchesSearch && matchesType;
+                const matchesAZ = !currentAZ || (inst.name && inst.name[0].toUpperCase() === currentAZ);
+                return matchesTab && matchesSearch && matchesType && matchesAZ;
             });
-
-            displayClients(filteredInstitutions);
+            renderAZSidebar(allInstitutions.filter(inst => {
+                const matchesTab = currentTab === 'active' ? 
+                    (inst.status === 'active' || !inst.status) : 
+                    inst.status === 'deactivated';
+                const matchesSearch = !searchTerm || 
+                    inst.name.toLowerCase().includes(searchTerm) ||
+                    inst.institution_id.toLowerCase().includes(searchTerm) ||
+                    inst.address.toLowerCase().includes(searchTerm);
+                const matchesType = !typeFilter || inst.type === typeFilter;
+                return matchesTab && matchesSearch && matchesType;
+            }));
+            // Pagination
+            const total = filteredInstitutions.length;
+            const start = (currentPage - 1) * PAGE_SIZE;
+            const end = start + PAGE_SIZE;
+            const pagedInstitutions = filteredInstitutions.slice(start, end);
+            renderPaginationControls(total, currentPage, PAGE_SIZE);
+            displayClients(pagedInstitutions);
         }
 
         function displayClients(institutions) {
@@ -839,7 +805,7 @@
                 const isDeactivated = actualStatus === 'deactivated';
                 const isHighlighted = window.pendingHighlight && window.pendingHighlight === inst.institution_id;
                 
-                card.className = `client-card ${isDeactivated ? 'deactivated cursor-not-allowed' : 'cursor-pointer'} ${isHighlighted ? 'highlighted-card' : ''} rounded-xl p-6 group hover:shadow-lg h-[460px] overflow-hidden`;
+                card.className = `client-card ${isDeactivated ? 'deactivated cursor-not-allowed' : 'cursor-pointer'} ${isHighlighted ? 'highlighted-card' : ''} rounded-xl p-6 group hover:shadow-lg flex flex-col h-[380px]`;
                 
                 // Only allow clicking on active cards
                 if (!isDeactivated) {
@@ -890,142 +856,118 @@
                 }
 
                 card.innerHTML = `
-                    <!-- Fixed Layout Container -->
-                    <div class="h-full flex flex-col">
+                    <!-- Card with fixed section heights for alignment -->
+                    <div class="flex flex-col h-full">
                         <!-- Header Section - Fixed Height -->
-                        <div class="flex items-start space-x-4 mb-4 h-[102px] relative">
-                            <div class="card-icon p-3 rounded-xl text-white flex-shrink-0 ${isDeactivated ? 'bg-red-500' : 'bg-green-500'}">
-                                <i class="fas fa-building text-lg"></i>
+                        <div class="h-[90px] flex items-start space-x-3 mb-4">
+                            <div class="card-icon p-3 rounded-lg text-white flex-shrink-0 ${isDeactivated ? 'bg-red-500' : 'bg-green-500'}">
+                                <i class="fas fa-building text-base"></i>
                             </div>
-                            <div class="flex-1 min-w-0 overflow-hidden">
-                                <!-- Institution Name - Fixed Height -->
-                                <div class="h-[54px] flex items-start mb-2 overflow-hidden">
-                                    <h3 class="font-bold text-lg text-gray-900 transition-colors leading-tight line-clamp-2">
-                                        ${inst.name}
-                                    </h3>
-                                </div>
-                                <!-- Institution ID Row - Fixed Height -->
-                                <div class="flex items-start h-[44px]">
-                                    <div class="institution-id text-xs px-2 py-1 rounded-md font-medium bg-gray-100 text-gray-700 border truncate">
-                                        ${inst.institution_id}
-                                    </div>
+                            <div class="flex-1 min-w-0">
+                                <h3 class="font-semibold text-base text-gray-900 mb-2 leading-tight break-words line-clamp-2">
+                                    ${inst.name}
+                                </h3>
+                                <div class="text-xs px-2 py-1 rounded-md font-medium bg-gray-100 text-gray-700 border inline-block">
+                                    ${inst.institution_id}
                                 </div>
                             </div>
-                            <!-- Status Section - Absolutely positioned to avoid overlap -->
-                            <div class="absolute top-14 right-0 flex flex-col items-end">
+                            <div class="flex flex-col items-end space-y-1">
                                 ${statusBadge}
                                 ${isDeactivated ? `
-                                    <!-- Deactivation date below status badge -->
-                                    <div class="text-xs text-red-600 font-medium mt-1 text-right">
+                                    <div class="text-xs text-red-600 font-medium">
                                         ${inst.deactivated_at ? 
                                             new Date(inst.deactivated_at).toLocaleDateString('en-US', { 
                                                 month: 'short', 
                                                 day: 'numeric',
-                                                year: 'numeric',
-                                                hour: '2-digit',
-                                                minute: '2-digit'
+                                                year: 'numeric'
                                             }) : 
                                             'Date Unknown'
                                         }
                                     </div>
                                 ` : ''}
                             </div>
-                            <!-- Chevron for active cards only -->
-                            ${isDeactivated ? '' : '<div class="w-[24px] h-[24px] flex items-center justify-center flex-shrink-0"><i class="fas fa-chevron-right text-gray-300 transition-all duration-300 text-sm"></i></div>'}
                         </div>
                         
-                        <!-- Date Information Section - Fixed Height -->
-                        <div class="mb-4 ${isDeactivated ? 'h-0' : 'h-0'} overflow-hidden">
-                        </div>
-                        
-                        <!-- Institution Details Section - Fixed Height -->
-                        <div class="space-y-2 mb-4 h-[84px] overflow-hidden">
-                            <div class="flex items-center text-sm text-gray-600 h-[28px]">
-                                <i class="fas fa-tag text-gray-400 mr-3 w-4 flex-shrink-0"></i>
-                                <span class="font-medium truncate">${formatInstitutionType(inst.type)}</span>
+                        <!-- Details Section - Fixed Height -->
+                        <div class="h-[80px] space-y-2.5 mb-4 overflow-hidden">
+                            <div class="flex items-center text-sm text-gray-600">
+                                <i class="fas fa-tag text-gray-400 mr-2.5 w-4 flex-shrink-0"></i>
+                                <span class="font-medium">${formatInstitutionType(inst.type)}</span>
                             </div>
                             
-                            <div class="flex items-start text-sm text-gray-600 h-[48px] overflow-hidden">
-                                <i class="fas fa-map-marker-alt text-gray-400 mr-3 w-4 mt-0.5 flex-shrink-0"></i>
-                                <span class="leading-tight line-clamp-3">${inst.address}</span>
+                            <div class="flex items-start text-sm text-gray-600">
+                                <i class="fas fa-map-marker-alt text-gray-400 mr-2.5 w-4 mt-0.5 flex-shrink-0"></i>
+                                <span class="leading-relaxed break-words line-clamp-3">${inst.address}</span>
                             </div>
                         </div>
                         
-                        <!-- Technician Assignment Section - Fixed Height -->
-                        <div class="mb-6 h-[68px] flex items-start pt-2 overflow-hidden">
+                        <!-- Technician Section - Fixed Height -->
+                        <div class="h-[60px] mb-4">
                             ${technicianSection}
                         </div>
                         
-                        <!-- Footer Section - Fixed Height and Position -->
-                        <div class="mt-auto">
-                            <div class="flex justify-between items-center pt-4 border-t border-gray-100 h-[64px]">
-                                <!-- Action Buttons - Fixed Width Container -->
-                                <div class="flex space-x-1 w-[120px]">
+                        <!-- Spacer to push footer to bottom -->
+                        <div class="flex-1"></div>
+                        
+                        <!-- Footer Section - Fixed at bottom -->
+                        <div class="pt-3 border-t border-gray-100 flex-shrink-0">
+                            <div class="flex justify-between items-center">
+                                <div class="flex space-x-1">
                                     ${isDeactivated ? `
-                                        <!-- Only reactivate button is enabled for deactivated clients -->
-                                        <button disabled class="action-button p-2.5 text-gray-300 bg-gray-100 rounded-lg cursor-not-allowed relative z-1 w-[36px] h-[36px] flex items-center justify-center opacity-50" 
+                                        <button disabled class="p-2 text-gray-300 bg-gray-100 rounded-lg cursor-not-allowed w-9 h-9 flex items-center justify-center opacity-50" 
                                             title="Not available for deactivated clients">
-                                            <i class="fas fa-user-plus text-sm relative z-1"></i>
+                                            <i class="fas fa-user-plus text-sm"></i>
                                         </button>
-                                        <button disabled class="action-button p-2.5 text-gray-300 bg-gray-100 rounded-lg cursor-not-allowed relative z-1 w-[36px] h-[36px] flex items-center justify-center opacity-50" 
+                                        <button disabled class="p-2 text-gray-300 bg-gray-100 rounded-lg cursor-not-allowed w-9 h-9 flex items-center justify-center opacity-50" 
                                             title="Not available for deactivated clients">
-                                            <i class="fas fa-edit text-sm relative z-1"></i>
+                                            <i class="fas fa-edit text-sm"></i>
                                         </button>
-                                        <!-- Only reactivate button is enabled -->
                                         <button onclick="event.stopPropagation(); confirmClientStatusToggle('${inst.institution_id}', '${actualStatus}', this.dataset.institutionName)" 
                                             data-institution-name="${inst.name}"
-                                            class="action-button p-2.5 text-white bg-green-600 hover:bg-green-700 rounded-lg transition-all relative z-1 shadow-md w-[36px] h-[36px] flex items-center justify-center" 
+                                            class="p-2 text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors w-9 h-9 flex items-center justify-center" 
                                             title="Reactivate Client">
-                                            <i class="fas fa-check-circle text-sm relative z-1"></i>
+                                            <i class="fas fa-check-circle text-sm"></i>
                                         </button>
                                     ` : `
-                                        <!-- Normal buttons for active clients -->
                                         <button onclick="event.stopPropagation(); assignTechnician('${inst.institution_id}')" 
-                                            class="action-button p-2.5 text-green-600 bg-green-50 hover:bg-green-600 hover:text-white rounded-lg transition-all relative z-1 w-[36px] h-[36px] flex items-center justify-center" 
+                                            class="p-2 text-green-600 bg-green-50 hover:bg-green-600 hover:text-white rounded-lg transition-colors w-9 h-9 flex items-center justify-center" 
                                             title="Assign Technician">
-                                            <i class="fas fa-user-plus text-sm relative z-1"></i>
+                                            <i class="fas fa-user-plus text-sm"></i>
                                         </button>
                                         <button onclick="event.stopPropagation(); editClient('${inst.institution_id}')" 
-                                            class="action-button p-2.5 text-blue-600 bg-blue-50 hover:bg-blue-600 hover:text-white rounded-lg transition-all relative z-1 w-[36px] h-[36px] flex items-center justify-center" 
+                                            class="p-2 text-blue-600 bg-blue-50 hover:bg-blue-600 hover:text-white rounded-lg transition-colors w-9 h-9 flex items-center justify-center" 
                                             title="Edit Client">
-                                            <i class="fas fa-edit text-sm relative z-1"></i>
+                                            <i class="fas fa-edit text-sm"></i>
                                         </button>
                                         <button onclick="event.stopPropagation(); confirmClientStatusToggle('${inst.institution_id}', '${actualStatus}', this.dataset.institutionName)" 
                                             data-institution-name="${inst.name}"
-                                            class="action-button p-2.5 text-red-600 bg-red-50 hover:bg-red-600 hover:text-white rounded-lg transition-all relative z-1 w-[36px] h-[36px] flex items-center justify-center" 
+                                            class="p-2 text-red-600 bg-red-50 hover:bg-red-600 hover:text-white rounded-lg transition-colors w-9 h-9 flex items-center justify-center" 
                                             title="Deactivate Client">
-                                            <i class="fas fa-ban text-sm relative z-1"></i>
+                                            <i class="fas fa-ban text-sm"></i>
                                         </button>
                                     `}
                                 </div>
                                 
-                                <!-- Date Section - Flexible Width Container -->
-                                <div class="flex-1 text-right ml-4">
+                                <div class="flex-1 text-right ml-3">
                                     ${isDeactivated ? `
-                                        <!-- Deactivated cards: Show only added date next to button -->
                                         <div class="text-right">
-                                            <div class="text-xs text-green-600 font-semibold bg-green-50 px-2 py-1 rounded border border-green-200 mb-1 inline-block">Added</div>
-                                            <div class="text-xs text-gray-600 font-medium">
+                                            <div class="text-xs text-green-600 font-semibold bg-green-50 px-2 py-1 rounded border border-green-200 inline-block">Added</div>
+                                            <div class="text-xs text-gray-600 font-medium mt-0.5">
                                                 ${new Date(inst.created_at).toLocaleDateString('en-US', { 
                                                     month: 'short', 
                                                     day: 'numeric',
-                                                    year: 'numeric',
-                                                    hour: '2-digit',
-                                                    minute: '2-digit'
+                                                    year: 'numeric'
                                                 })}
                                             </div>
                                         </div>
                                     ` : `
-                                        <!-- Active cards: Show added date on right -->
                                         <div class="text-right">
                                             <div class="text-xs text-gray-400 font-medium">Added</div>
                                             <div class="text-xs text-gray-600 font-semibold">
                                                 ${new Date(inst.created_at).toLocaleDateString('en-US', { 
                                                     month: 'short', 
                                                     day: 'numeric',
-                                                    year: 'numeric',
-                                                    hour: '2-digit',
-                                                    minute: '2-digit'
+                                                    year: 'numeric'
                                                 })}
                                             </div>
                                         </div>

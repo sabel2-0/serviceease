@@ -8,12 +8,21 @@
     <!-- AUTHENTICATION CHECK - Runs before page renders -->
     <script>
         (function() {
+            // If already redirecting to login, stop
+            if (sessionStorage.getItem('redirecting_to_login') === 'true') {
+                window.location.replace('/pages/login.html');
+                return;
+            }
+            
             // Check authentication immediately
             const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
             const userStr = localStorage.getItem('user');
+            const token = localStorage.getItem('token');
             
-            if (!isLoggedIn || !userStr) {
+            if (!isLoggedIn || !userStr || !token) {
                 // Not logged in - redirect to login
+                console.log('🔒 No auth data - redirecting to login');
+                sessionStorage.setItem('redirecting_to_login', 'true');
                 window.location.replace('/pages/login.html');
                 return;
             }
@@ -23,6 +32,7 @@
                 // Check if user is coordinator
                 if (user.role !== 'coordinator') {
                     // Wrong role - redirect to correct dashboard
+                    console.log('🔒 Wrong role - redirecting to correct dashboard');
                     const rolePaths = {
                         'admin': '/pages/admin/admin.html',
                         'operations_officer': '/pages/operations-officer/operations-officer.html',
@@ -30,11 +40,14 @@
                         'requester': '/pages/requester/requester.html'
                     };
                     const targetPath = rolePaths[user.role] || '/pages/login.html';
+                    sessionStorage.setItem('redirecting_to_login', 'true');
                     window.location.replace(targetPath);
                     return;
                 }
             } catch (e) {
                 // Invalid user data - redirect to login
+                console.log('🔒 Invalid user data - redirecting to login');
+                sessionStorage.setItem('redirecting_to_login', 'true');
                 window.location.replace('/pages/login.html');
                 return;
             }
@@ -700,6 +713,7 @@
             }
         }, true);
     </script>
+    <script src="../../js/dynamic-sidebar-loader.js"></script>
     <script src="../../js/auth.js"></script>
     <script src="../../js/coordinator-header-loader.js"></script>
     <script src="../../js/coordinator-ui.js" type="module"></script>

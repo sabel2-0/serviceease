@@ -191,6 +191,13 @@
         @keyframes spin {
             to { transform: translateY(-50%) rotate(360deg); }
         }
+        input[type="password"]::-ms-reveal,
+        input[type="password"]::-ms-clear {
+            display: none;
+        }
+        .upload-container.error .upload-dropzone {
+            border-color: #ef4444;
+        }
         .form-group {
             position: relative;
             margin-bottom: 1rem;
@@ -393,9 +400,9 @@
                                         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent 
                                         transition-all duration-200 ease-in-out"
                                         placeholder="John"
-                                            pattern="[A-Za-z ]{2,}"
-                                        title="Please enter at least 2 letters">
-                                    <p class="mt-1 text-sm text-red-600 hidden"></p>
+                                            pattern="[A-Za-zñÑ\\. ]{2,}"
+                                        title="Only letters, spaces, ñ, and . are allowed">
+                                    <p class="field-error mt-1 text-sm text-red-600 hidden"></p>
                                 </div>
 
                                 <div class="form-group">
@@ -405,9 +412,9 @@
                                         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent 
                                         transition-all duration-200 ease-in-out"
                                         placeholder="Doe"
-                                            pattern="[A-Za-z ]{2,}"
-                                        title="Please enter at least 2 letters">
-                                    <p class="mt-1 text-sm text-red-600 hidden"></p>
+                                            pattern="[A-Za-zñÑ\\. ]{2,}"
+                                        title="Only letters, spaces, ñ, and . are allowed">
+                                    <p class="field-error mt-1 text-sm text-red-600 hidden"></p>
                                 </div>
 
                             </div>
@@ -433,7 +440,7 @@
                                         <i class="fas fa-check-circle"></i>
                                     </div>
                                 </div>
-                                <p class="mt-1 text-sm text-red-600 hidden"></p>
+                                <p class="field-error mt-1 text-sm text-red-600 hidden"></p>
                             </div>
 
                             <div class="flex items-center gap-4">
@@ -503,11 +510,11 @@
 
                             <div class="grid grid-cols-2 gap-6">
                                 <!-- Front ID Upload -->
-                                <div class="upload-container group">
+                                <div class="upload-container group" id="frontIdContainer">
                                     <input type="file" id="front-id-upload" name="frontId" accept="image/*" class="hidden" />
                                     <label for="front-id-upload" class="block w-full cursor-pointer">
                                         <div class="aspect-w-3 aspect-h-2 mb-2">
-                                            <div class="w-full h-full border-2 border-dashed border transition-all duration-200 group-hover:border-blue-500 flex flex-col items-center justify-center p-4">
+                                            <div class="upload-dropzone w-full h-full border-2 border-dashed border transition-all duration-200 group-hover:border-blue-500 flex flex-col items-center justify-center p-4">
                                                 <div id="front-preview" class="hidden w-full h-full">
                                                     <img src="" alt="Front ID Preview" class="w-full h-full object-contain border">
                                                 </div>
@@ -515,18 +522,24 @@
                                                     <i class="fas fa-id-card text-3xl text-gray-400 mb-2"></i>
                                                     <p class="text-sm font-medium text-gray-900">Front of ID</p>
                                                     <p class="text-xs text-gray-500 mt-1">Click to upload</p>
+                                                    <div class="mt-4 flex justify-center gap-4">
+                                                        <button type="button" data-action="open-upload" data-target="front-id-upload" class="px-4 py-2 bg-gray-50 text-gray-600 border text-sm hover:bg-gray-100 transition-colors">
+                                                            <i class="fas fa-upload mr-2"></i>Upload
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </label>
+                                    <p class="field-error mt-2 text-sm text-red-600 hidden"></p>
                                 </div>
 
                                 <!-- Back ID Upload -->
-                                <div class="upload-container group">
+                                <div class="upload-container group" id="backIdContainer">
                                     <input type="file" id="back-id-upload" name="backId" accept="image/*" class="hidden" />
                                     <label for="back-id-upload" class="block w-full cursor-pointer">
                                         <div class="aspect-w-3 aspect-h-2 mb-2">
-                                            <div class="w-full h-full border-2 border-dashed border transition-all duration-200 group-hover:border-blue-500 flex flex-col items-center justify-center p-4">
+                                            <div class="upload-dropzone w-full h-full border-2 border-dashed border transition-all duration-200 group-hover:border-blue-500 flex flex-col items-center justify-center p-4">
                                                 <div id="back-preview" class="hidden w-full h-full">
                                                     <img src="" alt="Back ID Preview" class="w-full h-full object-contain border">
                                                 </div>
@@ -534,20 +547,26 @@
                                                     <i class="fas fa-id-card text-3xl text-gray-400 mb-2"></i>
                                                     <p class="text-sm font-medium text-gray-900">Back of ID</p>
                                                     <p class="text-xs text-gray-500 mt-1">Click to upload</p>
+                                                    <div class="mt-4 flex justify-center gap-4">
+                                                        <button type="button" data-action="open-upload" data-target="back-id-upload" class="px-4 py-2 bg-gray-50 text-gray-600 border text-sm hover:bg-gray-100 transition-colors">
+                                                            <i class="fas fa-upload mr-2"></i>Upload
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </label>
+                                    <p class="field-error mt-2 text-sm text-red-600 hidden"></p>
                                 </div>
                             </div>
 
                             <!-- Selfie Upload -->
                             <div class="mt-6">
-                                <div class="upload-container group">
+                                <div class="upload-container group" id="selfieContainer">
                                     <input type="file" id="selfie-upload" name="selfie" accept="image/*" class="hidden" />
                                     <label for="selfie-upload" class="block w-full cursor-pointer">
                                         <div class="aspect-w-16 aspect-h-9">
-                                            <div class="w-full h-full border-2 border-dashed border transition-all duration-200 group-hover:border-blue-500 flex flex-col items-center justify-center p-6">
+                                            <div class="upload-dropzone w-full h-full border-2 border-dashed border transition-all duration-200 group-hover:border-blue-500 flex flex-col items-center justify-center p-6">
                                                 <div id="selfie-preview" class="hidden w-full h-full">
                                                     <img src="" alt="Selfie Preview" class="w-full h-full object-contain border">
                                                 </div>
@@ -559,7 +578,7 @@
                                                         <button type="button" data-action="take-photo" class="px-4 py-2 bg-blue-50 text-blue-600 border text-sm hover:bg-blue-100 transition-colors">
                                                             <i class="fas fa-camera mr-2"></i>Take Photo
                                                         </button>
-                                                        <button type="button" class="px-4 py-2 bg-gray-50 text-gray-600 border text-sm hover:bg-gray-100 transition-colors">
+                                                        <button type="button" data-action="open-upload" data-target="selfie-upload" class="px-4 py-2 bg-gray-50 text-gray-600 border text-sm hover:bg-gray-100 transition-colors">
                                                             <i class="fas fa-upload mr-2"></i>Upload
                                                         </button>
                                                     </div>
@@ -567,7 +586,14 @@
                                             </div>
                                         </div>
                                     </label>
+                                    <p class="field-error mt-2 text-sm text-red-600 hidden"></p>
                                 </div>
+                            </div>
+
+                            <div class="flex justify-end mt-6">
+                                <button type="button" id="clearUploadsBtn" class="px-4 py-2 bg-white text-gray-700 border text-sm rounded-md hover:bg-gray-50 transition-colors">
+                                    <i class="fas fa-times mr-2"></i>Clear All Photos
+                                </button>
                             </div>
 
                             <!-- Guidelines -->
@@ -606,7 +632,7 @@
                                         transition-all duration-200 ease-in-out"
                                         placeholder="Enter your password"
                                         minlength="8">
-                                    <button type="button" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                                    <button type="button" data-toggle-password class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
                                         onclick="togglePassword('password')">
                                         <i class="fas fa-eye"></i>
                                     </button>
@@ -624,12 +650,12 @@
                                         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent 
                                         transition-all duration-200 ease-in-out"
                                         placeholder="Confirm your password">
-                                    <button type="button" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                                    <button type="button" data-toggle-password class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
                                         onclick="togglePassword('confirmPassword')">
                                         <i class="fas fa-eye"></i>
                                     </button>
                                 </div>
-                                <p class="mt-1 text-sm text-red-600 hidden"></p>
+                                <p class="field-error mt-1 text-sm text-red-600 hidden"></p>
                             </div>
                         </div>
                         <div class="mt-6 text-center">
@@ -653,9 +679,9 @@
                             <i class="fas fa-arrow-left mr-2"></i>
                             Previous
                         </button>
-                        <p id="signInText" class="text-xs text-gray-500">
-                            Already have an account? 
-                            <a href="/login" class="text-gray-900 hover:underline">Sign in</a>
+                        <p id="signInText" class="text-sm text-gray-600">
+                            Already have an account?
+                            <a href="/login" class="text-indigo-600 font-medium hover:text-indigo-700"> Sign in</a>
                         </p>
                     </div>
                     <div>
@@ -1243,8 +1269,8 @@
                 requiredFields.forEach(field => {
                     // Reset error state
                     field.classList.remove('border-red-500');
-                    const errorMessage = field.parentElement.nextElementSibling;
-                    if (errorMessage && errorMessage.classList.contains('text-red-600')) {
+                    const errorMessage = field.parentElement.querySelector('.field-error');
+                    if (errorMessage) {
                         errorMessage.classList.add('hidden');
                     }
 
@@ -1260,11 +1286,11 @@
 
                     // Additional validation for specific fields
                     if (field.id === 'firstName' || field.id === 'lastName') {
-                        if (!field.value.match(/^[A-Za-z ]{2,}$/)) {
+                        if (!field.value.match(/^[A-Za-zñÑ\\. ]{2,}$/)) {
                             isValid = false;
                             field.classList.add('border-red-500');
                             if (errorMessage) {
-                                errorMessage.textContent = 'Please enter at least 2 letters';
+                                errorMessage.textContent = 'Special characters are not allowed (ñ and . are okay)';
                                 errorMessage.classList.remove('hidden');
                             }
                         }
@@ -1293,6 +1319,42 @@
                         }
                     }
                 });
+
+                if (step === 4) {
+                    const fileFields = [
+                        {
+                            input: document.getElementById('front-id-upload'),
+                            container: document.getElementById('frontIdContainer'),
+                            message: 'Please upload the front of your ID'
+                        },
+                        {
+                            input: document.getElementById('back-id-upload'),
+                            container: document.getElementById('backIdContainer'),
+                            message: 'Please upload the back of your ID'
+                        },
+                        {
+                            input: document.getElementById('selfie-upload'),
+                            container: document.getElementById('selfieContainer'),
+                            message: 'Please upload a selfie with your ID'
+                        },
+                    ];
+
+                    fileFields.forEach(({ input, container, message }) => {
+                        if (!input || !container) return;
+                        container.classList.remove('error');
+                        const errorEl = container.querySelector('.field-error');
+                        if (errorEl) errorEl.classList.add('hidden');
+
+                        if (!input.files || !input.files.length) {
+                            isValid = false;
+                            container.classList.add('error');
+                            if (errorEl) {
+                                errorEl.textContent = message;
+                                errorEl.classList.remove('hidden');
+                            }
+                        }
+                    });
+                }
 
                 // If this is the final security step, ensure password and confirm password match
                 if (step === totalSteps) {
@@ -1350,6 +1412,47 @@
             setupInstitutionSearch(); // Setup immediately so user can click
             loadInstitutions(); // Load data in background
 
+            window.togglePassword = function(inputId) {
+                const input = document.getElementById(inputId);
+                if (!input) return;
+                const toggleBtn = input.parentElement.querySelector('[data-toggle-password]');
+                const icon = toggleBtn ? toggleBtn.querySelector('i') : null;
+                const shouldReveal = input.type === 'password';
+                
+                input.type = shouldReveal ? 'text' : 'password';
+                if (icon) {
+                    icon.classList.toggle('fa-eye', !shouldReveal);
+                    icon.classList.toggle('fa-eye-slash', shouldReveal);
+                }
+            }
+
+            function clearUploadField(inputId, previewId, placeholderId) {
+                const input = document.getElementById(inputId);
+                const preview = previewId ? document.getElementById(previewId) : null;
+                const placeholder = placeholderId ? document.getElementById(placeholderId) : null;
+
+                if (input) {
+                    input.value = '';
+                }
+                if (preview) {
+                    const img = preview.querySelector('img');
+                    if (img) img.src = '';
+                    preview.classList.add('hidden');
+                }
+                if (placeholder) {
+                    placeholder.classList.remove('hidden');
+                }
+
+                if (input) {
+                    const container = input.closest('.upload-container');
+                    if (container) {
+                        container.classList.remove('error');
+                        const errorMsg = container.querySelector('.field-error');
+                        if (errorMsg) errorMsg.classList.add('hidden');
+                    }
+                }
+            }
+
             // Handle image uploads and previews
             function handleImageUpload(inputId, previewId, placeholderId) {
                 const input = document.getElementById(inputId);
@@ -1377,6 +1480,10 @@
                             img.src = e.target.result;
                             preview.classList.remove('hidden');
                             placeholder.classList.add('hidden');
+                            const container = input.closest('.upload-container');
+                            const errorMsg = container ? container.querySelector('.field-error') : null;
+                            if (container) container.classList.remove('error');
+                            if (errorMsg) errorMsg.classList.add('hidden');
                         };
                         reader.readAsDataURL(file);
                     }
@@ -1499,6 +1606,26 @@
                         console.error('Camera access error:', err);
                         alert('Could not access camera. Please make sure you have granted camera permissions and your camera is not being used by another application.');
                     }
+                });
+            }
+
+            document.querySelectorAll('[data-action="open-upload"]').forEach(button => {
+                const targetId = button.getAttribute('data-target');
+                const input = document.getElementById(targetId);
+                if (!input) return;
+                button.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    input.click();
+                });
+            });
+
+            const clearUploadsBtn = document.getElementById('clearUploadsBtn');
+            if (clearUploadsBtn) {
+                clearUploadsBtn.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    clearUploadField('front-id-upload', 'front-preview', 'front-placeholder');
+                    clearUploadField('back-id-upload', 'back-preview', 'back-placeholder');
+                    clearUploadField('selfie-upload', 'selfie-preview', 'selfie-placeholder');
                 });
             }
 

@@ -111,7 +111,7 @@ function sanitizeBody(body) {
     return sanitized;
 }
 
-const auth = (req, res, next) => {
+const auth = async (req, res, next) => {
     // Get token from header
     const authHeader = req.headers['authorization'];
     
@@ -130,6 +130,30 @@ const auth = (req, res, next) => {
     try {
         // Verify token
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'serviceease_dev_secret');
+        
+        // Check if user's token version matches (to invalidate sessions after password change)
+        try {
+            const [userRows] = await db.query(
+                'SELECT token_version FROM users WHERE id = ?',
+                [decoded.id]
+            );
+            
+            if (userRows.length > 0) {
+                const userTokenVersion = userRows[0].token_version || 0;
+                const tokenVersion = decoded.tokenVersion || 0;
+                
+                if (userTokenVersion !== tokenVersion) {
+                    console.log(`Token version mismatch for user ${decoded.id}: token has v${tokenVersion}, database has v${userTokenVersion}`);
+                    return res.status(401).json({ 
+                        message: 'Session expired due to password change. Please login again.',
+                        code: 'TOKEN_INVALIDATED'
+                    });
+                }
+            }
+        } catch (dbErr) {
+            console.error('Error checking token version:', dbErr);
+            // Continue if token_version column doesn't exist yet
+        }
         
         // Add user data to request
         req.user = decoded;

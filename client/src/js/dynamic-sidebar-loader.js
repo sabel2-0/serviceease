@@ -4,6 +4,68 @@
  * This ensures role-based access control while allowing shared pages
  */
 
+// Global fetch interceptor to handle token invalidation
+(function setupGlobalFetchInterceptor() {
+    // Check if we're already in redirect mode
+    if (sessionStorage.getItem('redirecting_to_login') === 'true') {
+        return;
+    }
+    
+    const originalFetch = window.fetch;
+    window.fetch = async function(...args) {
+        // If already redirecting, just return a dummy response
+        if (sessionStorage.getItem('redirecting_to_login') === 'true') {
+            return new Response(null, { status: 401 });
+        }
+        
+        const response = await originalFetch.apply(this, args);
+        
+        // Clone the response so we can read it
+        const clonedResponse = response.clone();
+        
+        // Check for 401 with TOKEN_INVALIDATED code
+        if (response.status === 401) {
+            try {
+                const data = await clonedResponse.json();
+                if (data.code === 'TOKEN_INVALIDATED' || data.message?.includes('password change')) {
+                    console.log('🔒 Token invalidated detected - initiating logout');
+                    sessionStorage.setItem('redirecting_to_login', 'true');
+                    
+                    // Clear all authentication data
+                    localStorage.removeItem('user');
+                    localStorage.removeItem('isLoggedIn');
+                    localStorage.removeItem('token');
+                    
+                    console.log('🔒 Redirecting to login page...');
+                    // Small delay to ensure localStorage is cleared
+                    setTimeout(() => {
+                        window.location.replace('/pages/login.html');
+                    }, 100);
+                }
+            } catch (e) {
+                // If response is not JSON, continue normally
+            }
+        }
+        
+        return response;
+    };
+})();
+
+// Ensure global logout helper is available (loads once)
+(function ensureLogoutHelper() {
+    if (typeof window.showLogoutConfirm === 'function') return;
+    try {
+        const s = document.createElement('script');
+        s.src = '/js/logout-confirm.js';
+        s.async = true;
+        s.onload = () => console.log('logout-confirm helper loaded');
+        s.onerror = () => console.warn('Failed to load logout-confirm helper');
+        document.head.appendChild(s);
+    } catch (e) {
+        console.warn('Could not inject logout-confirm helper', e);
+    }
+})();
+
 function loadDynamicSidebar(containerId = 'dynamic-sidebar') {
     const user = getCurrentUser();
     const sidebarContainer = document.getElementById(containerId);
@@ -154,16 +216,21 @@ function initializeSidebarFunctionality(userRole) {
             e.preventDefault();
             e.stopPropagation();
             console.log('Logout button clicked in dynamic-sidebar-loader.js');
-            
-            if (confirm('Are you sure you want to logout?')) {
+
+            (async () => {
+                const confirmed = (typeof window.showLogoutConfirm === 'function')
+                    ? await window.showLogoutConfirm()
+                    : confirm('Are you sure you want to logout?');
+
+                if (!confirmed) return;
+
                 console.log('User confirmed logout');
-                
                 // Clear all user data from localStorage
                 localStorage.removeItem('user');
                 localStorage.removeItem('isLoggedIn');
                 localStorage.removeItem('token');
                 console.log('Local storage cleared');
-                
+
                 // Use absolute path for redirect - works from any page location
                 try {
                     console.log('Redirecting to login page');
@@ -173,7 +240,7 @@ function initializeSidebarFunctionality(userRole) {
                     // Fallback to origin-based redirect
                     window.location.href = window.location.origin + '/pages/login.html';
                 }
-            }
+            })();
         });
         
     }

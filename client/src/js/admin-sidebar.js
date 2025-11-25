@@ -118,24 +118,56 @@ function initializeSidebar() {
     
     // Set up logout functionality
     const logoutBtn = document.getElementById('logout-btn');
+    const logoutModal = document.getElementById('logout-confirm-modal');
+    const logoutConfirmBtn = document.getElementById('logout-confirm-btn');
+    const logoutCancelBtn = document.getElementById('logout-cancel-btn');
+
+    function performLogout(triggerElem) {
+        // Clear authentication data
+        localStorage.removeItem('user');
+        localStorage.removeItem('isLoggedIn');
+        localStorage.removeItem('token');
+        localStorage.removeItem('authToken');
+        sessionStorage.clear();
+
+        // Show loading state if we have a triggering element
+        if (triggerElem) {
+            triggerElem.innerHTML = '<i class="fas fa-spinner fa-spin w-5 h-5 mr-3"></i><span>Signing out...</span>';
+        }
+
+        // Redirect to login
+        setTimeout(() => {
+            window.location.href = '../../pages/login.html';
+        }, 400);
+    }
+
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', function() {
-            if (confirm('Are you sure you want to logout?')) {
-                // Clear authentication data
-                localStorage.removeItem('user');
-                localStorage.removeItem('isLoggedIn');
-                localStorage.removeItem('token');
-                localStorage.removeItem('authToken');
-                sessionStorage.clear();
-                
-                // Show loading state
-                this.innerHTML = '<i class="fas fa-spinner fa-spin w-5 h-5 mr-3"></i><span>Signing out...</span>';
-                
-                // Redirect to login
-                setTimeout(() => {
-                    window.location.href = '../../pages/login.html';
-                }, 1000);
+        logoutBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (logoutModal) {
+                logoutModal.classList.remove('hidden');
+                // simple focus management
+                const c = logoutCancelBtn || logoutConfirmBtn;
+                if (c) c.focus();
+            } else {
+                performLogout(this);
             }
+        });
+    }
+
+    if (logoutCancelBtn) {
+        logoutCancelBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (logoutModal) logoutModal.classList.add('hidden');
+        });
+    }
+
+    if (logoutConfirmBtn) {
+        logoutConfirmBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (logoutModal) logoutModal.classList.add('hidden');
+            performLogout(logoutBtn);
         });
     }
 }

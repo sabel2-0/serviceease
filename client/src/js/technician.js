@@ -1011,7 +1011,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const logoutBtn = document.getElementById('logout-btn');
         if (logoutBtn) {
             logoutBtn.addEventListener('click', function() {
-                if (confirm('Are you sure you want to logout?')) {
+                (async () => {
+                    const confirmed = (typeof window.showLogoutConfirm === 'function')
+                        ? await window.showLogoutConfirm()
+                        : confirm('Are you sure you want to logout?');
+
+                    if (!confirmed) return;
+
                     // Call the logout function from auth.js
                     if (typeof logout === 'function') {
                         logout();
@@ -1022,7 +1028,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         localStorage.removeItem('token');
                         window.location.href = '/pages/login.html';
                     }
-                }
+                })();
             });
         }
     }

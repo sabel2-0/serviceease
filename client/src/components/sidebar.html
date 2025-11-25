@@ -225,25 +225,62 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Logout functionality
+    // Logout functionality - use local modal in this component
     const logoutBtn = document.getElementById('logout-btn');
     if (logoutBtn) {
         logoutBtn.addEventListener('click', function() {
-            if (confirm('Are you sure you want to logout?')) {
-                // Clear authentication data
-                localStorage.removeItem('authToken');
-                localStorage.removeItem('user');
-                localStorage.removeItem('isLoggedIn');
-                localStorage.removeItem('token');
-                sessionStorage.clear();
-                
-                // Show loading state
-                this.innerHTML = '<i class="fas fa-spinner fa-spin w-5 h-5 mr-3"></i><span>Signing out...</span>';
-                
-                // Redirect to login using absolute path
+            const modal = document.getElementById('logout-modal');
+            const modalContent = document.getElementById('logout-modal-content');
+            const cancelBtn = document.getElementById('cancel-logout');
+            const confirmBtn = document.getElementById('confirm-logout');
+
+            if (modal && modalContent && cancelBtn && confirmBtn) {
+                modal.classList.remove('hidden');
+                // small enter animation
                 setTimeout(() => {
-                    window.location.href = '/pages/login.html';
-                }, 1000);
+                    modalContent.classList.remove('opacity-0');
+                    modalContent.classList.add('scale-100', 'opacity-100');
+                }, 10);
+
+                cancelBtn.onclick = function(e) {
+                    e.preventDefault();
+                    modal.classList.add('hidden');
+                    modalContent.classList.add('opacity-0');
+                };
+
+                confirmBtn.onclick = function(e) {
+                    e.preventDefault();
+                    // Clear authentication data
+                    localStorage.removeItem('authToken');
+                    localStorage.removeItem('user');
+                    localStorage.removeItem('isLoggedIn');
+                    localStorage.removeItem('token');
+                    sessionStorage.clear();
+
+                    // Show loading state
+                    confirmBtn.querySelector('#logout-text')?.classList.add('hidden');
+                    const spinner = document.getElementById('logout-spinner');
+                    if (spinner) spinner.classList.remove('hidden');
+
+                    setTimeout(() => {
+                        window.location.href = '/pages/login.html';
+                    }, 700);
+                };
+            } else {
+                // fallback to global helper or native confirm
+                (async () => {
+                    const confirmed = (typeof window.showLogoutConfirm === 'function')
+                        ? await window.showLogoutConfirm()
+                        : confirm('Are you sure you want to logout?');
+                    if (confirmed) {
+                        localStorage.removeItem('authToken');
+                        localStorage.removeItem('user');
+                        localStorage.removeItem('isLoggedIn');
+                        localStorage.removeItem('token');
+                        sessionStorage.clear();
+                        window.location.href = '/pages/login.html';
+                    }
+                })();
             }
         });
     }

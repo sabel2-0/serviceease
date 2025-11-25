@@ -60,6 +60,10 @@
             border-color: #ef4444 !important;
             box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.1) !important;
         }
+        input[type="password"]::-ms-reveal,
+        input[type="password"]::-ms-clear {
+            display: none;
+        }
     </style>
 </head>
 <body class="min-h-screen bg-white">
@@ -82,10 +86,10 @@
             
             <!-- Login Form Container -->
             <div class="flex-1 flex items-center justify-center p-6 lg:p-12">
-                <div class="w-full max-w-sm">
-                    <div class="mb-10">
-                        <h2 class="text-3xl font-light text-gray-900 mb-2">Sign In</h2>
-                        <p class="text-sm text-gray-500 font-light">Enter your credentials</p>
+                    <div class="w-full max-w-md lg:max-w-lg">
+                    <div class="mb-10 text-center lg:text-left">
+                        <h2 class="text-4xl lg:text-5xl font-light text-gray-900 mb-3">Sign In</h2>
+                        <p class="text-base lg:text-lg text-gray-600 font-light">Enter your credentials</p>
                     </div>
 
                 <!-- Error Message Space -->
@@ -106,9 +110,9 @@
                 <form id="loginForm" class="space-y-5">
                     <!-- Email Input -->
                     <div>
-                        <label for="email" class="block text-xs font-medium text-gray-600 mb-2">Email</label>
+                        <label for="email" class="block text-sm font-medium text-gray-600 mb-2">Email</label>
                         <input type="email" id="email" name="email" required
-                            class="block w-full px-4 py-2.5 border border-gray-200 rounded-md text-sm text-gray-900 
+                            class="block w-full px-4 py-3 border border-gray-200 rounded-md text-base text-gray-900 
                             focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900
                             transition-all"
                             placeholder="your@email.com">
@@ -116,10 +120,10 @@
 
                     <!-- Password Input -->
                     <div>
-                        <label for="password" class="block text-xs font-medium text-gray-600 mb-2">Password</label>
+                        <label for="password" class="block text-sm font-medium text-gray-600 mb-2">Password</label>
                         <div class="relative">
                             <input type="password" id="password" name="password" required
-                                class="block w-full px-4 py-2.5 border border-gray-200 rounded-md text-sm text-gray-900 
+                                class="block w-full px-4 py-3 border border-gray-200 rounded-md text-base text-gray-900 
                                 focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900
                                 transition-all"
                                 placeholder="Enter password">
@@ -131,7 +135,7 @@
                     </div>
 
                     <!-- Remember Me and Forgot Password -->
-                    <div class="flex items-center justify-between text-xs">
+                    <div class="flex items-center justify-between text-sm">
                         <div class="flex items-center">
                             <input type="checkbox" id="remember" name="remember"
                                 class="h-3.5 w-3.5 text-gray-900 focus:ring-gray-900 border-gray-300 rounded">
@@ -142,16 +146,16 @@
 
                     <!-- Login Button -->
                     <button type="submit"
-                        class="w-full py-2.5 px-4 border border-transparent rounded-md text-sm
+                        class="w-full py-3 px-4 border border-transparent rounded-md text-base
                         text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2
                         focus:ring-offset-2 focus:ring-gray-900 transition-all">
                         <span id="loginBtnText">Sign In</span>
                     </button>
 
                     <!-- Register Link -->
-                    <p class="text-center text-xs text-gray-500 pt-2">
+                    <p class="text-center text-sm text-gray-600 pt-2">
                         Don't have an account?
-                        <a href="register.html" class="text-gray-900 hover:underline">Sign up</a>
+                        <a href="register.html" class="text-indigo-600 font-medium hover:text-indigo-700"> Sign up</a>
                     </p>
                 </form>
             </div>
@@ -307,10 +311,27 @@
 
         // Initialize form event listeners
         document.addEventListener('DOMContentLoaded', function() {
+            // If we just got redirected due to token invalidation, clear the flag and allow login
+            const wasRedirected = sessionStorage.getItem('redirecting_to_login') === 'true';
+            if (wasRedirected) {
+                console.log('🔒 Arrived at login page after token invalidation - clearing redirect flag');
+                sessionStorage.removeItem('redirecting_to_login');
+                // Also ensure all auth data is cleared
+                localStorage.removeItem('isLoggedIn');
+                localStorage.removeItem('user');
+                localStorage.removeItem('token');
+                return; // Don't auto-redirect
+            }
+            
             // Check if user is already logged in
-            if (localStorage.getItem('isLoggedIn') === 'true' && localStorage.getItem('user')) {
+            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+            const userStr = localStorage.getItem('user');
+            const token = localStorage.getItem('token');
+            
+            if (isLoggedIn && userStr && token) {
                 try {
-                    const user = JSON.parse(localStorage.getItem('user'));
+                    const user = JSON.parse(userStr);
+                    console.log('User already logged in, redirecting to dashboard');
                     // Redirect to the appropriate dashboard based on role
                     if (user.role === 'admin') {
                         window.location.href = '/pages/admin/admin.html';
@@ -325,6 +346,14 @@
                 } catch (e) {
                     console.error('Error parsing user data:', e);
                     // Clear invalid data
+                    localStorage.removeItem('isLoggedIn');
+                    localStorage.removeItem('user');
+                    localStorage.removeItem('token');
+                }
+            } else {
+                // Clear any partial/invalid auth data
+                if (isLoggedIn || userStr || token) {
+                    console.log('🔒 Cleaning up incomplete auth data');
                     localStorage.removeItem('isLoggedIn');
                     localStorage.removeItem('user');
                     localStorage.removeItem('token');

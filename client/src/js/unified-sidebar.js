@@ -326,10 +326,15 @@ function setupLogout() {
     
     if (logoutBtn) {
         logoutBtn.addEventListener('click', function() {
-            if (confirm('Are you sure you want to logout?')) {
+            (async () => {
+                const confirmed = (typeof window.showLogoutConfirm === 'function')
+                    ? await window.showLogoutConfirm()
+                    : confirm('Are you sure you want to logout?');
+
+                if (!confirmed) return;
                 // Use the centralized logout function from auth.js
                 logout();
-            }
+            })();
         });
     }
 }

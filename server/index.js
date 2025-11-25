@@ -217,6 +217,19 @@ async function ensureInventoryTables() {
             await db.query(`ALTER TABLE inventory_items ADD COLUMN quantity INT NOT NULL DEFAULT 1 AFTER serial_number`);
         }
 
+        // Ensure token_version column exists in users table for session invalidation
+        const [tokenVersionColRows] = await db.query(`
+            SELECT COUNT(*) AS cnt
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'users'
+              AND COLUMN_NAME = 'token_version'
+        `);
+        if (tokenVersionColRows && tokenVersionColRows[0] && Number(tokenVersionColRows[0].cnt) === 0) {
+            await db.query(`ALTER TABLE users ADD COLUMN token_version INT DEFAULT 0`);
+            console.log('✓ Added token_version column to users table');
+        }
+
         await db.query(`
             CREATE TABLE IF NOT EXISTS client_printer_assignments (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -853,13 +866,14 @@ app.post('/api/login', async (req, res) => {
             lookup_success: !!institutionData.institution_id
         });
 
-        // Generate JWT token
+        // Generate JWT token with token_version for session invalidation
         const token = jwt.sign(
             {
                 id: user.id,
                 email: user.email,
                 role: user.role,
-                institution_id: institutionData.institution_id
+                institution_id: institutionData.institution_id,
+                tokenVersion: user.token_version || 0  // Include token version for session invalidation
             },
             process.env.JWT_SECRET || 'serviceease_dev_secret',
             { expiresIn: '24h' }
@@ -2037,13 +2051,13 @@ app.patch('/api/coordinators/:id/users/:userId/password', authenticateCoordinato
         // Hash the new password
         const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-        // Update password
+        // Update password and increment token_version to invalidate all existing sessions
         await db.query(
-            'UPDATE users SET password = ?, updated_at = NOW() WHERE id = ?',
+            'UPDATE users SET password = ?, token_version = COALESCE(token_version, 0) + 1, updated_at = NOW() WHERE id = ?',
             [hashedPassword, userId]
         );
 
-        console.log(`[COORDINATOR] Coordinator ${coordinatorId} changed password for user ${userId} (${user.first_name} ${user.last_name})`);
+        console.log(`[COORDINATOR] Coordinator ${coordinatorId} changed password for user ${userId} (${user.first_name} ${user.last_name}) - All sessions invalidated`);
 
         res.json({ 
             message: 'Password updated successfully',
@@ -2090,13 +2104,13 @@ app.patch('/api/admin/staff/:staffId/password', authenticateAdmin, async (req, r
         // Hash the new password
         const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-        // Update password
+        // Update password and increment token_version to invalidate all existing sessions
         await db.query(
-            'UPDATE users SET password = ?, updated_at = NOW() WHERE id = ?',
+            'UPDATE users SET password = ?, token_version = COALESCE(token_version, 0) + 1, updated_at = NOW() WHERE id = ?',
             [hashedPassword, staffId]
         );
 
-        console.log(`[ADMIN] Admin changed password for staff ${staffId} (${user.first_name} ${user.last_name}) - Role: ${user.role}`);
+        console.log(`[ADMIN] Admin changed password for staff ${staffId} (${user.first_name} ${user.last_name}) - Role: ${user.role} - All sessions invalidated`);
 
         res.json({ 
             message: 'Password updated successfully',
@@ -2145,13 +2159,13 @@ app.patch('/api/admin/coordinators/:coordinatorId/password', authenticateAdmin, 
         // Hash the new password
         const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-        // Update password
+        // Update password and increment token_version to invalidate all existing sessions
         await db.query(
-            'UPDATE users SET password = ?, updated_at = NOW() WHERE id = ?',
+            'UPDATE users SET password = ?, token_version = COALESCE(token_version, 0) + 1, updated_at = NOW() WHERE id = ?',
             [hashedPassword, coordinatorId]
         );
 
-        console.log(`[ADMIN] Admin changed password for coordinator ${coordinatorId} (${user.first_name} ${user.last_name})`);
+        console.log(`[ADMIN] Admin changed password for coordinator ${coordinatorId} (${user.first_name} ${user.last_name}) - All sessions invalidated`);
 
         res.json({ 
             message: 'Password updated successfully',

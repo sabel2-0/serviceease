@@ -80,13 +80,19 @@ function initializeLogout() {
     const logoutBtn = document.getElementById('logout-btn');
     if (logoutBtn) {
         logoutBtn.addEventListener('click', function() {
-            if (confirm('Are you sure you want to logout?')) {
+            (async () => {
+                const confirmed = (typeof window.showLogoutConfirm === 'function')
+                    ? await window.showLogoutConfirm()
+                    : confirm('Are you sure you want to logout?');
+
+                if (!confirmed) return;
+
                 if (typeof logout === 'function') {
                     logout();
                 } else {
                     console.error('Logout function not found');
                 }
-            }
+            })();
         });
     }
 }
