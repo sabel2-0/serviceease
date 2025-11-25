@@ -17,9 +17,9 @@
 
 ### Current State:
 - **Database**: `railway` (MySQL on Railway)
-- **Host**: `trolley.proxy.rlwy.net:17038`
+- **Host**: `YOUR_RAILWAY_HOST:PORT`
 - **User**: `root`
-- **Password**: `cBradZvPfObqGtuJMzBBWVSYpDKYYQsZ`
+- **Password**: `YOUR_RAILWAY_PASSWORD`
 
 ### Tables Status:
 - ✅ All 24 tables exist

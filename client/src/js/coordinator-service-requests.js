@@ -184,7 +184,7 @@ function loadAssignedPrinters() {
     const servicePrinterSelect = document.getElementById('servicePrinterSelect');
     if (!servicePrinterSelect) {
         console.error('Printer select dropdown not found');
-        return;
+        return Promise.resolve();
     }
 
     // Get user data from localStorage
@@ -192,7 +192,7 @@ function loadAssignedPrinters() {
     if (!userRaw) {
         console.error('[DEBUG] No user data found in localStorage');
         servicePrinterSelect.innerHTML = '<option value="" disabled selected>Error: User not logged in</option>';
-        return;
+        return Promise.resolve();
     }
     let user;
     try {
@@ -200,12 +200,12 @@ function loadAssignedPrinters() {
     } catch (e) {
         console.error('[DEBUG] Failed to parse user data:', userRaw);
         servicePrinterSelect.innerHTML = '<option value="" disabled selected>Error: Invalid user data</option>';
-        return;
+        return Promise.resolve();
     }
     if (!user.institution_id) {
         console.error('[DEBUG] Missing institution ID:', user);
         servicePrinterSelect.innerHTML = '<option value="" disabled selected>Error: Institution ID missing</option>';
-        return;
+        return Promise.resolve();
     }
 
     console.log('[DEBUG] Loading printers for institution ID:', user.institution_id);
@@ -213,7 +213,7 @@ function loadAssignedPrinters() {
 
     servicePrinterSelect.classList.add('w-full', 'px-4', 'py-2', 'border', 'rounded-md', 'bg-white', 'text-gray-900');
 
-    fetch(`/api/institutions/${user.institution_id}/printers`, {
+    return fetch(`/api/institutions/${user.institution_id}/printers`, {
         headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
         }

@@ -284,7 +284,7 @@ Look for these debug messages:
 
 **Railway Production:**
 ```bash
-mysql -h trolley.proxy.rlwy.net -P 17038 -u root -p railway
+mysql -h YOUR_RAILWAY_HOST -P YOUR_PORT -u root -p railway
 DESCRIBE users;
 ```
 
@@ -362,7 +362,7 @@ If issues occur in production:
 ## 📞 Support Contacts
 
 - **GitHub Repository:** https://github.com/sabel2-0/serviceease
-- **Railway Database:** trolley.proxy.rlwy.net:17038
+- **Railway Database:** YOUR_RAILWAY_HOST:PORT
 - **Cloudinary Dashboard:** https://cloudinary.com/console
 
 ---

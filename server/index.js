@@ -1205,6 +1205,35 @@ app.put('/api/admin/notifications/read-all', authenticateAdmin, async (req, res)
     }
 });
 
+// General notifications count endpoint for all authenticated users
+app.get('/api/notifications/count', auth, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const userRole = req.user.role;
+        
+        // Build query based on user role
+        let query = `
+            SELECT COUNT(*) as unread_count 
+            FROM notifications 
+            WHERE is_read = FALSE 
+            AND (user_id = ?`;
+        
+        // Admin and operations officer can see system-wide notifications
+        if (userRole === 'admin' || userRole === 'operations_officer') {
+            query += ` OR user_id IS NULL`;
+        }
+        
+        query += `)`;
+        
+        const [result] = await db.query(query, [userId]);
+        
+        res.json({ count: result[0].unread_count });
+    } catch (error) {
+        console.error('Error fetching notification count:', error);
+        res.status(500).json({ error: 'Failed to fetch notification count' });
+    }
+});
+
 // Dashboard statistics endpoint
 app.get('/api/admin/dashboard-stats', authenticateAdmin, async (req, res) => {
     try {
@@ -2558,6 +2587,75 @@ app.delete('/api/printers/:id', authenticateAdmin, async (req, res) => {
     } catch (error) {
         console.error('Error unassigning printer:', error);
         res.status(500).json({ error: 'Failed to unassign printer' });
+    }
+});
+
+// Get single printer details by institution and printer ID
+app.get('/api/institutions/:institutionId/printer/:printerId', auth, async (req, res) => {
+    try {
+        const { institutionId, printerId } = req.params;
+        
+        // Query using client_printer_assignments and inventory_items
+        const [rows] = await db.query(
+            `SELECT 
+                cpa.id as assignment_id,
+                ii.id as printer_id,
+                ii.name,
+                ii.brand,
+                ii.model,
+                ii.serial_number,
+                cpa.location_note as location,
+                ii.status,
+                cpa.assigned_at as installation_date,
+                cpa.institution_id,
+                inst.name as institution_name
+            FROM client_printer_assignments cpa
+            JOIN inventory_items ii ON cpa.inventory_item_id = ii.id
+            JOIN institutions inst ON cpa.institution_id = inst.institution_id
+            WHERE cpa.institution_id = ? AND ii.id = ?`,
+            [institutionId, printerId]
+        );
+        
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'Printer not found for this institution' });
+        }
+        
+        res.json(rows[0]);
+    } catch (error) {
+        console.error('Error fetching printer details:', error);
+        res.status(500).json({ error: 'Failed to fetch printer details' });
+    }
+});
+
+// Get service history for a specific printer
+app.get('/api/institutions/:institutionId/printer/:printerId/service-history', auth, async (req, res) => {
+    try {
+        const { institutionId, printerId } = req.params;
+        
+        // Query service_requests table for this printer's history
+        const [rows] = await db.query(
+            `SELECT 
+                sr.id,
+                sr.request_number,
+                sr.description,
+                sr.status,
+                sr.priority,
+                sr.created_at as service_date,
+                sr.completed_at,
+                sr.resolution_notes as description,
+                CONCAT(tech.first_name, ' ', tech.last_name) as technician_name,
+                sr.status as service_type
+            FROM service_requests sr
+            LEFT JOIN users tech ON sr.technician_id = tech.id
+            WHERE sr.institution_id = ? AND sr.inventory_item_id = ?
+            ORDER BY sr.created_at DESC`,
+            [institutionId, printerId]
+        );
+        
+        res.json(rows);
+    } catch (error) {
+        console.error('Error fetching service history:', error);
+        res.status(500).json({ error: 'Failed to fetch service history' });
     }
 });
 
