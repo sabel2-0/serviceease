@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
+    const API_URL = window.location.origin;
     let serviceRequests = [];
     let currentRequestId = null;
 

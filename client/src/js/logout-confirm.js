@@ -5,14 +5,14 @@
     function createModal() {
         const modal = document.createElement('div');
         modal.id = 'global-logout-confirm-modal';
-        modal.className = 'fixed inset-0 z-50 hidden flex items-center justify-center bg-black bg-opacity-50';
+        modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 9999; background-color: rgba(0, 0, 0, 0.5); display: none; align-items: center; justify-content: center; pointer-events: auto;';
         modal.innerHTML = `
-            <div class="bg-white rounded-lg shadow-lg max-w-md w-full p-6 mx-4">
-                <h2 class="text-lg font-semibold mb-2">Confirm Logout</h2>
-                <p class="text-sm text-gray-600 mb-4">Are you sure you want to logout?</p>
-                <div class="flex justify-end space-x-3">
-                    <button id="global-logout-cancel" class="px-4 py-2 bg-gray-200 rounded-md">Cancel</button>
-                    <button id="global-logout-confirm" class="px-4 py-2 bg-red-600 text-white rounded-md">Logout</button>
+            <div id="logout-modal-content" style="background: white; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); max-width: 400px; width: 90%; padding: 24px; margin: 16px; position: relative; z-index: 10000; pointer-events: auto;">
+                <h2 style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">Confirm Logout</h2>
+                <p style="font-size: 14px; color: #666; margin-bottom: 16px;">Are you sure you want to logout?</p>
+                <div style="display: flex; justify-content: flex-end; gap: 12px;">
+                    <button id="global-logout-cancel" type="button" style="padding: 8px 16px; background-color: #e5e7eb; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; pointer-events: auto;">Cancel</button>
+                    <button id="global-logout-confirm" type="button" style="padding: 8px 16px; background-color: #dc2626; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; pointer-events: auto;">Logout</button>
                 </div>
             </div>
         `;
@@ -29,7 +29,7 @@
             const confirmBtn = modal.querySelector('#global-logout-confirm');
 
             function cleanup() {
-                modal.classList.add('hidden');
+                modal.style.display = 'none';
                 confirmBtn.removeEventListener('click', onConfirm);
                 cancelBtn.removeEventListener('click', onCancel);
                 modal.removeEventListener('click', onBackdrop);
@@ -38,12 +38,16 @@
 
             function onConfirm(e) {
                 e.preventDefault();
+                e.stopPropagation();
+                console.log('Logout confirmed');
                 cleanup();
                 resolve(true);
             }
 
             function onCancel(e) {
                 e.preventDefault();
+                e.stopPropagation();
+                console.log('Logout cancelled');
                 cleanup();
                 resolve(false);
             }
@@ -68,9 +72,9 @@
             document.addEventListener('keydown', onKey);
 
             // show
-            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
             // focus confirm for keyboard users
-            cancelBtn.focus();
+            setTimeout(() => cancelBtn.focus(), 50);
         });
     }
 

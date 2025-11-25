@@ -160,7 +160,7 @@
             </div>
             
             <!-- Logout Button -->
-            <button id="pendingLogoutBtn" class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+            <button id="pendingLogoutBtn" onclick="handlePendingLogout()" class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
                 <i class="fas fa-sign-out-alt mr-2"></i>
                 Logout
             </button>
@@ -698,6 +698,17 @@
 
     <!-- JavaScript -->
     <script>
+        // Global logout handler for pending approval modal
+        function handlePendingLogout() {
+            console.log('handlePendingLogout called');
+            localStorage.removeItem('user');
+            localStorage.removeItem('isLoggedIn');
+            localStorage.removeItem('token');
+            localStorage.removeItem('userRole');
+            console.log('LocalStorage cleared, redirecting...');
+            window.location.href = '/pages/login.html';
+        }
+        
         // Add debug information to help diagnose loading issues
         console.log('Current page location:', window.location.href);
         console.log('Base URL:', window.location.origin);
@@ -713,6 +724,7 @@
             }
         }, true);
     </script>
+    <script src="../../js/logout-confirm.js"></script>
     <script src="../../js/dynamic-sidebar-loader.js"></script>
     <script src="../../js/auth.js"></script>
     <script src="../../js/coordinator-header-loader.js"></script>
@@ -792,20 +804,22 @@
                     
                     if (response.ok) {
                         const userData = await response.json();
+                        console.log('User approval status:', userData.approval_status);
                         
                         // Check if approval_status is pending
                         if (userData.approval_status === 'pending') {
+                            console.log('Showing pending approval modal');
                             // Show the pending approval modal
-                            document.getElementById('pendingApprovalModal').classList.remove('hidden');
-                            
-                            // Setup logout button
-                            document.getElementById('pendingLogoutBtn').addEventListener('click', function() {
-                                localStorage.removeItem('user');
-                                localStorage.removeItem('isLoggedIn');
-                                localStorage.removeItem('token');
-                                localStorage.removeItem('userRole');
-                                window.location.href = '/pages/login.html';
-                            });
+                            const modal = document.getElementById('pendingApprovalModal');
+                            if (modal) {
+                                modal.classList.remove('hidden');
+                                console.log('Modal shown, checking for logout button...');
+                                
+                                const logoutBtn = document.getElementById('pendingLogoutBtn');
+                                console.log('Logout button found:', logoutBtn);
+                            } else {
+                                console.error('pendingApprovalModal not found in DOM');
+                            }
                         } else if (userData.approval_status === 'approved') {
                             // Check if this is the first time seeing the approved status
                             const hasSeenApprovalModal = localStorage.getItem('hasSeenApprovalModal');
@@ -880,16 +894,27 @@
             }
             
             // Notification Center Toggle
-            document.getElementById('notifications-button').addEventListener('click', () => {
-                const notificationCenter = document.getElementById('notification-center');
-                notificationCenter.classList.toggle('translate-x-full');
-                notificationCenter.classList.toggle('translate-x-0');
-            });
+            const notificationsButton = document.getElementById('notifications-button');
+            if (notificationsButton) {
+                notificationsButton.addEventListener('click', () => {
+                    const notificationCenter = document.getElementById('notification-center');
+                    if (notificationCenter) {
+                        notificationCenter.classList.toggle('translate-x-full');
+                        notificationCenter.classList.toggle('translate-x-0');
+                    }
+                });
+            }
             
-            document.getElementById('close-notifications').addEventListener('click', () => {
-                document.getElementById('notification-center').classList.add('translate-x-full');
-                document.getElementById('notification-center').classList.remove('translate-x-0');
-            });
+            const closeNotifications = document.getElementById('close-notifications');
+            if (closeNotifications) {
+                closeNotifications.addEventListener('click', () => {
+                    const notificationCenter = document.getElementById('notification-center');
+                    if (notificationCenter) {
+                        notificationCenter.classList.add('translate-x-full');
+                        notificationCenter.classList.remove('translate-x-0');
+                    }
+                });
+            }
             
             // Modal Controls
             document.getElementById('new-service-request-btn')?.addEventListener('click', () => {

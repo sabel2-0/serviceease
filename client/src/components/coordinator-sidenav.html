@@ -264,7 +264,10 @@
                 badge.classList.add('hidden');
             }
         });
-        
+    });
+    
+    // Logout button handlers - run immediately for dynamically loaded content
+    setTimeout(() => {
         // Add direct event listener to the logout button - opens confirmation modal
         const logoutBtn = document.getElementById('logout-btn');
         if (logoutBtn) {
@@ -298,7 +301,7 @@
                 doLogout();
             });
         }
-    });
+    }, 100);
     
     // Export function to update notification badges
     function updateNotificationBadge(id, count) {
