@@ -84,14 +84,9 @@ class User {
             const userId = result.insertId;
             console.log(`Created user ${userId}`);
 
-            // For coordinators, update the institution's user_id to link them as the owner
-            if (role === 'coordinator' && institutionId) {
-                await db.query(
-                    'UPDATE institutions SET user_id = ? WHERE institution_id = ?',
-                    [userId, institutionId]
-                );
-                console.log(`Linked user ${userId} as owner of institution ${institutionId}`);
-            }
+            // NOTE: We no longer link the coordinator to the institution at registration time.
+            // The institution.user_id will be set only when the coordinator is approved by an admin.
+            // This preserves the integrity of institution ownership until approval.
 
             // Create notification for admins about new coordinator registration
             if (role === 'coordinator' && institutionId) {
@@ -158,17 +153,54 @@ class User {
 
     static async getPendingUsers() {
         try {
+            // Get pending users and fetch institution info from notifications.related_data
+            // since institutions.user_id is only set after approval
             const [rows] = await db.query(`
                 SELECT u.*, tp.front_id_photo, tp.back_id_photo, tp.selfie_photo,
-                       i.institution_id, i.name as institution_name,
-                       i.type as institution_type, i.address as institution_address
+                       n.related_data
                 FROM users u
                 LEFT JOIN temp_user_photos tp ON u.id = tp.user_id
-                LEFT JOIN institutions i ON i.user_id = u.id
+                LEFT JOIN notifications n ON n.related_user_id = u.id AND n.type = 'coordinator_registration'
                 WHERE u.approval_status = 'pending'
                 ORDER BY u.created_at DESC
             `);
-            return rows;
+            
+            // Parse related_data to extract institution information for coordinators
+            const formattedRows = rows.map(row => {
+                let institutionInfo = {
+                    institution_id: null,
+                    institution_name: null,
+                    institution_type: null,
+                    institution_address: null
+                };
+                
+                // Only parse for coordinators
+                if (row.role === 'coordinator' && row.related_data) {
+                    try {
+                        const data = typeof row.related_data === 'string' 
+                            ? JSON.parse(row.related_data) 
+                            : row.related_data;
+                        
+                        institutionInfo = {
+                            institution_id: data.institution_id || null,
+                            institution_name: data.institution_name || null,
+                            institution_type: data.institution_type || null,
+                            institution_address: data.institution_address || null
+                        };
+                    } catch (e) {
+                        console.error('Error parsing notification related_data:', e);
+                    }
+                }
+                
+                // Remove related_data and add institution info
+                const { related_data, ...rest } = row;
+                return {
+                    ...rest,
+                    ...institutionInfo
+                };
+            });
+            
+            return formattedRows;
         } catch (error) {
             console.error('Error fetching pending users:', error);
             throw new Error('Error fetching pending users');
@@ -188,6 +220,40 @@ class User {
                 'UPDATE users SET approval_status = ?, is_email_verified = ? WHERE id = ?',
                 ['approved', true, userId]
             );
+
+            // Try to associate the approved coordinator with the institution they selected during registration.
+            // The registration flow stores the selected institution_id inside a notification's related_data JSON.
+            try {
+                const [notifRows] = await db.query(
+                    `SELECT related_data FROM notifications WHERE related_user_id = ? AND type = 'coordinator_registration' ORDER BY created_at DESC LIMIT 1`,
+                    [userId]
+                );
+
+                if (notifRows && notifRows.length > 0 && notifRows[0].related_data) {
+                    let related = notifRows[0].related_data;
+                    // related_data may be a JSON string or already an object depending on driver
+                    if (typeof related === 'string') {
+                        try {
+                            related = JSON.parse(related);
+                        } catch (e) {
+                            // ignore parse error
+                        }
+                    }
+
+                    const institutionId = related && (related.institution_id || related.institutionId || related.institution_id);
+                    if (institutionId) {
+                        await db.query('UPDATE institutions SET user_id = ? WHERE institution_id = ?', [userId, institutionId]);
+                        console.log(`Linked approved coordinator ${userId} as owner of institution ${institutionId}`);
+                    } else {
+                        console.log(`No institution_id found in notification related_data for user ${userId}`);
+                    }
+                } else {
+                    console.log(`No coordinator_registration notification found for user ${userId} to determine institution`);
+                }
+            } catch (linkErr) {
+                console.error(`Error linking institution for approved user ${userId}:`, linkErr);
+                // Do not fail approval if linking fails
+            }
 
             // Delete the photos from Cloudinary if they exist
             if (photos && photos[0]) {

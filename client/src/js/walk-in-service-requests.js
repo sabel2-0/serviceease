@@ -141,7 +141,7 @@ function updateStats() {
     document.getElementById('inProgressCount').textContent = 
         allRequests.filter(r => r.status === 'in_progress').length;
     document.getElementById('approvalCount').textContent = 
-        allRequests.filter(r => r.status === 'completed' && r.requires_approval && !r.approved_by).length;
+        allRequests.filter(r => r.status === 'pending_approval' && r.approval_status === 'pending_approval').length;
 }
 
 // Render requests
@@ -153,15 +153,15 @@ function renderRequests() {
     
     // Filter by tab
     if (currentTab !== 'all') {
-        if (currentTab === 'completed') {
+        if (currentTab === 'pending_approval') {
             // Awaiting approval tab
             filteredRequests = allRequests.filter(r => 
-                r.status === 'completed' && r.requires_approval && !r.approved_by
+                r.status === 'pending_approval' && r.approval_status === 'pending_approval'
             );
-        } else if (currentTab === 'resolved') {
-            // Resolved tab (completed and approved)
+        } else if (currentTab === 'completed') {
+            // Completed/Resolved tab (approved requests)
             filteredRequests = allRequests.filter(r => 
-                r.status === 'resolved' || (r.status === 'completed' && r.approved_by)
+                r.status === 'completed' && r.approval_status === 'approved'
             );
         } else {
             filteredRequests = allRequests.filter(r => r.status === currentTab);
@@ -293,7 +293,9 @@ async function viewRequestDetails(requestId) {
     };
 
     const statusColor = statusColors[request.status] || 'bg-gray-100 text-gray-700';
-    const needsApproval = request.status === 'pending_approval' && request.approval_status === 'pending_approval';
+    // Only show needs approval if status is pending_approval AND approval_status is still pending_approval (not revision_requested)
+    const needsApproval = request.status === 'pending_approval' && 
+                         (!request.approval_status || request.approval_status === 'pending_approval');
 
     content.innerHTML = `
         <div class="space-y-6">
@@ -396,7 +398,7 @@ async function viewRequestDetails(requestId) {
             </div>
             ` : ''}
 
-            ${request.approved_by ? `
+            ${request.approved_by && request.approval_status === 'approved' ? `
             <div class="bg-green-50 border border-green-200 rounded-lg p-4">
                 <h5 class="font-semibold text-green-900 mb-2">
                     <i class="fas fa-check-circle mr-2"></i>Approved
@@ -405,6 +407,15 @@ async function viewRequestDetails(requestId) {
                     Approved by ${escapeHtml(request.approved_by_first_name + ' ' + request.approved_by_last_name)} at ${formatDate(request.approved_at)}
                 </p>
                 ${request.coordinator_notes ? `<p class="text-sm text-green-800 mt-2">${escapeHtml(request.coordinator_notes)}</p>` : ''}
+            </div>
+            ` : ''}
+            
+            ${request.approval_status === 'revision_requested' ? `
+            <div class="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                <h5 class="font-semibold text-orange-900 mb-2">
+                    <i class="fas fa-undo mr-2"></i>Revision Requested
+                </h5>
+                ${request.coordinator_notes ? `<p class="text-sm text-orange-800">${escapeHtml(request.coordinator_notes)}</p>` : ''}
             </div>
             ` : ''}
 

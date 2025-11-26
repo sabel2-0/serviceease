@@ -409,6 +409,27 @@ class InventoryPartsManager {
     openAddModal() {
         this.editingPart = null;
         this.resetForm();
+        
+        // Show type selection for new parts
+        const itemTypeSelectionSection = document.querySelector('#partForm > div:first-child');
+        if (itemTypeSelectionSection) {
+            itemTypeSelectionSection.classList.remove('hidden');
+            itemTypeSelectionSection.style.opacity = '1';
+            itemTypeSelectionSection.style.transform = 'translateY(0)';
+        }
+        
+        // Hide form sections initially
+        const itemDetailsSection = document.getElementById('itemDetailsSection');
+        const actionButtonsSection = document.getElementById('actionButtonsSection');
+        
+        if (itemDetailsSection) {
+            itemDetailsSection.classList.add('hidden');
+        }
+        
+        if (actionButtonsSection) {
+            actionButtonsSection.classList.add('hidden');
+        }
+        
         this.updateModalForAdd();
         this.showModal();
     }
@@ -418,9 +439,51 @@ class InventoryPartsManager {
         if (!part) return;
 
         this.editingPart = part;
-        this.populateForm(part);
         this.updateModalForEdit();
+        
+        // Bypass the type selection and show the form directly
+        this.showFormForEdit(part);
+        
         this.showModal();
+    }
+    
+    showFormForEdit(part) {
+        // Determine item type based on category
+        const consumableCategories = ['toner', 'ink', 'ink-bottle', 'drum', 'drum-cartridge', 'other-consumable', 'paper', 'cleaning-supplies'];
+        const itemType = consumableCategories.includes(part.category) ? 'consumable' : 'part';
+        
+        // Hide type selection
+        const itemTypeSelectionSection = document.querySelector('#partForm > div:first-child');
+        if (itemTypeSelectionSection) {
+            itemTypeSelectionSection.classList.add('hidden');
+        }
+        
+        // Show form sections
+        const itemDetailsSection = document.getElementById('itemDetailsSection');
+        const actionButtonsSection = document.getElementById('actionButtonsSection');
+        
+        if (itemDetailsSection) {
+            itemDetailsSection.classList.remove('hidden');
+            itemDetailsSection.style.opacity = '1';
+            itemDetailsSection.style.transform = 'translateY(0)';
+        }
+        
+        if (actionButtonsSection) {
+            actionButtonsSection.classList.remove('hidden');
+        }
+        
+        // Select the radio button (for consistency)
+        const radio = document.querySelector(`input[name="itemType"][value="${itemType}"]`);
+        if (radio) radio.checked = true;
+        
+        // Update selected item type text
+        const selectedItemType = document.getElementById('selectedItemType');
+        if (selectedItemType) {
+            selectedItemType.textContent = itemType === 'consumable' ? 'consumable' : 'printer part';
+        }
+        
+        // Populate the form fields
+        this.populateForm(part);
     }
 
     async deletePart(partId, partName) {

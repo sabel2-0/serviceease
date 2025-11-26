@@ -4448,6 +4448,8 @@
                     break;
                 case 'clients':
                     console.log('🏢 Initializing clients tab (clients.html)');
+                    // Force reload by clearing cache
+                    delete loadedComponents['clients-content'];
                     loadComponent('technician-clients-content', 'clients-content');
                     break;
                 case 'history':
@@ -4471,14 +4473,20 @@
         
         // Component loading function
         async function loadComponent(componentName, containerId) {
+            // Force reload for clients-content to get updated searchable interface
+            const forceReload = containerId === 'clients-content';
+            
             // Check if component is already loaded
-            if (loadedComponents[containerId]) {
+            if (loadedComponents[containerId] && !forceReload) {
                 console.log(`✓ Component ${componentName} already loaded in ${containerId}`);
                 return;
             }
             
             try {
-                const response = await fetch(`../../components/${componentName}.html`);
+                // Add cache-busting parameter with timestamp to force reload
+                const cacheBuster = Date.now();
+                console.log(`🔄 Loading component with cache buster: ${cacheBuster}`);
+                const response = await fetch(`../../components/${componentName}.html?v=${cacheBuster}`);
                 if (!response.ok) {
                     throw new Error(`Failed to load component: ${response.status}`);
                 }
@@ -4539,11 +4547,5 @@
             restoreActiveTab();
         }, 1000);
     </script>
-    
-    <!-- Search performance fix -->
-    <script src="search-fix.js"></script>
-    
-    <!-- Debug search -->
-    <script src="debug-search.js"></script>
 </body>
 </html>

@@ -43,6 +43,7 @@ router.get('/service-requests', authenticateTechnician, async (req, res) => {
                 requester.first_name as requester_first_name,
                 requester.last_name as requester_last_name,
                 requester.email as requester_email,
+                requester.role as requester_role,
                 sr.is_walk_in,
                 sr.walk_in_customer_name,
                 sr.printer_brand
@@ -433,6 +434,12 @@ router.post('/service-requests/:requestId/complete', authenticateTechnician, asy
                 [requestId, currentStatus, 'pending_approval', technicianId, `Service completion submitted for approval. Actions: ${actions.substring(0, 100)}...`]
             );
             
+            // Delete existing parts if resubmitting (to prevent duplicates)
+            await db.query(
+                'DELETE FROM service_parts_used WHERE service_request_id = ?',
+                [requestId]
+            );
+            
             // Record parts used in service_parts_used table (but don't deduct from inventory yet)
             if (parts && Array.isArray(parts) && parts.length > 0) {
                 for (const part of parts) {
@@ -461,13 +468,33 @@ router.post('/service-requests/:requestId/complete', authenticateTechnician, asy
                 }
             }
             
-            // Create service approval record
-            await db.query(
-                `INSERT INTO service_approvals 
-                 (service_request_id, status, technician_notes, submitted_at)
-                 VALUES (?, ?, ?, NOW())`,
-                [requestId, 'pending_approval', actions]
+            // Create or update service approval record
+            const [existingApproval] = await db.query(
+                'SELECT id FROM service_approvals WHERE service_request_id = ?',
+                [requestId]
             );
+            
+            if (existingApproval.length === 0) {
+                await db.query(
+                    `INSERT INTO service_approvals 
+                     (service_request_id, status, technician_notes, submitted_at)
+                     VALUES (?, ?, ?, NOW())`,
+                    [requestId, 'pending_approval', actions]
+                );
+            } else {
+                // Update existing record back to pending_approval if it was rejected
+                await db.query(
+                    `UPDATE service_approvals 
+                     SET status = 'pending_approval',
+                         technician_notes = ?,
+                         submitted_at = NOW(),
+                         coordinator_id = NULL,
+                         coordinator_notes = NULL,
+                         reviewed_at = NULL
+                     WHERE service_request_id = ?`,
+                    [actions, requestId]
+                );
+            }
             
             // Get coordinator for notification and send notification ONLY to coordinator
             // Requester will be notified after coordinator approves the service
@@ -665,7 +692,7 @@ router.get('/parts', authenticateTechnician, async (req, res) => {
         const technicianId = req.user.id;
         
         const [rows] = await db.query(`
-            SELECT ti.id, ti.part_id, pp.name, pp.brand, pp.category, ti.quantity as stock, pp.unit
+            SELECT ti.id, ti.part_id, pp.name, pp.brand, pp.category, ti.quantity as stock, pp.unit, pp.is_universal
             FROM technician_inventory ti
             JOIN printer_parts pp ON ti.part_id = pp.id
             WHERE ti.technician_id = ? AND ti.quantity > 0

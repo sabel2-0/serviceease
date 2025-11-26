@@ -26,29 +26,73 @@ router.get('/assigned-schools', auth, async (req, res) => {
                 i.type as institution_type,
                 i.address,
                 i.status,
-                COUNT(DISTINCT upa.inventory_item_id) as total_printers,
-                COUNT(CASE 
-                    WHEN vs.status = 'completed' 
-                    AND vs.created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
-                    THEN vs.id 
-                END) as serviced_count,
-                COUNT(CASE 
-                    WHEN vs.status IN ('pending_coordinator', 'pending_requester')
-                    THEN vs.id 
-                END) as pending_count
+                COALESCE(printer_counts.total_printers, 0) as total_printers,
+                COALESCE(printer_counts.serviced_count, 0) as serviced_count,
+                COALESCE(printer_counts.pending_count, 0) as pending_count,
+                (COALESCE(printer_counts.total_printers, 0) - COALESCE(printer_counts.serviced_count, 0) - COALESCE(printer_counts.pending_count, 0)) as remaining_count
             FROM technician_assignments ta
             INNER JOIN institutions i ON ta.institution_id = i.institution_id
-            LEFT JOIN user_printer_assignments upa ON upa.institution_id = i.institution_id
-            LEFT JOIN voluntary_services vs ON vs.printer_id = upa.inventory_item_id 
-                AND vs.technician_id = ?
+            LEFT JOIN (
+                SELECT 
+                    cpa.institution_id,
+                    COUNT(DISTINCT cpa.inventory_item_id) as total_printers,
+                    COUNT(DISTINCT CASE 
+                        WHEN latest_service.latest_status = 'completed'
+                        THEN cpa.inventory_item_id
+                    END) as serviced_count,
+                    COUNT(DISTINCT CASE 
+                        WHEN latest_service.latest_status IN ('pending_approval', 'pending_coordinator', 'pending_requester')
+                        THEN cpa.inventory_item_id
+                    END) as pending_count
+                FROM client_printer_assignments cpa
+                LEFT JOIN (
+                    SELECT 
+                        printer_id,
+                        latest_status
+                    FROM (
+                        -- Get latest voluntary service status
+                        SELECT 
+                            printer_id,
+                            CAST(status AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as latest_status,
+                            created_at as latest_date,
+                            'voluntary' as service_type
+                        FROM voluntary_services 
+                        WHERE technician_id = ?
+                        
+                        UNION ALL
+                        
+                        -- Get latest regular service request status
+                        SELECT 
+                            inventory_item_id as printer_id,
+                            CAST(status AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as latest_status,
+                            updated_at as latest_date,
+                            'regular' as service_type
+                        FROM service_requests
+                        WHERE assigned_technician_id = ?
+                            AND inventory_item_id IS NOT NULL
+                    ) combined_services
+                    WHERE (printer_id, latest_date) IN (
+                        SELECT printer_id, MAX(latest_date)
+                        FROM (
+                            SELECT printer_id, created_at as latest_date FROM voluntary_services WHERE technician_id = ?
+                            UNION ALL
+                            SELECT inventory_item_id as printer_id, updated_at as latest_date FROM service_requests WHERE assigned_technician_id = ? AND inventory_item_id IS NOT NULL
+                        ) all_dates
+                        GROUP BY printer_id
+                    )
+                ) latest_service ON latest_service.printer_id = cpa.inventory_item_id
+                GROUP BY cpa.institution_id
+            ) printer_counts ON printer_counts.institution_id = i.institution_id
             WHERE ta.technician_id = ?
                 AND i.type = 'public_school'
                 AND i.status = 'active'
-            GROUP BY i.institution_id, i.name, i.type, i.address, i.status
+            GROUP BY i.institution_id, i.name, i.type, i.address, i.status, 
+                     printer_counts.total_printers, printer_counts.serviced_count, 
+                     printer_counts.pending_count
             ORDER BY i.name ASC
         `;
         
-        const [schools] = await db.query(query, [technicianId, technicianId]);
+        const [schools] = await db.query(query, [technicianId, technicianId, technicianId, technicianId, technicianId]);
         
         res.json(schools);
     } catch (error) {
@@ -85,36 +129,73 @@ router.get('/school-printers/:institutionId', auth, async (req, res) => {
                 inv.serial_number,
                 inv.location,
                 inv.status,
-                upa.user_id as requester_id,
-                u.first_name as requester_first_name,
-                u.last_name as requester_last_name,
-                u.email as requester_email,
-                vs_latest.last_service_date,
-                vs_latest.last_service_status,
-                COALESCE(vs_count.service_count, 0) as service_count
-            FROM user_printer_assignments upa
-            INNER JOIN inventory_items inv ON inv.id = upa.inventory_item_id
-            INNER JOIN users u ON u.id = upa.user_id
+                cpa.location_note,
+                latest_service.last_service_date,
+                latest_service.last_service_status,
+                latest_service.service_type,
+                COALESCE(vs_count.voluntary_count, 0) as voluntary_count,
+                COALESCE(sr_count.regular_count, 0) as regular_count,
+                (COALESCE(vs_count.voluntary_count, 0) + COALESCE(sr_count.regular_count, 0)) as total_service_count
+            FROM client_printer_assignments cpa
+            INNER JOIN inventory_items inv ON inv.id = cpa.inventory_item_id
             LEFT JOIN (
-                SELECT printer_id, MAX(created_at) as last_service_date, 
-                       (SELECT status FROM voluntary_services WHERE printer_id = vs.printer_id ORDER BY created_at DESC LIMIT 1) as last_service_status
-                FROM voluntary_services vs
-                WHERE technician_id = ?
-                GROUP BY printer_id
-            ) vs_latest ON vs_latest.printer_id = inv.id
+                SELECT 
+                    printer_id,
+                    latest_date as last_service_date,
+                    latest_status as last_service_status,
+                    service_type
+                FROM (
+                    -- Get latest voluntary service
+                    SELECT 
+                        printer_id,
+                        CAST(status AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as latest_status,
+                        created_at as latest_date,
+                        'voluntary' as service_type
+                    FROM voluntary_services 
+                    WHERE technician_id = ?
+                    
+                    UNION ALL
+                    
+                    -- Get latest regular service request
+                    SELECT 
+                        inventory_item_id as printer_id,
+                        CAST(status AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as latest_status,
+                        updated_at as latest_date,
+                        'regular' as service_type
+                    FROM service_requests
+                    WHERE assigned_technician_id = ?
+                        AND inventory_item_id IS NOT NULL
+                ) combined
+                WHERE (printer_id, latest_date) IN (
+                    SELECT printer_id, MAX(latest_date)
+                    FROM (
+                        SELECT printer_id, created_at as latest_date FROM voluntary_services WHERE technician_id = ?
+                        UNION ALL
+                        SELECT inventory_item_id as printer_id, updated_at as latest_date FROM service_requests WHERE assigned_technician_id = ? AND inventory_item_id IS NOT NULL
+                    ) all_dates
+                    GROUP BY printer_id
+                )
+            ) latest_service ON latest_service.printer_id = inv.id
             LEFT JOIN (
-                SELECT printer_id, COUNT(*) as service_count
+                SELECT printer_id, COUNT(*) as voluntary_count
                 FROM voluntary_services
                 WHERE technician_id = ?
                 GROUP BY printer_id
             ) vs_count ON vs_count.printer_id = inv.id
-            WHERE upa.institution_id = ?
+            LEFT JOIN (
+                SELECT inventory_item_id as printer_id, COUNT(*) as regular_count
+                FROM service_requests
+                WHERE assigned_technician_id = ?
+                    AND inventory_item_id IS NOT NULL
+                GROUP BY inventory_item_id
+            ) sr_count ON sr_count.printer_id = inv.id
+            WHERE cpa.institution_id = ?
                 AND inv.category = 'printer'
                 AND inv.status IN ('available', 'assigned')
             ORDER BY inv.name ASC
         `;
         
-        const [printers] = await db.query(query, [technicianId, technicianId, institutionId]);
+        const [printers] = await db.query(query, [technicianId, technicianId, technicianId, technicianId, technicianId, technicianId, institutionId]);
         
         res.json(printers);
     } catch (error) {
@@ -183,6 +264,24 @@ router.post('/', auth, async (req, res) => {
         const requesterId = printer[0].requester_id;
         console.log('👤 Requester ID:', requesterId);
         
+        // Enrich parts_used with part names for display
+        let enrichedPartsUsed = null;
+        if (parts_used && parts_used.length > 0) {
+            enrichedPartsUsed = await Promise.all(parts_used.map(async (part) => {
+                const [partInfo] = await db.query(
+                    'SELECT name, brand FROM printer_parts WHERE id = ?',
+                    [part.part_id]
+                );
+                return {
+                    part_id: part.part_id,
+                    name: partInfo[0]?.name || 'Unknown Part',
+                    brand: partInfo[0]?.brand || null,
+                    qty: part.qty,
+                    unit: part.unit
+                };
+            }));
+        }
+        
         // Insert voluntary service
         const insertQuery = `
             INSERT INTO voluntary_services (
@@ -205,7 +304,7 @@ router.post('/', auth, async (req, res) => {
             institution_id,
             requesterId,
             service_description,
-            parts_used ? JSON.stringify(parts_used) : null
+            enrichedPartsUsed ? JSON.stringify(enrichedPartsUsed) : null
         ]);
         
         console.log('✅ Service inserted, ID:', result.insertId);
@@ -361,9 +460,7 @@ router.get('/coordinator/pending', auth, async (req, res) => {
             INNER JOIN users u_tech ON vs.technician_id = u_tech.id
             LEFT JOIN users u_req ON u_req.id = vs.requester_id
             WHERE vs.institution_id IN (?)
-            AND vs.coordinator_approval_status = 'pending'
-            AND vs.status != 'completed'
-            AND vs.status != 'rejected'
+            AND vs.status NOT IN ('completed', 'rejected')
             ORDER BY vs.created_at DESC
         `;
         
@@ -477,6 +574,14 @@ router.patch('/coordinator/:id/approve', auth, async (req, res) => {
             [serviceId]
         );
         
+        console.log('🔍 Service data retrieved:', {
+            id: service[0]?.id,
+            technician_id: service[0]?.technician_id,
+            parts_used_type: typeof service[0]?.parts_used,
+            parts_used_value: service[0]?.parts_used,
+            status: service[0]?.status
+        });
+        
         if (service.length === 0) {
             return res.status(404).json({ error: 'Service not found' });
         }
@@ -493,48 +598,59 @@ router.patch('/coordinator/:id/approve', auth, async (req, res) => {
             return res.status(400).json({ error: 'Service has already been completed' });
         }
         
-        // Check if requester already approved - if so, this completes the service
-        const alreadyApproved = service[0].requester_approval_status === 'approved';
-        const newStatus = alreadyApproved ? 'completed' : service[0].status;
+        // Single approval mode: coordinator approval immediately completes the service
+        const newStatus = 'completed';
         
-        console.log(`📝 Requester already approved: ${alreadyApproved}, new status: ${newStatus}`);
+        console.log(`📝 Coordinator approving - service will be completed immediately`);
         
-        // Update coordinator approval status (and complete if requester already approved)
+        // Update coordinator approval status and complete the service
         await db.query(
             `UPDATE voluntary_services 
              SET coordinator_approval_status = 'approved',
                  coordinator_notes = ?,
                  coordinator_reviewed_at = NOW(),
                  coordinator_reviewed_by = ?,
-                 status = ?,
-                 completed_at = ${alreadyApproved ? 'NOW()' : 'completed_at'}
+                 status = 'completed',
+                 completed_at = NOW()
              WHERE id = ?`,
-            [notes || null, coordinatorId, newStatus, serviceId]
+            [notes || null, coordinatorId, serviceId]
         );
         
-        // Only deduct parts if this approval completes the service (requester already approved OR single approval mode)
-        if (alreadyApproved && service[0].parts_used) {
+        // Deduct parts from inventory after coordinator approval
+        if (service[0].parts_used) {
             const parts_used = JSON.parse(service[0].parts_used);
             console.log('📦 Deducting parts from inventory after approval...');
+            console.log('📦 Parts to deduct:', JSON.stringify(parts_used, null, 2));
+            console.log('👤 Technician ID:', service[0].technician_id);
+            
+            // First, let's see what's in the technician's inventory
+            const [techInventory] = await db.query(
+                `SELECT ti.id, ti.quantity, pp.id as part_id, pp.name, pp.brand, pp.category, pp.is_universal
+                 FROM technician_inventory ti
+                 INNER JOIN printer_parts pp ON ti.part_id = pp.id
+                 WHERE ti.technician_id = ?`,
+                [service[0].technician_id]
+            );
+            console.log('📋 Technician inventory:', JSON.stringify(techInventory, null, 2));
             
             for (const part of parts_used) {
                 try {
-                    // Clean the part name
-                    let cleanPartName = part.name.replace(/^[✓⚠✗]\s*/, '').trim();
-                    cleanPartName = cleanPartName.replace(/\s*\(Stock:\s*\d+\)\s*$/, '').trim();
+                    console.log(`\n🔍 Processing part_id: ${part.part_id}`);
+                    console.log(`   Qty to deduct: ${part.qty}, Unit: ${part.unit}`);
                     
+                    // Query by part_id directly
                     const [inventoryItem] = await db.query(
                         `SELECT ti.id, ti.quantity, pp.name, pp.brand
                          FROM technician_inventory ti
                          INNER JOIN printer_parts pp ON ti.part_id = pp.id
-                         WHERE ti.technician_id = ? 
-                         AND pp.name = ? 
-                         AND pp.brand = ?
+                         WHERE ti.technician_id = ? AND ti.part_id = ?
                          LIMIT 1`,
-                        [service[0].technician_id, cleanPartName, part.brand]
+                        [service[0].technician_id, part.part_id]
                     );
                     
+                    console.log(`   📋 Query result: ${inventoryItem.length > 0 ? 'FOUND' : 'NOT FOUND'}`);
                     if (inventoryItem.length > 0) {
+                        console.log(`   📋 Found inventory: ID=${inventoryItem[0].id}, Part="${inventoryItem[0].name}", Current Qty=${inventoryItem[0].quantity}`);
                         const currentQty = inventoryItem[0].quantity;
                         const deductQty = parseInt(part.qty) || 0;
                         
@@ -544,19 +660,23 @@ router.patch('/coordinator/:id/approve', auth, async (req, res) => {
                                 'UPDATE technician_inventory SET quantity = ?, last_updated = NOW() WHERE id = ?',
                                 [newQty, inventoryItem[0].id]
                             );
-                            console.log(`✅ Deducted ${deductQty} ${cleanPartName}, new qty: ${newQty}`);
+                            console.log(`   ✅ Deducted ${deductQty} of "${inventoryItem[0].name}", new qty: ${newQty}`);
+                        } else {
+                            console.log(`   ⚠️ Insufficient stock: have ${currentQty}, need ${deductQty}`);
                         }
+                    } else {
+                        console.log(`   ❌ Part ID ${part.part_id} not found in technician's inventory`);
                     }
                 } catch (partError) {
                     console.error(`❌ Error deducting part:`, partError);
                 }
             }
+        } else {
+            console.log('📦 No parts to deduct (parts_used is null/empty)');
         }
         
-        // Notify technician that service was approved
-        const notificationMessage = alreadyApproved 
-            ? 'Your voluntary service has been approved by the coordinator and is now completed'
-            : 'Your voluntary service has been approved by the coordinator';
+        // Notify technician that service was approved and completed
+        const notificationMessage = 'Your voluntary service has been approved by the coordinator and is now completed';
         
         await db.query(
             `INSERT INTO notifications (user_id, type, title, message, reference_id)
@@ -565,8 +685,8 @@ router.patch('/coordinator/:id/approve', auth, async (req, res) => {
         );
         
         res.json({ 
-            message: alreadyApproved ? 'Service approved and completed successfully' : 'Service approved successfully',
-            completed: alreadyApproved
+            message: 'Service approved and completed successfully',
+            completed: true
         });
     } catch (error) {
         console.error('Error approving service:', error);
@@ -668,46 +788,47 @@ router.patch('/requester/:id/approve', auth, async (req, res) => {
             return res.status(400).json({ error: 'Service has already been completed' });
         }
         
-        // Check if coordinator already approved - if so, this completes the service
-        const alreadyApproved = service[0].coordinator_approval_status === 'approved';
-        const newStatus = alreadyApproved ? 'completed' : service[0].status;
+        // Single approval mode: requester approval immediately completes the service
+        const newStatus = 'completed';
         
-        console.log(`📝 Coordinator already approved: ${alreadyApproved}, new status: ${newStatus}`);
+        console.log(`📝 Requester approving - service will be completed immediately`);
         
-        // Update requester approval status (and complete if coordinator already approved)
+        // Update requester approval status and complete the service
         await db.query(
             `UPDATE voluntary_services 
              SET requester_approval_status = 'approved',
                  requester_notes = ?,
-                 status = ?,
-                 completed_at = ${alreadyApproved ? 'NOW()' : 'completed_at'}
+                 status = 'completed',
+                 completed_at = NOW()
              WHERE id = ?`,
-            [notes || null, newStatus, serviceId]
+            [notes || null, serviceId]
         );
         
-        // Only deduct parts if this approval completes the service (coordinator already approved OR single approval mode)
-        if (alreadyApproved && service[0].parts_used) {
+        // Deduct parts from inventory after requester approval
+        if (service[0].parts_used) {
             const parts_used = JSON.parse(service[0].parts_used);
             console.log('📦 Deducting parts from inventory after requester approval...');
+            console.log('📦 Parts to deduct:', JSON.stringify(parts_used, null, 2));
+            console.log('👤 Technician ID:', service[0].technician_id);
             
             for (const part of parts_used) {
                 try {
-                    // Clean the part name
-                    let cleanPartName = part.name.replace(/^[✓⚠✗]\s*/, '').trim();
-                    cleanPartName = cleanPartName.replace(/\s*\(Stock:\s*\d+\)\s*$/, '').trim();
+                    console.log(`\n🔍 Processing part_id: ${part.part_id}`);
+                    console.log(`   Qty to deduct: ${part.qty}, Unit: ${part.unit}`);
                     
+                    // Query by part_id directly
                     const [inventoryItem] = await db.query(
                         `SELECT ti.id, ti.quantity, pp.name, pp.brand
                          FROM technician_inventory ti
                          INNER JOIN printer_parts pp ON ti.part_id = pp.id
-                         WHERE ti.technician_id = ? 
-                         AND pp.name = ? 
-                         AND pp.brand = ?
+                         WHERE ti.technician_id = ? AND ti.part_id = ?
                          LIMIT 1`,
-                        [service[0].technician_id, cleanPartName, part.brand]
+                        [service[0].technician_id, part.part_id]
                     );
                     
+                    console.log(`   📋 Query result: ${inventoryItem.length > 0 ? 'FOUND' : 'NOT FOUND'}`);
                     if (inventoryItem.length > 0) {
+                        console.log(`   📋 Found inventory: ID=${inventoryItem[0].id}, Part="${inventoryItem[0].name}", Current Qty=${inventoryItem[0].quantity}`);
                         const currentQty = inventoryItem[0].quantity;
                         const deductQty = parseInt(part.qty) || 0;
                         
@@ -717,19 +838,23 @@ router.patch('/requester/:id/approve', auth, async (req, res) => {
                                 'UPDATE technician_inventory SET quantity = ?, last_updated = NOW() WHERE id = ?',
                                 [newQty, inventoryItem[0].id]
                             );
-                            console.log(`✅ Deducted ${deductQty} ${cleanPartName}, new qty: ${newQty}`);
+                            console.log(`   ✅ Deducted ${deductQty} of "${inventoryItem[0].name}", new qty: ${newQty}`);
+                        } else {
+                            console.log(`   ⚠️ Insufficient stock: have ${currentQty}, need ${deductQty}`);
                         }
+                    } else {
+                        console.log(`   ❌ Part ID ${part.part_id} not found in technician's inventory`);
                     }
                 } catch (partError) {
                     console.error(`❌ Error deducting part:`, partError);
                 }
             }
+        } else {
+            console.log('📦 No parts to deduct (parts_used is null/empty)');
         }
         
-        // Notify technician
-        const notificationMessage = alreadyApproved
-            ? 'Your voluntary service has been approved by the requester and is now completed'
-            : 'Your voluntary service has been approved by the requester';
+        // Notify technician that service was approved and completed
+        const notificationMessage = 'Your voluntary service has been approved by the requester and is now completed';
         
         await db.query(
             `INSERT INTO notifications (user_id, type, title, message, reference_id)
@@ -738,8 +863,8 @@ router.patch('/requester/:id/approve', auth, async (req, res) => {
         );
         
         res.json({ 
-            message: alreadyApproved ? 'Service approved and completed successfully' : 'Service approved successfully',
-            completed: alreadyApproved
+            message: 'Service approved and completed successfully',
+            completed: true
         });
     } catch (error) {
         console.error('Error approving service:', error);
@@ -895,9 +1020,7 @@ router.get('/requester/pending', auth, async (req, res) => {
             INNER JOIN users u_tech ON vs.technician_id = u_tech.id
             WHERE upa.user_id = ?
             AND vs.technician_id != ?
-            AND vs.requester_approval_status = 'pending'
-            AND vs.status != 'completed'
-            AND vs.status != 'rejected'
+            AND vs.status NOT IN ('completed', 'rejected')
             ORDER BY vs.created_at DESC
         `;
         

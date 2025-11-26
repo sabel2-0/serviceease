@@ -690,7 +690,29 @@ async function submitRequestForm() {
       // go to history
       navigateTo('history');
     } else {
-      alert(data.error || 'Failed to submit request');
+      // Check if error is about active request
+      if (data.activeRequest) {
+        // Show active request modal with details
+        const activeReq = data.activeRequest;
+        document.getElementById('activeRequestNumber').textContent = activeReq.request_number || '-';
+        document.getElementById('activeRequestStatus').textContent = (activeReq.status || '-').toUpperCase();
+        document.getElementById('activeRequestPrinter').textContent = activeReq.printer_name || 'Unknown Printer';
+        
+        const modal = document.getElementById('activeRequestModal');
+        modal.classList.remove('hidden');
+        
+        // Setup close handlers
+        document.getElementById('activeRequestCloseBtn').onclick = () => {
+          modal.classList.add('hidden');
+        };
+        document.getElementById('activeRequestViewBtn').onclick = () => {
+          modal.classList.add('hidden');
+          // Go to history to view the request
+          navigateTo('history');
+        };
+      } else {
+        alert(data.error || 'Failed to submit request');
+      }
     }
   } catch (e) {
     console.error('submitRequestForm', e);
@@ -1124,7 +1146,7 @@ async function rejectVoluntaryService(serviceId) {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ reason })
+      body: JSON.stringify({ notes: reason })
     });
     
     if (response.ok) {

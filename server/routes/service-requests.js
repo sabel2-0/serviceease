@@ -159,6 +159,30 @@ router.post('/', auth, async (req, res) => {
             return res.status(400).json({ error: 'Invalid printer selected for this institution' });
         }
 
+        // Check if there's already an active service request for this printer
+        const [activeRequests] = await db.query(
+            `SELECT sr.id, sr.request_number, sr.status, ii.name as printer_name
+             FROM service_requests sr
+             LEFT JOIN inventory_items ii ON sr.inventory_item_id = ii.id
+             WHERE sr.inventory_item_id = ? 
+             AND sr.status IN ('pending', 'assigned', 'in_progress', 'pending_approval')
+             LIMIT 1`,
+            [inventory_item_id]
+        );
+
+        if (activeRequests.length > 0) {
+            const existing = activeRequests[0];
+            return res.status(400).json({ 
+                error: `There is already an active service request (${existing.request_number}) for this printer. Please wait for it to be completed before submitting a new request.`,
+                activeRequest: {
+                    id: existing.id,
+                    request_number: existing.request_number,
+                    status: existing.status,
+                    printer_name: existing.printer_name
+                }
+            });
+        }
+
         // If no assigned technician found, return clear message per requirements
         if (assignedTechnicianIds.length === 0) {
             return res.status(400).json({ error: 'No active technician is linked to your institution. Please contact your coordinator.' });

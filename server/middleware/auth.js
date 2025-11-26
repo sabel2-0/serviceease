@@ -133,21 +133,69 @@ const auth = async (req, res, next) => {
         
         // Check if user's token version matches (to invalidate sessions after password change)
         try {
+            // Also check account status along with token_version so that deactivated users
+            // are prevented from using the system immediately.
             const [userRows] = await db.query(
-                'SELECT token_version FROM users WHERE id = ?',
+                'SELECT token_version, status, role FROM users WHERE id = ?',
                 [decoded.id]
             );
             
             if (userRows.length > 0) {
                 const userTokenVersion = userRows[0].token_version || 0;
                 const tokenVersion = decoded.tokenVersion || 0;
-                
+
                 if (userTokenVersion !== tokenVersion) {
                     console.log(`Token version mismatch for user ${decoded.id}: token has v${tokenVersion}, database has v${userTokenVersion}`);
                     return res.status(401).json({ 
-                        message: 'Session expired due to password change. Please login again.',
+                        message: 'Session expired due to password change or administrative action. Please login again.',
                         code: 'TOKEN_INVALIDATED'
                     });
+                }
+
+                const userStatus = (userRows[0].status || 'active').toLowerCase();
+                if (userStatus !== 'active') {
+                    console.log(`Access denied: user ${decoded.id} has status='${userStatus}'`);
+                    return res.status(401).json({
+                        message: 'Account is inactive. Contact an administrator.',
+                        code: 'ACCOUNT_INACTIVE'
+                    });
+                }
+                
+                // Check institution status for coordinators and requesters
+                const userRole = userRows[0].role;
+                if (userRole === 'coordinator' || userRole === 'requester') {
+                    let institutionStatus = null;
+                    
+                    try {
+                        if (userRole === 'coordinator') {
+                            // Coordinator owns the institution (institutions.user_id)
+                            const [instRows] = await db.query(
+                                'SELECT status FROM institutions WHERE user_id = ? LIMIT 1',
+                                [decoded.id]
+                            );
+                            institutionStatus = instRows && instRows.length > 0 ? instRows[0].status : null;
+                        } else if (userRole === 'requester') {
+                            // Requester is linked via user_printer_assignments.institution_id
+                            const [instRows] = await db.query(
+                                `SELECT i.status FROM institutions i
+                                 JOIN user_printer_assignments upa ON upa.institution_id = i.institution_id
+                                 WHERE upa.user_id = ? LIMIT 1`,
+                                [decoded.id]
+                            );
+                            institutionStatus = instRows && instRows.length > 0 ? instRows[0].status : null;
+                        }
+                        
+                        if (institutionStatus === 'deactivated') {
+                            console.log(`Access denied: user ${decoded.id} - institution is deactivated`);
+                            return res.status(401).json({
+                                message: 'Your institution has been deactivated. Contact an administrator.',
+                                code: 'INSTITUTION_DEACTIVATED'
+                            });
+                        }
+                    } catch (instErr) {
+                        console.error('Error checking institution status in auth middleware:', instErr);
+                        // Continue if institution check fails to avoid locking out users
+                    }
                 }
             }
         } catch (dbErr) {

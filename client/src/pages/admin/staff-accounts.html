@@ -424,27 +424,20 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                    <input type="email" name="email" id="editStaffEmail" required disabled class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100">
+                    <input type="email" name="email" id="editStaffEmail" required 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           placeholder="Enter email address">
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Department</label>
-                    <input type="text" name="department" id="editStaffDepartment" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter department">
-                </div>
+                <!-- Department field removed per admin UI update -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Role</label>
                     <select name="role" id="editStaffRole" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option value="">Select role</option>
+                        <option value="" disabled selected>Select role</option>
                         <option value="operations_officer">Operations Officer</option>
                         <option value="technician">Technician</option>
                     </select>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                    <select name="status" id="editStaffStatus" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
-                    </select>
-                </div>
+                <!-- Status removed from Edit modal (use action buttons to deactivate/activate) -->
                 <div class="flex justify-end space-x-3 pt-4">
                     <button type="button" onclick="closeEditStaffModal()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400">Cancel</button>
                     <button type="submit" id="submitEditStaffBtn" aria-live="polite" aria-busy="false" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -507,19 +500,25 @@
                         <input type="password" name="password" id="addStaffPassword" required 
                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                placeholder="Enter password"
-                               minlength="6" aria-describedby="passwordHelp">
+                               minlength="8" aria-describedby="passwordHelp">
                         <button type="button" id="togglePasswordBtn" aria-label="Show password" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700">
                             <i class="fas fa-eye"></i>
                         </button>
                     </div>
-                    <p id="passwordHelp" class="text-xs text-gray-500 mt-1">Use at least 6 characters. You can change this later.</p>
+                    <p id="passwordHelp" class="text-xs text-gray-500 mt-1">Use 8+ characters with letters, numbers &amp; symbols.</p>
+                    <div id="passwordStrength" class="mt-2">
+                        <div class="h-2 bg-gray-200 rounded overflow-hidden">
+                            <div id="passwordStrengthBar" class="h-full w-0 bg-red-500 transition-all"></div>
+                        </div>
+                        <div id="passwordStrengthText" class="mt-1 text-xs text-gray-600">Password strength: <span id="passwordStrengthLabel">—</span></div>
+                    </div>
                 </div>
                 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Role</label>
                     <select name="role" required 
                             class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option value="">Select role</option>
+                        <option value="" disabled selected>Select role</option>
                         <option value="operations_officer">Operations Officer</option>
                         <option value="technician">Technician</option>
                     </select>
@@ -626,17 +625,33 @@
                 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">New Password</label>
-                    <input type="password" id="newPasswordInput" required minlength="6" 
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                           placeholder="Enter new password (min 6 characters)">
-                    <p class="text-xs text-gray-500 mt-1">Minimum 6 characters</p>
+                    <div class="relative">
+                        <input type="password" id="newPasswordInput" required minlength="8"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                               placeholder="Enter new password (min 8 characters)" aria-describedby="changePasswordHelp">
+                        <button type="button" id="toggleChangePasswordBtn" aria-label="Show password" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <p id="changePasswordHelp" class="text-xs text-gray-500 mt-1">Use 8+ characters with letters, numbers &amp; symbols.</p>
+                    <div id="changePasswordStrength" class="mt-2">
+                        <div class="h-2 bg-gray-200 rounded overflow-hidden">
+                            <div id="changePasswordStrengthBar" class="h-full w-0 bg-red-500 transition-all"></div>
+                        </div>
+                        <div id="changePasswordStrengthText" class="mt-1 text-xs text-gray-600">Password strength: <span id="changePasswordStrengthLabel">—</span></div>
+                    </div>
                 </div>
                 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
-                    <input type="password" id="confirmPasswordInput" required minlength="6"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                           placeholder="Confirm new password">
+                    <div class="relative">
+                        <input type="password" id="confirmPasswordInput" required minlength="8"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                               placeholder="Confirm new password">
+                        <button type="button" id="toggleConfirmPasswordBtn" aria-label="Show password" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
                 </div>
                 
                 <div class="flex justify-end space-x-3 pt-4">

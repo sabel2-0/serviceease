@@ -139,7 +139,18 @@
                     </div>
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
-                        <input type="password" id="userPassword" class="w-full px-4 py-2 border rounded-md" placeholder="Enter a password for the user" required>
+                        <div class="relative">
+                            <input type="password" id="userPassword" class="w-full px-4 py-2 border rounded-md" placeholder="Enter a password for the user" required aria-describedby="passwordStrengthText">
+                            <button type="button" id="togglePasswordVisibility" aria-label="Toggle password visibility" class="absolute inset-y-0 right-2 px-2 text-gray-500 hover:text-gray-700 focus:outline-none">
+                                <i class="fas fa-eye" id="togglePasswordIcon"></i>
+                            </button>
+                        </div>
+                        <div class="mt-2 flex items-center gap-3">
+                            <div class="w-full bg-gray-200 rounded overflow-hidden h-2">
+                                <div id="passwordStrengthBar" class="h-2 bg-red-400 w-0 transition-all"></div>
+                            </div>
+                            <div id="passwordStrengthText" class="text-sm text-gray-600 w-40 text-right" aria-live="polite">&nbsp;</div>
+                        </div>
                     </div>
                     <!-- Coordinator-created users are assigned the 'requester' role by the server -->
                     <div class="mb-4">
@@ -147,10 +158,11 @@
                         <input type="text" id="department" class="w-full px-4 py-2 border rounded-md">
                     </div>
                     <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Assign Printer (optional)</label>
-                        <select id="assignPrinterSelect" class="w-full px-4 py-2 border rounded-md">
-                            <option value="">-- No printer --</option>
-                        </select>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Assign Printers (optional)</label>
+                        <div class="border rounded-md p-3 max-h-48 overflow-y-auto bg-gray-50" id="printerCheckboxContainer">
+                            <p class="text-sm text-gray-500">Loading printers...</p>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Select one or more printers to assign to this user</p>
                     </div>
                 </form>
             </div>
@@ -211,10 +223,11 @@
                         <input type="text" id="editDepartment" class="w-full px-4 py-2 border rounded-md">
                     </div>
                     <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Assign Printer (optional)</label>
-                        <select id="editAssignPrinterSelect" class="w-full px-4 py-2 border rounded-md">
-                            <option value="">-- No printer --</option>
-                        </select>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Assign Printers (optional)</label>
+                        <div class="border rounded-md p-3 max-h-48 overflow-y-auto bg-gray-50" id="editPrinterCheckboxContainer">
+                            <p class="text-sm text-gray-500">Loading printers...</p>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Select one or more printers to assign to this user</p>
                     </div>
                 </form>
             </div>
@@ -323,6 +336,73 @@
                 document.getElementById('addUserModal').classList.add('hidden');
             });
             
+            // Password visibility toggle and strength helpers
+            const pwdInput = document.getElementById('userPassword');
+            const togglePwdBtn = document.getElementById('togglePasswordVisibility');
+            const togglePwdIcon = document.getElementById('togglePasswordIcon');
+            const strengthBar = document.getElementById('passwordStrengthBar');
+            const strengthText = document.getElementById('passwordStrengthText');
+
+            function calculatePasswordStrength(pw) {
+                let score = 0;
+                if (!pw) return score;
+                // length >= 8
+                if (pw.length >= 8) score++;
+                // has both lower and upper
+                if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) score++;
+                // has digit
+                if (/[0-9]/.test(pw)) score++;
+                // has special char
+                if (/[^A-Za-z0-9]/.test(pw)) score++;
+                return score; // 0..4
+            }
+
+            function updatePasswordStrengthUI(pw) {
+                const score = calculatePasswordStrength(pw);
+                let percent = (score / 4) * 100;
+                let label = '';
+                let colorClass = 'bg-red-400';
+                if (score === 0) { label = '' ; percent = 0; }
+                else if (score === 1) { label = 'Very weak'; colorClass = 'bg-red-400'; }
+                else if (score === 2) { label = 'Weak'; colorClass = 'bg-yellow-400'; }
+                else if (score === 3) { label = 'Good'; colorClass = 'bg-blue-400'; }
+                else if (score === 4) { label = 'Strong'; colorClass = 'bg-green-500'; }
+
+                strengthBar.style.width = percent + '%';
+                strengthBar.className = 'h-2 ' + colorClass + ' w-0 transition-all';
+                strengthText.textContent = label ? `${label}` : '\u00A0';
+            }
+
+            function passwordMeetsPolicy(pw) {
+                // Policy: at least 8 chars, has letter, digit and symbol
+                if (!pw) return false;
+                if (pw.length < 8) return false;
+                if (!/[A-Za-z]/.test(pw)) return false;
+                if (!/[0-9]/.test(pw)) return false;
+                if (!/[^A-Za-z0-9]/.test(pw)) return false;
+                return true;
+            }
+
+            // Toggle password visibility
+            togglePwdBtn?.addEventListener('click', () => {
+                if (!pwdInput) return;
+                if (pwdInput.type === 'password') {
+                    pwdInput.type = 'text';
+                    togglePwdIcon.classList.remove('fa-eye');
+                    togglePwdIcon.classList.add('fa-eye-slash');
+                } else {
+                    pwdInput.type = 'password';
+                    togglePwdIcon.classList.remove('fa-eye-slash');
+                    togglePwdIcon.classList.add('fa-eye');
+                }
+                pwdInput.focus();
+            });
+
+            // Update strength on input
+            pwdInput?.addEventListener('input', (e) => {
+                updatePasswordStrengthUI(e.target.value);
+            });
+
             // Form submission
             document.getElementById('submitAddUser')?.addEventListener('click', async () => {
                 // Collect form values
@@ -331,11 +411,22 @@
                 const email = document.getElementById('userEmail').value.trim();
                 // Password provided by coordinator
                 const password = document.getElementById('userPassword').value.trim();
-                const inventory_item_id = document.getElementById('assignPrinterSelect').value || null;
+                
+                // Collect all selected printer IDs
+                const selectedPrinters = Array.from(document.querySelectorAll('.printer-checkbox:checked'))
+                    .map(cb => Number(cb.value))
+                    .filter(id => id);
+                
                 const department = document.getElementById('department').value.trim() || null;
 
                 if (!firstName || !lastName || !email || !password) {
                     showNotification('Error', 'First name, last name, email and password are required', 'error');
+                    return;
+                }
+
+                // Enforce password policy on the client side (server side is authoritative)
+                if (!passwordMeetsPolicy(password)) {
+                    showNotification('Error', 'Password must be at least 8 characters and include letters, numbers, and symbols', 'error');
                     return;
                 }
 
@@ -349,7 +440,10 @@
 
                 try {
                     const payload = { firstName, lastName, email, password, department };
-                    if (inventory_item_id) payload.inventory_item_id = Number(inventory_item_id);
+                    // Send array of printer IDs
+                    if (selectedPrinters.length > 0) {
+                        payload.inventory_item_ids = selectedPrinters;
+                    }
 
                     const token = localStorage.getItem('token');
                     console.log('Create user payload:', payload);
@@ -370,16 +464,20 @@
                     const resultJson = await res.json();
                     console.log('Create user response:', resultJson);
                     document.getElementById('addUserModal').classList.add('hidden');
-                    showNotification('Success', 'New user added successfully', 'success');
+                    showNotification('Success', `New user added successfully${selectedPrinters.length > 0 ? ' with ' + selectedPrinters.length + ' printer(s)' : ''}`, 'success');
                     // Refresh user list so the new user becomes visible
                     loadUsers();
+                    
+                    // Reset form and checkboxes
+                    document.getElementById('addUserForm').reset();
+                    document.querySelectorAll('.printer-checkbox').forEach(cb => cb.checked = false);
                 } catch (err) {
                     console.error('Create user error:', err);
                     showNotification('Error', err.message || 'Failed to create user', 'error');
                 }
             });
 
-            // Load available printers for this coordinator's institution into select
+            // Load available printers for this coordinator's institution into checkboxes
             async function loadAvailablePrinters() {
                 const user = JSON.parse(localStorage.getItem('user')) || {};
                 if (!user.institution_id) return;
@@ -387,15 +485,35 @@
                     const res = await fetch(`/api/institutions/${user.institution_id}/printers`);
                     if (!res.ok) return;
                     const printers = await res.json();
-                    const select = document.getElementById('assignPrinterSelect');
+                    const container = document.getElementById('printerCheckboxContainer');
+                    container.innerHTML = '';
+                    
+                    if (!printers || printers.length === 0) {
+                        container.innerHTML = '<p class="text-sm text-gray-500">No printers available</p>';
+                        return;
+                    }
+                    
                     printers.forEach(p => {
-                        const opt = document.createElement('option');
-                        opt.value = p.inventory_item_id;
+                        const div = document.createElement('div');
+                        div.className = 'flex items-center mb-2';
+                        
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.id = `printer_${p.inventory_item_id}`;
+                        checkbox.value = p.inventory_item_id;
+                        checkbox.className = 'mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded printer-checkbox';
+                        
+                        const label = document.createElement('label');
+                        label.htmlFor = `printer_${p.inventory_item_id}`;
+                        label.className = 'text-sm text-gray-700';
                         const parts = [p.name];
                         if (p.model) parts.push('(' + p.model + ')');
                         if (p.serial_number) parts.push('- SN:' + p.serial_number);
-                        opt.textContent = parts.join(' ');
-                        select.appendChild(opt);
+                        label.textContent = parts.join(' ');
+                        
+                        div.appendChild(checkbox);
+                        div.appendChild(label);
+                        container.appendChild(div);
                     });
                 } catch (e) {
                     console.error('Failed to load printers:', e);
@@ -478,8 +596,20 @@
                         deptTd.textContent = u.department || '';
 
                         const printerTd = document.createElement('td');
-                        printerTd.className = 'px-6 py-4 whitespace-nowrap text-sm text-gray-600';
-                        printerTd.textContent = u.printer_name || '';
+                        printerTd.className = 'px-6 py-4 text-sm text-gray-600';
+                        // Show multiple printers
+                        if (u.printers && u.printers.length > 0) {
+                            const printerList = u.printers.map(p => p.printer_name || 'Unnamed').join(', ');
+                            printerTd.innerHTML = `<div class="max-w-xs truncate" title="${printerList}">${printerList}</div>`;
+                            if (u.printers.length > 1) {
+                                const badge = document.createElement('span');
+                                badge.className = 'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 ml-2';
+                                badge.textContent = `${u.printers.length} printers`;
+                                printerTd.appendChild(badge);
+                            }
+                        } else {
+                            printerTd.textContent = 'None';
+                        }
 
                         const actionsTd = document.createElement('td');
                         actionsTd.className = 'px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex gap-2 justify-end';
@@ -562,16 +692,35 @@
                     const res = await fetch(`/api/institutions/${user.institution_id}/printers`);
                     if (!res.ok) return;
                     const printers = await res.json();
-                    const select = document.getElementById('editAssignPrinterSelect');
-                    select.innerHTML = '<option value="">-- No printer --</option>';
+                    const container = document.getElementById('editPrinterCheckboxContainer');
+                    container.innerHTML = '';
+                    
+                    if (!printers || printers.length === 0) {
+                        container.innerHTML = '<p class="text-sm text-gray-500">No printers available</p>';
+                        return;
+                    }
+                    
                     printers.forEach(p => {
-                        const opt = document.createElement('option');
-                        opt.value = p.inventory_item_id;
+                        const div = document.createElement('div');
+                        div.className = 'flex items-center mb-2';
+                        
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.id = `edit_printer_${p.inventory_item_id}`;
+                        checkbox.value = p.inventory_item_id;
+                        checkbox.className = 'mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded edit-printer-checkbox';
+                        
+                        const label = document.createElement('label');
+                        label.htmlFor = `edit_printer_${p.inventory_item_id}`;
+                        label.className = 'text-sm text-gray-700';
                         const parts = [p.name];
                         if (p.model) parts.push('(' + p.model + ')');
                         if (p.serial_number) parts.push('- SN:' + p.serial_number);
-                        opt.textContent = parts.join(' ');
-                        select.appendChild(opt);
+                        label.textContent = parts.join(' ');
+                        
+                        div.appendChild(checkbox);
+                        div.appendChild(label);
+                        container.appendChild(div);
                     });
                 } catch (e) {
                     console.error('Failed to load printers for edit:', e);
@@ -588,16 +737,23 @@
                 document.getElementById('editDepartment').value = user.department || '';
                 // Show modal immediately
                 document.getElementById('editUserModal').classList.remove('hidden');
-                // Load printers and preselect if user has assignment (don't block showing modal)
+                // Load printers and preselect those assigned to the user
                 loadAvailablePrintersForEdit().then(() => {
                     try {
-                        if (user.inventory_item_id) {
-                            document.getElementById('editAssignPrinterSelect').value = user.inventory_item_id;
-                        } else {
-                            document.getElementById('editAssignPrinterSelect').value = '';
+                        // Uncheck all first
+                        document.querySelectorAll('.edit-printer-checkbox').forEach(cb => cb.checked = false);
+                        
+                        // Check the ones assigned to this user
+                        if (user.printers && user.printers.length > 0) {
+                            user.printers.forEach(printer => {
+                                const checkbox = document.querySelector(`.edit-printer-checkbox[value="${printer.inventory_item_id}"]`);
+                                if (checkbox) {
+                                    checkbox.checked = true;
+                                }
+                            });
                         }
                     } catch (e) {
-                        console.warn('Could not preselect printer in edit modal:', e.message);
+                        console.warn('Could not preselect printers in edit modal:', e.message);
                     }
                 }).catch(e => console.warn('Failed to load printers for edit:', e));
             }
@@ -609,7 +765,11 @@
                 const lastName = document.getElementById('editLastName').value.trim();
                 const email = document.getElementById('editEmail').value.trim();
                 const department = document.getElementById('editDepartment').value.trim() || null;
-                const inventory_item_id = document.getElementById('editAssignPrinterSelect').value || null;
+                
+                // Collect all selected printer IDs
+                const selectedPrinters = Array.from(document.querySelectorAll('.edit-printer-checkbox:checked'))
+                    .map(cb => Number(cb.value))
+                    .filter(id => id);
 
                 if (!firstName || !lastName || !email) {
                     showNotification('Error', 'First, last name and email are required', 'error');
@@ -619,7 +779,13 @@
                 try {
                     const token = localStorage.getItem('token');
                     const payload = { firstName, lastName, email, department };
-                    if (inventory_item_id) payload.inventory_item_id = Number(inventory_item_id);
+                    // Send array of printer IDs
+                    if (selectedPrinters.length > 0) {
+                        payload.inventory_item_ids = selectedPrinters;
+                    } else {
+                        // Empty array means remove all assignments
+                        payload.inventory_item_ids = [];
+                    }
 
                     const currentUser = JSON.parse(localStorage.getItem('user')) || {};
                     const coordinatorId = currentUser.id;
@@ -638,7 +804,8 @@
                     const result = await res.json();
                     console.log('Edit user result:', result);
                     document.getElementById('editUserModal').classList.add('hidden');
-                    showNotification('Success', 'User updated', 'success');
+                    const changeMsg = result.changes ? ` (${result.changes.added} added, ${result.changes.removed} removed)` : '';
+                    showNotification('Success', `User updated${changeMsg}`, 'success');
                     loadUsers();
                 } catch (e) {
                     console.error('Edit user error:', e);

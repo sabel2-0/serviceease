@@ -1,4 +1,5 @@
 <!-- Clients Tab Content Component - Voluntary Services -->
+<!-- Version: 2025-11-26 - Updated parts selection with type filter -->
 <div class="container mx-auto px-4 py-6 pb-24">
     <div class="max-w-4xl mx-auto">
         <!-- Header -->
@@ -67,9 +68,10 @@
 <!-- Service Submission Modal - Fullscreen -->
 <div id="serviceModal" class="hidden fixed inset-0 bg-black/50 z-50 overflow-y-auto">
     <div class="min-h-screen flex items-center justify-center p-0 md:p-4">
+        <!-- v2.0.1 SEARCHABLE PARTS INTERFACE -->
         <div class="bg-white w-full h-screen md:h-auto md:rounded-2xl md:max-w-4xl md:my-8 shadow-2xl flex flex-col md:max-h-[95vh]">
         <!-- Header -->
-        <div class="p-6 border-b border-slate-200 flex-shrink-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-2xl">
+        <div class="p-6 border-b border-slate-200 flex-shrink-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
             <div class="flex justify-between items-center">
                 <div class="flex items-center gap-4">
                     <div class="p-3 bg-white/20 rounded-xl">
@@ -79,7 +81,7 @@
                     </div>
                     <div>
                         <h2 class="text-2xl font-bold">Submit Voluntary Service</h2>
-                        <p class="text-blue-100 text-sm">Complete service details</p>
+                        <p class="text-blue-100 text-sm">Complete service details • v2.1 Searchable Parts</p>
                     </div>
                 </div>
                 <button onclick="closeServiceModal()" class="bg-white/20 hover:bg-white/30 p-2.5 rounded-xl transition-all">
@@ -216,12 +218,12 @@
                                             </label>
                                             <select class="vs-part-type w-full p-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 bg-white font-medium text-slate-700" onchange="updatePartTypeFilter(this)">
                                                 <option value="">Choose type first...</option>
-                                                <option value="consumable">Consumable (Universal)</option>
-                                                <option value="printer_part">Printer Part (Brand-Specific)</option>
+                                                <option value="consumable">Consumable</option>
+                                                <option value="printer_part">Printer Part</option>
                                             </select>
                                         </div>
                                         
-                                        <!-- Part Selection (Auto-filtered by Printer Brand) -->
+                                        <!-- Part Selection with Search -->
                                         <div>
                                             <label class="block text-sm font-semibold text-slate-700 mb-1.5">
                                                 <svg class="w-3.5 h-3.5 text-purple-500 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -229,9 +231,50 @@
                                                 </svg>
                                                 Select Part <span class="text-xs text-purple-600">(Filtered by Type & Brand)</span>
                                             </label>
-                                            <select class="vs-part-name w-full p-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-400 focus:border-purple-400 bg-white font-medium text-slate-700" onchange="updatePartStock(this)" disabled>
-                                                <option value="">Select part type first...</option>
+                                            <!-- v2.0 SEARCHABLE CARD INTERFACE -->
+                                            
+                                            <!-- Search Box -->
+                                            <div class="relative mb-3">
+                                                <input type="text" class="vs-part-search-input w-full p-3 pl-10 pr-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-400 focus:border-purple-400 bg-white text-sm text-slate-700 placeholder-slate-400" 
+                                                       placeholder="Search parts..." disabled>
+                                                <div class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                                                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                                    </svg>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Selected Part Display -->
+                                            <div class="vs-selected-part-display hidden p-3 bg-gradient-to-r from-purple-50 to-blue-50 border-2 border-purple-200 rounded-lg mb-2">
+                                                <div class="flex items-center justify-between">
+                                                    <div class="flex-1">
+                                                        <div class="font-semibold text-slate-700 text-sm vs-selected-part-name"></div>
+                                                        <div class="text-xs text-slate-500 vs-selected-part-info"></div>
+                                                    </div>
+                                                    <button type="button" class="vs-clear-part-btn text-red-500 hover:text-red-600 p-1">
+                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Parts Grid -->
+                                            <div class="vs-parts-grid-container max-h-64 overflow-y-auto border-2 border-slate-200 rounded-lg p-2 bg-slate-50 hidden">
+                                                <div class="vs-parts-grid grid grid-cols-1 gap-2"></div>
+                                                <div class="vs-no-parts-message hidden text-center py-8 text-slate-400 text-sm">
+                                                    <svg class="w-12 h-12 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+                                                    </svg>
+                                                    No parts available
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Hidden select for data storage -->
+                                            <select class="vs-part-name" style="display: none !important;" disabled>
+                                                <option value="">Select type first...</option>
                                             </select>
+                                            
                                             <div class="vs-part-stock text-sm mt-1.5 font-medium"></div>
                                         </div>
                                         
@@ -275,7 +318,7 @@
                         
                         <!-- Add Part Button -->
                         <div class="mt-3 flex justify-center">
-                            <button type="button" onclick="addNewPart()" 
+                            <button type="button" onclick="window.addNewPart()" 
                                     class="group inline-flex items-center gap-2 text-purple-600 hover:text-white font-semibold bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-500 hover:to-purple-600 px-6 py-3 rounded-xl transition-all duration-300 border-2 border-purple-200 hover:border-purple-600 shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
                                 <div class="p-1 bg-purple-200 group-hover:bg-white/20 rounded-full transition-all">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -291,7 +334,7 @@
         </div>
 
         <!-- Footer -->
-        <div class="p-6 border-t border-slate-200 flex justify-end space-x-3 flex-shrink-0 bg-slate-50 rounded-b-2xl">
+        <div class="p-6 border-t border-slate-200 flex justify-end space-x-3 flex-shrink-0 bg-slate-50">
             <button type="button" onclick="closeServiceModal()"
                 class="px-6 py-2.5 border-2 border-slate-300 text-slate-700 rounded-xl hover:bg-slate-100 font-medium transition-all">
                 Cancel
@@ -309,14 +352,8 @@
 (function() {
     'use strict';
     
-    // Check if already initialized
-    if (window.voluntaryServicesInitialized) {
-        console.log('📚 Voluntary services already initialized, skipping...');
-        return;
-    }
-    window.voluntaryServicesInitialized = true;
-    
-    console.log('📚 Voluntary services script loaded');
+    // Always reinitialize to get latest code
+    console.log('📚 Voluntary services script loading (forced reload)...');
 
     // Store data in closure scope accessible to all functions
     let schoolsData = [];
@@ -424,7 +461,7 @@ window.renderSchools = function() {
                         <div class="text-[10px] text-slate-600 uppercase tracking-wide mt-1">Pending</div>
                     </div>
                     <div class="text-center border-l-4 border-l-slate-400 bg-white p-3 shadow-sm">
-                        <div class="text-xl font-bold text-slate-700">${Math.max(0, school.total_printers - (school.serviced_count || 0))}</div>
+                        <div class="text-xl font-bold text-slate-700">${school.remaining_count || 0}</div>
                         <div class="text-[10px] text-slate-600 uppercase tracking-wide mt-1">Remaining</div>
                     </div>
                 </div>
@@ -505,6 +542,7 @@ window.renderPrinterCard = function(printer, institutionId) {
     const statusColors = {
         'pending_coordinator': 'bg-amber-100 text-amber-800 border-l-amber-500',
         'pending_requester': 'bg-blue-100 text-blue-800 border-l-blue-500',
+        'pending_approval': 'bg-orange-100 text-orange-800 border-l-orange-500',
         'completed': 'bg-green-100 text-green-800 border-l-green-500',
         'rejected': 'bg-red-100 text-red-800 border-l-red-500'
     };
@@ -512,9 +550,16 @@ window.renderPrinterCard = function(printer, institutionId) {
     const statusText = {
         'pending_coordinator': 'COORDINATOR REVIEW',
         'pending_requester': 'REQUESTER REVIEW',
+        'pending_approval': 'PENDING APPROVAL',
         'completed': 'COMPLETED',
         'rejected': 'REJECTED'
     };
+    
+    // Service type badge
+    const serviceTypeBadge = hasService && printer.service_type ? 
+        `<span class="inline-block px-2 py-0.5 text-[9px] font-semibold ${printer.service_type === 'voluntary' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'} rounded-full ml-2">
+            ${printer.service_type === 'voluntary' ? '🎁 VOLUNTARY' : '📋 REGULAR'}
+        </span>` : '';
     
     return `
         <div class="bg-white p-4 border border-slate-200 shadow hover:shadow-md transition-all ${hasService ? 'border-l-4 ' + statusColors[printer.last_service_status]?.split(' ').pop() : 'border-l-4 border-l-slate-300'}">
@@ -530,9 +575,12 @@ window.renderPrinterCard = function(printer, institutionId) {
                     </div>
                 </div>
                 ${hasService ? `
-                    <span class="px-3 py-1.5 text-[10px] font-bold ${statusColors[printer.last_service_status] || 'bg-slate-100 text-slate-700'} border-l-4 whitespace-nowrap flex-shrink-0 ml-2 uppercase tracking-wider shadow-sm">
-                        ${statusText[printer.last_service_status] || printer.last_service_status}
-                    </span>
+                    <div class="flex flex-col items-end gap-1">
+                        <span class="px-3 py-1.5 text-[10px] font-bold ${statusColors[printer.last_service_status] || 'bg-slate-100 text-slate-700'} border-l-4 whitespace-nowrap flex-shrink-0 uppercase tracking-wider shadow-sm">
+                            ${statusText[printer.last_service_status] || printer.last_service_status}
+                        </span>
+                        ${serviceTypeBadge}
+                    </div>
                 ` : `
                     <span class="px-3 py-1.5 text-[10px] font-bold bg-slate-100 text-slate-600 border-l-4 border-l-slate-300 whitespace-nowrap flex-shrink-0 ml-2 uppercase tracking-wider shadow-sm">
                         NOT SERVICED
@@ -543,6 +591,7 @@ window.renderPrinterCard = function(printer, institutionId) {
             ${hasService ? `
                 <div class="text-xs text-slate-600 mb-3 bg-slate-50 px-3 py-2 border-l-2 border-slate-300">
                     Last service: ${new Date(printer.last_service_date).toLocaleDateString()}
+                    ${printer.total_service_count ? ` • Total services: ${printer.total_service_count}` : ''}
                 </div>
             ` : ''}
             
@@ -561,7 +610,7 @@ window.openServiceModal = async function(printerId, institutionId, brand, model,
     
     // Store the printer brand for filtering parts
     window.vsCurrentPrinterBrand = brand;
-    console.log('🖨️ Walk-in printer brand:', brand);
+    console.log('🖨️ Printer brand:', brand);
     
     document.getElementById('modal-printer-info').innerHTML = `
         <div class="flex items-center space-x-3">
@@ -573,23 +622,139 @@ window.openServiceModal = async function(printerId, institutionId, brand, model,
         </div>
     `;
     
-    // Reset form
+    // Reset form completely
     document.getElementById('serviceForm').reset();
+    document.getElementById('service-description').value = '';
     
-    // Reset carousel to first part
+    // Reset carousel to single part entry
     vsCurrentPartIndex = 0;
     const container = document.getElementById('vs-partsContainer');
     
-    // Keep only first part entry and reset it
-    while (container.children.length > 1) {
-        container.removeChild(container.lastChild);
+    // Remove all part entries
+    while (container.firstChild) {
+        container.removeChild(container.firstChild);
     }
-    const firstPart = container.firstElementChild;
-    firstPart.querySelector('.vs-part-name').value = '';
-    firstPart.querySelector('.vs-part-quantity').value = '1';
-    firstPart.querySelector('.vs-part-unit').value = 'pieces';
-    firstPart.querySelector('.vs-part-stock').innerHTML = '';
     
+    // Add fresh first part entry
+    const firstPartHTML = `
+        <div class="vs-part-entry min-w-full bg-white rounded-xl p-5 border-2 border-purple-100 shadow-sm">
+            <div class="flex items-center justify-between mb-3 pb-2 border-b border-purple-100">
+                <div class="flex items-center gap-1.5">
+                    <div class="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-sm">
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                        </svg>
+                    </div>
+                    <span class="text-sm font-semibold text-slate-700">Part #<span class="vs-part-number">1</span></span>
+                </div>
+                <button type="button" onclick="removePart(this)" class="text-red-500 hover:text-red-700 p-1.5 hover:bg-red-50 rounded-lg transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">
+                        <svg class="w-3.5 h-3.5 text-indigo-500 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path>
+                        </svg>
+                        Part Type <span class="text-red-500">*</span>
+                    </label>
+                    <select class="vs-part-type w-full p-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 bg-white font-medium text-slate-700" onchange="updatePartTypeFilter(this)">
+                        <option value="">Choose type first...</option>
+                        <option value="consumable">Consumable</option>
+                        <option value="printer_part">Printer Part</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">
+                        <svg class="w-3.5 h-3.5 text-purple-500 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a2 2 0 012-2z"></path>
+                        </svg>
+                        Select Part <span class="text-xs text-purple-600">(Filtered by Type & Brand)</span>
+                    </label>
+                    
+                    <!-- Search Box -->
+                    <div class="relative mb-3">
+                        <input type="text" class="vs-part-search-input w-full p-3 pl-10 pr-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-400 focus:border-purple-400 bg-white text-sm text-slate-700 placeholder-slate-400" 
+                               placeholder="Search parts..." disabled>
+                        <div class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    
+                    <!-- Selected Part Display -->
+                    <div class="vs-selected-part-display hidden p-3 bg-gradient-to-r from-purple-50 to-blue-50 border-2 border-purple-200 rounded-lg mb-2">
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1">
+                                <div class="font-semibold text-slate-700 text-sm vs-selected-part-name"></div>
+                                <div class="text-xs text-slate-500 vs-selected-part-info"></div>
+                            </div>
+                            <button type="button" class="vs-clear-part-btn text-red-500 hover:text-red-600 p-1">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Parts Grid -->
+                    <div class="vs-parts-grid-container max-h-64 overflow-y-auto border-2 border-slate-200 rounded-lg p-2 bg-slate-50 hidden">
+                        <div class="vs-parts-grid grid grid-cols-1 gap-2"></div>
+                        <div class="vs-no-parts-message hidden text-center py-8 text-slate-400 text-sm">
+                            <svg class="w-12 h-12 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+                            </svg>
+                            No parts available
+                        </div>
+                    </div>
+                    
+                    <!-- Hidden select for data storage -->
+                    <select class="vs-part-name" style="display: none !important;" disabled>
+                        <option value="">Select type first...</option>
+                    </select>
+                    
+                    <div class="vs-part-stock text-sm mt-1.5 font-medium"></div>
+                </div>
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1.5">
+                            <svg class="w-3.5 h-3.5 text-blue-500 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path>
+                            </svg>
+                            Quantity
+                        </label>
+                        <input type="number" class="vs-part-quantity w-full p-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 font-semibold text-slate-700" min="1" value="1" max="999">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1.5">
+                            <svg class="w-3.5 h-3.5 text-green-500 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                            </svg>
+                            Unit
+                        </label>
+                        <select class="vs-part-unit w-full p-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-green-400 focus:border-green-400 bg-white font-medium text-slate-700">
+                            <option value="pieces">Pieces</option>
+                            <option value="ml">ML</option>
+                            <option value="liters">Liters</option>
+                            <option value="grams">Grams</option>
+                            <option value="kg">KG</option>
+                            <option value="bottles">Bottles</option>
+                            <option value="cartridges">Cartridges</option>
+                            <option value="rolls">Rolls</option>
+                            <option value="sheets">Sheets</option>
+                            <option value="sets">Sets</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.innerHTML = firstPartHTML;
     container.style.transform = 'translateX(0)';
     
     // Load parts data and update controls
@@ -607,18 +772,35 @@ window.closeServiceModal = function() {
 // Update part dropdown based on selected type
 window.updatePartTypeFilter = function(typeSelect) {
     const partEntry = typeSelect.closest('.vs-part-entry');
-    const partNameSelect = partEntry.querySelector('.vs-part-name');
+    const searchInput = partEntry.querySelector('.vs-part-search-input');
+    const partsGrid = partEntry.querySelector('.vs-parts-grid');
+    const gridContainer = partEntry.querySelector('.vs-parts-grid-container');
+    const noPartsMessage = partEntry.querySelector('.vs-no-parts-message');
+    const hiddenSelect = partEntry.querySelector('.vs-part-name');
+    const selectedDisplay = partEntry.querySelector('.vs-selected-part-display');
     const selectedType = typeSelect.value;
     
-    if (!selectedType) {
-        partNameSelect.innerHTML = '<option value="">Select part type first...</option>';
-        partNameSelect.disabled = true;
+    // Safety check - ensure all elements exist
+    if (!searchInput || !partsGrid || !gridContainer || !noPartsMessage || !hiddenSelect || !selectedDisplay) {
+        console.error('❌ Missing required elements in part entry');
         return;
     }
     
-    // Map UI values to database values
-    const dbPartType = selectedType === 'consumable' ? 'universal' : 'brand_specific';
-    console.log(`🔍 Filtering parts: Type=${selectedType} (DB: ${dbPartType})`);
+    if (!selectedType) {
+        searchInput.disabled = true;
+        searchInput.value = '';
+        gridContainer.classList.add('hidden');
+        selectedDisplay.classList.add('hidden');
+        hiddenSelect.innerHTML = '<option value="">Select part type first...</option>';
+        hiddenSelect.disabled = true;
+        return;
+    }
+    
+    // Define category mappings
+    const consumableCategories = ['toner', 'ink', 'ink-bottle', 'drum', 'drum-cartridge', 'other-consumable', 'paper', 'cleaning-supplies'];
+    const printerPartCategories = ['fuser', 'roller', 'printhead', 'transfer-belt', 'maintenance-unit', 'power-board', 'mainboard', 'maintenance-box', 'tools', 'cables', 'batteries', 'lubricants', 'replacement-parts', 'software', 'labels', 'other'];
+    
+    console.log(`🔍 Filtering parts: Type=${selectedType}`);
     
     const printerBrand = window.vsCurrentPrinterBrand;
     if (!printerBrand) {
@@ -630,35 +812,44 @@ window.updatePartTypeFilter = function(typeSelect) {
     // Check if vsAllParts is loaded
     if (!window.vsAllParts || window.vsAllParts.length === 0) {
         console.warn('⚠️ Parts data not loaded yet');
-        partNameSelect.innerHTML = '<option value="">Loading parts...</option>';
-        partNameSelect.disabled = true;
+        searchInput.disabled = true;
         return;
     }
     
-    // Filter parts by type and brand
+    // Filter parts by category and brand/universal
     const filteredParts = window.vsAllParts.filter(part => {
-        const typeMatch = part.part_type === dbPartType;
+        // Check if part matches selected category type
+        const categoryMatch = selectedType === 'consumable' 
+            ? consumableCategories.includes(part.category)
+            : printerPartCategories.includes(part.category);
+        
+        if (!categoryMatch) return false;
+        
+        // Check brand compatibility: either universal OR matches printer brand
+        const isUniversal = part.is_universal == 1;
         const brandMatch = part.brand?.trim().toLowerCase() === printerBrand.trim().toLowerCase();
-        return typeMatch && brandMatch;
+        
+        return isUniversal || brandMatch;
     });
     
     console.log(`📦 Found ${filteredParts.length} ${selectedType} parts for brand: ${printerBrand}`);
     
-    if (filteredParts.length === 0) {
-        partNameSelect.innerHTML = `<option value="">No ${selectedType} parts available for ${printerBrand}</option>`;
-        partNameSelect.disabled = true;
-        return;
-    }
+    // Store filtered parts for search functionality
+    partEntry.dataset.filteredParts = JSON.stringify(filteredParts);
     
-    // Populate dropdown with filtered parts
-    const partOptions = '<option value="">Choose part...</option>' + 
-        filteredParts.map(p => {
-            const stockStatus = p.assigned_quantity > 5 ? '✓' : p.assigned_quantity > 0 ? '⚠' : '✗';
-            return `<option value="${p.part_id}" data-stock="${p.assigned_quantity}" data-unit="${p.unit || 'pieces'}">${stockStatus} ${p.name} (Stock: ${p.assigned_quantity})</option>`;
-        }).join('');
+    // Enable search input
+    searchInput.disabled = false;
+    searchInput.value = '';
     
-    partNameSelect.innerHTML = partOptions;
-    partNameSelect.disabled = false;
+    // DON'T render parts initially - wait for user to search
+    // Store filtered parts for search functionality
+    partsGrid.innerHTML = '';
+    
+    // Hide grid container initially - show only when user types
+    gridContainer.classList.add('hidden');
+    
+    // Setup search functionality
+    setupPartSearch(partEntry);
 }
 
 // Parts carousel state
@@ -668,6 +859,143 @@ let vsAllParts = [];
 
 // Make vsAllParts globally accessible
 window.vsAllParts = vsAllParts;
+
+// Render parts as clickable cards
+function renderPartsCards(partEntry, parts) {
+    const partsGrid = partEntry.querySelector('.vs-parts-grid');
+    
+    if (parts.length === 0) {
+        partsGrid.innerHTML = '';
+        return;
+    }
+    
+    partsGrid.innerHTML = parts.map(part => {
+        const stockColor = part.assigned_quantity > 5 ? 'green' : part.assigned_quantity > 0 ? 'yellow' : 'red';
+        const stockIcon = part.assigned_quantity > 5 ? '✓' : part.assigned_quantity > 0 ? '⚠' : '✗';
+        const brandBadge = part.is_universal == 1 
+            ? '<span class="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-semibold rounded">Universal</span>'
+            : `<span class="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-semibold rounded">${part.brand}</span>`;
+        
+        return `
+            <div class="vs-part-card cursor-pointer bg-white hover:bg-purple-50 border-2 border-slate-200 hover:border-purple-400 rounded-lg p-3 transition-all" 
+                 data-part-id="${part.part_id}" 
+                 data-part-name="${part.name}" 
+                 data-stock="${part.assigned_quantity}"
+                 data-unit="${part.unit || 'pieces'}"
+                 onclick="event.stopPropagation(); selectVSPartFromCard(this);">
+                <div class="flex items-start justify-between gap-2">
+                    <div class="flex-1">
+                        <div class="font-semibold text-slate-700 text-sm mb-1">${part.name}</div>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            ${brandBadge}
+                            <span class="text-${stockColor}-600 text-xs font-medium">${stockIcon} Stock: ${part.assigned_quantity}</span>
+                        </div>
+                    </div>
+                    <svg class="w-5 h-5 text-purple-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// Setup search functionality
+function setupPartSearch(partEntry) {
+    const searchInput = partEntry.querySelector('.vs-part-search-input');
+    const clearBtn = partEntry.querySelector('.vs-clear-part-btn');
+    
+    // Remove existing listeners
+    const newSearchInput = searchInput.cloneNode(true);
+    searchInput.replaceWith(newSearchInput);
+    
+    const newClearBtn = clearBtn.cloneNode(true);
+    clearBtn.replaceWith(newClearBtn);
+    
+    // Add search input listener
+    newSearchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase().trim();
+        const gridContainer = partEntry.querySelector('.vs-parts-grid-container');
+        const filteredParts = JSON.parse(partEntry.dataset.filteredParts || '[]');
+        
+        // Only show grid when user types something
+        if (searchTerm === '') {
+            gridContainer.classList.add('hidden');
+            return;
+        }
+        
+        const searchResults = filteredParts.filter(part => 
+            part.name.toLowerCase().includes(searchTerm)
+        );
+        
+        renderPartsCards(partEntry, searchResults);
+        
+        const noPartsMessage = partEntry.querySelector('.vs-no-parts-message');
+        const partsGrid = partEntry.querySelector('.vs-parts-grid');
+        
+        // Show grid container
+        gridContainer.classList.remove('hidden');
+        
+        if (searchResults.length === 0) {
+            noPartsMessage.classList.remove('hidden');
+            partsGrid.innerHTML = '';
+        } else {
+            noPartsMessage.classList.add('hidden');
+        }
+    });
+    
+    // Add clear button listener
+    newClearBtn.addEventListener('click', function() {
+        const hiddenSelect = partEntry.querySelector('.vs-part-name');
+        const selectedDisplay = partEntry.querySelector('.vs-selected-part-display');
+        const gridContainer = partEntry.querySelector('.vs-parts-grid-container');
+        const stockDiv = partEntry.querySelector('.vs-part-stock');
+        
+        hiddenSelect.value = '';
+        selectedDisplay.classList.add('hidden');
+        gridContainer.classList.remove('hidden');
+        stockDiv.innerHTML = '';
+        
+        // Re-render all parts
+        const filteredParts = JSON.parse(partEntry.dataset.filteredParts || '[]');
+        renderPartsCards(partEntry, filteredParts);
+    });
+}
+
+// Select part from card (Voluntary Service)
+window.selectVSPartFromCard = function(cardElement) {
+    const partEntry = cardElement.closest('.vs-part-entry');
+    const partId = cardElement.dataset.partId;
+    const partName = cardElement.dataset.partName;
+    const stock = cardElement.dataset.stock;
+    const unit = cardElement.dataset.unit;
+    
+    // Update hidden select
+    const hiddenSelect = partEntry.querySelector('.vs-part-name');
+    hiddenSelect.innerHTML = `<option value="${partId}" data-stock="${stock}" data-unit="${unit}" selected>${partName}</option>`;
+    hiddenSelect.value = partId;
+    hiddenSelect.disabled = false;
+    
+    // Show selected part display
+    const selectedDisplay = partEntry.querySelector('.vs-selected-part-display');
+    const selectedName = partEntry.querySelector('.vs-selected-part-name');
+    const selectedInfo = partEntry.querySelector('.vs-selected-part-info');
+    const stockDiv = partEntry.querySelector('.vs-part-stock');
+    
+    selectedName.textContent = partName;
+    selectedInfo.textContent = `Stock: ${stock} ${unit}`;
+    selectedDisplay.classList.remove('hidden');
+    
+    // Update stock display
+    const stockColor = stock > 0 ? 'green' : 'red';
+    stockDiv.innerHTML = `<span class="text-${stockColor}-600">📦 Stock: ${stock}</span>`;
+    
+    // Hide grid container
+    const gridContainer = partEntry.querySelector('.vs-parts-grid-container');
+    gridContainer.classList.add('hidden');
+    
+    console.log(`✅ Selected part: ${partName} (ID: ${partId}, Stock: ${stock})`);
+}
 
 // Load brands and parts data
 async function loadPartsData() {
@@ -716,42 +1044,6 @@ async function loadPartsData() {
     }
 }
 
-// Helper function to get filtered parts options
-function getFilteredPartsOptions() {
-    const printerBrand = window.vsCurrentPrinterBrand;
-    if (!printerBrand || !vsAllParts) {
-        return '<option value="">Loading parts...</option>';
-    }
-    
-    const brandParts = vsAllParts.filter(p => p.brand === printerBrand);
-    if (brandParts.length === 0) {
-        return `<option value="">No parts available for ${printerBrand}</option>`;
-    }
-    
-    return '<option value="">Choose part...</option>' + 
-        brandParts.map(p => `<option value="${p.part_id}" data-stock="${p.assigned_quantity}" data-unit="${p.unit || 'pieces'}">${p.name} (Stock: ${p.assigned_quantity})</option>`).join('');
-}
-
-// Load parts for selected brand (no longer used - kept for compatibility)
-window.loadPartsForBrand = function(brandSelect) {
-    console.log('⚠️ loadPartsForBrand called but no longer used - parts filtered by printer brand');
-    return;
-}
-
-// Update part stock display
-window.updatePartStock = function(partSelect) {
-    const partEntry = partSelect.closest('.vs-part-entry');
-    const stockDiv = partEntry.querySelector('.vs-part-stock');
-    const selectedOption = partSelect.options[partSelect.selectedIndex];
-    const stock = selectedOption?.dataset.stock || 0;
-    
-    if (partSelect.value) {
-        stockDiv.innerHTML = `<span class="text-${stock > 0 ? 'green' : 'red'}-600">📦 Stock: ${stock}</span>`;
-    } else {
-        stockDiv.innerHTML = '';
-    }
-}
-
 // Add new part entry
 window.addNewPart = function() {
     const container = document.getElementById('vs-partsContainer');
@@ -785,8 +1077,8 @@ window.addNewPart = function() {
                 </label>
                 <select class="vs-part-type w-full p-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 bg-white font-medium text-slate-700" onchange="updatePartTypeFilter(this)">
                     <option value="">Choose type first...</option>
-                    <option value="consumable">Consumable (Universal)</option>
-                    <option value="printer_part">Printer Part (Brand-Specific)</option>
+                    <option value="consumable">Consumable</option>
+                    <option value="printer_part">Printer Part</option>
                 </select>
             </div>
             <div>
@@ -796,9 +1088,49 @@ window.addNewPart = function() {
                     </svg>
                     Select Part <span class="text-xs text-purple-600">(Filtered by Type & Brand)</span>
                 </label>
-                <select class="vs-part-name w-full p-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-400 focus:border-purple-400 bg-white font-medium text-slate-700" onchange="updatePartStock(this)" disabled>
-                    <option value="">Select part type first...</option>
+                
+                <!-- Search Box -->
+                <div class="relative mb-3">
+                    <input type="text" class="vs-part-search-input w-full p-3 pl-10 pr-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-400 focus:border-purple-400 bg-white text-sm text-slate-700 placeholder-slate-400" 
+                           placeholder="Search parts..." disabled>
+                    <div class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+                
+                <!-- Selected Part Display -->
+                <div class="vs-selected-part-display hidden p-3 bg-gradient-to-r from-purple-50 to-blue-50 border-2 border-purple-200 rounded-lg mb-2">
+                    <div class="flex items-center justify-between">
+                        <div class="flex-1">
+                            <div class="font-semibold text-slate-700 text-sm vs-selected-part-name"></div>
+                            <div class="text-xs text-slate-500 vs-selected-part-info"></div>
+                        </div>
+                        <button type="button" class="vs-clear-part-btn text-red-500 hover:text-red-600 p-1">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Parts Grid -->
+                <div class="vs-parts-grid-container max-h-64 overflow-y-auto border-2 border-slate-200 rounded-lg p-2 bg-slate-50 hidden">
+                    <div class="vs-parts-grid grid grid-cols-1 gap-2"></div>
+                    <div class="vs-no-parts-message hidden text-center py-8 text-slate-400 text-sm">
+                        <svg class="w-12 h-12 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+                        </svg>
+                        No parts available
+                    </div>
+                </div>
+                
+                <!-- Hidden select for data storage -->
+                <select class="vs-part-name" style="display: none !important;" disabled>
+                    <option value="">Select type first...</option>
                 </select>
+                
                 <div class="vs-part-stock text-sm mt-1.5 font-medium"></div>
             </div>
             <div class="grid grid-cols-2 gap-2.5">
@@ -836,6 +1168,11 @@ window.addNewPart = function() {
     `;
     
     container.appendChild(newPart);
+    
+    // Navigate to the newly added part
+    vsCurrentPartIndex = container.children.length - 1;
+    container.style.transform = `translateX(-${vsCurrentPartIndex * 100}%)`;
+    
     updateCarouselControls();
 }
 
@@ -919,8 +1256,7 @@ window.submitService = async function() {
             if (partSelect && partSelect.value && quantity > 0) {
                 const selectedOption = partSelect.options[partSelect.selectedIndex];
                 partsUsed.push({
-                    brand: window.vsCurrentPrinterBrand || 'Unknown',
-                    name: selectedOption.text,
+                    part_id: parseInt(partSelect.value), // Use part_id instead of name
                     qty: parseInt(quantity),
                     unit: unit
                 });

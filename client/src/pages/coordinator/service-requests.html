@@ -538,7 +538,32 @@
                                 showNotification('Success', 'Service request submitted successfully', 'success');
                                 document.getElementById('newRequestModal').classList.add('hidden');
                             } else {
-                                showNotification('Error', responseData.message || 'Failed to submit request', 'error');
+                                // Check if error is about active request
+                                if (responseData.activeRequest) {
+                                    // Close the new request modal
+                                    document.getElementById('newRequestModal').classList.add('hidden');
+                                    
+                                    // Show active request modal with details
+                                    const activeReq = responseData.activeRequest;
+                                    document.getElementById('activeRequestNumber').textContent = activeReq.request_number || '-';
+                                    document.getElementById('activeRequestStatus').textContent = (activeReq.status || '-').toUpperCase();
+                                    document.getElementById('activeRequestPrinter').textContent = activeReq.printer_name || 'Unknown Printer';
+                                    
+                                    const modal = document.getElementById('activeRequestModal');
+                                    modal.classList.remove('hidden');
+                                    
+                                    // Setup close handlers
+                                    document.getElementById('activeRequestCloseBtn').onclick = () => {
+                                        modal.classList.add('hidden');
+                                    };
+                                    document.getElementById('activeRequestViewBtn').onclick = () => {
+                                        modal.classList.add('hidden');
+                                        // Scroll to the active request or refresh the list
+                                        location.reload();
+                                    };
+                                } else {
+                                    showNotification('Error', responseData.error || responseData.message || 'Failed to submit request', 'error');
+                                }
                             }
                         } catch (error) {
                             showNotification('Error', 'An error occurred while submitting the request', 'error');

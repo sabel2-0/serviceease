@@ -405,6 +405,33 @@ async function ensureWalkInServiceRequestFields() {
     }
 }
 
+// Drop part_type column - redundant when we have is_universal and brand
+async function dropPartTypeColumn() {
+    try {
+        // Check if column exists
+        const [columns] = await db.query(`
+            SELECT COLUMN_NAME 
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_SCHEMA = DATABASE() 
+            AND TABLE_NAME = 'printer_parts' 
+            AND COLUMN_NAME = 'part_type'
+        `);
+        
+        if (columns.length > 0) {
+            // Drop the index first
+            await db.query(`ALTER TABLE printer_parts DROP INDEX IF EXISTS idx_parts_type`).catch(() => {});
+            
+            // Drop the column
+            await db.query(`ALTER TABLE printer_parts DROP COLUMN part_type`);
+            console.log('Dropped part_type column from printer_parts table');
+        } else {
+            console.log('part_type column does not exist (already removed)');
+        }
+    } catch (err) {
+        console.error('Failed to drop part_type column:', err);
+    }
+}
+
 // Initialize database tables that must exist
 ensurePrintersTable();
 ensureInventoryTables();
@@ -415,6 +442,8 @@ ensureUserAssignmentsTable();
 ensureWalkInServiceRequestFields();
 ensureAuditLogsTable();
 ensureTechnicianAssignmentsTable();
+dropPartTypeColumn();
+
 
 // Audit logging helper function
 async function logAuditAction(userId, userRole, action, actionType, targetType = null, targetId = null, details = null, req = null) {
@@ -834,6 +863,59 @@ app.post('/api/login', async (req, res) => {
 
         if (!user) {
             return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        // Fetch authoritative status/approval values directly from the database
+        try {
+            const [freshRows] = await db.query('SELECT status, approval_status FROM users WHERE id = ? LIMIT 1', [user.id]);
+            const fresh = freshRows && freshRows.length > 0 ? freshRows[0] : {};
+            const dbStatus = String((fresh.status || '')).trim().toLowerCase();
+            const dbApproval = String((fresh.approval_status || '')).trim().toLowerCase();
+            console.log(`DB login check for user ${user.id}: status='${dbStatus}', approval_status='${dbApproval}'`);
+
+            // Block login if status explicitly set to 'inactive'
+            if (dbStatus === 'inactive') {
+                // For security/privacy, don't reveal account status to the client.
+                // Log on server for auditing, but return generic invalid credentials message.
+                console.log(`Login blocked for inactive user ${user.id} (${user.email}) — db status='${dbStatus}'`);
+                return res.status(401).json({ error: 'Invalid credentials' });
+            }
+        } catch (dbErr) {
+            console.error('Error fetching user status for login check:', dbErr);
+            // If DB check fails, proceed cautiously and allow login to fall through (we don't want to lock out users due to DB hiccup)
+        }
+        
+        // Check institution status for coordinators and requesters
+        if (user.role === 'coordinator' || user.role === 'requester') {
+            try {
+                let institutionStatus = null;
+                
+                if (user.role === 'coordinator') {
+                    // Coordinator owns the institution (institutions.user_id)
+                    const [instRows] = await db.query(
+                        'SELECT status FROM institutions WHERE user_id = ? LIMIT 1',
+                        [user.id]
+                    );
+                    institutionStatus = instRows && instRows.length > 0 ? instRows[0].status : null;
+                } else if (user.role === 'requester') {
+                    // Requester is linked via user_printer_assignments.institution_id
+                    const [instRows] = await db.query(
+                        `SELECT i.status FROM institutions i
+                         JOIN user_printer_assignments upa ON upa.institution_id = i.institution_id
+                         WHERE upa.user_id = ? LIMIT 1`,
+                        [user.id]
+                    );
+                    institutionStatus = instRows && instRows.length > 0 ? instRows[0].status : null;
+                }
+                
+                if (institutionStatus === 'deactivated') {
+                    console.log(`Login blocked for user ${user.id} (${user.email}) — institution is deactivated`);
+                    return res.status(401).json({ error: 'Invalid credentials' });
+                }
+            } catch (instErr) {
+                console.error('Error checking institution status for login:', instErr);
+                // Continue with login if institution check fails
+            }
         }
 
         // Get institution owned by this user (institutions.user_id = user.id)
@@ -1565,10 +1647,18 @@ app.post('/api/coordinators/:id/users', authenticateCoordinator, async (req, res
             return res.status(403).json({ error: 'Access denied' });
         }
 
-    const { firstName, lastName, email, password, inventory_item_id, department } = req.body;
+    const { firstName, lastName, email, password, inventory_item_ids, department } = req.body;
 
         if (!firstName || !lastName || !email || !password) {
             return res.status(400).json({ error: 'firstName, lastName, email and password are required' });
+        }
+
+        // Support both single inventory_item_id (legacy) and multiple inventory_item_ids (new)
+        let printerIds = [];
+        if (req.body.inventory_item_ids && Array.isArray(req.body.inventory_item_ids)) {
+            printerIds = req.body.inventory_item_ids.filter(id => id); // Remove null/undefined
+        } else if (req.body.inventory_item_id) {
+            printerIds = [req.body.inventory_item_id];
         }
 
         // Check email uniqueness
@@ -1634,11 +1724,12 @@ app.post('/api/coordinators/:id/users', authenticateCoordinator, async (req, res
         // Prepare department for assignment
         const departmentToSave = department || null;
 
-        // If inventory_item_id provided, create assignment in user_printer_assignments
-        // Allow assignment of printers that are already assigned to the coordinator's institution
-        // but prevent double-assignment to another user.
-        let assignmentId = null;
-        if (inventory_item_id) {
+        // Create assignments for all selected printers
+        const assignmentIds = [];
+        const assignedPrinters = [];
+        
+        for (const inventory_item_id of printerIds) {
+            if (!inventory_item_id) continue;
             // Validate inventory item exists
             const [itemRows] = await connection.query('SELECT id, status FROM inventory_items WHERE id = ?', [inventory_item_id]);
             if (itemRows.length === 0) {
@@ -1647,16 +1738,8 @@ app.post('/api/coordinators/:id/users', authenticateCoordinator, async (req, res
                 return res.status(400).json({ error: 'Invalid inventory_item_id' });
             }
 
-            // Prevent assigning an inventory item that's already assigned to a user
-            const [existingUserAssign] = await connection.query(
-                'SELECT id FROM user_printer_assignments WHERE inventory_item_id = ? LIMIT 1',
-                [inventory_item_id]
-            );
-            if (existingUserAssign.length > 0) {
-                // rollback and return
-                await connection.rollback();
-                return res.status(400).json({ error: 'Inventory item is already assigned to a user' });
-            }
+            // Multiple users can share the same printer (common in real institutions)
+            // No need to check for existing assignments
 
             const currentStatus = itemRows[0].status;
 
@@ -1710,6 +1793,13 @@ app.post('/api/coordinators/:id/users', authenticateCoordinator, async (req, res
                 } catch (notifError) {
                     console.error('❌ Failed to send printer assignment notification:', notifError);
                 }
+                
+                assignmentIds.push(assignmentId);
+                assignedPrinters.push({
+                    inventory_item_id,
+                    assignment_id: assignmentId,
+                    status: 'available_assigned'
+                });
             } else if (currentStatus === 'assigned') {
                 // If already assigned, ensure it's assigned to the same institution (or no institution mapping exists)
                 const [cpaRows] = await connection.query(
@@ -1735,17 +1825,30 @@ app.post('/api/coordinators/:id/users', authenticateCoordinator, async (req, res
                 } catch (e) {
                     console.warn('Could not fetch inserted assignment row:', e.message);
                 }
+                
+                assignmentIds.push(assignmentId);
+                assignedPrinters.push({
+                    inventory_item_id,
+                    assignment_id: assignmentId,
+                    status: 'already_assigned'
+                });
             } else {
-                // Other statuses (retired, etc.) are not assignable
-                // rollback and return
-                await connection.rollback();
-                return res.status(400).json({ error: 'Inventory item cannot be assigned in its current state' });
+                // Other statuses (retired, etc.) are not assignable - skip this printer
+                console.warn(`Skipping inventory_item_id ${inventory_item_id} - status ${currentStatus} not assignable`);
+                continue;
             }
-        }
+        } // End of for loop for printer assignments
+        
         // commit transaction and release
         await connection.commit();
         // fetch final assignment details if needed
-        res.status(201).json({ message: 'User created', userId: newUserId, user: newUserRow, assignmentId });
+        res.status(201).json({ 
+            message: 'User created', 
+            userId: newUserId, 
+            user: newUserRow, 
+            assignmentIds,
+            assignedPrinters
+        });
     } catch (error) {
         console.error('Error creating user by coordinator (transactional):', error);
         try {
@@ -1798,14 +1901,12 @@ app.get('/api/coordinators/:id/users', authenticateCoordinator, async (req, res)
                 u.last_name,
                 u.email,
                 u.role,
-                -- prefer explicit status, otherwise derive from approval_status
                 CASE 
                     WHEN u.status IS NOT NULL AND u.status != '' THEN u.status
                     WHEN u.approval_status = 'approved' THEN 'active'
                     ELSE COALESCE(u.status, u.approval_status)
                 END AS status,
                 upa.inventory_item_id,
-                -- build a human-friendly printer name if ii.name missing
                 COALESCE(ii.name, CONCAT_WS(' ', ii.brand, ii.model, ii.serial_number)) AS printer_name,
                 upa.department,
                 upa.assigned_at
@@ -1813,15 +1914,34 @@ app.get('/api/coordinators/:id/users', authenticateCoordinator, async (req, res)
             JOIN users u ON upa.user_id = u.id
             LEFT JOIN inventory_items ii ON upa.inventory_item_id = ii.id
             WHERE upa.institution_id = ?
-            ORDER BY u.created_at DESC
+            ORDER BY u.created_at DESC, upa.assigned_at DESC
         `, [coordinatorInstitutionId]);
 
-        if (rows && rows.length > 0) {
-            console.log('Sample user row for UI:', rows[0]);
-        }
+        // Group results by user to return array of printers for each user
+        const userMap = new Map();
+        rows.forEach(row => {
+            if (!userMap.has(row.user_id)) {
+                userMap.set(row.user_id, {
+                    user_id: row.user_id,
+                    first_name: row.first_name,
+                    last_name: row.last_name,
+                    email: row.email,
+                    role: row.role,
+                    status: row.status,
+                    department: row.department,
+                    printers: []
+                });
+            }
+            userMap.get(row.user_id).printers.push({
+                inventory_item_id: row.inventory_item_id,
+                printer_name: row.printer_name,
+                assigned_at: row.assigned_at
+            });
+        });
 
-    console.log(`Fetched ${rows.length} user rows for institution ${coordinatorInstitutionId}`);
-    res.json(rows);
+        const groupedUsers = Array.from(userMap.values());
+        console.log(`Fetched ${groupedUsers.length} users with ${rows.length} total printer assignments for institution ${coordinatorInstitutionId}`);
+        res.json(groupedUsers);
     } catch (error) {
         console.error('Error fetching coordinator users:', error);
         res.status(500).json({ error: 'Failed to fetch users' });
@@ -1867,8 +1987,17 @@ app.patch('/api/coordinators/:id/users/:userId/status', authenticateCoordinator,
             return res.status(403).json({ error: 'User does not belong to your institution' });
         }
 
-        // Update status
-        await db.query('UPDATE users SET status = ?, updated_at = NOW() WHERE id = ?', [status, userId]);
+        // Check current user status and update accordingly
+        const [targetUserRows] = await db.query('SELECT status FROM users WHERE id = ? LIMIT 1', [userId]);
+        const previousUserStatus = targetUserRows && targetUserRows.length > 0 ? targetUserRows[0].status : 'active';
+
+        // If coordinator (or admin) is deactivating the user, increment token_version to invalidate sessions
+        if (previousUserStatus !== status && status === 'inactive') {
+            await db.query('UPDATE users SET status = ?, token_version = COALESCE(token_version, 0) + 1, updated_at = NOW() WHERE id = ?', [status, userId]);
+            console.log(`Coordinator deactivated user ${userId} — token_version incremented to invalidate sessions`);
+        } else {
+            await db.query('UPDATE users SET status = ?, updated_at = NOW() WHERE id = ?', [status, userId]);
+        }
 
         res.json({ message: `User status updated to ${status}` });
     } catch (error) {
@@ -1888,10 +2017,18 @@ app.put('/api/coordinators/:id/users/:userId', authenticateCoordinator, async (r
             return res.status(403).json({ error: 'Access denied' });
         }
 
-        const { firstName, lastName, email, department, inventory_item_id } = req.body;
+        const { firstName, lastName, email, department, inventory_item_ids } = req.body;
 
         if (!firstName || !lastName || !email) {
             return res.status(400).json({ error: 'firstName, lastName and email are required' });
+        }
+
+        // Support both single inventory_item_id (legacy) and multiple inventory_item_ids (new)
+        let printerIds = [];
+        if (req.body.inventory_item_ids && Array.isArray(req.body.inventory_item_ids)) {
+            printerIds = req.body.inventory_item_ids.filter(id => id);
+        } else if (req.body.inventory_item_id) {
+            printerIds = [req.body.inventory_item_id];
         }
 
         // Get coordinator's institution using correct architecture
@@ -1927,93 +2064,122 @@ app.put('/api/coordinators/:id/users/:userId', authenticateCoordinator, async (r
         );
 
         // Handle printer assignment changes
-        // Get current assignment if any
-        const [currentAssign] = await db.query('SELECT id, inventory_item_id, department FROM user_printer_assignments WHERE user_id = ? LIMIT 1', [userId]);
-        const hasCurrent = currentAssign && currentAssign.length > 0 ? currentAssign[0] : null;
-
-        // If inventory_item_id provided
-        if (inventory_item_id) {
-            // Validate inventory item
-            const [itemRows] = await db.query('SELECT id, status FROM inventory_items WHERE id = ?', [inventory_item_id]);
-            if (itemRows.length === 0) return res.status(400).json({ error: 'Invalid inventory_item_id' });
-
-            // If currently assigned to same item, just update department on assignment
-            if (hasCurrent && Number(hasCurrent.inventory_item_id) === Number(inventory_item_id)) {
-                await db.query('UPDATE user_printer_assignments SET department = ? WHERE id = ?', [department || null, hasCurrent.id]);
-            } else {
-                // Ensure item not assigned to another user
-                const [assignedElsewhere] = await db.query('SELECT id FROM user_printer_assignments WHERE inventory_item_id = ? AND user_id != ? LIMIT 1', [inventory_item_id, userId]);
-                if (assignedElsewhere.length > 0) return res.status(400).json({ error: 'Inventory item is already assigned to another user' });
-
-                // Remove existing assignment if present
-                if (hasCurrent) {
-                    try {
-                        await db.query('DELETE FROM user_printer_assignments WHERE id = ?', [hasCurrent.id]);
-                        // mark previous inventory as available
-                        await db.query('UPDATE inventory_items SET status = "available" WHERE id = ?', [hasCurrent.inventory_item_id]);
-                    } catch (e) {
-                        console.warn('Failed to remove previous assignment during edit:', e.message);
-                    }
+        // Get all current assignments for this user
+        const [currentAssignments] = await db.query(
+            'SELECT id, inventory_item_id, department FROM user_printer_assignments WHERE user_id = ? AND institution_id = ?',
+            [userId, coordinatorInstitutionId]
+        );
+        
+        const currentPrinterIds = currentAssignments.map(a => Number(a.inventory_item_id));
+        const newPrinterIds = printerIds.map(id => Number(id));
+        
+        // Determine which assignments to add and which to remove
+        const toAdd = newPrinterIds.filter(id => !currentPrinterIds.includes(id));
+        const toRemove = currentPrinterIds.filter(id => !newPrinterIds.includes(id));
+        const toKeep = currentPrinterIds.filter(id => newPrinterIds.includes(id));
+        
+        console.log(`Updating printer assignments for user ${userId}: add=${toAdd.length}, remove=${toRemove.length}, keep=${toKeep.length}`);
+        
+        // Remove old assignments that are no longer selected
+        for (const printerIdToRemove of toRemove) {
+            const assignmentToRemove = currentAssignments.find(a => Number(a.inventory_item_id) === printerIdToRemove);
+            if (assignmentToRemove) {
+                await db.query('DELETE FROM user_printer_assignments WHERE id = ?', [assignmentToRemove.id]);
+                // Check if any other user has this printer assigned
+                const [otherAssignments] = await db.query(
+                    'SELECT id FROM user_printer_assignments WHERE inventory_item_id = ? LIMIT 1',
+                    [printerIdToRemove]
+                );
+                if (!otherAssignments || otherAssignments.length === 0) {
+                    // No other user has this printer, mark as available
+                    await db.query('UPDATE inventory_items SET status = "available" WHERE id = ?', [printerIdToRemove]);
                 }
-
-                // Insert new assignment
-                await db.query('INSERT INTO user_printer_assignments (user_id, inventory_item_id, institution_id, department) VALUES (?, ?, ?, ?)', [userId, inventory_item_id, coordinatorInstitutionId, department || null]);
-                // mark new inventory as assigned
-                await db.query('UPDATE inventory_items SET status = "assigned" WHERE id = ?', [inventory_item_id]);
-                
-                // Send notification to requester about printer assignment
-                try {
-                    const [printerInfo] = await db.query(
-                        'SELECT name, brand, model, serial_number FROM inventory_items WHERE id = ?',
-                        [inventory_item_id]
-                    );
-                    const [coordInfo] = await db.query(
-                        'SELECT first_name, last_name FROM users WHERE id = ?',
-                        [coordinatorId]
-                    );
-                    
-                    if (printerInfo[0] && coordInfo[0]) {
-                        const printerDetails = `${printerInfo[0].brand} ${printerInfo[0].model} (SN: ${printerInfo[0].serial_number})`;
-                        await createNotification({
-                            title: 'Printer Assigned',
-                            message: `Coordinator ${coordInfo[0].first_name} ${coordInfo[0].last_name} has assigned you a printer: ${printerDetails}`,
-                            type: 'info',
-                            user_id: userId,
-                            sender_id: coordinatorId,
-                            reference_type: 'inventory_item',
-                            reference_id: inventory_item_id,
-                            priority: 'medium'
-                        });
-                        console.log('✅ Notification sent to requester about printer assignment');
-                    }
-                } catch (notifError) {
-                    console.error('❌ Failed to send printer assignment notification:', notifError);
-                }
-            }
-        } else {
-            // No inventory_item_id provided
-            // If there's an existing assignment, update department or remove it
-            if (hasCurrent) {
-                if (department !== undefined && department !== hasCurrent.department) {
-                    // Update department only
-                    await db.query('UPDATE user_printer_assignments SET department = ? WHERE id = ?', [department || null, hasCurrent.id]);
-                }
-                // If you want to allow removing assignment by passing null, uncomment below:
-                // else {
-                //     await db.query('DELETE FROM user_printer_assignments WHERE id = ?', [hasCurrent.id]);
-                //     await db.query('UPDATE inventory_items SET status = "available" WHERE id = ?', [hasCurrent.inventory_item_id]);
-                // }
+                console.log(`Removed printer ${printerIdToRemove} from user ${userId}`);
             }
         }
+        
+        // Add new assignments
+        for (const inventory_item_id of toAdd) {
+            // Validate inventory item
+            const [itemRows] = await db.query('SELECT id, status FROM inventory_items WHERE id = ?', [inventory_item_id]);
+            if (itemRows.length === 0) {
+                console.warn(`Invalid inventory_item_id ${inventory_item_id} - skipping`);
+                continue;
+            }
 
-        // Return updated user row (users table does NOT have department column)
+            // Insert new assignment
+            await db.query(
+                'INSERT INTO user_printer_assignments (user_id, inventory_item_id, institution_id, department) VALUES (?, ?, ?, ?)',
+                [userId, inventory_item_id, coordinatorInstitutionId, department || null]
+            );
+            
+            // Mark inventory as assigned
+            await db.query('UPDATE inventory_items SET status = "assigned" WHERE id = ?', [inventory_item_id]);
+            
+            console.log(`Added printer ${inventory_item_id} to user ${userId}`);
+            
+            // Send notification to requester about new printer assignment
+            try {
+                const [printerInfo] = await db.query(
+                    'SELECT name, brand, model, serial_number FROM inventory_items WHERE id = ?',
+                    [inventory_item_id]
+                );
+                const [coordInfo] = await db.query(
+                    'SELECT first_name, last_name FROM users WHERE id = ?',
+                    [coordinatorId]
+                );
+                
+                if (printerInfo[0] && coordInfo[0]) {
+                    const printerDetails = `${printerInfo[0].brand || ''} ${printerInfo[0].model || ''} (SN: ${printerInfo[0].serial_number || 'N/A'})`;
+                    await createNotification({
+                        title: 'New Printer Assigned',
+                        message: `Coordinator ${coordInfo[0].first_name} ${coordInfo[0].last_name} has assigned you a new printer: ${printerDetails}`,
+                        type: 'info',
+                        user_id: userId,
+                        sender_id: coordinatorId,
+                        reference_type: 'inventory_item',
+                        reference_id: inventory_item_id,
+                        priority: 'medium'
+                    });
+                    console.log('✅ Notification sent to requester about new printer assignment');
+                }
+            } catch (notifError) {
+                console.error('❌ Failed to send printer assignment notification:', notifError);
+            }
+        } // End of add new assignments loop
+        
+        // Update department for all kept assignments if department changed
+        if (department !== undefined && toKeep.length > 0) {
+            await db.query(
+                'UPDATE user_printer_assignments SET department = ? WHERE user_id = ? AND institution_id = ?',
+                [department || null, userId, coordinatorInstitutionId]
+            );
+        }
+
+        // Return updated user row with all assignments
         const [updatedRows] = await db.query('SELECT id as user_id, first_name, last_name, email, role, status FROM users WHERE id = ?', [userId]);
         const updatedUser = updatedRows[0];
-        // Fetch assignment if exists
-        const [newAssignRows] = await db.query('SELECT id, inventory_item_id, department, assigned_at FROM user_printer_assignments WHERE user_id = ?', [userId]);
-        const assignment = newAssignRows.length > 0 ? newAssignRows[0] : null;
+        
+        // Fetch all assignments
+        const [newAssignRows] = await db.query(
+            `SELECT upa.id, upa.inventory_item_id, upa.department, upa.assigned_at,
+                    COALESCE(ii.name, CONCAT_WS(' ', ii.brand, ii.model)) as printer_name
+             FROM user_printer_assignments upa
+             LEFT JOIN inventory_items ii ON upa.inventory_item_id = ii.id
+             WHERE upa.user_id = ? AND upa.institution_id = ?`,
+            [userId, coordinatorInstitutionId]
+        );
 
-        res.json({ message: 'User updated', user: updatedUser, assignment });
+        res.json({ 
+            message: 'User updated', 
+            user: updatedUser, 
+            assignments: newAssignRows,
+            changes: {
+                added: toAdd.length,
+                removed: toRemove.length,
+                kept: toKeep.length
+            }
+        });
     } catch (error) {
         console.error('Error editing user by coordinator:', error);
         res.status(500).json({ error: 'Failed to edit user' });
@@ -2217,6 +2383,8 @@ app.get('/api/coordinators/pending', authenticateAdmin, async (req, res) => {
     try {
         const { search } = req.query;
         
+        // Query pending coordinators and get institution info from notifications.related_data
+        // since institutions.user_id is only set after approval
         let query = `
             SELECT 
                 u.id,
@@ -2224,18 +2392,16 @@ app.get('/api/coordinators/pending', authenticateAdmin, async (req, res) => {
                 u.last_name,
                 u.email,
                 u.role,
-                COALESCE(i.name, '') as institution_name,
-                COALESCE(i.type, '') as institution_type,
-                COALESCE(i.address, '') as institution_address,
                 u.approval_status,
                 u.is_email_verified,
                 u.created_at,
                 tp.front_id_photo,
                 tp.back_id_photo,
-                tp.selfie_photo
+                tp.selfie_photo,
+                n.related_data
             FROM users u 
-            LEFT JOIN institutions i ON i.user_id = u.id
             LEFT JOIN temp_user_photos tp ON tp.user_id = u.id
+            LEFT JOIN notifications n ON n.related_user_id = u.id AND n.type = 'coordinator_registration'
             WHERE u.role = 'coordinator' AND u.approval_status = 'pending'
         `;
         
@@ -2243,15 +2409,48 @@ app.get('/api/coordinators/pending', authenticateAdmin, async (req, res) => {
         
         // Add search filter
         if (search && search.trim()) {
-            query += ` AND (u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ? OR i.name LIKE ?)`;
+            query += ` AND (u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ?)`;
             const searchPattern = `%${search.trim()}%`;
-            params.push(searchPattern, searchPattern, searchPattern, searchPattern);
+            params.push(searchPattern, searchPattern, searchPattern);
         }
         
         query += ` ORDER BY u.created_at DESC`;
         
         const [rows] = await db.query(query, params);
-        res.json(rows);
+        
+        // Parse related_data JSON to extract institution information
+        const formattedRows = rows.map(row => {
+            let institutionInfo = {
+                institution_name: '',
+                institution_type: '',
+                institution_address: ''
+            };
+            
+            if (row.related_data) {
+                try {
+                    const data = typeof row.related_data === 'string' 
+                        ? JSON.parse(row.related_data) 
+                        : row.related_data;
+                    
+                    institutionInfo = {
+                        institution_name: data.institution_name || '',
+                        institution_type: data.institution_type || '',
+                        institution_address: data.institution_address || ''
+                    };
+                } catch (e) {
+                    console.error('Error parsing notification related_data:', e);
+                }
+            }
+            
+            // Remove related_data and spread institution info
+            const { related_data, ...rest } = row;
+            return {
+                ...rest,
+                ...institutionInfo
+            };
+        });
+        
+        res.json(formattedRows);
     } catch (error) {
         console.error('Error fetching pending coordinators:', error);
         res.status(500).json({ error: 'Failed to fetch pending coordinators' });
@@ -2277,11 +2476,8 @@ app.post('/api/coordinators/:id/approve', authenticateAdmin, async (req, res) =>
             return res.status(400).json({ error: 'Coordinator is already approved' });
         }
 
-        // Approve and verify email
-        await db.query(
-            'UPDATE users SET approval_status = ?, is_email_verified = ?, updated_at = NOW() WHERE id = ?',
-            ['approved', true, id]
-        );
+        // Use the shared approveUser helper so institution linking happens at approval time
+        await User.approveUser(id);
 
         // Log audit action
         await logAuditAction(
@@ -2302,7 +2498,7 @@ app.post('/api/coordinators/:id/approve', authenticateAdmin, async (req, res) =>
             req
         );
 
-        // Send approval email notification
+        // Send approval email notification (frontend will trigger actual email)
         const emailData = {
             coordinator_name: `${user[0].first_name} ${user[0].last_name}`,
             coordinator_email: user[0].email,
@@ -2432,11 +2628,13 @@ app.post('/api/coordinators/:id/toggle-status', authenticateAdmin, async (req, r
             ? 'Coordinator account activated successfully' 
             : 'Coordinator account deactivated successfully';
 
-        // Update the coordinator status
-        await db.query(
-            'UPDATE users SET status = ?, updated_at = NOW() WHERE id = ?',
-            [newStatus, id]
-        );
+        // Update the coordinator status and invalidate sessions if deactivating
+        if (currentUser.status !== newStatus && newStatus === 'inactive') {
+            await db.query('UPDATE users SET status = ?, token_version = COALESCE(token_version, 0) + 1, updated_at = NOW() WHERE id = ?', [newStatus, id]);
+            console.log(`Admin deactivated coordinator ${id} — token_version incremented to invalidate sessions`);
+        } else {
+            await db.query('UPDATE users SET status = ?, updated_at = NOW() WHERE id = ?', [newStatus, id]);
+        }
 
         res.json({ 
             message: actionMessage,
@@ -2772,22 +2970,33 @@ app.put('/api/staff/:id', authenticateAdmin, async (req, res) => {
             return res.status(400).json({ error: 'Status must be either active or inactive' });
         }
 
-        // Check if staff member exists
-        const [staff] = await db.query(
-            'SELECT id FROM users WHERE id = ? AND role IN ("operations_officer", "technician")',
-            [id]
-        );
-        if (staff.length === 0) {
-            return res.status(404).json({ error: 'Staff member not found' });
-        }
+            // Check if staff member exists and get current status
+            const [staff] = await db.query(
+                'SELECT id, status FROM users WHERE id = ? AND role IN ("operations_officer", "technician")',
+                [id]
+            );
+            if (staff.length === 0) {
+                return res.status(404).json({ error: 'Staff member not found' });
+            }
 
-        // Update status directly using the new status column
-        await db.query(
-            'UPDATE users SET first_name = ?, last_name = ?, role = ?, status = ?, updated_at = NOW() WHERE id = ?',
-            [first_name, last_name, role, status, id]
-        );
+            const previousStatus = staff[0].status || 'active';
 
-        res.json({ message: 'Staff member updated successfully' });
+            // If admin is deactivating the staff, increment token_version to invalidate existing sessions
+            if (previousStatus !== status && status === 'inactive') {
+                await db.query(
+                    'UPDATE users SET first_name = ?, last_name = ?, role = ?, status = ?, token_version = COALESCE(token_version, 0) + 1, updated_at = NOW() WHERE id = ?',
+                    [first_name, last_name, role, status, id]
+                );
+                console.log(`Admin deactivated staff ${id} — token_version incremented to invalidate sessions`);
+            } else {
+                // Normal update
+                await db.query(
+                    'UPDATE users SET first_name = ?, last_name = ?, role = ?, status = ?, updated_at = NOW() WHERE id = ?',
+                    [first_name, last_name, role, status, id]
+                );
+            }
+
+            res.json({ message: 'Staff member updated successfully' });
     } catch (error) {
         console.error('Error updating staff member:', error);
         res.status(500).json({ error: 'Failed to update staff member' });
@@ -2880,22 +3089,62 @@ app.get('/api/users/me/service-requests', auth, async (req, res) => {
             return res.json([]); // User has no institution, return empty array
         }
 
-        // Get service requests created by this user only
-        const [rows] = await db.query(`
-            SELECT sr.id, sr.request_number, sr.inventory_item_id, sr.institution_id, sr.priority, sr.description,
-                   sr.location, sr.status, sr.created_at, sr.updated_at, sr.completed_at,
-                   ii.name as printer_name, ii.brand as printer_brand, ii.model as printer_model,
-                   i.name as institution_name,
-                   requester.first_name as requester_first_name, requester.last_name as requester_last_name,
-                   tech.first_name as technician_first_name, tech.last_name as technician_last_name
-            FROM service_requests sr
-            LEFT JOIN inventory_items ii ON sr.inventory_item_id = ii.id
-            LEFT JOIN institutions i ON sr.institution_id = i.institution_id
-            LEFT JOIN users requester ON sr.requested_by_user_id = requester.id
-            LEFT JOIN users tech ON sr.assigned_technician_id = tech.id
-            WHERE sr.requested_by_user_id = ?
-            ORDER BY sr.created_at DESC
-        `, [userId]);
+        // For requesters: show ALL service requests for printers assigned to them
+        // For coordinators: show ALL service requests for their institution
+        let query = '';
+        let queryParams = [];
+        
+        if (userRole === 'requester') {
+            // Get all printers assigned to this requester
+            const [assignedPrinters] = await db.query(
+                'SELECT inventory_item_id FROM user_printer_assignments WHERE user_id = ?',
+                [userId]
+            );
+            
+            if (!assignedPrinters || assignedPrinters.length === 0) {
+                return res.json([]); // No printers assigned
+            }
+            
+            const printerIds = assignedPrinters.map(p => p.inventory_item_id);
+            
+            // Get all service requests for these printers
+            query = `
+                SELECT sr.id, sr.request_number, sr.inventory_item_id, sr.institution_id, sr.priority, sr.description,
+                       sr.location, sr.status, sr.created_at, sr.updated_at, sr.completed_at, sr.requested_by_user_id,
+                       ii.name as printer_name, ii.brand as printer_brand, ii.model as printer_model,
+                       i.name as institution_name,
+                       requester.first_name as requester_first_name, requester.last_name as requester_last_name,
+                       tech.first_name as technician_first_name, tech.last_name as technician_last_name
+                FROM service_requests sr
+                LEFT JOIN inventory_items ii ON sr.inventory_item_id = ii.id
+                LEFT JOIN institutions i ON sr.institution_id = i.institution_id
+                LEFT JOIN users requester ON sr.requested_by_user_id = requester.id
+                LEFT JOIN users tech ON sr.assigned_technician_id = tech.id
+                WHERE sr.inventory_item_id IN (${printerIds.map(() => '?').join(',')})
+                ORDER BY sr.created_at DESC
+            `;
+            queryParams = printerIds;
+        } else {
+            // For coordinators/admins: show all requests for their institution
+            query = `
+                SELECT sr.id, sr.request_number, sr.inventory_item_id, sr.institution_id, sr.priority, sr.description,
+                       sr.location, sr.status, sr.created_at, sr.updated_at, sr.completed_at, sr.requested_by_user_id,
+                       ii.name as printer_name, ii.brand as printer_brand, ii.model as printer_model,
+                       i.name as institution_name,
+                       requester.first_name as requester_first_name, requester.last_name as requester_last_name,
+                       tech.first_name as technician_first_name, tech.last_name as technician_last_name
+                FROM service_requests sr
+                LEFT JOIN inventory_items ii ON sr.inventory_item_id = ii.id
+                LEFT JOIN institutions i ON sr.institution_id = i.institution_id
+                LEFT JOIN users requester ON sr.requested_by_user_id = requester.id
+                LEFT JOIN users tech ON sr.assigned_technician_id = tech.id
+                WHERE sr.institution_id = ?
+                ORDER BY sr.created_at DESC
+            `;
+            queryParams = [institutionId];
+        }
+
+        const [rows] = await db.query(query, queryParams);
 
         res.json(rows);
     } catch (error) {
@@ -2928,8 +3177,14 @@ app.patch('/api/users/me/service-requests/:id/approve', auth, async (req, res) =
         
         const request = requests[0];
         
-        if (request.requested_by_user_id !== userId) {
-            return res.status(403).json({ error: 'You can only approve your own service requests' });
+        // Check if this requester has access to the printer in this service request
+        const [printerAccess] = await db.query(
+            'SELECT id FROM user_printer_assignments WHERE user_id = ? AND inventory_item_id = (SELECT inventory_item_id FROM service_requests WHERE id = ?)',
+            [userId, requestId]
+        );
+        
+        if (!printerAccess || printerAccess.length === 0) {
+            return res.status(403).json({ error: 'You can only approve service requests for printers assigned to you' });
         }
         
         if (request.status !== 'pending_approval') {
@@ -3270,7 +3525,7 @@ app.patch('/api/institutions/:id/status', authenticateAdmin, async (req, res) =>
         
         // Check if institution exists
         const [rows] = await db.query(
-            'SELECT institution_id FROM institutions WHERE institution_id = ?',
+            'SELECT institution_id, name FROM institutions WHERE institution_id = ?',
             [institution_id]
         );
         
@@ -3278,21 +3533,104 @@ app.patch('/api/institutions/:id/status', authenticateAdmin, async (req, res) =>
             return res.status(404).json({ error: 'Institution not found' });
         }
         
+        const institutionName = rows[0].name;
+        
         // Update institution status
         if (status === 'deactivated') {
             await db.query(
                 'UPDATE institutions SET status = ?, deactivated_at = NOW() WHERE institution_id = ?',
                 [status, institution_id]
             );
+            
+            // CASCADE: Deactivate the coordinator who owns this institution
+            // institutions.user_id points to the coordinator
+            const [coordinatorUpdate] = await db.query(
+                `UPDATE users u
+                 JOIN institutions i ON i.user_id = u.id
+                 SET u.status = 'inactive', u.token_version = COALESCE(u.token_version, 0) + 1, u.updated_at = NOW()
+                 WHERE i.institution_id = ? AND u.role = 'coordinator'`,
+                [institution_id]
+            );
+            
+            // CASCADE: Deactivate all requesters assigned to this institution
+            // Requesters are linked via user_printer_assignments.institution_id
+            const [requesterUpdate] = await db.query(
+                `UPDATE users u
+                 JOIN user_printer_assignments upa ON upa.user_id = u.id
+                 SET u.status = 'inactive', u.token_version = COALESCE(u.token_version, 0) + 1, u.updated_at = NOW()
+                 WHERE upa.institution_id = ? AND u.role = 'requester'`,
+                [institution_id]
+            );
+            
+            console.log(`Institution ${institution_id} deactivated:`);
+            console.log(`  - Deactivated ${coordinatorUpdate.affectedRows} coordinator(s)`);
+            console.log(`  - Deactivated ${requesterUpdate.affectedRows} requester(s)`);
+            console.log(`  - All sessions invalidated (token_version incremented)`);
+            
+            // Log audit action
+            await logAuditAction(
+                req.user.id,
+                req.user.role,
+                `Deactivated institution: ${institutionName} (${institution_id}) - Cascaded to ${coordinatorUpdate.affectedRows} coordinator(s) and ${requesterUpdate.affectedRows} requester(s)`,
+                'deactivate',
+                'institution',
+                institution_id,
+                JSON.stringify({
+                    institution_id,
+                    institution_name: institutionName,
+                    coordinators_deactivated: coordinatorUpdate.affectedRows,
+                    requesters_deactivated: requesterUpdate.affectedRows
+                }),
+                req
+            );
         } else {
             await db.query(
                 'UPDATE institutions SET status = ?, deactivated_at = NULL WHERE institution_id = ?',
                 [status, institution_id]
             );
+            
+            // CASCADE: Reactivate the coordinator who owns this institution
+            const [coordinatorUpdate] = await db.query(
+                `UPDATE users u
+                 JOIN institutions i ON i.user_id = u.id
+                 SET u.status = 'active', u.updated_at = NOW()
+                 WHERE i.institution_id = ? AND u.role = 'coordinator'`,
+                [institution_id]
+            );
+            
+            // CASCADE: Reactivate all requesters assigned to this institution
+            const [requesterUpdate] = await db.query(
+                `UPDATE users u
+                 JOIN user_printer_assignments upa ON upa.user_id = u.id
+                 SET u.status = 'active', u.updated_at = NOW()
+                 WHERE upa.institution_id = ? AND u.role = 'requester'`,
+                [institution_id]
+            );
+            
+            console.log(`Institution ${institution_id} activated:`);
+            console.log(`  - Activated ${coordinatorUpdate.affectedRows} coordinator(s)`);
+            console.log(`  - Activated ${requesterUpdate.affectedRows} requester(s)`);
+            
+            // Log audit action
+            await logAuditAction(
+                req.user.id,
+                req.user.role,
+                `Activated institution: ${institutionName} (${institution_id}) - Cascaded to ${coordinatorUpdate.affectedRows} coordinator(s) and ${requesterUpdate.affectedRows} requester(s)`,
+                'activate',
+                'institution',
+                institution_id,
+                JSON.stringify({
+                    institution_id,
+                    institution_name: institutionName,
+                    coordinators_activated: coordinatorUpdate.affectedRows,
+                    requesters_activated: requesterUpdate.affectedRows
+                }),
+                req
+            );
         }
         
         res.json({ 
-            message: `Institution ${status === 'active' ? 'activated' : 'deactivated'} successfully`,
+            message: `Institution ${status === 'active' ? 'activated' : 'deactivated'} successfully. All associated users have been ${status === 'active' ? 'activated' : 'deactivated'}.`,
             status: status
         });
     } catch (error) {
@@ -3899,6 +4237,12 @@ app.post('/api/service-requests/:id/complete', auth, async (req, res) => {
             [resolution_notes, technician_id, id]
         );
         
+        // Delete existing parts if resubmitting (to prevent duplicates)
+        await db.query(
+            'DELETE FROM service_parts_used WHERE service_request_id = ?',
+            [id]
+        );
+        
         // Save parts used to service_parts_used table
         if (parts && Array.isArray(parts) && parts.length > 0) {
             for (const part of parts) {
@@ -3910,12 +4254,32 @@ app.post('/api/service-requests/:id/complete', auth, async (req, res) => {
             }
         }
         
-        // Create service approval record
-        await db.query(
-            `INSERT INTO service_approvals (service_request_id, status, technician_notes, submitted_at)
-             VALUES (?, 'pending_approval', ?, NOW())`,
-            [id, resolution_notes]
+        // Create service approval record (only if one doesn't exist)
+        const [existingApproval] = await db.query(
+            'SELECT id FROM service_approvals WHERE service_request_id = ?',
+            [id]
         );
+        
+        if (existingApproval.length === 0) {
+            await db.query(
+                `INSERT INTO service_approvals (service_request_id, status, technician_notes, submitted_at)
+                 VALUES (?, 'pending_approval', ?, NOW())`,
+                [id, resolution_notes]
+            );
+        } else {
+            // Update existing record back to pending_approval if it was rejected
+            await db.query(
+                `UPDATE service_approvals 
+                 SET status = 'pending_approval', 
+                     technician_notes = ?,
+                     submitted_at = NOW(),
+                     coordinator_id = NULL,
+                     coordinator_notes = NULL,
+                     reviewed_at = NULL
+                 WHERE service_request_id = ?`,
+                [resolution_notes, id]
+            );
+        }
         
         // If it's a walk-in request, notify admins and operations officers for approval
         if (request.is_walk_in) {
@@ -4003,15 +4367,29 @@ app.post('/api/service-requests/:id/approve-completion', authenticateAdmin, asyn
         
         // Update service_approvals table
         const approvalStatus = approved ? 'approved' : 'revision_requested';
-        await db.query(
-            `UPDATE service_approvals 
-             SET status = ?,
-                 coordinator_id = ?,
-                 coordinator_notes = ?,
-                 reviewed_at = NOW()
-             WHERE service_request_id = ? AND status = 'pending_approval'`,
-            [approvalStatus, approver_id, notes || null, id]
-        );
+        
+        if (approved) {
+            // Only set coordinator_id on actual approval
+            await db.query(
+                `UPDATE service_approvals 
+                 SET status = ?,
+                     coordinator_id = ?,
+                     coordinator_notes = ?,
+                     reviewed_at = NOW()
+                 WHERE service_request_id = ? AND status = 'pending_approval'`,
+                [approvalStatus, approver_id, notes || null, id]
+            );
+        } else {
+            // On rejection, don't set coordinator_id to avoid showing "approved by"
+            await db.query(
+                `UPDATE service_approvals 
+                 SET status = ?,
+                     coordinator_notes = ?,
+                     reviewed_at = NOW()
+                 WHERE service_request_id = ? AND status = 'pending_approval'`,
+                [approvalStatus, notes || null, id]
+            );
+        }
         
         // Update service request status
         const newStatus = approved ? 'completed' : 'in_progress';

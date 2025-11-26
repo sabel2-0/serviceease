@@ -39,6 +39,66 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Password strength UI for Add Staff form
+    const addStaffPassword = document.getElementById('addStaffPassword');
+    const passwordStrengthBar = document.getElementById('passwordStrengthBar');
+    const passwordStrengthLabel = document.getElementById('passwordStrengthLabel');
+    const passwordHelp = document.getElementById('passwordHelp');
+
+    function evaluatePassword(pwd) {
+        const score = (() => {
+            let points = 0;
+            if (!pwd) return 0;
+            if (pwd.length >= 8) points += 1;
+            if (/[a-z]/.test(pwd) && /[A-Z]/.test(pwd)) points += 1; // mixed case
+            if (/[0-9]/.test(pwd)) points += 1;
+            if (/[^A-Za-z0-9]/.test(pwd)) points += 1; // symbol
+            if (pwd.length >= 12) points += 1; // extra length
+            return points;
+        })();
+
+        // Determine label and percent
+        let label = 'Very weak';
+        let percent = 10;
+        let meets = false;
+        if (score <= 1) { label = 'Very weak'; percent = 10; }
+        else if (score === 2) { label = 'Weak'; percent = 35; }
+        else if (score === 3) { label = 'Fair'; percent = 60; }
+        else if (score === 4) { label = 'Strong'; percent = 85; meets = true; }
+        else if (score >= 5) { label = 'Very strong'; percent = 100; meets = true; }
+
+        // For this app require at least: length >=8, letters, numbers and symbols
+        const meetsCriteria = pwd && pwd.length >= 8 && /[A-Za-z]/.test(pwd) && /[0-9]/.test(pwd) && /[^A-Za-z0-9]/.test(pwd);
+
+        return { score, label, percent, meetsCriteria, meets };
+    }
+
+    function updatePasswordStrengthUI() {
+        if (!addStaffPassword) return;
+        const pwd = addStaffPassword.value || '';
+        const res = evaluatePassword(pwd);
+        if (passwordStrengthBar) {
+            passwordStrengthBar.style.width = res.percent + '%';
+            // color based on percent
+            if (res.percent < 40) passwordStrengthBar.className = 'h-full w-0 bg-red-500 transition-all';
+            else if (res.percent < 70) passwordStrengthBar.className = 'h-full w-0 bg-amber-400 transition-all';
+            else passwordStrengthBar.className = 'h-full w-0 bg-green-500 transition-all';
+            // force width update after class change
+            setTimeout(() => passwordStrengthBar.style.width = res.percent + '%', 10);
+        }
+        if (passwordStrengthLabel) passwordStrengthLabel.textContent = res.label;
+        if (passwordHelp) {
+            // keep the short guidance visible
+            passwordHelp.textContent = 'Use 8+ characters with letters, numbers & symbols.';
+        }
+    }
+
+    if (addStaffPassword) {
+        addStaffPassword.addEventListener('input', updatePasswordStrengthUI);
+        // initialize on load
+        updatePasswordStrengthUI();
+    }
+
     // Load staff members from API
     async function loadStaffMembers() {
         try {
@@ -243,6 +303,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 password: formData.get('password'),
                 role: formData.get('role')
             };
+
+            // Client-side password strength validation: require 8+ chars, letters, numbers and symbols
+            const pwdCheck = (function(p) {
+                if (!p) return { meets: false };
+                const meetsCriteria = p.length >= 8 && /[A-Za-z]/.test(p) && /[0-9]/.test(p) && /[^A-Za-z0-9]/.test(p);
+                return { meets: meetsCriteria };
+            })(staffData.password);
+
+            if (!pwdCheck.meets) {
+                if (alertEl) {
+                    alertEl.className = 'bg-red-50 border border-red-200 text-red-800 rounded-md p-3 mb-4';
+                    alertEl.textContent = 'Password must be at least 8 characters and include letters, numbers, and symbols.';
+                } else {
+                    showError('Password must be at least 8 characters and include letters, numbers, and symbols.');
+                }
+                submitBtn.disabled = false;
+                submitBtn.setAttribute('aria-busy', 'false');
+                if (submitBtnLoader) submitBtnLoader.classList.add('hidden');
+                submitBtnText.textContent = 'Add Staff';
+                return;
+            }
 
             // Get authentication token
             const token = localStorage.getItem('token');
@@ -570,9 +651,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('editStaffFirstName').value = staff.first_name || '';
         document.getElementById('editStaffLastName').value = staff.last_name || '';
         document.getElementById('editStaffEmail').value = staff.email || '';
-        document.getElementById('editStaffDepartment').value = staff.department || '';
         document.getElementById('editStaffRole').value = staff.role || '';
-        document.getElementById('editStaffStatus').value = staff.status || 'active';
 
         // Clear alert
         if (editStaffAlert) { editStaffAlert.className = 'hidden'; editStaffAlert.textContent = ''; }
@@ -595,11 +674,26 @@ document.addEventListener('DOMContentLoaded', function() {
             const id = document.getElementById('editStaffId').value;
             const firstName = document.getElementById('editStaffFirstName').value;
             const lastName = document.getElementById('editStaffLastName').value;
-            const department = document.getElementById('editStaffDepartment').value;
+            const email = document.getElementById('editStaffEmail').value;
             const role = document.getElementById('editStaffRole').value;
-            const status = document.getElementById('editStaffStatus').value;
-            // Email is not editable
-            const data = { first_name: firstName, last_name: lastName, department, role, status };
+            // Status is controlled via action buttons; preserve existing staff.status
+            const existing = allStaff.find(s => s.id == id);
+            const status = existing && existing.status ? existing.status : 'active';
+
+            // Basic email validation
+            const emailValid = email && /^\S+@\S+\.\S+$/.test(email);
+            if (!emailValid) {
+                if (editStaffAlert) {
+                    editStaffAlert.className = 'rounded-md p-3 mb-4 text-sm bg-red-100 text-red-800';
+                    editStaffAlert.textContent = 'Please enter a valid email address.';
+                }
+                return;
+            }
+
+            // Preserve existing department value from loaded staff record (field removed from UI)
+            // (existing already retrieved above)
+            const data = { first_name: firstName, last_name: lastName, email, role, status };
+            if (existing && typeof existing.department !== 'undefined') data.department = existing.department;
             
             // Get authentication token
             const token = localStorage.getItem('token');
@@ -1596,35 +1690,106 @@ document.addEventListener('DOMContentLoaded', function() {
     // Handle password change form submission
     const changePasswordForm = document.getElementById('changePasswordForm');
     if (changePasswordForm) {
+        // Setup change password UI: toggle and strength meter
+        const newPasswordInput = document.getElementById('newPasswordInput');
+        const confirmPasswordInput = document.getElementById('confirmPasswordInput');
+        const toggleChangePasswordBtn = document.getElementById('toggleChangePasswordBtn');
+        const changePasswordStrengthBar = document.getElementById('changePasswordStrengthBar');
+        const changePasswordStrengthLabel = document.getElementById('changePasswordStrengthLabel');
+        const changePasswordHelp = document.getElementById('changePasswordHelp');
+
+        // Toggle show/hide for New Password
+        if (toggleChangePasswordBtn && newPasswordInput) {
+            toggleChangePasswordBtn.addEventListener('click', function() {
+                if (newPasswordInput.type === 'password') {
+                    newPasswordInput.type = 'text';
+                    toggleChangePasswordBtn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+                    toggleChangePasswordBtn.setAttribute('aria-label', 'Hide password');
+                } else {
+                    newPasswordInput.type = 'password';
+                    toggleChangePasswordBtn.innerHTML = '<i class="fas fa-eye"></i>';
+                    toggleChangePasswordBtn.setAttribute('aria-label', 'Show password');
+                }
+                newPasswordInput.focus();
+            });
+        }
+
+        // Toggle show/hide for Confirm Password
+        const toggleConfirmPasswordBtn = document.getElementById('toggleConfirmPasswordBtn');
+        if (toggleConfirmPasswordBtn && confirmPasswordInput) {
+            toggleConfirmPasswordBtn.addEventListener('click', function() {
+                if (confirmPasswordInput.type === 'password') {
+                    confirmPasswordInput.type = 'text';
+                    toggleConfirmPasswordBtn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+                    toggleConfirmPasswordBtn.setAttribute('aria-label', 'Hide password');
+                } else {
+                    confirmPasswordInput.type = 'password';
+                    toggleConfirmPasswordBtn.innerHTML = '<i class="fas fa-eye"></i>';
+                    toggleConfirmPasswordBtn.setAttribute('aria-label', 'Show password');
+                }
+                confirmPasswordInput.focus();
+            });
+        }
+
+        // Strength update for change password field
+        function updateChangePasswordStrength() {
+            if (!newPasswordInput) return;
+            const pwd = newPasswordInput.value || '';
+            const res = evaluatePassword(pwd); // reuse evaluatePassword defined earlier
+            if (changePasswordStrengthBar) {
+                changePasswordStrengthBar.style.width = res.percent + '%';
+                if (res.percent < 40) changePasswordStrengthBar.className = 'h-full w-0 bg-red-500 transition-all';
+                else if (res.percent < 70) changePasswordStrengthBar.className = 'h-full w-0 bg-amber-400 transition-all';
+                else changePasswordStrengthBar.className = 'h-full w-0 bg-green-500 transition-all';
+                setTimeout(() => changePasswordStrengthBar.style.width = res.percent + '%', 10);
+            }
+            if (changePasswordStrengthLabel) changePasswordStrengthLabel.textContent = res.label;
+            if (changePasswordHelp) changePasswordHelp.textContent = 'Use 8+ characters with letters, numbers & symbols.';
+        }
+
+        if (newPasswordInput) {
+            newPasswordInput.addEventListener('input', updateChangePasswordStrength);
+            // init
+            updateChangePasswordStrength();
+        }
+
+        // Submit handler with strength validation
         changePasswordForm.addEventListener('submit', async function(e) {
             e.preventDefault();
-            
+
             const staffId = document.getElementById('changePasswordStaffId').value;
-            const newPassword = document.getElementById('newPasswordInput').value.trim();
-            const confirmPassword = document.getElementById('confirmPasswordInput').value.trim();
+            const newPassword = (newPasswordInput && newPasswordInput.value || '').trim();
+            const confirmPassword = (confirmPasswordInput && confirmPasswordInput.value || '').trim();
             const alertDiv = document.getElementById('changePasswordAlert');
             const submitBtn = document.getElementById('submitChangePasswordBtn');
             const btnText = document.getElementById('changePasswordBtnText');
             const loader = document.getElementById('changePasswordLoader');
-            
-            // Validation
-            if (newPassword.length < 6) {
-                showAlertInModal(alertDiv, 'Password must be at least 6 characters long', 'error');
+
+            // Basic checks
+            if (newPassword.length < 8) {
+                showAlertInModal(alertDiv, 'Password must be at least 8 characters long', 'error');
                 return;
             }
-            
+
+            // require letters, numbers, symbols
+            const meetsCriteria = /[A-Za-z]/.test(newPassword) && /[0-9]/.test(newPassword) && /[^A-Za-z0-9]/.test(newPassword);
+            if (!meetsCriteria) {
+                showAlertInModal(alertDiv, 'Password must include letters, numbers, and symbols', 'error');
+                return;
+            }
+
             if (newPassword !== confirmPassword) {
                 showAlertInModal(alertDiv, 'Passwords do not match', 'error');
                 return;
             }
-            
+
             try {
                 // Show loading state
                 submitBtn.disabled = true;
                 btnText.textContent = 'Changing...';
                 loader.classList.remove('hidden');
                 alertDiv.classList.add('hidden');
-                
+
                 const token = getAuthToken();
                 const response = await fetch(`/api/admin/staff/${staffId}/password`, {
                     method: 'PATCH',
@@ -1634,17 +1799,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     },
                     body: JSON.stringify({ newPassword })
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (!response.ok) {
                     throw new Error(data.error || 'Failed to change password');
                 }
-                
+
                 // Success
                 showSuccessMessage('Password changed successfully');
                 window.closeChangePasswordModal();
-                
+
             } catch (error) {
                 console.error('Error changing password:', error);
                 showAlertInModal(alertDiv, error.message || 'Failed to change password', 'error');

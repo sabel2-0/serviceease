@@ -69,7 +69,6 @@ router.get('/', async (req, res) => {
                 created_at,
                 updated_at,
                 is_universal,
-                part_type,
                 unit
             FROM printer_parts
             ORDER BY created_at DESC
@@ -144,11 +143,10 @@ router.put('/:id', async (req, res) => {
             unit,
             minimum_stock,
             status,
-            part_type,
             is_universal
         } = req.body;
 
-        if (!name && !brand && !category && quantity === undefined && unit === undefined && minimum_stock === undefined && status === undefined && part_type === undefined && is_universal === undefined) {
+        if (!name && !brand && !category && quantity === undefined && unit === undefined && minimum_stock === undefined && status === undefined && is_universal === undefined) {
             return res.status(400).json({ error: 'At least one field to update is required' });
         }
 
@@ -162,7 +160,6 @@ router.put('/:id', async (req, res) => {
         if (unit !== undefined) { updateFields.push('unit = ?'); values.push(unit); }
         if (minimum_stock !== undefined) { updateFields.push('minimum_stock = ?'); values.push(minimum_stock); }
         if (status !== undefined) { updateFields.push('status = ?'); values.push(status); }
-        if (part_type !== undefined) { updateFields.push('part_type = ?'); values.push(part_type); }
         if (is_universal !== undefined) { updateFields.push('is_universal = ?'); values.push(is_universal); }
 
         values.push(id);

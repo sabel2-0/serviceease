@@ -121,7 +121,6 @@
                             <select id="status-filter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
                                 <option value="all">All Status</option>
                                 <option value="pending_coordinator" selected>Pending Coordinator Approval</option>
-                                <option value="pending_requester">Pending Requester Approval</option>
                                 <option value="completed">Completed</option>
                                 <option value="rejected">Rejected</option>
                             </select>
@@ -202,7 +201,6 @@
                 document.getElementById('status-filter').innerHTML = `
                     <option value="all">All Status</option>
                     <option value="pending_coordinator" selected>Pending Coordinator Approval</option>
-                    <option value="pending_requester">Pending Requester Approval</option>
                     <option value="completed">Completed</option>
                     <option value="rejected">Rejected</option>
                 `;
@@ -378,7 +376,7 @@
                         <button onclick="viewDetails(${service.id})" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
                             <i class="fas fa-eye mr-2"></i>View Details
                         </button>
-                        ${service.coordinator_approval_status === 'pending' ? `
+                        ${service.status !== 'completed' && service.status !== 'rejected' && service.coordinator_approval_status === 'pending' ? `
                         <button onclick="rejectService(${service.id})" class="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors">
                             <i class="fas fa-times mr-2"></i>Reject
                         </button>
@@ -392,29 +390,29 @@
         }
 
         function getStatusBadgeClass(service) {
-            if (service.coordinator_approval_status === 'pending') {
-                return 'bg-yellow-100 text-yellow-800';
-            } else if (service.coordinator_approval_status === 'approved' && service.requester_approval_status === 'pending') {
-                return 'bg-blue-100 text-blue-800';
-            } else if (service.status === 'completed') {
+            // Check final status first
+            if (service.status === 'completed') {
                 return 'bg-green-100 text-green-800';
-            } else if (service.coordinator_approval_status === 'rejected' || service.requester_approval_status === 'rejected') {
+            } else if (service.status === 'rejected' || service.coordinator_approval_status === 'rejected' || service.requester_approval_status === 'rejected') {
                 return 'bg-red-100 text-red-800';
+            } else if (service.coordinator_approval_status === 'pending') {
+                return 'bg-yellow-100 text-yellow-800';
             }
             return 'bg-gray-100 text-gray-800';
         }
 
         function getStatusText(service) {
-            if (service.coordinator_approval_status === 'pending') {
-                return 'Pending Your Approval';
-            } else if (service.coordinator_approval_status === 'approved' && service.requester_approval_status === 'pending') {
-                return 'Pending Requester Approval';
-            } else if (service.status === 'completed') {
+            // Check final status first
+            if (service.status === 'completed') {
                 return 'Completed';
+            } else if (service.status === 'rejected') {
+                return 'Rejected';
             } else if (service.coordinator_approval_status === 'rejected') {
                 return 'Rejected by Coordinator';
             } else if (service.requester_approval_status === 'rejected') {
                 return 'Rejected by Requester';
+            } else if (service.coordinator_approval_status === 'pending') {
+                return 'Pending Your Approval';
             }
             return 'Unknown';
         }
@@ -501,93 +499,66 @@
             const partsUsed = service.parts_used || [];
             
             const modalContent = `
-                <div class="space-y-6">
+                <div class="space-y-4">
                     <!-- Service Information -->
-                    <div class="bg-gray-50 rounded-lg p-4">
-                        <h4 class="font-semibold text-gray-800 mb-3">Service Information</h4>
-                        <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-gray-50 rounded-lg p-3">
+                        <div class="grid grid-cols-2 gap-3 text-sm">
                             <div>
-                                <div class="text-xs text-gray-500">Service ID</div>
-                                <div class="text-sm font-medium">#${service.id}</div>
+                                <span class="text-gray-500">Service ID:</span>
+                                <span class="font-medium ml-2">#${service.id}</span>
                             </div>
                             <div>
-                                <div class="text-xs text-gray-500">Status</div>
-                                <div class="text-sm font-medium">
-                                    <span class="px-2 py-1 rounded-full text-xs ${getStatusBadgeClass(service)}">
-                                        ${getStatusText(service)}
-                                    </span>
-                                </div>
+                                <span class="text-gray-500">Status:</span>
+                                <span class="px-2 py-0.5 ml-2 rounded-full text-xs ${getStatusBadgeClass(service)}">
+                                    ${getStatusText(service)}
+                                </span>
                             </div>
                             <div>
-                                <div class="text-xs text-gray-500">Submitted Date</div>
-                                <div class="text-sm font-medium">${new Date(service.created_at).toLocaleString()}</div>
+                                <span class="text-gray-500">Submitted:</span>
+                                <span class="font-medium ml-2">${new Date(service.created_at).toLocaleString()}</span>
                             </div>
                             <div>
-                                <div class="text-xs text-gray-500">Institution</div>
-                                <div class="text-sm font-medium">${service.institution_name}</div>
+                                <span class="text-gray-500">Institution:</span>
+                                <span class="font-medium ml-2">${service.institution_name}</span>
                             </div>
                         </div>
                     </div>
 
                     <!-- Printer Details -->
-                    <div class="bg-blue-50 rounded-lg p-4">
-                        <h4 class="font-semibold text-gray-800 mb-3">
-                            <i class="fas fa-print text-blue-600 mr-2"></i>Printer Details
+                    <div class="bg-blue-50 rounded-lg p-3">
+                        <h4 class="font-semibold text-gray-800 mb-2 text-sm">
+                            <i class="fas fa-print text-blue-600 mr-1"></i>Printer Details
                         </h4>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <div class="text-xs text-gray-500">Printer Name</div>
-                                <div class="text-sm font-medium">${service.printer_name}</div>
-                            </div>
-                            <div>
-                                <div class="text-xs text-gray-500">Location</div>
-                                <div class="text-sm font-medium">${service.location}</div>
-                            </div>
-                            <div>
-                                <div class="text-xs text-gray-500">Brand</div>
-                                <div class="text-sm font-medium">${service.brand || 'N/A'}</div>
-                            </div>
-                            <div>
-                                <div class="text-xs text-gray-500">Model</div>
-                                <div class="text-sm font-medium">${service.model || 'N/A'}</div>
-                            </div>
+                        <div class="text-sm text-gray-700">
+                            <div><span class="font-medium">${service.printer_name}</span> ${service.brand ? `• ${service.brand}` : ''} ${service.model ? service.model : ''}</div>
+                            ${service.location ? `<div class="text-xs text-gray-600 mt-1"><i class="fas fa-map-marker-alt mr-1"></i>${service.location}</div>` : ''}
                         </div>
                     </div>
 
-                    <!-- Technician -->
-                    <div class="bg-green-50 rounded-lg p-4">
-                        <h4 class="font-semibold text-gray-800 mb-3">
-                            <i class="fas fa-user-cog text-green-600 mr-2"></i>Technician
-                        </h4>
-                        <div class="text-sm font-medium">${service.technician_name}</div>
+                    <!-- People Involved -->
+                    <div class="bg-purple-50 rounded-lg p-3">
+                        <div class="grid grid-cols-2 gap-3 text-sm">
+                            <div>
+                                <div class="text-xs text-gray-500 mb-1"><i class="fas fa-user-cog mr-1"></i>Technician</div>
+                                <div class="font-medium">${service.technician_name}</div>
+                            </div>
+                            ${service.requester_name ? `
+                            <div>
+                                <div class="text-xs text-gray-500 mb-1"><i class="fas fa-user mr-1"></i>Requester</div>
+                                <div class="font-medium">${service.requester_name}</div>
+                            </div>
+                            ` : ''}
+                        </div>
                     </div>
-
-                    <!-- Coordinator -->
-                    <div class="bg-purple-50 rounded-lg p-4">
-                        <h4 class="font-semibold text-gray-800 mb-3">
-                            <i class="fas fa-user-tie text-purple-600 mr-2"></i>Coordinator
-                        </h4>
-                        <div class="text-sm font-medium">${service.coordinator_name || 'Not assigned'}</div>
-                    </div>
-
-                    ${service.requester_name ? `
-                    <!-- Requester -->
-                    <div class="bg-blue-50 rounded-lg p-4">
-                        <h4 class="font-semibold text-gray-800 mb-3">
-                            <i class="fas fa-user text-blue-600 mr-2"></i>Requester (Printer Owner)
-                        </h4>
-                        <div class="text-sm font-medium">${service.requester_name}</div>
-                    </div>
-                    ` : ''}
 
                     <!-- Service Description -->
                     <div>
-                        <h4 class="font-semibold text-gray-800 mb-2">Service Description</h4>
-                        <p class="text-sm text-gray-700 bg-gray-50 rounded-lg p-4">${service.service_description || 'No description provided'}</p>
+                        <h4 class="font-semibold text-gray-800 mb-2 text-sm">Service Description</h4>
+                        <p class="text-sm text-gray-700 bg-gray-50 rounded-lg p-3">${service.service_description || 'No description provided'}</p>
                     </div>
 
                     <!-- Action Buttons -->
-                    ${service.coordinator_approval_status === 'pending' ? `
+                    ${service.status !== 'completed' && service.status !== 'rejected' && service.coordinator_approval_status === 'pending' ? `
                     <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
                         <button onclick="closeDetailsModal()" class="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
                             Cancel

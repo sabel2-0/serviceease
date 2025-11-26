@@ -39,7 +39,6 @@ router.get('/inventory', authenticateTechnician, async (req, res) => {
                 pp.name,
                 pp.brand,
                 pp.category,
-                pp.part_type,
                 pp.unit,
                 pp.is_universal,
                 CONCAT(u.first_name, ' ', u.last_name) as assigned_by_name
@@ -73,10 +72,10 @@ router.get('/available-parts', authenticateTechnician, async (req, res) => {
                 name,
                 brand,
                 category,
-                part_type,
                 quantity,
                 unit,
-                minimum_stock
+                minimum_stock,
+                is_universal
             FROM printer_parts
             WHERE quantity > 0
         `;
@@ -99,18 +98,19 @@ router.get('/available-parts', authenticateTechnician, async (req, res) => {
             params.push(category);
         }
         
-        // Add part type filter (consumable vs printer_part)
+        // Add part type filter (consumable vs printer_part based on category)
         if (part_type) {
+            const consumableCategories = ['toner', 'ink', 'ink-bottle', 'drum', 'drum-cartridge', 'other-consumable', 'paper', 'cleaning-supplies'];
+            const printerPartCategories = ['fuser', 'roller', 'printhead', 'transfer-belt', 'maintenance-unit', 'power-board', 'mainboard', 'maintenance-box', 'tools', 'cables', 'batteries', 'lubricants', 'replacement-parts', 'software', 'labels', 'other'];
+            
             if (part_type === 'consumable') {
-                query += ` AND category IN (
-                    'paper', 'cleaning-supplies', 'tools', 'cables', 
-                    'batteries', 'lubricants', 'labels', 'other-consumable'
-                )`;
+                const placeholders = consumableCategories.map(() => '?').join(',');
+                query += ` AND category IN (${placeholders})`;
+                params.push(...consumableCategories);
             } else if (part_type === 'printer_part') {
-                query += ` AND category NOT IN (
-                    'paper', 'cleaning-supplies', 'tools', 'cables', 
-                    'batteries', 'lubricants', 'labels', 'other-consumable'
-                )`;
+                const placeholders = printerPartCategories.map(() => '?').join(',');
+                query += ` AND category IN (${placeholders})`;
+                params.push(...printerPartCategories);
             }
         }
         
