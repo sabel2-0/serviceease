@@ -539,8 +539,22 @@
             }
 
             // Define and call helper loaders
-            // Load available printers
-            loadAvailablePrinters();
+            // Load available printers after coordinator profile is loaded
+            window.addEventListener('coordinatorProfileLoaded', function(event) {
+                console.log('🎉 Coordinator profile loaded event received:', event.detail);
+                loadAvailablePrinters();
+            });
+            
+            // Also try loading immediately in case profile was already loaded
+            setTimeout(() => {
+                const user = JSON.parse(localStorage.getItem('user') || '{}');
+                if (user.institution_id) {
+                    console.log('✅ Profile already available, loading printers immediately');
+                    loadAvailablePrinters();
+                } else {
+                    console.log('⏳ Waiting for coordinatorProfileLoaded event...');
+                }
+            }, 100);
 
             // Fetch and render users for the coordinator
             async function loadUsers() {

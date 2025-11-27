@@ -34,6 +34,22 @@
             const data = await response.json();
             console.log('Coordinator profile data:', data);
             
+            // Store profile data in localStorage for other scripts to use
+            const existingUser = JSON.parse(localStorage.getItem('user') || '{}');
+            const updatedUser = {
+                ...existingUser,
+                ...data,
+                institution_id: data.institution_id,
+                institution_name: data.institution_name,
+                institution_type: data.institution_type,
+                institution_address: data.institution_address
+            };
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+            console.log('✅ Updated localStorage user with institution_id:', data.institution_id);
+            
+            // Dispatch custom event to notify other scripts that profile is loaded
+            window.dispatchEvent(new CustomEvent('coordinatorProfileLoaded', { detail: data }));
+            
             // Update institution name
             const institutionNameEl = document.getElementById('header-institution-name');
             if (institutionNameEl && data.institution_name) {
