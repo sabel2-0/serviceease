@@ -56,8 +56,14 @@ router.post('/send-code', async (req, res) => {
         res.json({ message: 'Verification code stored', email_sent: emailSent });
         
     } catch (error) {
+        const debugErrors = process.env.DEBUG_ERRORS === 'true';
         console.error('❌ Send code error:', error);
-        res.status(500).json({ error: 'Failed to send verification code' });
+        const resp = { error: 'Failed to send verification code' };
+        if (debugErrors) {
+            resp.details = error.message;
+            resp.stack = error.stack;
+        }
+        res.status(500).json(resp);
     }
 });
 
