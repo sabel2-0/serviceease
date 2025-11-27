@@ -43,11 +43,17 @@ router.post('/send-code', async (req, res) => {
             [email, code, expires_at]
         );
         
-        // Send email
-        await sendRequesterVerificationEmail(email, code, 'User');
-        
-        console.log('✅ Verification code sent to:', email);
-        res.json({ message: 'Verification code sent to your email' });
+        // Send email (do not let email failures cause a 500)
+        let emailSent = false;
+        try {
+            await sendRequesterVerificationEmail(email, code, 'User');
+            emailSent = true;
+            console.log('✅ Verification code sent to:', email);
+        } catch (emailErr) {
+            console.error('⚠️ Failed to send verification email (continuing):', emailErr);
+        }
+
+        res.json({ message: 'Verification code stored', email_sent: emailSent });
         
     } catch (error) {
         console.error('❌ Send code error:', error);
