@@ -10,6 +10,7 @@ const mailjet = require('node-mailjet');
 const cloudinary = require('cloudinary').v2;
 const User = require('./models/User');
 const technicianInstitutionsRoute = require('./routes/technician-institutions');
+const coordinatorUsersRoute = require('./routes/coordinator-users');
 const db = require('./config/database');
 const { authenticateAdmin, authenticateCoordinator } = require('./middleware/auth');
 const { auth } = require('./middleware/auth');
@@ -41,6 +42,9 @@ const app = express();
 
 // Technician institutions API
 app.use('/api/technician', technicianInstitutionsRoute);
+
+// Coordinator users API (only approved users)
+app.use('/api/coordinators', coordinatorUsersRoute);
 
 // Create temp directory for uploaded photos if it doesn't exist
 const tempPhotosDir = path.join(__dirname, 'temp_photos');
@@ -1639,7 +1643,7 @@ app.get('/api/coordinators', authenticateAdmin, async (req, res) => {
 app.post('/api/coordinators/:id/users', authenticateCoordinator, async (req, res) => {
     let connection;
     try {
-        const coordinatorId = req.params.id;
+        const coordinatorId = parseInt(req.params.id);
         const creator = req.user;
 
         // Only allow the logged-in coordinator to create users for their own account
@@ -1721,8 +1725,10 @@ app.post('/api/coordinators/:id/users', authenticateCoordinator, async (req, res
             console.warn('Could not fetch new user row:', e.message);
         }
 
-        // Prepare department for assignment
-        const departmentToSave = department || null;
+        // Validate that at least one printer is assigned
+        if (!printerIds || printerIds.length === 0) {
+            return res.status(400).json({ error: 'At least one printer must be assigned to the user' });
+        }
 
         // Create assignments for all selected printers
         const assignmentIds = [];
@@ -1869,7 +1875,12 @@ app.post('/api/coordinators/:id/users', authenticateCoordinator, async (req, res
 // Get users for a coordinator's institution (includes printer assignment info)
 app.get('/api/coordinators/:id/users', authenticateCoordinator, async (req, res) => {
     try {
-        const coordinatorId = req.params.id;
+        const coordinatorId = parseInt(req.params.id);
+        
+        if (isNaN(coordinatorId)) {
+            return res.status(400).json({ error: 'Invalid coordinator ID' });
+        }
+        
         const requester = req.user;
 
         // Only allow the logged-in coordinator to view users for their own account (or admin)
@@ -1951,8 +1962,13 @@ app.get('/api/coordinators/:id/users', authenticateCoordinator, async (req, res)
 // Update user status (active/inactive) by coordinator for their institution users
 app.patch('/api/coordinators/:id/users/:userId/status', authenticateCoordinator, async (req, res) => {
     try {
-        const coordinatorId = req.params.id;
-        const userId = req.params.userId;
+        const coordinatorId = parseInt(req.params.id);
+        const userId = parseInt(req.params.userId);
+        
+        if (isNaN(coordinatorId) || isNaN(userId)) {
+            return res.status(400).json({ error: 'Invalid ID parameters' });
+        }
+        
         const requester = req.user;
 
         if (String(requester.id) !== String(coordinatorId) && requester.role !== 'admin') {
@@ -2009,8 +2025,13 @@ app.patch('/api/coordinators/:id/users/:userId/status', authenticateCoordinator,
 // Edit a user created by a coordinator (details + assignment)
 app.put('/api/coordinators/:id/users/:userId', authenticateCoordinator, async (req, res) => {
     try {
-        const coordinatorId = req.params.id;
-        const userId = req.params.userId;
+        const coordinatorId = parseInt(req.params.id);
+        const userId = parseInt(req.params.userId);
+        
+        if (isNaN(coordinatorId) || isNaN(userId)) {
+            return res.status(400).json({ error: 'Invalid ID parameters' });
+        }
+        
         const requester = req.user;
 
         if (String(requester.id) !== String(coordinatorId) && requester.role !== 'admin') {
@@ -2189,8 +2210,13 @@ app.put('/api/coordinators/:id/users/:userId', authenticateCoordinator, async (r
 // Coordinator change user password
 app.patch('/api/coordinators/:id/users/:userId/password', authenticateCoordinator, async (req, res) => {
     try {
-        const coordinatorId = req.params.id;
-        const userId = req.params.userId;
+        const coordinatorId = parseInt(req.params.id);
+        const userId = parseInt(req.params.userId);
+        
+        if (isNaN(coordinatorId) || isNaN(userId)) {
+            return res.status(400).json({ error: 'Invalid ID parameters' });
+        }
+        
         const requester = req.user;
         const { newPassword } = req.body;
 
@@ -3333,6 +3359,27 @@ app.get('/api/user/profile', auth, async (req, res) => {
     }
 });
 
+// Check email availability (used by registration pages)
+app.post('/api/check-email', async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email || typeof email !== 'string') {
+            return res.status(400).json({ error: 'Email is required' });
+        }
+
+        // Check in users table
+        const [users] = await db.query('SELECT id FROM users WHERE email = ?', [email.trim()]);
+        if (users && users.length > 0) {
+            return res.json({ exists: true, reason: 'user' });
+        }
+
+        return res.json({ exists: false });
+    } catch (error) {
+        console.error('Error checking email availability:', error);
+        res.status(500).json({ error: 'Failed to check email' });
+    }
+});
+
 // Institution Management API endpoints
 
 // Get institutions for registration (public endpoint) - MUST come before /:id route
@@ -3352,9 +3399,19 @@ app.get('/api/institutions/public', async (req, res) => {
 // Get all institutions
 app.get('/api/institutions', async (req, res) => {
     try {
-        const [rows] = await db.query(
-            'SELECT institution_id, name, type, address, status, deactivated_at, created_at FROM institutions ORDER BY created_at DESC'
-        );
+        const { type } = req.query;
+
+        let baseQuery = 'SELECT institution_id, name, type, address, status, deactivated_at, created_at FROM institutions';
+        const params = [];
+
+        if (type) {
+            baseQuery += ' WHERE type = ?';
+            params.push(type);
+        }
+
+        baseQuery += ' ORDER BY created_at DESC';
+
+        const [rows] = await db.query(baseQuery, params);
         res.json(rows);
     } catch (error) {
         console.error('Error fetching institutions:', error);
@@ -4761,6 +4818,14 @@ app.delete('/api/inventory-items/:id', authenticateAdmin, async (req, res) => {
         res.status(500).json({ error: 'Failed to delete inventory item' });
     }
 });
+
+// Password Reset API Routes
+const passwordResetRouter = require('./routes/password-reset');
+app.use('/api/auth', passwordResetRouter);
+
+// Requester Registration API Routes
+const requesterRegistrationRouter = require('./routes/requester-registration');
+app.use('/api/requester-registration', requesterRegistrationRouter);
 
 // Parts API Routes
 const partsRouter = require('./routes/parts');
