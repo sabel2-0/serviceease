@@ -208,17 +208,21 @@ router.post('/submit', (req, res) => {
         
                 // Validate required fields
                 if (!first_name || !last_name || !email || !password || !institution_id || !printer_serial_numbers) {
+                    console.error('❌ Missing required fields:', { first_name, last_name, email, password, institution_id, printer_serial_numbers });
                     return res.status(400).json({ error: 'All fields are required' });
                 }
         
                 // Ensure email was verified
                 if (email_verified !== 'true') {
+                    console.error('❌ Email not verified:', { email_verified });
                     return res.status(400).json({ error: 'Please verify your email first' });
                 }
         
                 // Check if email already exists
                 const [existingUsers] = await db.query('SELECT id FROM users WHERE email = ?', [email]);
+                console.log('🔍 Checking if email exists:', email, 'Result:', existingUsers);
                 if (existingUsers.length > 0) {
+                    console.error('❌ Email already registered:', email);
                     return res.status(400).json({ error: 'Email already registered' });
                 }
         
@@ -227,8 +231,11 @@ router.post('/submit', (req, res) => {
                 try {
                     printers = JSON.parse(printer_serial_numbers);
                 } catch (e) {
+                    console.error('❌ Invalid printer data format:', printer_serial_numbers, 'Error:', e);
                     return res.status(400).json({ error: 'Invalid printer data format' });
                 }
+        
+                console.log('🔍 Parsed printers:', printers);
         
                 // Validate printers exist in institution
                 const validated = [];
@@ -243,20 +250,25 @@ router.post('/submit', (req, res) => {
                         [institution_id, printer.serial_number, `%${printer.brand}%`]
                     );
                     
+                    console.log('🔍 Validating printer:', printer, 'Matches:', matches);
+        
                     if (matches.length > 0) {
                         validated.push(matches[0].id);
                     }
                 }
         
                 if (validated.length === 0) {
+                    console.error('❌ No matching printers found in institution inventory:', { institution_id, printers });
                     return res.status(400).json({ error: 'No matching printers found in institution inventory' });
                 }
         
+                console.log('✅ Validated printers:', validated);
+        
                 // Hash password
                 const password_hash = await bcrypt.hash(password, 10);
+                console.log('🔒 Password hashed successfully');
         
                 // Insert user directly into users table (pending coordinator approval)
-                // Note: Institution info will be retrieved via user_printer_assignments JOIN
                 const [result] = await db.query(
                     `INSERT INTO users (
                         first_name, last_name, email, password, role,
@@ -266,6 +278,7 @@ router.post('/submit', (req, res) => {
                 );
         
                 const newUserId = result.insertId;
+                console.log('✅ User inserted into database:', { newUserId });
         
                 // Upload ID photos to Cloudinary and save to temp_user_photos
                 let front_id_photo = null;
@@ -282,6 +295,7 @@ router.post('/submit', (req, res) => {
                             uploadStream.end(req.files.id_front[0].buffer);
                         });
                         front_id_photo = uploadResult.secure_url;
+                        console.log('✅ ID front photo uploaded:', front_id_photo);
                     }
         
                     if (req.files.id_back) {
@@ -293,6 +307,7 @@ router.post('/submit', (req, res) => {
                             uploadStream.end(req.files.id_back[0].buffer);
                         });
                         back_id_photo = uploadResult.secure_url;
+                        console.log('✅ ID back photo uploaded:', back_id_photo);
                     }
         
                     if (req.files.selfie) {
@@ -304,9 +319,9 @@ router.post('/submit', (req, res) => {
                             uploadStream.end(req.files.selfie[0].buffer);
                         });
                         selfie_photo = uploadResult.secure_url;
+                        console.log('✅ Selfie photo uploaded:', selfie_photo);
                     }
         
-                    // Save photos to temp_user_photos table
                     await db.query(
                         `INSERT INTO temp_user_photos (user_id, front_id_photo, back_id_photo, selfie_photo)
                          VALUES (?, ?, ?, ?)
@@ -317,7 +332,7 @@ router.post('/submit', (req, res) => {
                         [newUserId, front_id_photo, back_id_photo, selfie_photo]
                     );
         
-                    console.log('✅ Photos uploaded to Cloudinary and saved to temp_user_photos for user:', newUserId);
+                    console.log('✅ Photos saved to temp_user_photos for user:', newUserId);
                 }
         
                 // Assign printers to user
@@ -329,11 +344,15 @@ router.post('/submit', (req, res) => {
                     );
                 }
         
+                console.log('✅ Printers assigned to user:', { userId: newUserId, printers: validated });
+        
                 // Create notification for coordinator
                 const [coordinators] = await db.query(
                     'SELECT user_id FROM institutions WHERE institution_id = ?',
                     [institution_id]
                 );
+        
+                console.log('🔍 Coordinators found for institution:', coordinators);
         
                 if (coordinators.length > 0 && coordinators[0].user_id) {
                     await db.query(
@@ -345,9 +364,9 @@ router.post('/submit', (req, res) => {
                             newUserId
                         ]
                     );
-                }
         
-                console.log('✅ Requester created, user ID:', newUserId);
+                    console.log('✅ Notification created for coordinator:', coordinators[0].user_id);
+                }
         
                 res.json({
                     message: 'Registration submitted successfully. Your account is pending coordinator approval.',
@@ -356,8 +375,6 @@ router.post('/submit', (req, res) => {
         
             } catch (error) {
                 console.error('❌ Requester registration error:', error);
-                // Temporarily include error details in response to help debugging production 500s.
-                // Include details temporarily for debugging (remove after root cause found)
                 const resp = { error: 'Failed to submit registration', details: error.message, stack: error.stack };
                 res.status(500).json(resp);
             }
