@@ -437,16 +437,21 @@ async function dropPartTypeColumn() {
 }
 
 // Initialize database tables that must exist
-ensurePrintersTable();
-ensureInventoryTables();
-ensurePrinterPartsTable();
-ensureServiceRequestsTables();
-ensureNotificationsTable();
-ensureUserAssignmentsTable();
-ensureWalkInServiceRequestFields();
-ensureAuditLogsTable();
-ensureTechnicianAssignmentsTable();
-dropPartTypeColumn();
+const SKIP_SCHEMA_MIGRATIONS = process.env.SKIP_SCHEMA_MIGRATIONS === 'true';
+if (!SKIP_SCHEMA_MIGRATIONS) {
+    ensurePrintersTable();
+    ensureInventoryTables();
+    ensurePrinterPartsTable();
+    ensureServiceRequestsTables();
+    ensureNotificationsTable();
+    ensureUserAssignmentsTable();
+    ensureWalkInServiceRequestFields();
+    ensureAuditLogsTable();
+    ensureTechnicianAssignmentsTable();
+    dropPartTypeColumn();
+} else {
+    console.log('SKIP_SCHEMA_MIGRATIONS=true — skipping startup schema creation and ALTER statements to avoid DB locks');
+}
 
 
 // Audit logging helper function
@@ -1652,6 +1657,7 @@ app.post('/api/coordinators/:id/users', authenticateCoordinator, async (req, res
         }
 
     const { firstName, lastName, email, password, inventory_item_ids, department } = req.body;
+    const departmentToSave = department || null;
 
         if (!firstName || !lastName || !email || !password) {
             return res.status(400).json({ error: 'firstName, lastName, email and password are required' });
@@ -1754,9 +1760,9 @@ app.post('/api/coordinators/:id/users', authenticateCoordinator, async (req, res
                 const assignSql = `INSERT INTO user_printer_assignments (user_id, inventory_item_id, institution_id, department) VALUES (?, ?, ?, ?)`;
                 const assignParams = [newUserId, inventory_item_id, coordinatorInstitutionId, departmentToSave];
                 console.log('Inserting user_printer_assignments with params (transaction):', assignParams);
-                const [insertAssign] = await connection.query(assignSql, assignParams);
-                console.log('Assignment insert result:', insertAssign);
-                assignmentId = insertAssign.insertId;
+                    const [insertAssign] = await connection.query(assignSql, assignParams);
+                    console.log('Assignment insert result:', insertAssign);
+                    const assignmentId = insertAssign.insertId;
 
                 // Fetch the inserted assignment row for response
                 try {
@@ -1800,8 +1806,8 @@ app.post('/api/coordinators/:id/users', authenticateCoordinator, async (req, res
                     console.error('❌ Failed to send printer assignment notification:', notifError);
                 }
                 
-                assignmentIds.push(assignmentId);
-                assignedPrinters.push({
+                    assignmentIds.push(assignmentId);
+                    assignedPrinters.push({
                     inventory_item_id,
                     assignment_id: assignmentId,
                     status: 'available_assigned'
@@ -1823,7 +1829,7 @@ app.post('/api/coordinators/:id/users', authenticateCoordinator, async (req, res
                 console.log('Inserting user_printer_assignments with params (existing assigned item, transaction):', assignParams);
                 const [insertAssign] = await connection.query(assignSql, assignParams);
                 console.log('Assignment insert result (existing assigned item):', insertAssign);
-                assignmentId = insertAssign.insertId;
+                const assignmentId = insertAssign.insertId;
                 try {
                     const [assignmentRows] = await db.query('SELECT id, user_id, inventory_item_id, institution_id, department, assigned_at FROM user_printer_assignments WHERE id = ?', [assignmentId]);
                     console.log('Inserted assignment row (existing assigned item):', assignmentRows[0]);
