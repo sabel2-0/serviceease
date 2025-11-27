@@ -112,13 +112,18 @@ class InventoryPartsManager {
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            
             const data = await response.json();
-            this.parts = data || [];
+            // Accept either an array (legacy) or a diagnostic object { count, rows }
+            let rows = [];
+            if (Array.isArray(data)) {
+                rows = data;
+            } else if (data && Array.isArray(data.rows)) {
+                rows = data.rows;
+            }
+            this.parts = rows || [];
             this.filteredParts = [...this.parts];
             this.renderParts();
             this.updateStatistics();
-            
             this.showSuccess(`Loaded ${this.parts.length} printer parts`);
         } catch (error) {
             console.error('Error loading parts:', error);
