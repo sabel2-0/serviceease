@@ -120,8 +120,8 @@ class InventoryPartsManager {
             } else if (data && Array.isArray(data.rows)) {
                 rows = data.rows;
             }
-            this.parts = rows || [];
-            this.filteredParts = [...this.parts];
+            this.parts = Array.isArray(rows) ? rows : [];
+            this.filteredParts = Array.isArray(this.parts) ? [...this.parts] : [];
             this.renderParts();
             this.updateStatistics();
             this.showSuccess(`Loaded ${this.parts.length} printer parts`);
