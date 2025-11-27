@@ -566,12 +566,12 @@ app.get('/login', (req, res) => {
 
 // Route for register page
 app.get('/register', (req, res) => {
-    res.sendFile(path.join(__dirname, '../client/src/pages/register.html'));
+    res.sendFile(path.join(__dirname, '../client/src/pages/register-select.html'));
 });
 
 // Route for register page (alternative path)
 app.get('/register.html', (req, res) => {
-    res.sendFile(path.join(__dirname, '../client/src/pages/register.html'));
+    res.sendFile(path.join(__dirname, '../client/src/pages/register-select.html'));
 });
 
 // Route for admin pages
