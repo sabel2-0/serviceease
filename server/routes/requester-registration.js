@@ -9,6 +9,10 @@ const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
 
+// In-memory fallback for verification codes when the DB schema doesn't allow storing
+// (temporary, non-persistent; used to avoid blocking registration when DB schema/migrations differ)
+const pendingVerification = new Map();
+
 /**
  * Send verification code to email
  * POST /api/requester-registration/send-code
@@ -111,12 +115,21 @@ router.post('/verify-code', async (req, res) => {
         );
         
         if (tokens.length === 0) {
+            // Check transient in-memory fallback store
+            const pv = pendingVerification.get(email);
+            if (pv && pv.code === code && pv.expires_at > Date.now()) {
+                // Accept and remove
+                pendingVerification.delete(email);
+                console.log('✅ Email verified via in-memory fallback:', email);
+                return res.json({ message: 'Email verified successfully (transient)', verified: true });
+            }
+
             return res.status(400).json({ error: 'Invalid or expired verification code' });
         }
-        
+
         // Mark as used
         await db.query('DELETE FROM verification_tokens WHERE id = ?', [tokens[0].id]);
-        
+
         console.log('✅ Email verified:', email);
         res.json({ message: 'Email verified successfully', verified: true });
         
