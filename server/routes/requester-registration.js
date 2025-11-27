@@ -38,10 +38,21 @@ router.post('/send-code', async (req, res) => {
         );
         
         // Store code (using token field for email, code field for the code, user_id is NULL before registration)
-        await db.query(
-            'INSERT INTO verification_tokens (user_id, token, code, type, expires_at) VALUES (NULL, ?, ?, "email", ?)',
-            [email, code, expires_at]
-        );
+        // Some deployments may not have the `code` column yet (migration not run). Try insert with code,
+        // and fall back to inserting without the code column if that fails.
+        try {
+            await db.query(
+                'INSERT INTO verification_tokens (user_id, token, code, type, expires_at) VALUES (NULL, ?, ?, "email", ?)',
+                [email, code, expires_at]
+            );
+        } catch (insertErr) {
+            console.warn('⚠️ verification_tokens insert with code failed, falling back (migration missing?):', insertErr.message);
+            // Fallback: insert without `code` column so older schemas still work
+            await db.query(
+                'INSERT INTO verification_tokens (user_id, token, type, expires_at) VALUES (NULL, ?, "email", ?)',
+                [email, expires_at]
+            );
+        }
         
         // Send email (do not let email failures cause a 500)
         let emailSent = false;
