@@ -347,11 +347,8 @@ router.post('/submit', upload.fields([
     } catch (error) {
         console.error('❌ Requester registration error:', error);
         // Temporarily include error details in response to help debugging production 500s.
-        const resp = { error: 'Failed to submit registration' };
-        if (process.env.DEBUG_ERRORS === 'true') {
-            resp.details = error.message;
-            resp.stack = error.stack;
-        }
+        // Include details temporarily for debugging (remove after root cause found)
+        const resp = { error: 'Failed to submit registration', details: error.message, stack: error.stack };
         res.status(500).json(resp);
     }
 });
