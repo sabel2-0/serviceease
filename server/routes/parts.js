@@ -5,58 +5,7 @@ const db = require('../config/database');
 // Get all parts
 router.get('/', async (req, res) => {
     try {
-        console.log('Attempting to fetch parts...');
-
-        // First test database connection
-        try {
-            await db.query('SELECT 1');
-            console.log('Database connection test successful');
-        } catch (connError) {
-            console.error('Database connection test failed:', connError);
-            throw new Error('Database connection failed: ' + connError.message);
-        }
-
-        // Check if the database exists
-        try {
-            const [databases] = await db.query(`
-                SELECT SCHEMA_NAME 
-                FROM information_schema.SCHEMATA 
-                WHERE SCHEMA_NAME = 'serviceease'
-            `);
-            if (databases.length === 0) {
-                console.error('Database "serviceease" does not exist');
-                throw new Error('Database "serviceease" does not exist');
-            }
-            console.log('Database "serviceease" exists');
-        } catch (dbError) {
-            console.error('Error checking database:', dbError);
-            throw new Error('Failed to verify database: ' + dbError.message);
-        }
-
-        // Check if the table exists
-        try {
-            const [tables] = await db.query(`
-                SELECT TABLE_NAME 
-                FROM information_schema.TABLES 
-                WHERE TABLE_SCHEMA = 'serviceease' 
-                AND TABLE_NAME = 'printer_parts'
-            `);
-            
-            if (tables.length === 0) {
-                console.log('printer_parts table does not exist, creating it...');
-                // Create the table if it doesn't exist
-                const schema = require('fs').readFileSync(require('path').join(__dirname, '../config/printer_parts_schema.sql'), 'utf8');
-                await db.executeMultiStatementSql(schema);
-                console.log('Created printer_parts table successfully');
-            } else {
-                console.log('printer_parts table exists');
-            }
-        } catch (tableError) {
-            console.error('Error with printer_parts table:', tableError);
-            throw new Error('Table operation failed: ' + tableError.message);
-        }
-
-        // Now try to fetch the parts
+        // Try a straightforward select — if table exists and has rows, this will succeed
         const [rows] = await db.query(`
             SELECT 
                 id,
@@ -73,14 +22,38 @@ router.get('/', async (req, res) => {
             FROM printer_parts
             ORDER BY created_at DESC
         `);
-        console.log(`Successfully fetched ${rows.length} parts`);
-        res.json(rows);
+
+        console.log(`Fetched ${rows.length} parts`);
+        return res.json(rows);
     } catch (error) {
-        console.error('Error in GET /api/parts:', error);
-        console.error('Error stack:', error.stack);
-        // Don't return 500 to the frontend for parts endpoint; return empty list instead
-        // This prevents the client-side UI from failing when parts table or DB is briefly unavailable.
-        res.status(200).json([]);
+        console.error('Error fetching parts (initial query):', error && error.message ? error.message : error);
+
+        // If the table doesn't exist, try to create it and retry once
+        const isNoSuchTable = error && (error.code === 'ER_NO_SUCH_TABLE' || error.errno === 1146 || (error.message && error.message.includes("doesn't exist")));
+        if (isNoSuchTable) {
+            try {
+                console.log('printer_parts table missing — attempting to create from schema');
+                const fs = require('fs');
+                const path = require('path');
+                const schema = fs.readFileSync(path.join(__dirname, '../config/printer_parts_schema.sql'), 'utf8');
+                await db.executeMultiStatementSql(schema);
+
+                // Retry select
+                const [rows2] = await db.query(`
+                    SELECT id, name, brand, category, quantity, minimum_stock, status, created_at, updated_at, is_universal, unit
+                    FROM printer_parts
+                    ORDER BY created_at DESC
+                `);
+                console.log(`Fetched ${rows2.length} parts after creating table`);
+                return res.json(rows2);
+            } catch (createErr) {
+                console.error('Failed to create printer_parts table:', createErr);
+                return res.status(500).json({ error: 'Failed to initialize parts table', message: createErr.message });
+            }
+        }
+
+        // For other errors, return a 500 with details (so frontend/devs can see cause)
+        return res.status(500).json({ error: 'Failed to fetch parts', message: error && error.message ? error.message : String(error) });
     }
 });
 
