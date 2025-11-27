@@ -78,11 +78,9 @@ router.get('/', async (req, res) => {
     } catch (error) {
         console.error('Error in GET /api/parts:', error);
         console.error('Error stack:', error.stack);
-        res.status(500).json({ 
-            error: 'Failed to fetch parts',
-            message: error.message,
-            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-        });
+        // Don't return 500 to the frontend for parts endpoint; return empty list instead
+        // This prevents the client-side UI from failing when parts table or DB is briefly unavailable.
+        res.status(200).json([]);
     }
 });
 
