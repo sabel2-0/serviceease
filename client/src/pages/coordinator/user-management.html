@@ -794,6 +794,10 @@
                         checkbox.type = 'checkbox';
                         checkbox.id = `edit_printer_${p.inventory_item_id}`;
                         checkbox.value = p.inventory_item_id;
+                        // Include data attributes for serial and name to allow matching
+                        // against user.printers when inventory_item_id is not present.
+                        if (p.serial_number) checkbox.setAttribute('data-serial', String(p.serial_number));
+                        if (p.name) checkbox.setAttribute('data-name', String(p.name));
                         checkbox.className = 'mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded edit-printer-checkbox';
                         
                         const label = document.createElement('label');
@@ -840,10 +844,24 @@
                         if (user.printers && user.printers.length > 0) {
                             user.printers.forEach(printer => {
                                 const printerId = String(printer.inventory_item_id ?? printer.id ?? '');
-                                if (!printerId) return;
-                                const checkbox = Array.from(document.querySelectorAll('.edit-printer-checkbox'))
-                                    .find(cb => String(cb.value) === printerId);
-                                console.debug('DEBUG openEditModal - matching printer id', printerId, '-> checkbox found?', !!checkbox);
+                                let checkbox = printerId ? Array.from(document.querySelectorAll('.edit-printer-checkbox'))
+                                    .find(cb => String(cb.value) === printerId) : null;
+
+                                // If no direct id match, try matching by serial_number or name
+                                if (!checkbox) {
+                                    const serial = printer.serial_number ?? printer.serial ?? null;
+                                    const name = printer.name ?? null;
+                                    if (serial) {
+                                        checkbox = Array.from(document.querySelectorAll('.edit-printer-checkbox'))
+                                            .find(cb => cb.getAttribute('data-serial') === String(serial));
+                                    }
+                                    if (!checkbox && name) {
+                                        checkbox = Array.from(document.querySelectorAll('.edit-printer-checkbox'))
+                                            .find(cb => cb.getAttribute('data-name') === String(name));
+                                    }
+                                }
+
+                                console.debug('DEBUG openEditModal - matching printer id', printerId, 'serial', printer.serial_number, 'name', printer.name, '-> checkbox found?', !!checkbox);
                                 if (checkbox) checkbox.checked = true;
                             });
                         }
