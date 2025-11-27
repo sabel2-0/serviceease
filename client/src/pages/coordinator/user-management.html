@@ -825,7 +825,9 @@
                 document.getElementById('editFirstName').value = user.first_name || '';
                 document.getElementById('editLastName').value = user.last_name || '';
                 document.getElementById('editEmail').value = user.email || '';
-                document.getElementById('editDepartment').value = user.department || '';
+                // Prefill department. Some API responses include department at the
+                // user level, others include it on the assigned printer object.
+                document.getElementById('editDepartment').value = user.department ?? (user.printers && user.printers[0] && user.printers[0].department) ?? '';
                 document.getElementById('editUserModal').classList.remove('hidden');
 
                 // Load printers and preselect those assigned to the user
