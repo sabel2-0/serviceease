@@ -197,4 +197,22 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
+// Debug endpoint: return count and a sample of parts (safe, read-only)
+router.get('/debug', async (req, res) => {
+    try {
+        const [countRows] = await db.query('SELECT COUNT(*) as cnt FROM printer_parts');
+        const count = countRows && countRows[0] ? Number(countRows[0].cnt) : 0;
+        const [sampleRows] = await db.query(
+            `SELECT id, name, brand, category, quantity, minimum_stock, status, created_at
+             FROM printer_parts
+             ORDER BY created_at DESC
+             LIMIT 20`
+        );
+        res.json({ count, sample: sampleRows });
+    } catch (error) {
+        console.error('Error in GET /api/parts/debug:', error);
+        res.status(500).json({ error: 'Failed to fetch parts debug info', message: error.message });
+    }
+});
+
 module.exports = router;
