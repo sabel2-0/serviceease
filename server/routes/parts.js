@@ -5,7 +5,7 @@ const db = require('../config/database');
 // Get all parts
 router.get('/', async (req, res) => {
     try {
-        // Try a straightforward select — if table exists and has rows, this will succeed
+        // Straightforward select — return diagnostic wrapper { count, rows }
         const [rows] = await db.query(`
             SELECT 
                 id,
@@ -23,16 +23,16 @@ router.get('/', async (req, res) => {
             ORDER BY created_at DESC
         `);
 
-        console.log(`Fetched ${rows.length} parts`);
-        return res.json(rows);
+        console.log(`[GET /api/parts] fetched ${rows.length} rows`);
+        return res.json({ count: rows.length, rows });
     } catch (error) {
-        console.error('Error fetching parts (initial query):', error && error.message ? error.message : error);
+        console.error('[GET /api/parts] initial query error:', error && error.message ? error.message : error);
 
         // If the table doesn't exist, try to create it and retry once
         const isNoSuchTable = error && (error.code === 'ER_NO_SUCH_TABLE' || error.errno === 1146 || (error.message && error.message.includes("doesn't exist")));
         if (isNoSuchTable) {
             try {
-                console.log('printer_parts table missing — attempting to create from schema');
+                console.log('[GET /api/parts] printer_parts table missing — attempting to create from schema');
                 const fs = require('fs');
                 const path = require('path');
                 const schema = fs.readFileSync(path.join(__dirname, '../config/printer_parts_schema.sql'), 'utf8');
@@ -44,16 +44,16 @@ router.get('/', async (req, res) => {
                     FROM printer_parts
                     ORDER BY created_at DESC
                 `);
-                console.log(`Fetched ${rows2.length} parts after creating table`);
-                return res.json(rows2);
+                console.log(`[GET /api/parts] fetched ${rows2.length} rows after creating table`);
+                return res.json({ count: rows2.length, rows: rows2 });
             } catch (createErr) {
-                console.error('Failed to create printer_parts table:', createErr);
-                return res.status(500).json({ error: 'Failed to initialize parts table', message: createErr.message });
+                console.error('[GET /api/parts] failed to create printer_parts table:', createErr);
+                return res.status(500).json({ count: 0, rows: [], error: 'Failed to initialize parts table', message: createErr.message });
             }
         }
 
-        // For other errors, return a 500 with details (so frontend/devs can see cause)
-        return res.status(500).json({ error: 'Failed to fetch parts', message: error && error.message ? error.message : String(error) });
+        // For other errors, return 500 with a diagnostic shape
+        return res.status(500).json({ count: 0, rows: [], error: 'Failed to fetch parts', message: error && error.message ? error.message : String(error) });
     }
 });
 
