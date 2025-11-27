@@ -690,16 +690,59 @@ router.post('/service-requests/:requestId/reassign', authenticateTechnician, asy
 router.get('/parts', authenticateTechnician, async (req, res) => {
     try {
         const technicianId = req.user.id;
-        
-        const [rows] = await db.query(`
-            SELECT ti.id, ti.part_id, pp.name, pp.brand, pp.category, ti.quantity as stock, pp.unit, pp.is_universal
-            FROM technician_inventory ti
-            JOIN printer_parts pp ON ti.part_id = pp.id
-            WHERE ti.technician_id = ? AND ti.quantity > 0
+        // Fetch global parts (central inventory)
+        const [globalParts] = await db.query(`
+            SELECT pp.id as part_id, pp.id, pp.name, pp.brand, pp.category, pp.quantity as stock, pp.unit, pp.is_universal
+            FROM printer_parts pp
+            WHERE pp.quantity > 0
             ORDER BY pp.brand, pp.category, pp.name
+        `);
+
+        // Fetch parts assigned to this technician (their personal inventory)
+        const [techParts] = await db.query(`
+            SELECT ti.id as tech_inventory_id, ti.part_id, ti.quantity as technician_stock
+            FROM technician_inventory ti
+            WHERE ti.technician_id = ? AND ti.quantity > 0
         `, [technicianId]);
-        
-        res.json(rows);
+
+        // Merge: prefer global stock as `stock`, but include technician_stock and flag
+        const partsMap = new Map();
+
+        for (const p of globalParts) {
+            partsMap.set(p.part_id, Object.assign({}, p, { technician_stock: 0, in_technician_inventory: false }));
+        }
+
+        for (const t of techParts) {
+            const existing = partsMap.get(t.part_id);
+            if (existing) {
+                existing.technician_stock = t.technician_stock;
+                existing.in_technician_inventory = true;
+                existing.tech_inventory_id = t.tech_inventory_id;
+            } else {
+                // Part exists only in technician inventory (not in central inventory)
+                partsMap.set(t.part_id, {
+                    part_id: t.part_id,
+                    id: t.part_id,
+                    name: null,
+                    brand: null,
+                    category: null,
+                    stock: 0,
+                    unit: 'pieces',
+                    is_universal: 0,
+                    technician_stock: t.technician_stock,
+                    in_technician_inventory: true,
+                    tech_inventory_id: t.tech_inventory_id
+                });
+            }
+        }
+
+        const merged = Array.from(partsMap.values()).sort((a,b) => {
+            const aKey = `${a.brand || ''}:${a.category || ''}:${a.name || ''}`.toLowerCase();
+            const bKey = `${b.brand || ''}:${b.category || ''}:${b.name || ''}`.toLowerCase();
+            return aKey < bKey ? -1 : (aKey > bKey ? 1 : 0);
+        });
+
+        res.json(merged);
     } catch (error) {
         console.error('Error fetching technician inventory parts:', error);
         res.status(500).json({ error: 'Failed to fetch inventory parts' });
