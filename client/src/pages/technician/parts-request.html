@@ -379,8 +379,9 @@
                 
                 const data = await response.json();
                 console.log('📦 Parts data received:', data);
-                
-                allParts = Array.isArray(data) ? data : (data.parts || data.data || []);
+
+                // Accept either an array (legacy) or diagnostic object { count, rows }
+                allParts = Array.isArray(data) ? data : (data.rows || data.parts || data.data || []);
                 
                 if (allParts.length === 0) {
                     showEmptyState('No parts are currently available in the inventory.');
