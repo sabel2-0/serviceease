@@ -830,13 +830,16 @@
                         // Uncheck all first
                         document.querySelectorAll('.edit-printer-checkbox').forEach(cb => cb.checked = false);
 
-                        // Check the ones assigned to this user
+                        // Check the ones assigned to this user. Be tolerant of different
+                        // shapes returned by the API (some rows use `inventory_item_id`,
+                        // some use `id`). Compare as strings to avoid number/string mismatches.
                         if (user.printers && user.printers.length > 0) {
                             user.printers.forEach(printer => {
-                                const checkbox = document.querySelector(`.edit-printer-checkbox[value="${printer.inventory_item_id}"]`);
-                                if (checkbox) {
-                                    checkbox.checked = true;
-                                }
+                                const printerId = String(printer.inventory_item_id ?? printer.id ?? printer.inventory_item_id ?? '');
+                                if (!printerId) return;
+                                const checkbox = Array.from(document.querySelectorAll('.edit-printer-checkbox'))
+                                    .find(cb => String(cb.value) === printerId);
+                                if (checkbox) checkbox.checked = true;
                             });
                         }
                     } catch (e) {
@@ -866,12 +869,11 @@
                 try {
                     const token = localStorage.getItem('token');
                     const payload = { firstName, lastName, email, department };
-                    // Send array of printer IDs
+                    // Send array of printer IDs only when coordinator selected printers.
+                    // If no printer field is present in the payload, the backend will
+                    // leave assignments unchanged (avoid accidental removals).
                     if (selectedPrinters.length > 0) {
                         payload.inventory_item_ids = selectedPrinters;
-                    } else {
-                        // Empty array means remove all assignments
-                        payload.inventory_item_ids = [];
                     }
 
                     const currentUser = JSON.parse(localStorage.getItem('user')) || {};
