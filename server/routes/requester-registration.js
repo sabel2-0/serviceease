@@ -176,23 +176,33 @@ router.post('/validate-printers', async (req, res) => {
  * Submit requester registration (direct to users table)
  * POST /api/requester-registration/submit
  */
-router.post('/submit', upload.fields([
-    { name: 'id_front', maxCount: 1 },
-    { name: 'id_back', maxCount: 1 },
-    { name: 'selfie', maxCount: 1 }
-]), async (req, res) => {
-    try {
-        const {
-            first_name,
-            last_name,
-            email,
-            password,
-            department,
-            institution_id,
-            institution_type,
-            printer_serial_numbers,
-            email_verified // Must be true from frontend
-        } = req.body;
+router.post('/submit', (req, res) => {
+    // Use multer programmatically so we can catch multer errors and return JSON
+    const mw = upload.fields([
+        { name: 'id_front', maxCount: 1 },
+        { name: 'id_back', maxCount: 1 },
+        { name: 'selfie', maxCount: 1 }
+    ]);
+
+    mw(req, res, async (multerErr) => {
+        if (multerErr) {
+            console.error('❌ Multer error on submit:', multerErr);
+            return res.status(400).json({ error: 'Invalid file upload', details: multerErr.message });
+        }
+
+        (async () => {
+            try {
+                const {
+                    first_name,
+                    last_name,
+                    email,
+                    password,
+                    department,
+                    institution_id,
+                    institution_type,
+                    printer_serial_numbers,
+                    email_verified // Must be true from frontend
+                } = req.body;
         
         console.log('📝 Requester registration submission:', { first_name, last_name, email, institution_id });
         
