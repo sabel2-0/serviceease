@@ -89,8 +89,7 @@
                                     <table class="min-w-full divide-y divide-gray-200">
                                         <thead class="bg-gray-50">
                                             <tr>
-                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User Info</th>
                                                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
                                                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                                                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Department</th>
@@ -254,12 +253,28 @@
                     </div>
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-700 mb-2">New Password</label>
-                        <input type="password" id="newPasswordInput" class="w-full px-4 py-2 border rounded-md" placeholder="Enter new password (min 6 characters)" required minlength="6">
-                        <p class="text-xs text-gray-500 mt-1">Minimum 6 characters</p>
+                        <div class="relative">
+                            <input type="password" id="newPasswordInput" class="w-full px-4 py-2 border rounded-md" placeholder="Enter new password (min 8 characters)" required minlength="8">
+                            <button type="button" id="toggleNewPasswordVisibility" aria-label="Toggle new password visibility" class="absolute inset-y-0 right-2 px-2 text-gray-500 hover:text-gray-700 focus:outline-none">
+                                <i class="fas fa-eye" id="toggleNewPasswordIcon"></i>
+                            </button>
+                        </div>
+                        <div class="mt-2 flex items-center gap-3">
+                            <div class="w-full bg-gray-200 rounded overflow-hidden h-2">
+                                <div id="newPasswordStrengthBar" class="h-2 bg-red-400 w-0 transition-all"></div>
+                            </div>
+                            <div id="newPasswordStrengthText" class="text-sm text-gray-600 w-40 text-right" aria-live="polite">&nbsp;</div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Must include letters, numbers, and symbols</p>
                     </div>
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
-                        <input type="password" id="confirmPasswordInput" class="w-full px-4 py-2 border rounded-md" placeholder="Confirm new password" required minlength="6">
+                        <div class="relative">
+                            <input type="password" id="confirmPasswordInput" class="w-full px-4 py-2 border rounded-md" placeholder="Confirm new password" required minlength="8">
+                            <button type="button" id="toggleConfirmPasswordVisibility" aria-label="Toggle confirm password visibility" class="absolute inset-y-0 right-2 px-2 text-gray-500 hover:text-gray-700 focus:outline-none">
+                                <i class="fas fa-eye" id="toggleConfirmPasswordIcon"></i>
+                            </button>
+                        </div>
                     </div>
                     <div id="passwordChangeError" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
                         <p class="text-sm text-red-600"></p>
@@ -311,38 +326,7 @@
             // Set the active sidebar item
             window.location.hash = '#user-management';
             
-            // Close notification center handler
-            document.getElementById('close-notifications')?.addEventListener('click', () => {
-                document.getElementById('notification-center').classList.add('translate-x-full');
-                document.getElementById('notification-center').classList.remove('translate-x-0');
-            });
-            
-            // Modal Controls
-            document.getElementById('add-user-btn')?.addEventListener('click', () => {
-                document.getElementById('addUserModal').classList.remove('hidden');
-            });
-            
-            // Close all modals when clicking outside
-            document.querySelectorAll('.fixed.inset-0').forEach(modal => {
-                modal.addEventListener('click', (e) => {
-                    if (e.target === modal) {
-                        modal.classList.add('hidden');
-                    }
-                });
-            });
-            
-            // Cancel button for modal
-            document.getElementById('cancelAddUser')?.addEventListener('click', () => {
-                document.getElementById('addUserModal').classList.add('hidden');
-            });
-            
-            // Password visibility toggle and strength helpers
-            const pwdInput = document.getElementById('userPassword');
-            const togglePwdBtn = document.getElementById('togglePasswordVisibility');
-            const togglePwdIcon = document.getElementById('togglePasswordIcon');
-            const strengthBar = document.getElementById('passwordStrengthBar');
-            const strengthText = document.getElementById('passwordStrengthText');
-
+            // Global password strength functions
             function calculatePasswordStrength(pw) {
                 let score = 0;
                 if (!pw) return score;
@@ -368,9 +352,16 @@
                 else if (score === 3) { label = 'Good'; colorClass = 'bg-blue-400'; }
                 else if (score === 4) { label = 'Strong'; colorClass = 'bg-green-500'; }
 
-                strengthBar.style.width = percent + '%';
-                strengthBar.className = 'h-2 ' + colorClass + ' w-0 transition-all';
-                strengthText.textContent = label ? `${label}` : '\u00A0';
+                const strengthBar = document.getElementById('newPasswordStrengthBar');
+                const strengthText = document.getElementById('newPasswordStrengthText');
+                
+                if (strengthBar) {
+                    strengthBar.style.width = percent + '%';
+                    strengthBar.className = 'h-2 ' + colorClass + ' w-0 transition-all';
+                }
+                if (strengthText) {
+                    strengthText.textContent = label ? `${label}` : '\u00A0';
+                }
             }
 
             function passwordMeetsPolicy(pw) {
@@ -382,8 +373,40 @@
                 if (!/[^A-Za-z0-9]/.test(pw)) return false;
                 return true;
             }
+            
+            // Close notification center handler
+            document.getElementById('close-notifications')?.addEventListener('click', () => {
+                document.getElementById('notification-center').classList.add('translate-x-full');
+                document.getElementById('notification-center').classList.remove('translate-x-0');
+            });
+            
+            // Modal Controls
+            document.getElementById('add-user-btn')?.addEventListener('click', () => {
+                document.getElementById('addUserModal').classList.remove('hidden');
+            });
+            
+            // Close all modals when clicking outside
+            document.querySelectorAll('.fixed.inset-0').forEach(modal => {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.classList.add('hidden');
+                    }
+                });
+            });
+            
+            // Cancel button for modal
+            document.getElementById('cancelAddUser')?.addEventListener('click', () => {
+                document.getElementById('addUserModal').classList.add('hidden');
+            });
+            
+            // Password visibility toggle and strength helpers for add user modal
+            const pwdInput = document.getElementById('userPassword');
+            const togglePwdBtn = document.getElementById('togglePasswordVisibility');
+            const togglePwdIcon = document.getElementById('togglePasswordIcon');
+            const strengthBar = document.getElementById('passwordStrengthBar');
+            const strengthText = document.getElementById('passwordStrengthText');
 
-            // Toggle password visibility
+            // Toggle password visibility for add user modal
             togglePwdBtn?.addEventListener('click', () => {
                 if (!pwdInput) return;
                 if (pwdInput.type === 'password') {
@@ -398,9 +421,25 @@
                 pwdInput.focus();
             });
 
-            // Update strength on input
+            // Update strength on input for add user modal
             pwdInput?.addEventListener('input', (e) => {
-                updatePasswordStrengthUI(e.target.value);
+                const score = calculatePasswordStrength(e.target.value);
+                let percent = (score / 4) * 100;
+                let label = '';
+                let colorClass = 'bg-red-400';
+                if (score === 0) { label = '' ; percent = 0; }
+                else if (score === 1) { label = 'Very weak'; colorClass = 'bg-red-400'; }
+                else if (score === 2) { label = 'Weak'; colorClass = 'bg-yellow-400'; }
+                else if (score === 3) { label = 'Good'; colorClass = 'bg-blue-400'; }
+                else if (score === 4) { label = 'Strong'; colorClass = 'bg-green-500'; }
+
+                if (strengthBar) {
+                    strengthBar.style.width = percent + '%';
+                    strengthBar.className = 'h-2 ' + colorClass + ' w-0 transition-all';
+                }
+                if (strengthText) {
+                    strengthText.textContent = label ? `${label}` : '\u00A0';
+                }
             });
 
             // Form submission
@@ -605,13 +644,12 @@
                         const tr = document.createElement('tr');
                         tr.className = 'hover:bg-gray-50';
 
-                        const nameTd = document.createElement('td');
-                        nameTd.className = 'px-6 py-4 whitespace-nowrap';
-                        nameTd.innerHTML = `<div class="text-sm font-medium text-gray-900">${(u.first_name || '') + ' ' + (u.last_name || '')}</div>`;
-
-                        const emailTd = document.createElement('td');
-                        emailTd.className = 'px-6 py-4 whitespace-nowrap';
-                        emailTd.innerHTML = `<div class="text-sm text-gray-500">${u.email || ''}</div>`;
+                        const userInfoTd = document.createElement('td');
+                        userInfoTd.className = 'px-6 py-4 whitespace-nowrap';
+                        userInfoTd.innerHTML = `
+                            <div class="text-sm font-medium text-gray-900">${(u.first_name || '') + ' ' + (u.last_name || '')}</div>
+                            <div class="text-sm text-gray-500">${u.email || ''}</div>
+                        `;
 
                         const roleTd = document.createElement('td');
                         roleTd.className = 'px-6 py-4 whitespace-nowrap';
@@ -625,13 +663,13 @@
 
                         const deptTd = document.createElement('td');
                         deptTd.className = 'px-6 py-4 whitespace-nowrap text-sm text-gray-600';
-                        deptTd.textContent = u.department || '';
+                        deptTd.textContent = u.printers?.[0]?.department || '';
 
                         const printerTd = document.createElement('td');
                         printerTd.className = 'px-6 py-4 text-sm text-gray-600';
                         // Show multiple printers
                         if (u.printers && u.printers.length > 0) {
-                            const printerList = u.printers.map(p => p.printer_name || 'Unnamed').join(', ');
+                            const printerList = u.printers.map(p => p.name || 'Unnamed').join(', ');
                             printerTd.innerHTML = `<div class="max-w-xs truncate" title="${printerList}">${printerList}</div>`;
                             if (u.printers.length > 1) {
                                 const badge = document.createElement('span');
@@ -670,13 +708,12 @@
                             const displayName = (u.first_name || '') + ' ' + (u.last_name || '');
                             const action = statusLabel === 'active' ? 'Deactivate' : 'Activate';
                             showConfirm(`${action} user`, `Are you sure you want to ${action.toLowerCase()} ${displayName.trim()}?`, async () => {
-                                await toggleUserStatus(u.user_id, statusLabel);
+                                await toggleUserStatus(u.id || u.user_id, statusLabel);
                             });
                         });
                         actionsTd.appendChild(toggleBtn);
 
-                        tr.appendChild(nameTd);
-                        tr.appendChild(emailTd);
+                        tr.appendChild(userInfoTd);
                         tr.appendChild(roleTd);
                         tr.appendChild(statusTd);
                         tr.appendChild(deptTd);
@@ -780,7 +817,7 @@
             // Handler to open edit modal for a given user
             function openEditModal(user) {
                 console.log('Opening edit modal for user', user);
-                document.getElementById('editUserId').value = user.user_id;
+                document.getElementById('editUserId').value = user.id || user.user_id;
                 document.getElementById('editFirstName').value = user.first_name || '';
                 document.getElementById('editLastName').value = user.last_name || '';
                 document.getElementById('editEmail').value = user.email || '';
@@ -929,18 +966,67 @@
             let currentPasswordChangeUser = null;
 
             function openChangePasswordModal(user) {
+                console.log('Opening password change modal for user:', user);
+                console.log('User user_id:', user.user_id);
+                console.log('User has user_id property:', user.hasOwnProperty('user_id'));
+                console.log('User keys:', Object.keys(user));
+                
+                if (!user || (!user.id && !user.user_id) || isNaN(user.id || user.user_id)) {
+                    console.error('Invalid user object passed to openChangePasswordModal:', user);
+                    showNotification('Error', 'Unable to open password change modal - invalid user data', 'error');
+                    return;
+                }
+                
                 currentPasswordChangeUser = user;
-                document.getElementById('passwordChangeUserId').value = user.user_id;
+                document.getElementById('passwordChangeUserId').value = user.id || user.user_id;
                 document.getElementById('passwordChangeUserName').textContent = `${user.first_name} ${user.last_name} (${user.email})`;
                 document.getElementById('newPasswordInput').value = '';
                 document.getElementById('confirmPasswordInput').value = '';
                 document.getElementById('passwordChangeError').classList.add('hidden');
+                // Reset strength UI
+                updatePasswordStrengthUI('');
                 document.getElementById('changePasswordModal').classList.remove('hidden');
             }
 
             document.getElementById('cancelPasswordChange').addEventListener('click', () => {
                 document.getElementById('changePasswordModal').classList.add('hidden');
                 currentPasswordChangeUser = null;
+            });
+
+            // Password visibility toggles for change password modal
+            document.getElementById('toggleNewPasswordVisibility').addEventListener('click', () => {
+                const input = document.getElementById('newPasswordInput');
+                const icon = document.getElementById('toggleNewPasswordIcon');
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                } else {
+                    input.type = 'password';
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                }
+                input.focus();
+            });
+
+            document.getElementById('toggleConfirmPasswordVisibility').addEventListener('click', () => {
+                const input = document.getElementById('confirmPasswordInput');
+                const icon = document.getElementById('toggleConfirmPasswordIcon');
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                } else {
+                    input.type = 'password';
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                }
+                input.focus();
+            });
+
+            // Update strength on new password input
+            document.getElementById('newPasswordInput').addEventListener('input', (e) => {
+                updatePasswordStrengthUI(e.target.value);
             });
 
             document.getElementById('submitPasswordChange').addEventListener('click', async () => {
@@ -950,8 +1036,8 @@
                 const errorText = errorDiv.querySelector('p');
 
                 // Validation
-                if (newPassword.length < 6) {
-                    errorText.textContent = 'Password must be at least 6 characters';
+                if (!passwordMeetsPolicy(newPassword)) {
+                    errorText.textContent = 'Password must be at least 8 characters and include letters, numbers, and symbols';
                     errorDiv.classList.remove('hidden');
                     return;
                 }
@@ -972,7 +1058,19 @@
                     const currentUser = JSON.parse(localStorage.getItem('user')) || {};
                     const coordinatorId = currentUser.id;
                     const token = localStorage.getItem('token');
-                    const userId = currentPasswordChangeUser.user_id;
+                    const userId = currentPasswordChangeUser.id || currentPasswordChangeUser.user_id;
+                    
+                    console.log('Submitting password change:');
+                    console.log('currentPasswordChangeUser:', currentPasswordChangeUser);
+                    console.log('userId:', userId);
+                    console.log('coordinatorId:', coordinatorId);
+
+                    if (!userId || isNaN(userId)) {
+                        console.error('userId is invalid!');
+                        errorText.textContent = 'User ID is invalid. Please try again.';
+                        errorDiv.classList.remove('hidden');
+                        return;
+                    }
 
                     const res = await fetch(`/api/coordinators/${coordinatorId}/users/${userId}/password`, {
                         method: 'PATCH',

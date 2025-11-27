@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Requester Email Verification | ServiceEase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .bg-image {
+            background-image: url('../images/img-art-left.jpg');
+            background-size: cover;
+            background-position: center;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-white">
+    <div class="min-h-screen flex">
+        <!-- Left side - Minimalist Image Section -->
+        <div class="hidden lg:flex lg:w-1/2 items-center justify-center bg-gray-50">
+            <div class="text-center">
+                <div class="w-80 h-80 mx-auto mb-8 bg-image rounded-lg shadow-sm"></div>
+                <h1 class="text-4xl font-light tracking-tight text-gray-900 mb-2">ServiceEase</h1>
+                <p class="text-gray-500 text-base font-light">Efficient Service Management</p>
+            </div>
+        </div>
+
+        <!-- Right side - Verification Status -->
+        <div class="w-full lg:w-1/2 flex flex-col">
+            <!-- Mobile Brand Header -->
+            <div class="lg:hidden p-6 text-center border-b border-gray-100">
+                <h1 class="text-2xl font-light text-gray-900">ServiceEase</h1>
+            </div>
+            
+            <!-- Status Container -->
+            <div class="flex-1 flex items-center justify-center p-6 lg:p-12">
+                <div class="w-full max-w-md text-center">
+                    <!-- Loading State -->
+                    <div id="loadingState">
+                        <i class="fas fa-spinner fa-spin text-5xl text-indigo-500 mb-6"></i>
+                        <h2 class="text-3xl font-light text-gray-900 mb-3">Verifying Email</h2>
+                        <p class="text-gray-600">Please wait while we verify your email address...</p>
+                    </div>
+
+                    <!-- Success State -->
+                    <div id="successState" class="hidden">
+                        <div class="mb-6">
+                            <i class="fas fa-check-circle text-6xl text-green-500"></i>
+                        </div>
+                        <h2 class="text-3xl font-light text-gray-900 mb-3">Email Verified!</h2>
+                        <div class="mb-6">
+                            <p class="text-gray-600 mb-3">
+                                Your email has been successfully verified.
+                            </p>
+                            <div class="bg-blue-50 border border-blue-200 rounded-md p-4 mb-4">
+                                <p class="text-sm text-blue-800">
+                                    <i class="fas fa-info-circle mr-2"></i>
+                                    Your registration is now pending review by your institution's coordinator. You will receive an email notification once your account has been approved.
+                                </p>
+                            </div>
+                        </div>
+                        <a href="login.html" 
+                            class="inline-block py-3 px-8 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md transition-colors">
+                            Go to Login
+                        </a>
+                    </div>
+
+                    <!-- Error State -->
+                    <div id="errorState" class="hidden">
+                        <div class="mb-6">
+                            <i class="fas fa-times-circle text-6xl text-red-500"></i>
+                        </div>
+                        <h2 class="text-3xl font-light text-gray-900 mb-3">Verification Failed</h2>
+                        <p id="errorMessage" class="text-gray-600 mb-6">
+                            This verification link is invalid or has expired.
+                        </p>
+                        <div class="space-y-3">
+                            <a href="login.html" 
+                                class="block py-3 px-8 bg-gray-900 hover:bg-gray-800 text-white rounded-md transition-colors">
+                                Go to Login
+                            </a>
+                            <a href="register-select.html" 
+                                class="block py-3 px-8 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-md transition-colors">
+                                Register Again
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Extract token from URL
+        function getTokenFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('token');
+        }
+
+        // Verify email on page load
+        async function verifyEmail() {
+            const token = getTokenFromUrl();
+            
+            if (!token) {
+                showError('No verification token provided');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/requester-registration/verify-email/${token}`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    showSuccess();
+                } else {
+                    showError(data.error || 'Verification failed');
+                }
+            } catch (error) {
+                console.error('Error verifying email:', error);
+                showError('An error occurred during verification. Please try again.');
+            }
+        }
+
+        function showSuccess() {
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('successState').classList.remove('hidden');
+        }
+
+        function showError(message) {
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('errorState').classList.remove('hidden');
+        }
+
+        // Initialize verification on page load
+        document.addEventListener('DOMContentLoaded', verifyEmail);
+    </script>
+</body>
+</html>

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Choose Registration Type | ServiceEase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .bg-image {
+            background-image: url('../images/img-art-left.jpg');
+            background-size: cover;
+            background-position: center;
+        }
+        
+        .role-card {
+            transition: all 0.3s ease;
+        }
+        
+        .role-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-white">
+    <div class="min-h-screen flex">
+        <!-- Left side - Minimalist Image Section -->
+        <div class="hidden lg:flex lg:w-1/2 items-center justify-center bg-gray-50">
+            <div class="text-center">
+                <div class="w-80 h-80 mx-auto mb-8 bg-image rounded-lg shadow-sm"></div>
+                <h1 class="text-4xl font-light tracking-tight text-gray-900 mb-2">ServiceEase</h1>
+                <p class="text-gray-500 text-base font-light">Efficient Service Management</p>
+            </div>
+        </div>
+
+        <!-- Right side - Role Selection -->
+        <div class="w-full lg:w-1/2 flex flex-col">
+            <!-- Mobile Brand Header -->
+            <div class="lg:hidden p-6 text-center border-b border-gray-100">
+                <h1 class="text-2xl font-light text-gray-900">ServiceEase</h1>
+            </div>
+            
+            <!-- Selection Container -->
+            <div class="flex-1 flex items-center justify-center p-6 lg:p-12">
+                <div class="w-full max-w-3xl">
+                    <!-- Back to login -->
+                    <div class="mb-6">
+                        <a href="login.html" class="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+                            <i class="fas fa-arrow-left mr-2"></i>
+                            Back to Sign In
+                        </a>
+                    </div>
+
+                    <div class="mb-10 text-center">
+                        <h2 class="text-4xl lg:text-5xl font-light text-gray-900 mb-3">Choose Your Role</h2>
+                        <p class="text-base lg:text-lg text-gray-600 font-light">Select the type of account you want to create</p>
+                    </div>
+
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <!-- Coordinator Card -->
+                        <div class="role-card bg-white border-2 border-gray-200 rounded-lg p-8 cursor-pointer" 
+                             onclick="window.location.href='coordinator-register.html'">
+                            <div class="text-center mb-6">
+                                <div class="inline-flex items-center justify-center w-20 h-20 bg-indigo-100 rounded-full mb-4">
+                                    <i class="fas fa-building text-3xl text-indigo-600"></i>
+                                </div>
+                                <h3 class="text-2xl font-medium text-gray-900 mb-2">Institution Coordinator</h3>
+                            </div>
+                            
+                            <p class="text-gray-600 text-center mb-6">
+                                I represent an institution (school, university, office, etc.) and will manage service requests for our printers and equipment.
+                            </p>
+                            
+                            <ul class="space-y-3 mb-6">
+                                <li class="flex items-start text-sm text-gray-600">
+                                    <i class="fas fa-check text-green-500 mt-1 mr-3 flex-shrink-0"></i>
+                                    <span>Manage institution's printers and equipment</span>
+                                </li>
+                                <li class="flex items-start text-sm text-gray-600">
+                                    <i class="fas fa-check text-green-500 mt-1 mr-3 flex-shrink-0"></i>
+                                    <span>Create user accounts for requesters</span>
+                                </li>
+                                <li class="flex items-start text-sm text-gray-600">
+                                    <i class="fas fa-check text-green-500 mt-1 mr-3 flex-shrink-0"></i>
+                                    <span>Approve and track service requests</span>
+                                </li>
+                                <li class="flex items-start text-sm text-gray-600">
+                                    <i class="fas fa-check text-green-500 mt-1 mr-3 flex-shrink-0"></i>
+                                    <span>Monitor service history and inventory</span>
+                                </li>
+                            </ul>
+                            
+                            <button class="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md transition-colors">
+                                Register as Coordinator
+                            </button>
+                        </div>
+
+                        <!-- Requester Card -->
+                        <div class="role-card bg-white border-2 border-gray-200 rounded-lg p-8 cursor-pointer" 
+                             onclick="window.location.href='requester-register.html'">
+                            <div class="text-center mb-6">
+                                <div class="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-4">
+                                    <i class="fas fa-user text-3xl text-green-600"></i>
+                                </div>
+                                <h3 class="text-2xl font-medium text-gray-900 mb-2">Requester</h3>
+                            </div>
+                            
+                            <p class="text-gray-600 text-center mb-6">
+                                I am a printer user within a department or institution and need to request service for my assigned printer.
+                            </p>
+                            
+                            <ul class="space-y-3 mb-6">
+                                <li class="flex items-start text-sm text-gray-600">
+                                    <i class="fas fa-check text-green-500 mt-1 mr-3 flex-shrink-0"></i>
+                                    <span>Submit service requests for your printer</span>
+                                </li>
+                                <li class="flex items-start text-sm text-gray-600">
+                                    <i class="fas fa-check text-green-500 mt-1 mr-3 flex-shrink-0"></i>
+                                    <span>Track the status of your requests</span>
+                                </li>
+                                <li class="flex items-start text-sm text-gray-600">
+                                    <i class="fas fa-check text-green-500 mt-1 mr-3 flex-shrink-0"></i>
+                                    <span>View service history for your equipment</span>
+                                </li>
+                                <li class="flex items-start text-sm text-gray-600">
+                                    <i class="fas fa-check text-green-500 mt-1 mr-3 flex-shrink-0"></i>
+                                    <span>Receive notifications about service updates</span>
+                                </li>
+                            </ul>
+                            
+                            <button class="w-full py-3 px-4 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors">
+                                Register as Requester
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Already have account -->
+                    <p class="text-center text-sm text-gray-600 mt-8">
+                        Already have an account?
+                        <a href="login.html" class="text-indigo-600 font-medium hover:text-indigo-700">Sign in</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

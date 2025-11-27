@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Requester Registration | ServiceEase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html, body { min-height: 100%; margin: 0; overflow: auto; background: white; }
+
+        /* Mobile-first form container: allow natural scrolling */
+        .form-container {
+            position: relative;
+            padding: 18px;
+            overflow-y: visible;
+            border-radius: 0;
+            background-color: transparent;
+        }
+
+        .password-strength-bar { height: 4px; border-radius: 2px; transition: all 0.3s ease; }
+        .strength-weak { background-color: #ef4444; width: 33%; }
+        .strength-medium { background-color: #f59e0b; width: 66%; }
+        .strength-strong { background-color: #10b981; width: 100%; }
+
+        .printer-input-group { animation: fadeIn 0.22s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+
+        .validation-icon { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); }
+
+        .file-preview {
+            position: relative; width: 100%; height: 160px; border: 2px dashed #d1d5db; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center; background: #f9fafb; overflow: hidden;
+        }
+        .file-preview img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .file-preview.has-image { border-style: solid; border-color: #10b981; }
+
+        /* Step visibility */
+        .form-step { display: none; }
+        .form-step.active { display: block; }
+
+        /* Verification modal */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 50; align-items: center; justify-content: center; }
+        .modal.active { display: flex; }
+
+        /* Make two-column grids collapse to single column on smaller screens */
+        @media (max-width: 1024px) {
+            .form-container .grid.grid-cols-2 { grid-template-columns: 1fr !important; }
+            .form-container .grid.grid-cols-3 { grid-template-columns: 1fr !important; }
+            .form-container .grid.grid-cols-12 { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+            .file-preview { height: 140px; }
+            .min-h-screen { min-height: auto; }
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gray-50">
+    <div class="min-h-screen flex flex-col py-8 px-0">
+        <!-- Header -->
+        <div class="w-full max-w-4xl mx-auto mb-4 px-4 lg:px-0">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <a href="register-select.html" class="text-gray-600 hover:text-gray-900 p-2 rounded-full lg:hidden" aria-label="Back">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                    <div>
+                        <h1 class="text-2xl font-semibold text-gray-900 leading-tight">ServiceEase</h1>
+                        <p class="text-sm text-gray-500 mt-0.5">Requester Registration</p>
+                    </div>
+                </div>
+                <a href="register-select.html" class="hidden lg:inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+                    <i class="fas fa-arrow-left mr-2"></i>Back
+                </a>
+            </div>
+            <hr class="mt-4 border-t border-gray-100">
+        </div>
+
+        <!-- Main Form -->
+        <div class="flex-1 w-full max-w-4xl mx-auto bg-white rounded-lg shadow-sm p-4 lg:p-8">
+            <form id="requesterRegistrationForm" enctype="multipart/form-data">
+                <!-- Success Message -->
+                <div id="successMessage" class="hidden mb-6 p-4 bg-green-50 border border-green-200 rounded-md">
+                    <div class="flex items-start">
+                        <i class="fas fa-check-circle text-green-400 text-xl mt-0.5 mr-3"></i>
+                        <div>
+                            <h3 class="text-base font-medium text-green-800 mb-1">Registration Submitted Successfully!</h3>
+                            <div class="text-sm text-green-700 space-y-2">
+                                <p class="font-medium">Your registration is pending coordinator approval.</p>
+                                <p>You will receive an email notification once your account is approved. You can then log in using your registered email and password.</p>
+                                <p class="mt-2">Redirecting to login page in 5 seconds...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Error Message -->
+                <div id="errorMessage" class="hidden mb-6 p-3 bg-red-50 border border-red-100 rounded-md">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <i class="fas fa-exclamation-circle text-red-400 text-sm mr-2"></i>
+                            <p id="errorText" class="text-sm text-red-700"></p>
+                        </div>
+                        <button type="button" onclick="hideError()" class="text-red-400 hover:text-red-600">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="mobileProgress" class="text-sm text-gray-600 mb-4">Step 1 of 5</div>
+
+                <div class="form-container space-y-6">
+                    <!-- Step 1: Personal Information -->
+                    <div class="form-step active" data-step="1">
+                        <h3 class="text-xl font-medium text-gray-900 mb-4">Personal Information</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label for="firstName" class="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+                                <input type="text" id="firstName" name="firstName" required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label for="lastName" class="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+                                <input type="text" id="lastName" name="lastName" required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <label for="department" class="block text-sm font-medium text-gray-700 mb-1">Department *</label>
+                            <input type="text" id="department" name="department" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        </div>
+                        <div class="mt-4">
+                            <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email Address *</label>
+                            <input type="email" id="email" name="email" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                onblur="handleEmailBlur()">
+                            <p class="mt-1 text-xs text-gray-500">You will receive a verification code at this address</p>
+                        </div>
+
+                        <!-- Email Verification Section (hidden initially) -->
+                        <div id="emailVerificationSection" class="hidden mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div id="verifyEmailStep">
+                                <p class="text-sm text-gray-700 mb-3">
+                                    <i class="fas fa-info-circle text-blue-500 mr-1"></i>
+                                    Please verify your email to continue
+                                </p>
+                                <button type="button" id="sendCodeBtn" onclick="sendVerificationCode()" 
+                                    class="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <i class="fas fa-paper-plane mr-2"></i>Send Verification Code
+                                </button>
+                            </div>
+
+                            <div id="enterCodeStep" class="hidden">
+                                <p class="text-sm text-gray-700 mb-3">
+                                    <i class="fas fa-envelope text-blue-500 mr-1"></i>
+                                    Enter the 6-digit code sent to <strong id="displayEmail"></strong>
+                                </p>
+                                <div class="flex gap-2 mb-3">
+                                    <input type="text" id="verificationCode" maxlength="6" placeholder="000000"
+                                        class="flex-1 px-3 py-2 border border-gray-300 rounded-md text-center text-lg font-mono tracking-widest focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                                    <button type="button" onclick="verifyEmailCode()" 
+                                        class="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
+                                        <i class="fas fa-check mr-1"></i>Verify
+                                    </button>
+                                </div>
+                                <button type="button" id="resendCodeBtn" onclick="resendVerificationCode()" 
+                                    class="text-sm text-blue-600 hover:text-blue-800 disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <i class="fas fa-redo mr-1"></i>Resend Code <span id="resendTimer"></span>
+                                </button>
+                            </div>
+
+                            <div id="emailVerifiedStep" class="hidden text-center">
+                                <div class="inline-flex items-center justify-center w-12 h-12 bg-green-100 rounded-full mb-2">
+                                    <i class="fas fa-check text-green-600 text-xl"></i>
+                                </div>
+                                <p class="text-sm font-medium text-green-700">Email Verified Successfully!</p>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 flex justify-end">
+                            <button type="button" id="step1NextBtn" onclick="nextStep()" 
+                                class="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed" 
+                                disabled>Next</button>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Institution Information -->
+                    <div class="form-step" data-step="2">
+                        <h3 class="text-xl font-medium text-gray-900 mb-4">Institution Information</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="institutionType" class="block text-sm font-medium text-gray-700 mb-1">Institution Type <span class="text-red-500">*</span></label>
+                                <select id="institutionType" name="institutionType" required
+                                    class="form-input w-full px-4 py-2 border border-gray-300 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <option value="" disabled selected>Select institution type</option>
+                                    <option value="public_school">Public School</option>
+                                    <option value="private_school">Private School</option>
+                                    <option value="private_company">Private Company</option>
+                                    <option value="lgu">Local Government Unit</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="institutionSearch" class="block text-sm font-medium text-gray-700 mb-1">Institution Name *</label>
+                                <div class="relative">
+                                    <input id="institutionSearch" name="institutionSearch" type="text" required disabled
+                                        placeholder="Start typing to search institutions"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    <input type="hidden" id="institutionId" name="institutionId">
+                                    <div id="institutionSuggestions" class="absolute z-40 left-0 right-0 mt-1 bg-gray-50 border border-gray-300 rounded-md shadow-md hidden max-h-48 overflow-auto ring-1 ring-gray-100"></div>
+                                </div>
+                                <p id="institutionHelp" class="mt-1 text-xs text-gray-500">Type to find your institution</p>
+                                <p id="institutionAddress" class="mt-1 text-sm text-gray-600 hidden"></p>
+                            </div>
+                        </div>
+                        <div class="mt-6 flex justify-between">
+                            <button type="button" onclick="prevStep()" class="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50">Previous</button>
+                            <button type="button" onclick="nextStep()" class="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Next</button>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Printer Information -->
+                    <div class="form-step" data-step="3">
+                        <h3 class="text-xl font-medium text-gray-900 mb-2">Printer Information</h3>
+                        <p class="text-sm text-gray-600 mb-4">Enter the serial number and brand of your printer(s). You can add multiple printers if needed.</p>
+                        
+                        <div id="printersContainer" class="space-y-3">
+                            <!-- Printer inputs will be added here dynamically -->
+                        </div>
+                        
+                        <button type="button" onclick="addPrinterInput()" 
+                            class="mt-3 text-sm text-indigo-600 hover:text-indigo-700 font-medium">
+                            <i class="fas fa-plus mr-1"></i>Add Another Printer
+                        </button>
+                        
+                        <div class="mt-4 p-3 bg-blue-50 rounded-md border border-blue-200">
+                            <button type="button" onclick="validateAllPrinters()" 
+                                class="w-full py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium">
+                                <i class="fas fa-check-circle mr-2"></i>Validate All Printers
+                            </button>
+                            <p class="text-xs text-blue-700 mt-2 text-center">Click to verify all printers are registered in your institution</p>
+                        </div>
+                        
+                        <div class="mt-6 flex justify-between">
+                            <button type="button" onclick="prevStep()" class="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50">Previous</button>
+                            <button type="button" onclick="nextStep()" class="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Next</button>
+                        </div>
+                    </div>
+
+                    <!-- Step 4: ID Verification -->
+                    <div class="form-step" data-step="4">
+                        <h3 class="text-xl font-medium text-gray-900 mb-4">ID Verification</h3>
+                        <p class="text-sm text-gray-600 mb-4">Upload clear photos of your valid ID and a selfie holding your ID</p>
+                        
+                        <div class="grid grid-cols-3 gap-4">
+                            <!-- ID Front -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">ID Front *</label>
+                                <div class="file-preview" id="idFrontPreview">
+                                    <div class="text-center">
+                                                <i class="fas fa-id-card text-gray-400 text-3xl mb-2"></i>
+                                                <p class="text-xs text-gray-500">Click to upload</p>
+                                            </div>
+                                        </div>
+                                        <input type="file" id="idFront" name="id_front" accept="image/*" required
+                                    class="hidden" onchange="previewImage(this, 'idFrontPreview')">
+                                <button type="button" onclick="document.getElementById('idFront').click()"
+                                    class="mt-2 w-full py-2 px-3 border border-gray-300 rounded-md text-sm hover:bg-gray-50">
+                                    Choose File
+                                </button>
+                            </div>
+
+                            <!-- ID Back -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">ID Back *</label>
+                                <div class="file-preview" id="idBackPreview">
+                                    <div class="text-center">
+                                        <i class="fas fa-id-card text-gray-400 text-3xl mb-2"></i>
+                                        <p class="text-xs text-gray-500">Click to upload</p>
+                                    </div>
+                                </div>
+                                <input type="file" id="idBack" name="id_back" accept="image/*" required
+                                    class="hidden" onchange="previewImage(this, 'idBackPreview')">
+                                <button type="button" onclick="document.getElementById('idBack').click()"
+                                    class="mt-2 w-full py-2 px-3 border border-gray-300 rounded-md text-sm hover:bg-gray-50">
+                                    Choose File
+                                </button>
+                            </div>
+
+                            <!-- Selfie -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Selfie with ID *</label>
+                                <div class="file-preview" id="selfiePreview">
+                                    <div class="text-center">
+                                        <i class="fas fa-camera text-gray-400 text-3xl mb-2"></i>
+                                        <p class="text-xs text-gray-500">Click to upload</p>
+                                    </div>
+                                </div>
+                                <input type="file" id="selfie" name="selfie" accept="image/*" required
+                                    class="hidden" onchange="previewImage(this, 'selfiePreview')">
+                                <button type="button" onclick="document.getElementById('selfie').click()"
+                                    class="mt-2 w-full py-2 px-3 border border-gray-300 rounded-md text-sm hover:bg-gray-50">
+                                    Choose File
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mt-6 flex justify-between">
+                            <button type="button" onclick="prevStep()" class="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50">Previous</button>
+                            <button type="button" onclick="nextStep()" class="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Next</button>
+                        </div>
+                    </div>
+
+                    <!-- Step 5: Account Security -->
+                    <div class="form-step" data-step="5">
+                        <h3 class="text-xl font-medium text-gray-900 mb-4">Account Security</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password *</label>
+                                <div class="relative">
+                                    <input type="password" id="password" name="password" required minlength="8"
+                                        class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    <button type="button" onclick="togglePasswordVisibility('password')"
+                                        class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                        <i class="fas fa-eye text-sm"></i>
+                                    </button>
+                                </div>
+                                <div class="mt-2">
+                                    <div class="w-full bg-gray-200 rounded-full h-1 overflow-hidden">
+                                        <div id="strengthBar" class="password-strength-bar"></div>
+                                    </div>
+                                    <p id="strengthText" class="text-xs mt-1 text-gray-500"></p>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-1">Confirm Password *</label>
+                                <div class="relative">
+                                    <input type="password" id="confirmPassword" name="confirmPassword" required minlength="8"
+                                        class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    <button type="button" onclick="togglePasswordVisibility('confirmPassword')"
+                                        class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                        <i class="fas fa-eye text-sm"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-6 flex justify-between">
+                            <button type="button" onclick="prevStep()" class="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50">Previous</button>
+                            <button type="submit" class="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
+                                <span id="submitBtnText">Submit Registration</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="text-center text-xs text-gray-500 mt-4">
+                    Already have an account?
+                    <a href="login.html" class="text-indigo-600 hover:text-indigo-700 font-medium">Sign in</a>
+                </p>
+            </form>
+
+            <!-- Verification Code Modal -->
+            <!-- Verification modal removed - verification now inline in step 1 -->
+        </div>
+    </div>
+
+    <script>
+        let printerCount = 0;
+        let institutions = [];
+        let currentStep = 1;
+        const totalSteps = 5;
+        let registrationId = null;
+
+        // Step navigation
+        function nextStep() {
+            // If leaving step 3 (printers), validate all printers first
+            if (currentStep === 3) {
+                if (!areAllPrintersValid()) {
+                    showError('Please validate all printers before proceeding. Click "Validate All Printers" button.');
+                    return;
+                }
+            }
+            
+            if (currentStep < totalSteps) {
+                document.querySelector(`.form-step[data-step="${currentStep}"]`).classList.remove('active');
+                currentStep++;
+                document.querySelector(`.form-step[data-step="${currentStep}"]`).classList.add('active');
+                updateProgress();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        function prevStep() {
+            if (currentStep > 1) {
+                document.querySelector(`.form-step[data-step="${currentStep}"]`).classList.remove('active');
+                currentStep--;
+                document.querySelector(`.form-step[data-step="${currentStep}"]`).classList.add('active');
+                updateProgress();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        function updateProgress() {
+            document.getElementById('mobileProgress').textContent = `Step ${currentStep} of ${totalSteps}`;
+        }
+
+        // Add first printer input on load
+        document.addEventListener('DOMContentLoaded', function() {
+            addPrinterInput();
+            
+            // Password strength checker
+            document.getElementById('password').addEventListener('input', updatePasswordStrength);
+            
+            // Hook up email availability check
+            const emailInput = document.getElementById('email');
+            if (emailInput) {
+                emailInput.addEventListener('blur', checkEmailAvailability);
+                emailInput.addEventListener('input', clearEmailInlineError);
+            }
+        });
+
+        // Track email availability state
+        let emailAvailable = true;
+
+        async function checkEmailAvailability() {
+            const emailEl = document.getElementById('email');
+            if (!emailEl) return;
+            const email = emailEl.value.trim();
+            clearEmailInlineError();
+
+            if (!email) return;
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                showEmailInlineError('Please enter a valid email address');
+                emailAvailable = false;
+                return;
+            }
+
+            try {
+                const resp = await fetch('/api/check-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+
+                if (!resp.ok) throw new Error('Server error');
+                const data = await resp.json();
+                if (data.exists) {
+                    if (data.reason === 'user') {
+                        showEmailInlineError('This email is already registered. Please use a different email or log in.');
+                    } else if (data.reason === 'pending_registration') {
+                        showEmailInlineError('A registration with this email is already pending. Check your inbox.');
+                    } else {
+                        showEmailInlineError('This email is already in use');
+                    }
+                    emailAvailable = false;
+                } else {
+                    emailAvailable = true;
+                }
+            } catch (err) {
+                console.error('Email availability check failed:', err);
+                // Don't block the user on transient errors; leave emailAvailable true
+                emailAvailable = true;
+            }
+        }
+
+        function showEmailInlineError(message) {
+            const emailInput = document.getElementById('email');
+            if (!emailInput) return;
+            const wrapper = emailInput.parentElement;
+            let err = wrapper.querySelector('.email-inline-error');
+            if (!err) {
+                err = document.createElement('p');
+                err.className = 'email-inline-error mt-1 text-sm text-red-600';
+                wrapper.appendChild(err);
+            }
+            err.textContent = message;
+            emailInput.classList.add('border-red-500');
+        }
+
+        function clearEmailInlineError() {
+            const emailInput = document.getElementById('email');
+            if (!emailInput) return;
+            const wrapper = emailInput.parentElement;
+            const err = wrapper.querySelector('.email-inline-error');
+            if (err) err.remove();
+            emailInput.classList.remove('border-red-500');
+        }
+
+        // Email verification state
+        let emailVerified = false;
+        let resendTimer = null;
+        let resendCountdown = 0;
+
+        // Handle email blur - show verification section
+        function handleEmailBlur() {
+            const emailEl = document.getElementById('email');
+            const email = emailEl.value.trim();
+            
+            if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                document.getElementById('emailVerificationSection').classList.remove('hidden');
+            }
+        }
+
+        // Send verification code
+        async function sendVerificationCode() {
+            const emailEl = document.getElementById('email');
+            const email = emailEl.value.trim();
+            const btn = document.getElementById('sendCodeBtn');
+            
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                showError('Please enter a valid email address');
+                return;
+            }
+            
+            try {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Sending...';
+                
+                const response = await fetch('/api/requester-registration/send-code', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Show code input step
+                    document.getElementById('verifyEmailStep').classList.add('hidden');
+                    document.getElementById('enterCodeStep').classList.remove('hidden');
+                    document.getElementById('displayEmail').textContent = email;
+                    
+                    // Start resend timer (60 seconds)
+                    startResendTimer();
+                } else {
+                    showError(data.error || 'Failed to send verification code');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i>Send Verification Code';
+                }
+            } catch (error) {
+                console.error('Send code error:', error);
+                showError('Failed to send verification code. Please try again.');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i>Send Verification Code';
+            }
+        }
+
+        // Verify email code
+        async function verifyEmailCode() {
+            const emailEl = document.getElementById('email');
+            const email = emailEl.value.trim();
+            const code = document.getElementById('verificationCode').value.trim();
+            
+            if (!code || code.length !== 6) {
+                showError('Please enter the 6-digit code');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/requester-registration/verify-code', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, code })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.verified) {
+                    // Show success state
+                    document.getElementById('enterCodeStep').classList.add('hidden');
+                    document.getElementById('emailVerifiedStep').classList.remove('hidden');
+                    
+                    // Enable next button
+                    emailVerified = true;
+                    document.getElementById('step1NextBtn').disabled = false;
+                    document.getElementById('email').disabled = true; // Lock email field
+                    
+                    hideError();
+                    
+                    // Clear resend timer
+                    if (resendTimer) {
+                        clearInterval(resendTimer);
+                        resendTimer = null;
+                    }
+                } else {
+                    showError(data.error || 'Invalid verification code');
+                }
+            } catch (error) {
+                console.error('Verify code error:', error);
+                showError('Failed to verify code. Please try again.');
+            }
+        }
+
+        // Resend verification code
+        async function resendVerificationCode() {
+            const emailEl = document.getElementById('email');
+            const email = emailEl.value.trim();
+            const btn = document.getElementById('resendCodeBtn');
+            
+            if (resendCountdown > 0) return; // Still in cooldown
+            
+            try {
+                btn.disabled = true;
+                
+                const response = await fetch('/api/requester-registration/send-code', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showSuccess('New code sent to your email');
+                    document.getElementById('verificationCode').value = '';
+                    document.getElementById('verificationCode').focus();
+                    
+                    // Restart timer
+                    startResendTimer();
+                } else {
+                    showError(data.error || 'Failed to resend code');
+                    btn.disabled = false;
+                }
+            } catch (error) {
+                console.error('Resend code error:', error);
+                showError('Failed to resend code. Please try again.');
+                btn.disabled = false;
+            }
+        }
+
+        // Resend timer (60 second cooldown)
+        function startResendTimer() {
+            const btn = document.getElementById('resendCodeBtn');
+            const timerEl = document.getElementById('resendTimer');
+            
+            resendCountdown = 60;
+            btn.disabled = true;
+            
+            resendTimer = setInterval(() => {
+                resendCountdown--;
+                timerEl.textContent = `(${resendCountdown}s)`;
+                
+                if (resendCountdown <= 0) {
+                    clearInterval(resendTimer);
+                    resendTimer = null;
+                    btn.disabled = false;
+                    timerEl.textContent = '';
+                }
+            }, 1000);
+        }
+
+        // Load institutions when type changes and enable search box
+        document.getElementById('institutionType').addEventListener('change', async function() {
+            const type = this.value;
+            const searchInput = document.getElementById('institutionSearch');
+            const hiddenId = document.getElementById('institutionId');
+            const suggestions = document.getElementById('institutionSuggestions');
+
+            hiddenId.value = '';
+            searchInput.value = '';
+            const addrEl = document.getElementById('institutionAddress');
+            if (addrEl) { addrEl.textContent = ''; addrEl.classList.add('hidden'); }
+            suggestions.classList.add('hidden');
+
+            if (!type) {
+                searchInput.disabled = true;
+                document.getElementById('institutionHelp').textContent = 'Select institution type first';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/institutions?type=${type}`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    institutions = data;
+                    searchInput.disabled = false;
+                    document.getElementById('institutionHelp').textContent = 'Type to find your institution';
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                console.error('Error loading institutions:', error);
+                showError('Failed to load institutions');
+                searchInput.disabled = true;
+            }
+        });
+
+        // Institution search with suggestions (debounced)
+        (function(){
+            const input = document.getElementById('institutionSearch');
+            const suggestions = document.getElementById('institutionSuggestions');
+            let debounceTimer = null;
+
+            input && input.addEventListener('input', function() {
+                const q = this.value.trim().toLowerCase();
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    renderInstitutionSuggestions(q);
+                }, 180);
+            });
+
+            input && input.addEventListener('blur', function() {
+                setTimeout(() => suggestions.classList.add('hidden'), 200);
+            });
+
+            function renderInstitutionSuggestions(q) {
+                suggestions.innerHTML = '';
+                if (!q) { 
+                    suggestions.classList.add('hidden'); 
+                    // clear selected institution id and hide address when user clears input
+                    const hid = document.getElementById('institutionId');
+                    if (hid) hid.value = '';
+                    const addr = document.getElementById('institutionAddress');
+                    if (addr) { addr.textContent = ''; addr.classList.add('hidden'); }
+                    return; 
+                }
+
+                const selectedType = document.getElementById('institutionType') ? document.getElementById('institutionType').value : '';
+                const normalize = (s) => (s || '').toString().toLowerCase().replace(/[^a-z0-9]/g, '');
+                const matches = institutions.filter(i => {
+                    const nameMatches = (i.name || '').toLowerCase().includes(q);
+                    const typeMatches = !selectedType || normalize(i.type) === normalize(selectedType);
+                    return nameMatches && typeMatches;
+                });
+                if (matches.length === 0) { suggestions.classList.add('hidden'); return; }
+
+                matches.slice(0, 20).forEach(inst => {
+                    const item = document.createElement('div');
+                    item.className = 'px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm';
+                    item.innerHTML = `
+                        <div class="font-medium text-sm text-gray-900">${inst.name}</div>
+                        <div class="text-xs text-gray-600 mt-0.5">${inst.address || ''}</div>
+                    `;
+                    item.addEventListener('click', () => {
+                        document.getElementById('institutionSearch').value = inst.name;
+                        document.getElementById('institutionId').value = inst.institution_id;
+                        const addrEl = document.getElementById('institutionAddress');
+                        if (addrEl) {
+                            addrEl.textContent = inst.address || '';
+                            addrEl.classList.remove('hidden');
+                        }
+                        suggestions.classList.add('hidden');
+                    });
+                    suggestions.appendChild(item);
+                });
+                suggestions.classList.remove('hidden');
+            }
+        })();
+
+        function addPrinterInput() {
+            const container = document.getElementById('printersContainer');
+            const index = printerCount++;
+            
+            const div = document.createElement('div');
+            div.className = 'printer-input-group flex flex-col sm:flex-row gap-3 items-center';
+            div.id = `printer-${index}`;
+            
+            div.innerHTML = `
+                <div class="w-8 flex-shrink-0 flex items-start justify-center">
+                    <div class="w-6 h-6 rounded-full bg-gray-100 text-gray-700 flex items-center justify-center text-sm font-medium" id="printer-number-${index}">1</div>
+                </div>
+                <div class="flex-1 w-full">
+                    <div class="relative">
+                        <input type="text"
+                            id="serialNumber-${index}"
+                            name="serialNumber[]"
+                            placeholder="Serial number"
+                            required
+                            class="flex-1 w-full px-3 py-2 pr-8 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                            onblur="validatePrinter(${index})">
+                        <span class="validation-icon hidden" id="validation-${index}">
+                            <i class="fas fa-spinner fa-spin text-gray-400"></i>
+                        </span>
+                    </div>
+                    <p class="mt-1 text-xs text-red-600 hidden" id="validationMsg-${index}"></p>
+                </div>
+                <div class="flex-1 w-full">
+                    <input type="text"
+                        id="brand-${index}"
+                        name="brand[]"
+                        placeholder="Brand"
+                        required
+                        class="flex-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        onblur="validatePrinter(${index})">
+                </div>
+                <div class="w-full sm:w-auto flex-shrink-0">
+                    ${printerCount > 1 ? `
+                        <button type="button" onclick="removePrinterInput(${index})"
+                            class="py-2 px-3 text-red-600 hover:text-red-700">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    ` : ''}
+                </div>
+            `;
+            
+            container.appendChild(div);
+            updatePrinterNumbers();
+        }
+
+        function removePrinterInput(index) {
+            const element = document.getElementById(`printer-${index}`);
+            if (element) {
+                element.remove();
+                updatePrinterNumbers();
+            }
+        }
+
+        function updatePrinterNumbers() {
+            const groups = Array.from(document.querySelectorAll('.printer-input-group'));
+            groups.forEach((g, i) => {
+                const badge = g.querySelector(`[id^=printer-number-]`);
+                if (badge) badge.textContent = (i + 1).toString();
+            });
+        }
+
+        // Normalize serial+brand for reliable comparison
+        function normalizeForCompare(s) {
+            return (s || '').toString().toLowerCase().replace(/[^a-z0-9]/g, '');
+        }
+
+        // Check if the given serial+brand duplicates another input (excluding `index`)
+        function isDuplicatePrinter(index, serial, brand) {
+            const norm = normalizeForCompare(serial) + '|' + normalizeForCompare(brand);
+            for (let i = 0; i < printerCount; i++) {
+                if (i === index) continue;
+                const sEl = document.getElementById(`serialNumber-${i}`);
+                const bEl = document.getElementById(`brand-${i}`);
+                if (!sEl || !bEl) continue;
+                const s = sEl.value.trim();
+                const b = bEl.value.trim();
+                const otherNorm = normalizeForCompare(s) + '|' + normalizeForCompare(b);
+                if (otherNorm && otherNorm === norm) return true;
+            }
+            return false;
+        }
+
+        async function validatePrinter(index) {
+            const serialNumber = document.getElementById(`serialNumber-${index}`).value.trim();
+            const brand = document.getElementById(`brand-${index}`).value.trim();
+            const institutionId = document.getElementById('institutionId').value;
+            const validationIcon = document.getElementById(`validation-${index}`);
+            const serialInput = document.getElementById(`serialNumber-${index}`);
+            const msgEl = document.getElementById(`validationMsg-${index}`);
+
+            // Reset message
+            if (msgEl) { msgEl.textContent = ''; msgEl.classList.add('hidden'); }
+
+            if (!institutionId) {
+                // Show friendly inline message prompting institution selection
+                if (msgEl) { msgEl.textContent = 'Please select your institution first.'; msgEl.classList.remove('hidden'); }
+                return;
+            }
+
+            if (!serialNumber || !brand) {
+                if (msgEl && (!serialNumber || !brand)) {
+                    msgEl.textContent = 'Both serial number and brand are required for validation.';
+                    msgEl.classList.remove('hidden');
+                }
+                return;
+            }
+
+            // Check for duplicates among inputs
+            if (isDuplicatePrinter(index, serialNumber, brand)) {
+                if (msgEl) { msgEl.textContent = 'Duplicate printer entry — you already added this printer.'; msgEl.classList.remove('hidden'); msgEl.classList.add('text-red-600'); }
+                validationIcon.classList.remove('hidden');
+                validationIcon.innerHTML = '<i class="fas fa-times-circle text-red-500"></i>';
+                serialInput.classList.remove('border-green-300');
+                serialInput.classList.add('border-red-300');
+                return;
+            }
+            
+            // Show loading
+            validationIcon.classList.remove('hidden');
+            validationIcon.innerHTML = '<i class="fas fa-spinner fa-spin text-gray-400"></i>';
+            
+            try {
+                const response = await fetch('/api/requester-registration/validate-printers', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        institution_id: institutionId,
+                        printers: [{ serial_number: serialNumber, brand }]
+                    })
+                });
+                
+                const data = await response.json();
+
+                // server returns `validated` and `notFound`
+                if (response.ok && data.validated && data.validated.length > 0) {
+                    // Valid
+                    validationIcon.innerHTML = '<i class="fas fa-check-circle text-green-500"></i>';
+                    serialInput.classList.remove('border-red-300');
+                    serialInput.classList.add('border-green-300');
+                    serialInput.dataset.validated = 'true';
+                    if (msgEl) { msgEl.textContent = 'Printer found in institution inventory.'; msgEl.classList.remove('hidden'); msgEl.classList.remove('text-red-600'); msgEl.classList.add('text-green-600'); }
+                } else {
+                    // Invalid
+                    validationIcon.innerHTML = '<i class="fas fa-times-circle text-red-500"></i>';
+                    serialInput.classList.remove('border-green-300');
+                    serialInput.classList.add('border-red-300');
+                    serialInput.dataset.validated = 'false';
+                    if (msgEl) { msgEl.textContent = (data.notFound && data.notFound[0] && data.notFound[0].reason) ? data.notFound[0].reason : 'Printer not found in institution inventory.'; msgEl.classList.remove('hidden'); msgEl.classList.add('text-red-600'); }
+                }
+            } catch (error) {
+                console.error('Validation error:', error);
+                validationIcon.classList.add('hidden');
+                serialInput.dataset.validated = 'false';
+                if (msgEl) { msgEl.textContent = 'Validation failed. Please try again.'; msgEl.classList.remove('hidden'); }
+            }
+        }
+        
+        async function validateAllPrinters() {
+            const institutionId = document.getElementById('institutionId').value;
+            
+            if (!institutionId) {
+                showError('Please select your institution first.');
+                return;
+            }
+            
+            let allValid = true;
+            const groups = Array.from(document.querySelectorAll('.printer-input-group'));
+            
+            for (let i = 0; i < groups.length; i++) {
+                const serialInput = document.getElementById(`serialNumber-${i}`);
+                const brandInput = document.getElementById(`brand-${i}`);
+                
+                if (!serialInput || !brandInput) continue;
+                
+                const serial = serialInput.value.trim();
+                const brand = brandInput.value.trim();
+                
+                if (!serial || !brand) {
+                    allValid = false;
+                    continue;
+                }
+                
+                await validatePrinter(i);
+                
+                // Check if validation passed
+                if (serialInput.dataset.validated !== 'true') {
+                    allValid = false;
+                }
+            }
+            
+            if (allValid) {
+                showSuccess('All printers validated successfully!');
+            } else {
+                showError('Some printers failed validation. Please check the errors above.');
+            }
+        }
+        
+        function areAllPrintersValid() {
+            const groups = Array.from(document.querySelectorAll('.printer-input-group'));
+            
+            for (let i = 0; i < groups.length; i++) {
+                const serialInput = document.getElementById(`serialNumber-${i}`);
+                const brandInput = document.getElementById(`brand-${i}`);
+                
+                if (!serialInput || !brandInput) continue;
+                
+                const serial = serialInput.value.trim();
+                const brand = brandInput.value.trim();
+                
+                if (!serial || !brand) return false;
+                
+                // Check if validated
+                if (serialInput.dataset.validated !== 'true') {
+                    return false;
+                }
+            }
+            
+            return groups.length > 0;
+        }
+
+        function previewImage(input, previewId) {
+            const preview = document.getElementById(previewId);
+            const file = input.files[0];
+            
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+                    preview.classList.add('has-image');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function togglePasswordVisibility(inputId) {
+            const input = document.getElementById(inputId);
+            const icon = input.nextElementSibling.querySelector('i');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        function calculatePasswordStrength(password) {
+            let strength = 0;
+            if (password.length >= 8) strength++;
+            if (password.length >= 12) strength++;
+            if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
+            if (/\d/.test(password)) strength++;
+            if (/[^a-zA-Z\d]/.test(password)) strength++;
+            return strength;
+        }
+
+        function updatePasswordStrength() {
+            const password = document.getElementById('password').value;
+            const strengthBar = document.getElementById('strengthBar');
+            const strengthText = document.getElementById('strengthText');
+            
+            if (!password) {
+                strengthBar.className = 'password-strength-bar';
+                strengthText.textContent = '';
+                return;
+            }
+            
+            const strength = calculatePasswordStrength(password);
+            strengthBar.className = 'password-strength-bar';
+            
+            if (strength <= 2) {
+                strengthBar.classList.add('strength-weak');
+                strengthText.textContent = 'Weak password';
+                strengthText.className = 'text-xs mt-1 text-red-600';
+            } else if (strength <= 3) {
+                strengthBar.classList.add('strength-medium');
+                strengthText.textContent = 'Medium password';
+                strengthText.className = 'text-xs mt-1 text-yellow-600';
+            } else {
+                strengthBar.classList.add('strength-strong');
+                strengthText.textContent = 'Strong password';
+                strengthText.className = 'text-xs mt-1 text-green-600';
+            }
+        }
+
+        function showError(message) {
+            const errorMessage = document.getElementById('errorMessage');
+            const errorText = document.getElementById('errorText');
+            errorText.textContent = message;
+            errorMessage.classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function hideError() {
+            document.getElementById('errorMessage').classList.add('hidden');
+        }
+
+        function showSuccess() {
+            document.getElementById('successMessage').classList.remove('hidden');
+            document.getElementById('requesterRegistrationForm').style.display = 'none';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Handle form submission
+        document.getElementById('requesterRegistrationForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            hideError();
+            
+            // Ensure email is verified
+            if (!emailVerified) {
+                showError('Please verify your email before submitting');
+                return;
+            }
+            
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            // Validate passwords match
+            if (password !== confirmPassword) {
+                showError('Passwords do not match');
+                return;
+            }
+            
+            // Check for duplicate printer entries before submitting
+            for (let i = 0; i < printerCount; i++) {
+                const sEl = document.getElementById(`serialNumber-${i}`);
+                const bEl = document.getElementById(`brand-${i}`);
+                if (!sEl || !bEl) continue;
+                const s = sEl.value.trim();
+                const b = bEl.value.trim();
+                if (!s || !b) continue; // skip empty rows
+                if (isDuplicatePrinter(i, s, b)) {
+                    showError('Duplicate printer entries detected. Please remove duplicates before submitting.');
+                    return;
+                }
+            }
+
+            // Collect printer data
+            const printers = [];
+            for (let i = 0; i < printerCount; i++) {
+                const serialInput = document.getElementById(`serialNumber-${i}`);
+                const brandInput = document.getElementById(`brand-${i}`);
+                
+                if (serialInput && brandInput) {
+                    const serial = serialInput.value.trim();
+                    const brand = brandInput.value.trim();
+                    
+                    if (serial && brand) {
+                        printers.push({ serial_number: serial, brand });
+                    }
+                }
+            }
+            
+            if (printers.length === 0) {
+                showError('Please add at least one printer');
+                return;
+            }
+            
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const submitBtnText = document.getElementById('submitBtnText');
+            
+            try {
+                submitBtn.disabled = true;
+                submitBtnText.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Submitting...';
+                
+                // Prepare form data
+                const formData = new FormData();
+                // Use snake_case keys expected by the server
+
+                formData.append('first_name', document.getElementById('firstName').value.trim());
+                formData.append('last_name', document.getElementById('lastName').value.trim());
+                formData.append('email', document.getElementById('email').value.trim());
+                formData.append('department', document.getElementById('department').value.trim());
+                formData.append('password', password);
+                formData.append('institution_id', document.getElementById('institutionId').value);
+                formData.append('institution_type', document.getElementById('institutionType').value);
+                formData.append('printer_serial_numbers', JSON.stringify(printers));
+                formData.append('email_verified', 'true'); // Email already verified
+                
+                // Append files
+                formData.append('id_front', document.getElementById('idFront').files[0]);
+                formData.append('id_back', document.getElementById('idBack').files[0]);
+                formData.append('selfie', document.getElementById('selfie').files[0]);
+                
+                const response = await fetch('/api/requester-registration/submit', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    console.log('✅ Registration submitted:', data);
+                    // Show success message - no verification modal needed
+                    document.getElementById('successMessage').classList.remove('hidden');
+                    this.reset();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    
+                    // Redirect to login after 5 seconds
+                    setTimeout(() => {
+                        window.location.href = 'login.html';
+                    }, 5000);
+                } else {
+                    throw new Error(data.error || 'Registration failed');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showError(error.message || 'An error occurred. Please try again.');
+                submitBtn.disabled = false;
+                submitBtnText.textContent = 'Submit Registration';
+            }
+        });
+    </script>
+</body>
+</html>
