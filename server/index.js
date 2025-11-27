@@ -5160,3 +5160,50 @@ app.listen(PORT, '0.0.0.0', async () => {
         console.error('Error fixing database constraint:', error.message);
     }
 });
+
+// Geocoding API endpoint (proxy for Nominatim to avoid CORS issues)
+app.get('/api/geocode', async (req, res) => {
+    try {
+        const { q, countrycodes = 'ph', limit = '8', addressdetails = '1' } = req.query;
+
+        if (!q) {
+            return res.status(400).json({ error: 'Query parameter "q" is required' });
+        }
+
+        // Construct the Nominatim API URL
+        const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q + ', Philippines')}&countrycodes=${countrycodes}&limit=${limit}&addressdetails=${addressdetails}`;
+
+        console.log('Geocoding request:', nominatimUrl);
+
+        // Make request to Nominatim
+        const response = await fetch(nominatimUrl, {
+            headers: {
+                'User-Agent': 'ServiceEase/1.0 (https://serviceease.onrender.com)'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Nominatim API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        // Add CORS headers
+        res.header('Access-Control-Allow-Origin', '*');
+        res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+        res.json(data);
+    } catch (error) {
+        console.error('Geocoding error:', error);
+        res.status(500).json({ error: 'Geocoding service unavailable', details: error.message });
+    }
+});
+
+// Handle preflight requests for CORS
+app.options('/api/geocode', (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.sendStatus(200);
+});
