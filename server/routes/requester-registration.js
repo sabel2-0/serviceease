@@ -639,4 +639,40 @@ router.get('/history', auth, async (req, res) => {
     }
 });
 
+/**
+ * Update requester details (coordinator only)
+ * PUT /api/requester-registration/coordinators/:coordinatorId/users/:userId
+ */
+router.put('/coordinators/:coordinatorId/users/:userId', auth, async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { firstName, lastName, email, department, inventory_item_ids } = req.body;
+
+        // Update user details
+        await db.query(
+            `UPDATE users SET first_name = ?, last_name = ?, email = ?, department = ? WHERE id = ?`,
+            [firstName, lastName, email, department, userId]
+        );
+
+        // Update printer assignments only if inventory_item_ids is provided
+        if (Array.isArray(inventory_item_ids)) {
+            // Clear existing assignments
+            await db.query(`DELETE FROM user_printer_assignments WHERE user_id = ?`, [userId]);
+
+            // Add new assignments
+            for (const printerId of inventory_item_ids) {
+                await db.query(
+                    `INSERT INTO user_printer_assignments (user_id, inventory_item_id) VALUES (?, ?)`,
+                    [userId, printerId]
+                );
+            }
+        }
+
+        res.json({ message: 'User updated successfully' });
+    } catch (error) {
+        console.error('Error updating user:', error);
+        res.status(500).json({ error: 'Failed to update user' });
+    }
+});
+
 module.exports = router;

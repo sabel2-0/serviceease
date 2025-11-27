@@ -822,14 +822,14 @@
                 document.getElementById('editLastName').value = user.last_name || '';
                 document.getElementById('editEmail').value = user.email || '';
                 document.getElementById('editDepartment').value = user.department || '';
-                // Show modal immediately
                 document.getElementById('editUserModal').classList.remove('hidden');
+
                 // Load printers and preselect those assigned to the user
                 loadAvailablePrintersForEdit().then(() => {
                     try {
                         // Uncheck all first
                         document.querySelectorAll('.edit-printer-checkbox').forEach(cb => cb.checked = false);
-                        
+
                         // Check the ones assigned to this user
                         if (user.printers && user.printers.length > 0) {
                             user.printers.forEach(printer => {
