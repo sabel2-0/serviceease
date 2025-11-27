@@ -2651,6 +2651,8 @@ app.post('/api/coordinators/:id/toggle-status', authenticateAdmin, async (req, r
 app.get('/api/institutions/:institutionId/printers', async (req, res) => {
     try {
         const { institutionId } = req.params;
+        console.log(`📋 Fetching printers for institution: ${institutionId}`);
+        
         const [rows] = await db.query(
             `SELECT 
                 cpa.id as assignment_id,
@@ -2662,14 +2664,18 @@ app.get('/api/institutions/:institutionId/printers', async (req, res) => {
                 cpa.assigned_at
             FROM client_printer_assignments cpa
             JOIN inventory_items ii ON cpa.inventory_item_id = ii.id
-            WHERE cpa.institution_id = ?
+            WHERE cpa.institution_id COLLATE utf8mb4_unicode_ci = ? COLLATE utf8mb4_unicode_ci
             ORDER BY cpa.assigned_at DESC`,
             [institutionId]
         );
+        
+        console.log(`✅ Found ${rows.length} printers for institution ${institutionId}`);
         res.json(rows);
     } catch (error) {
-        console.error('Error fetching printers:', error);
-        res.status(500).json({ error: 'Failed to fetch printers' });
+        console.error('❌ Error fetching printers:', error);
+        console.error('Institution ID:', institutionId);
+        console.error('Error details:', error.message);
+        res.status(500).json({ error: 'Failed to fetch printers', details: error.message });
     }
 });
 

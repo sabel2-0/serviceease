@@ -480,12 +480,29 @@
             // Load available printers for this coordinator's institution into checkboxes
             async function loadAvailablePrinters() {
                 const user = JSON.parse(localStorage.getItem('user')) || {};
-                if (!user.institution_id) return;
+                console.log('🔍 Loading printers for institution:', user.institution_id);
+                
+                if (!user.institution_id) {
+                    console.error('❌ No institution_id found in user data');
+                    return;
+                }
+                
+                const container = document.getElementById('printerCheckboxContainer');
+                
                 try {
                     const res = await fetch(`/api/institutions/${user.institution_id}/printers`);
-                    if (!res.ok) return;
+                    console.log('📡 Printer API response status:', res.status);
+                    
+                    if (!res.ok) {
+                        const errorData = await res.json().catch(() => ({}));
+                        console.error('❌ API error:', errorData);
+                        container.innerHTML = `<p class="text-sm text-red-500">Failed to load printers: ${errorData.error || res.statusText}</p>`;
+                        return;
+                    }
+                    
                     const printers = await res.json();
-                    const container = document.getElementById('printerCheckboxContainer');
+                    console.log('✅ Loaded printers:', printers);
+                    
                     container.innerHTML = '';
                     
                     if (!printers || printers.length === 0) {
@@ -516,7 +533,8 @@
                         container.appendChild(div);
                     });
                 } catch (e) {
-                    console.error('Failed to load printers:', e);
+                    console.error('❌ Failed to load printers:', e);
+                    container.innerHTML = `<p class="text-sm text-red-500">Error: ${e.message}</p>`;
                 }
             }
 
@@ -687,12 +705,29 @@
             // Populate edit printers select (reuse loadAvailablePrinters but target edit select)
             async function loadAvailablePrintersForEdit() {
                 const user = JSON.parse(localStorage.getItem('user')) || {};
-                if (!user.institution_id) return;
+                console.log('🔍 Loading printers for edit modal, institution:', user.institution_id);
+                
+                if (!user.institution_id) {
+                    console.error('❌ No institution_id found in user data');
+                    return;
+                }
+                
+                const container = document.getElementById('editPrinterCheckboxContainer');
+                
                 try {
                     const res = await fetch(`/api/institutions/${user.institution_id}/printers`);
-                    if (!res.ok) return;
+                    console.log('📡 Edit modal printer API response status:', res.status);
+                    
+                    if (!res.ok) {
+                        const errorData = await res.json().catch(() => ({}));
+                        console.error('❌ Edit modal API error:', errorData);
+                        container.innerHTML = `<p class="text-sm text-red-500">Failed to load printers: ${errorData.error || res.statusText}</p>`;
+                        return;
+                    }
+                    
                     const printers = await res.json();
-                    const container = document.getElementById('editPrinterCheckboxContainer');
+                    console.log('✅ Loaded printers for edit:', printers);
+                    
                     container.innerHTML = '';
                     
                     if (!printers || printers.length === 0) {
@@ -723,7 +758,8 @@
                         container.appendChild(div);
                     });
                 } catch (e) {
-                    console.error('Failed to load printers for edit:', e);
+                    console.error('❌ Failed to load printers for edit:', e);
+                    container.innerHTML = `<p class="text-sm text-red-500">Error: ${e.message}</p>`;
                 }
             }
 
