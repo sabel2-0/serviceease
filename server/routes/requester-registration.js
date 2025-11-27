@@ -9,10 +9,6 @@ const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
 
-// In-memory fallback for verification codes when the DB schema doesn't allow storing
-// (temporary, non-persistent; used to avoid blocking registration when DB schema/migrations differ)
-const pendingVerification = new Map();
-
 /**
  * Send verification code to email
  * POST /api/requester-registration/send-code
@@ -25,68 +21,40 @@ router.post('/send-code', async (req, res) => {
             return res.status(400).json({ error: 'Email is required' });
         }
 
-        // Attempt DB checks/inserts, but don't fail entirely if DB is inaccessible or schema is missing.
-        let dbOk = false;
-        let code;
-        try {
-            // Check if email already exists
-            const [existingUsers] = await db.query('SELECT id FROM users WHERE email = ?', [email]);
-            if (existingUsers.length > 0) {
-                return res.status(400).json({ error: 'Email already registered' });
-            }
-
-            // Generate 6-digit code
-            code = Math.floor(100000 + Math.random() * 900000).toString();
-            const expires_at = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
-            // Delete any existing verification codes for this email
-            await db.query(
-                'DELETE FROM verification_tokens WHERE token = ? AND type = "email"',
-                [email]
-            );
-
-            // Store code (using token field for email, code field for the code, user_id is NULL before registration)
-            // Some deployments may not have the `code` column yet (migration not run). Try insert with code,
-            // and fall back to inserting without the code column if that fails.
-            try {
-                await db.query(
-                    'INSERT INTO verification_tokens (user_id, token, code, type, expires_at) VALUES (NULL, ?, ?, "email", ?)',
-                    [email, code, expires_at]
-                );
-            } catch (insertErr) {
-                console.warn('⚠️ verification_tokens insert with code failed, falling back (migration missing?):', insertErr.message);
-                // Fallback: insert without `code` column so older schemas still work
-                await db.query(
-                    'INSERT INTO verification_tokens (user_id, token, type, expires_at) VALUES (NULL, ?, "email", ?)',
-                    [email, expires_at]
-                );
-            }
-
-            dbOk = true;
-        } catch (dbErr) {
-            console.warn('⚠️ DB operation failed in send-code (continuing without DB):', dbErr.message);
-            // Continue without failing — we'll still attempt to send the email but the code won't be persisted.
+        // Normal flow: store verification code in DB and send email.
+        // Check if email already exists
+        const [existingUsers] = await db.query('SELECT id FROM users WHERE email = ?', [email]);
+        if (existingUsers.length > 0) {
+            return res.status(400).json({ error: 'Email already registered' });
         }
 
-        // Send email (do not let email failures cause a 500)
+        // Generate 6-digit code
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        const expires_at = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+        // Delete any existing verification codes for this email
+        await db.query(
+            'DELETE FROM verification_tokens WHERE token = ? AND type = "email"',
+            [email]
+        );
+
+        // Store code (user_id NULL before registration)
+        await db.query(
+            'INSERT INTO verification_tokens (user_id, token, code, type, expires_at) VALUES (NULL, ?, ?, "email", ?)',
+            [email, code, expires_at]
+        );
+
+        // Send email; log errors but return success so UX isn't blocked by mail provider issues
         let emailSent = false;
         try {
-            // If db failed and code is undefined, generate a transient code to include in the email (won't be persisted)
-            if (!code) {
-                code = Math.floor(100000 + Math.random() * 900000).toString();
-            }
             await sendRequesterVerificationEmail(email, code, 'User');
             emailSent = true;
             console.log('✅ Verification code sent to:', email);
         } catch (emailErr) {
-            console.error('⚠️ Failed to send verification email (continuing):', emailErr);
+            console.error('⚠️ Failed to send verification email:', emailErr);
         }
 
-        // If DB storing failed earlier, indicate that in the response so frontend can warn
-        const respPayload = { message: 'Verification code processed', email_sent: emailSent };
-        if (!dbOk) respPayload.db_persisted = false; else respPayload.db_persisted = true;
-
-        res.json(respPayload);
+        res.json({ message: 'Verification code sent to your email', email_sent: emailSent });
         
     } catch (error) {
         // NOTE: temporarily include error details in the response to aid debugging of production 500s.
