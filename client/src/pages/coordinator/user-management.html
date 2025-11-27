@@ -827,6 +827,10 @@
                 // Load printers and preselect those assigned to the user
                 loadAvailablePrintersForEdit().then(() => {
                     try {
+                        // Debug: print user.printers and available checkboxes to help
+                        // diagnose why checkboxes are not being preselected.
+                        console.debug('DEBUG openEditModal - user.printers:', user.printers);
+                        console.debug('DEBUG openEditModal - checkbox values before preselect:', Array.from(document.querySelectorAll('.edit-printer-checkbox')).map(cb => cb.value));
                         // Uncheck all first
                         document.querySelectorAll('.edit-printer-checkbox').forEach(cb => cb.checked = false);
 
@@ -835,13 +839,15 @@
                         // some use `id`). Compare as strings to avoid number/string mismatches.
                         if (user.printers && user.printers.length > 0) {
                             user.printers.forEach(printer => {
-                                const printerId = String(printer.inventory_item_id ?? printer.id ?? printer.inventory_item_id ?? '');
+                                const printerId = String(printer.inventory_item_id ?? printer.id ?? '');
                                 if (!printerId) return;
                                 const checkbox = Array.from(document.querySelectorAll('.edit-printer-checkbox'))
                                     .find(cb => String(cb.value) === printerId);
+                                console.debug('DEBUG openEditModal - matching printer id', printerId, '-> checkbox found?', !!checkbox);
                                 if (checkbox) checkbox.checked = true;
                             });
                         }
+                        console.debug('DEBUG openEditModal - checkbox states after preselect:', Array.from(document.querySelectorAll('.edit-printer-checkbox')).map(cb => ({ value: cb.value, checked: cb.checked })));
                     } catch (e) {
                         console.warn('Could not preselect printers in edit modal:', e.message);
                     }
