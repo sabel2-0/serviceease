@@ -24,8 +24,8 @@ async function loadSidebar() {
             containerId = 'technician-sidebar';
             break;
         default:
-            sidebarPath = '../../components/coordinator-sidebar.html';
-            containerId = 'coordinator-sidebar';
+            sidebarPath = '../../components/institution_admin-sidebar.html';
+            containerId = 'institution_admin-sidebar';
     }
 
     // Find the sidebar container
@@ -99,3 +99,7 @@ function initializeLogout() {
 
 // Load the sidebar when the DOM is ready
 document.addEventListener('DOMContentLoaded', loadSidebar);
+
+
+
+

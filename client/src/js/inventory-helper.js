@@ -63,8 +63,8 @@ function enrichServiceRequestsWithInventoryDetails(requests) {
     // Collect all unique inventory item IDs
     const inventoryItemIds = [...new Set(
         requests
-            .filter(req => req.inventory_item_id)
-            .map(req => req.inventory_item_id)
+            .filter(req => req.printer_id)
+            .map(req => req.printer_id)
     )];
     
     if (inventoryItemIds.length === 0) {
@@ -77,9 +77,9 @@ function enrichServiceRequestsWithInventoryDetails(requests) {
     return fetchInventoryItemsAsMap()
         .then(inventoryMap => {
             return requests.map(req => {
-                if (req.inventory_item_id && inventoryMap[req.inventory_item_id]) {
-                    const inventoryItem = inventoryMap[req.inventory_item_id];
-                    console.log(`Enhancing request #${req.id} with inventory item #${req.inventory_item_id} details`);
+                if (req.printer_id && inventoryMap[req.printer_id]) {
+                    const inventoryItem = inventoryMap[req.printer_id];
+                    console.log(`Enhancing request #${req.id} with inventory item #${req.printer_id} details`);
                     
                     return {
                         ...req,
@@ -104,3 +104,6 @@ if (typeof module !== 'undefined' && module.exports) {
         enrichServiceRequestsWithInventoryDetails
     };
 }
+
+
+

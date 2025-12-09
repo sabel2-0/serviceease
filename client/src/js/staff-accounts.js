@@ -19,85 +19,8 @@ document.addEventListener('DOMContentLoaded', function() {
     roleFilter.addEventListener('change', filterStaff);
     statusFilter.addEventListener('change', filterStaff);
     addStaffForm.addEventListener('submit', handleAddStaff);
-    // Password toggle and modal alert clearing
-    const togglePasswordBtn = document.getElementById('togglePasswordBtn');
+    // Modal alert clearing
     const addStaffAlert = document.getElementById('addStaffAlert');
-    if (togglePasswordBtn) {
-        togglePasswordBtn.addEventListener('click', function() {
-            const pwd = document.getElementById('addStaffPassword');
-            if (!pwd) return;
-            if (pwd.type === 'password') {
-                pwd.type = 'text';
-                togglePasswordBtn.innerHTML = '<i class="fas fa-eye-slash"></i>';
-                togglePasswordBtn.setAttribute('aria-label', 'Hide password');
-            } else {
-                pwd.type = 'password';
-                togglePasswordBtn.innerHTML = '<i class="fas fa-eye"></i>';
-                togglePasswordBtn.setAttribute('aria-label', 'Show password');
-            }
-            pwd.focus();
-        });
-    }
-
-    // Password strength UI for Add Staff form
-    const addStaffPassword = document.getElementById('addStaffPassword');
-    const passwordStrengthBar = document.getElementById('passwordStrengthBar');
-    const passwordStrengthLabel = document.getElementById('passwordStrengthLabel');
-    const passwordHelp = document.getElementById('passwordHelp');
-
-    function evaluatePassword(pwd) {
-        const score = (() => {
-            let points = 0;
-            if (!pwd) return 0;
-            if (pwd.length >= 8) points += 1;
-            if (/[a-z]/.test(pwd) && /[A-Z]/.test(pwd)) points += 1; // mixed case
-            if (/[0-9]/.test(pwd)) points += 1;
-            if (/[^A-Za-z0-9]/.test(pwd)) points += 1; // symbol
-            if (pwd.length >= 12) points += 1; // extra length
-            return points;
-        })();
-
-        // Determine label and percent
-        let label = 'Very weak';
-        let percent = 10;
-        let meets = false;
-        if (score <= 1) { label = 'Very weak'; percent = 10; }
-        else if (score === 2) { label = 'Weak'; percent = 35; }
-        else if (score === 3) { label = 'Fair'; percent = 60; }
-        else if (score === 4) { label = 'Strong'; percent = 85; meets = true; }
-        else if (score >= 5) { label = 'Very strong'; percent = 100; meets = true; }
-
-        // For this app require at least: length >=8, letters, numbers and symbols
-        const meetsCriteria = pwd && pwd.length >= 8 && /[A-Za-z]/.test(pwd) && /[0-9]/.test(pwd) && /[^A-Za-z0-9]/.test(pwd);
-
-        return { score, label, percent, meetsCriteria, meets };
-    }
-
-    function updatePasswordStrengthUI() {
-        if (!addStaffPassword) return;
-        const pwd = addStaffPassword.value || '';
-        const res = evaluatePassword(pwd);
-        if (passwordStrengthBar) {
-            passwordStrengthBar.style.width = res.percent + '%';
-            // color based on percent
-            if (res.percent < 40) passwordStrengthBar.className = 'h-full w-0 bg-red-500 transition-all';
-            else if (res.percent < 70) passwordStrengthBar.className = 'h-full w-0 bg-amber-400 transition-all';
-            else passwordStrengthBar.className = 'h-full w-0 bg-green-500 transition-all';
-            // force width update after class change
-            setTimeout(() => passwordStrengthBar.style.width = res.percent + '%', 10);
-        }
-        if (passwordStrengthLabel) passwordStrengthLabel.textContent = res.label;
-        if (passwordHelp) {
-            // keep the short guidance visible
-            passwordHelp.textContent = 'Use 8+ characters with letters, numbers & symbols.';
-        }
-    }
-
-    if (addStaffPassword) {
-        addStaffPassword.addEventListener('input', updatePasswordStrengthUI);
-        // initialize on load
-        updatePasswordStrengthUI();
-    }
 
     // Load staff members from API
     async function loadStaffMembers() {
@@ -300,30 +223,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 firstName: formData.get('firstName'),
                 lastName: formData.get('lastName'),
                 email: formData.get('email'),
-                password: formData.get('password'),
                 role: formData.get('role')
             };
-
-            // Client-side password strength validation: require 8+ chars, letters, numbers and symbols
-            const pwdCheck = (function(p) {
-                if (!p) return { meets: false };
-                const meetsCriteria = p.length >= 8 && /[A-Za-z]/.test(p) && /[0-9]/.test(p) && /[^A-Za-z0-9]/.test(p);
-                return { meets: meetsCriteria };
-            })(staffData.password);
-
-            if (!pwdCheck.meets) {
-                if (alertEl) {
-                    alertEl.className = 'bg-red-50 border border-red-200 text-red-800 rounded-md p-3 mb-4';
-                    alertEl.textContent = 'Password must be at least 8 characters and include letters, numbers, and symbols.';
-                } else {
-                    showError('Password must be at least 8 characters and include letters, numbers, and symbols.');
-                }
-                submitBtn.disabled = false;
-                submitBtn.setAttribute('aria-busy', 'false');
-                if (submitBtnLoader) submitBtnLoader.classList.add('hidden');
-                submitBtnText.textContent = 'Add Staff';
-                return;
-            }
 
             // Get authentication token
             const token = localStorage.getItem('token');
@@ -349,9 +250,9 @@ document.addEventListener('DOMContentLoaded', function() {
             // Show inline success inside modal briefly
             if (alertEl) {
                 alertEl.className = 'bg-green-50 border border-green-200 text-green-800 rounded-md p-3 mb-4';
-                alertEl.textContent = 'Staff member added successfully!';
+                alertEl.textContent = result.message || 'Staff member created successfully. Temporary password has been sent to their email.';
             } else {
-                showSuccessMessage('Staff member added successfully!');
+                showSuccessMessage(result.message || 'Staff member created successfully. Temporary password has been sent to their email.');
             }
 
             // Close modal after a short delay so the user sees feedback
@@ -1731,27 +1632,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        // Strength update for change password field
-        function updateChangePasswordStrength() {
-            if (!newPasswordInput) return;
-            const pwd = newPasswordInput.value || '';
-            const res = evaluatePassword(pwd); // reuse evaluatePassword defined earlier
-            if (changePasswordStrengthBar) {
-                changePasswordStrengthBar.style.width = res.percent + '%';
-                if (res.percent < 40) changePasswordStrengthBar.className = 'h-full w-0 bg-red-500 transition-all';
-                else if (res.percent < 70) changePasswordStrengthBar.className = 'h-full w-0 bg-amber-400 transition-all';
-                else changePasswordStrengthBar.className = 'h-full w-0 bg-green-500 transition-all';
-                setTimeout(() => changePasswordStrengthBar.style.width = res.percent + '%', 10);
-            }
-            if (changePasswordStrengthLabel) changePasswordStrengthLabel.textContent = res.label;
-            if (changePasswordHelp) changePasswordHelp.textContent = 'Use 8+ characters with letters, numbers & symbols.';
-        }
-
-        if (newPasswordInput) {
-            newPasswordInput.addEventListener('input', updateChangePasswordStrength);
-            // init
-            updateChangePasswordStrength();
-        }
+        // Password strength validation removed - not needed for change password modal
 
         // Submit handler with strength validation
         changePasswordForm.addEventListener('submit', async function(e) {
@@ -1834,4 +1715,8 @@ document.addEventListener('DOMContentLoaded', function() {
         alertDiv.classList.remove('hidden');
     }
 });
+
+
+
+
 

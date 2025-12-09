@@ -59,7 +59,7 @@ printer_parts (
 
 ---
 
-### 2. ✅ Coordinator User Creation
+### 2. ✅ institution_admin user Creation
 **File:** `server/index.js` - `POST /api/coordinators/:id/users`
 
 **Error Fixed:**
@@ -164,15 +164,15 @@ LEFT JOIN institutions i ON i.user_id = u.id
 
 ---
 
-### 7. ✅ Create Service Request (Requester)
+### 7. ✅ Create Service Request (institution_user)
 **File:** `server/routes/service-requests.js` - `POST /`
 
 **Error Fixed:**
-- Requesters couldn't create service requests because code tried to get institution from `institutions.user_id`
+- Institution Users couldn't create service requests because code tried to get institution from `institutions.user_id`
 
 **Before:**
 ```javascript
-if (actorRole === 'requester') {
+if (actorRole === 'institution_user') {
     const [instRows] = await db.query(
         'SELECT institution_id FROM institutions WHERE user_id = ?', [actorId]
     );
@@ -181,7 +181,7 @@ if (actorRole === 'requester') {
 
 **After:**
 ```javascript
-if (actorRole === 'requester') {
+if (actorRole === 'institution_user') {
     // Requesters don't own institutions - get from printer assignment
     const [assignRows] = await db.query(
         'SELECT institution_id FROM user_printer_assignments WHERE user_id = ?', [actorId]
@@ -191,7 +191,7 @@ if (actorRole === 'requester') {
 
 ---
 
-### 8. ✅ View Service Requests (Requester)
+### 8. ✅ View Service Requests (institution_user)
 **File:** `server/index.js` - `GET /api/users/me/service-requests`
 
 **Error Fixed:**
@@ -206,7 +206,7 @@ const [userRows] = await db.query(
 
 **After:**
 ```javascript
-if (userRole === 'requester') {
+if (userRole === 'institution_user') {
     const [assignRows] = await db.query(
         'SELECT institution_id FROM user_printer_assignments WHERE user_id = ?', [userId]
     );
@@ -217,7 +217,7 @@ if (userRole === 'requester') {
 
 ## 🔑 Key Architectural Principles
 
-### For Coordinators:
+### for institution_admins:
 ```
 Coordinator (users.id=65)
     ↑
@@ -227,7 +227,7 @@ Institution (institutions.institution_id='INST-017', user_id=65)
 ```
 **Query:** `SELECT institution_id FROM institutions WHERE user_id = ?`
 
-### For Requesters:
+### for institution_users:
 ```
 Requester (users.id=66)
     |
@@ -241,7 +241,7 @@ Institution (institutions.institution_id='INST-017')
 
 ### For Technicians:
 - Can be associated with multiple institutions via `technician_assignments`
-- May also own an institution via `institutions.user_id` (if they're also a coordinator)
+- May also own an institution via `institutions.user_id` (if they're also An institution_admin)
 
 ---
 
@@ -297,3 +297,5 @@ Institution (institutions.institution_id='INST-017')
 
 ## 📅 Completion Date
 October 16, 2025
+
+

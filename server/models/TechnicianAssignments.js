@@ -21,3 +21,4 @@ class TechnicianAssignments {
 }
 
 module.exports = TechnicianAssignments;
+

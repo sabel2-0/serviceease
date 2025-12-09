@@ -133,6 +133,66 @@
                         placeholder="e.g., Replaced toner cartridge, cleaned print head, fixed paper jam..."></textarea>
                 </div>
 
+                <!-- Completion Photo -->
+                <div class="bg-white border-2 border-slate-200 rounded-2xl p-6">
+                    <div class="flex items-start gap-2 mb-3">
+                        <div class="p-2 bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-md flex-shrink-0">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-xl font-bold text-slate-800">
+                                Completion Photo <span class="text-red-500">*</span>
+                            </h3>
+                            <p class="text-sm text-slate-600">Take a photo of the completed service</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Photo Input -->
+                    <div class="space-y-3">
+                        <!-- Camera Button -->
+                        <div id="vs-camera-area">
+                            <input type="file" id="completion-photo-input" accept="image/*" capture="environment" class="hidden">
+                            <button type="button" onclick="vsOpenCamera()" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-3">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                </svg>
+                                <span class="text-lg">Take Photo</span>
+                            </button>
+                        </div>
+                        
+                        <!-- Photo Preview -->
+                        <div id="completion-photo-preview" class="hidden">
+                            <div class="relative rounded-xl overflow-hidden border-2 border-green-200 shadow-lg">
+                                <img id="completion-photo-preview-img" src="" alt="Completion photo" class="w-full h-auto max-h-96 object-cover">
+                                <div class="absolute top-2 right-2 flex gap-2">
+                                    <button type="button" onclick="vsRetakePhoto()" class="bg-green-500 hover:bg-green-600 text-white p-2 rounded-lg shadow-lg transition-all">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                        </svg>
+                                    </button>
+                                    <button type="button" onclick="vsRemovePhoto()" class="bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg shadow-lg transition-all">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
+                                    <p class="text-white text-sm font-medium flex items-center gap-2">
+                                        <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                        </svg>
+                                        Photo captured successfully
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Parts & Consumables -->
                 <div class="bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-2xl p-6">
                     <div class="mb-4 pb-3 border-b-2 border-purple-200">
@@ -383,8 +443,8 @@
         const token = localStorage.getItem('token');
         console.log('🔑 [4/10] Token exists:', !!token);
         
-        console.log('🌐 [5/10] Fetching from /api/voluntary-services/assigned-schools');
-        const response = await fetch('/api/voluntary-services/assigned-schools', {
+        console.log('🌐 [5/10] Fetching from /api/maintenance-services/assigned-schools');
+        const response = await fetch('/api/maintenance-services/assigned-schools', {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -496,7 +556,7 @@ window.loadSchoolPrinters = async function(institutionId, schoolName, printerCou
 
     try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`/api/voluntary-services/school-printers/${institutionId}`, {
+        const response = await fetch(`/api/maintenance-services/school-printers/${institutionId}`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -767,6 +827,15 @@ window.openServiceModal = async function(printerId, institutionId, brand, model,
 // Close service modal
 window.closeServiceModal = function() {
     document.getElementById('serviceModal').classList.add('hidden');
+    document.getElementById('service-description').value = '';
+    
+    // Reset photo input and preview
+    const photoInput = document.getElementById('completion-photo-input');
+    const photoPreview = document.getElementById('completion-photo-preview');
+    const cameraArea = document.getElementById('vs-camera-area');
+    if (photoInput) photoInput.value = '';
+    if (photoPreview) photoPreview.classList.add('hidden');
+    if (cameraArea) cameraArea.classList.remove('hidden');
 }
 
 // Update part dropdown based on selected type
@@ -1231,19 +1300,94 @@ function updateCarouselControls() {
     document.getElementById('vs-nextPartBtn').disabled = vsCurrentPartIndex === totalParts - 1;
 }
 
+// Preview completion photo
+window.previewCompletionPhoto = function(input) {
+    const preview = document.getElementById('completion-photo-preview');
+    const previewImg = document.getElementById('completion-photo-preview-img');
+    const cameraArea = document.getElementById('vs-camera-area');
+    
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            previewImg.src = e.target.result;
+            preview.classList.remove('hidden');
+            if (cameraArea) cameraArea.classList.add('hidden');
+        };
+        reader.readAsDataURL(input.files[0]);
+    } else {
+        preview.classList.add('hidden');
+        if (cameraArea) cameraArea.classList.remove('hidden');
+    }
+}
+
+// Open camera for voluntary service
+window.vsOpenCamera = function() {
+    const input = document.getElementById('completion-photo-input');
+    input.click();
+    input.onchange = function() {
+        previewCompletionPhoto(this);
+    };
+}
+
+// Retake photo for voluntary service
+window.vsRetakePhoto = function() {
+    const input = document.getElementById('completion-photo-input');
+    input.value = '';
+    const preview = document.getElementById('completion-photo-preview');
+    const cameraArea = document.getElementById('vs-camera-area');
+    preview.classList.add('hidden');
+    if (cameraArea) cameraArea.classList.remove('hidden');
+    vsOpenCamera();
+}
+
+// Remove photo for voluntary service
+window.vsRemovePhoto = function() {
+    const input = document.getElementById('completion-photo-input');
+    input.value = '';
+    const preview = document.getElementById('completion-photo-preview');
+    const cameraArea = document.getElementById('vs-camera-area');
+    preview.classList.add('hidden');
+    if (cameraArea) cameraArea.classList.remove('hidden');
+}
+
 // Submit service with parts carousel data
 window.submitService = async function() {
     const printerId = document.getElementById('modal-printer-id').value;
     const institutionId = document.getElementById('modal-institution-id').value;
     const description = document.getElementById('service-description').value;
+    const photoInput = document.getElementById('completion-photo-input');
 
     if (!description.trim()) {
         alert('Please provide a service description');
         return;
     }
 
+    if (!photoInput.files || photoInput.files.length === 0) {
+        alert('Please take a completion photo');
+        return;
+    }
+
     try {
         const token = localStorage.getItem('token');
+        
+        // Upload photo to Cloudinary first
+        const formData = new FormData();
+        formData.append('image', photoInput.files[0]);
+
+        const photoResponse = await fetch('/api/upload-image', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            body: formData
+        });
+
+        if (!photoResponse.ok) {
+            throw new Error('Failed to upload photo');
+        }
+
+        const photoData = await photoResponse.json();
+        const completionPhotoUrl = photoData.url;
         
         // Collect parts data from carousel
         const partsUsed = [];
@@ -1256,7 +1400,7 @@ window.submitService = async function() {
             if (partSelect && partSelect.value && quantity > 0) {
                 const selectedOption = partSelect.options[partSelect.selectedIndex];
                 partsUsed.push({
-                    part_id: parseInt(partSelect.value), // Use part_id instead of name
+                    part_id: parseInt(partSelect.value),
                     qty: parseInt(quantity),
                     unit: unit
                 });
@@ -1267,10 +1411,11 @@ window.submitService = async function() {
             printer_id: parseInt(printerId),
             institution_id: institutionId,
             service_description: description.trim(),
+            completion_photo: completionPhotoUrl,
             parts_used: partsUsed.length > 0 ? partsUsed : null
         };
 
-        const response = await fetch('/api/voluntary-services', {
+        const response = await fetch('/api/maintenance-services', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -1284,14 +1429,14 @@ window.submitService = async function() {
             throw new Error(error.error || 'Failed to submit service');
         }
 
-        alert('✅ Service submitted successfully! Awaiting coordinator approval.');
+        alert('Service submitted successfully! Awaiting coordinator approval.');
         closeServiceModal();
         
         // Reload the printers for this school
         loadSchoolPrinters(institutionId);
     } catch (error) {
         console.error('Error submitting service:', error);
-        alert('❌ ' + error.message);
+        alert(error.message);
     }
 }
 

@@ -97,9 +97,9 @@
   5. Check school printer list refreshes
 
 - [ ] **Test Notifications**
-  1. After submission, log in as coordinator
+  1. After submission, log in as institution_admin
   2. Check notifications - should see "New Voluntary Service Submitted"
-  3. Log in as requester (printer owner)
+  3. Log in as institution_user (printer owner)
   4. Check notifications - should see "Voluntary Service Pending"
 
 ### Current Technician Inventory:
@@ -122,19 +122,19 @@ voluntary_services:
 - technician_id
 - printer_id
 - institution_id
-- requester_id (auto-filled from user_printer_assignments)
+- Institution User_id (auto-filled from user_printer_assignments)
 - service_description (required)
 - parts_used (JSON array, optional)
 - status
-- coordinator_approval_status
-- requester_approval_status
-- coordinator_notes
-- requester_notes
+- Institution Admin_approval_status
+- Institution User_approval_status
+- Institution Admin_notes
+- Institution User_notes
 - created_at
-- coordinator_reviewed_at
-- coordinator_reviewed_by
-- requester_reviewed_at
-- requester_reviewed_by
+- Institution Admin_reviewed_at
+- Institution Admin_reviewed_by
+- Institution User_reviewed_at
+- Institution User_reviewed_by
 - completed_at
 ```
 
@@ -168,3 +168,5 @@ Server running on: **http://0.0.0.0:3000**
 Test URL: **http://localhost:3000** (or your server IP)
 
 **Test User:** markivan.storm@gmail.com (Technician with inventory)
+
+

@@ -48,7 +48,7 @@ Coordinator sees registration in their dashboard
 Coordinator approves
    ↓
 User created in users table
-role = 'requester'
+role = 'institution_user'
 status = 'active'
    ↓
 User can log in
@@ -106,12 +106,12 @@ Code expires in 24 hours.
 - `status` values:
   - `pending_verification` - User hasn't entered code yet
   - `pending_coordinator` - Code verified, waiting for coordinator
-  - `approved` - Coordinator approved (user created in `users` table)
-  - `rejected` - Coordinator rejected
+  - `approved` - Institution Admin approved (user created in `users` table)
+  - `rejected` - Institution Admin rejected
 
 **users** (Final storage)
 - Only created AFTER coordinator approval
-- `role = 'requester'`
+- `role = 'institution_user'`
 - Has all permissions to view/create service requests
 
 ### 9. Why Registrations Don't Appear Immediately
@@ -125,7 +125,7 @@ Code expires in 24 hours.
 
 **In users table:**
 ❌ NOT visible until coordinator approves
-✅ Created only after approval with `role = 'requester'`
+✅ Created only after approval with `role = 'institution_user'`
 
 ### 10. Testing Steps
 
@@ -149,14 +149,14 @@ node index.js
 - Click Verify
 
 4. **Coordinator Approval:**
-- Log in as coordinator
+- Log in as institution_admin
 - Go to User Accounts → Requester Registrations
 - See pending registration
 - Click Approve
 
-5. **Login as Requester:**
+5. **Login as institution_user:**
 - Use registered email and password
-- Access system as requester
+- Access system as institution_user
 
 ### 11. Files Modified
 
@@ -221,3 +221,5 @@ WHERE email = 'test@example.com';
 ✅ Changed: Verification uses 6-digit code instead of email link
 ✅ Clarified: Registration data flow (requester_registrations → users)
 ✅ Improved: User experience with modal and clear instructions
+
+

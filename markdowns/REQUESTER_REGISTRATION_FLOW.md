@@ -24,7 +24,7 @@ status = 'pending_coordinator'
 Coordinator Approves
     ↓
 Record created in users table
-role = 'requester'
+role = 'institution_user'
 status = 'active'
     ↓
 User Can Log In
@@ -32,10 +32,10 @@ User Can Log In
 
 ### Why Registration Doesn't Appear Immediately
 
-**Q: Why don't I see the registration in the coordinator page?**
+**Q: Why don't I see the registration in The institution_admin page?**
 - Registration must be **email verified first**
-- Status must be `'pending_coordinator'` to appear in the coordinator UI
-- Coordinator endpoint filters: `WHERE status = 'pending_coordinator'`
+- Status must be `'pending_coordinator'` to appear in The institution_admin UI
+- Institution Admin endpoint filters: `WHERE status = 'pending_coordinator'`
 
 **Q: Why isn't the user in the `users` table?**
 - Users are only created **after coordinator approval**
@@ -86,7 +86,7 @@ User Can Log In
 #### 6. User Login
 - User can now log in at `login.html`
 - Email and password from registration
-- Role: `requester`
+- Role: `institution_user`
 
 ### Testing the Flow (Development)
 
@@ -103,7 +103,7 @@ curl.exe "http://localhost:3000/api/requester-registration/verify-email/<TOKEN>"
 ```
 
 3. **Check if coordinator sees it:**
-- Log in as coordinator
+- Log in as institution_admin
 - Navigate to User Accounts → Requester Registrations
 - Should see the registration if status is `'pending_coordinator'`
 
@@ -147,7 +147,7 @@ These endpoints are only available when `NODE_ENV !== 'production'`:
 
 **Flow to users table:**
 - On approval, creates:
-  - New row in `users` (role='requester')
+  - New row in `users` (role='institution_user')
   - Rows in `user_printer_assignments` for each matched printer
   - Notification for requester (approval email)
 
@@ -171,3 +171,5 @@ When `NODE_ENV !== 'production'`, the registration form logs:
 - 🔗 Direct verification URL you can click to bypass email
 
 Check browser console after submitting for the verification link.
+
+

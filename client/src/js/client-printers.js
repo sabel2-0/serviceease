@@ -15,6 +15,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const totalCount = document.getElementById('totalCount');
     const institutionSelect = document.getElementById('institutionSelect'); // Hidden for compatibility
 
+    // Tab Elements
+    const assignedTab = document.getElementById('assignedTab');
+    const historyTab = document.getElementById('historyTab');
+    const assignedView = document.getElementById('assignedView');
+    const historyView = document.getElementById('historyView');
+    const historyTbody = document.getElementById('historyTbody');
+    const historySearch = document.getElementById('historySearch');
+    const historyEmptyState = document.getElementById('historyEmptyState');
+    const historyCount = document.getElementById('historyCount');
+
     // State
     let allInstitutions = [];
     let filteredInstitutions = [];
@@ -22,7 +32,136 @@ document.addEventListener('DOMContentLoaded', () => {
     let availableInventory = [];
     let allPrinters = []; // Store all printers for filtering
     let filteredPrinters = [];
+    let allHistory = []; // Store all history records
+    let filteredHistory = [];
     let printerCounts = {}; // Store printer counts per institution
+    let currentView = 'assigned'; // Track current view: 'assigned' or 'history'
+
+    // Initialize loading skeleton
+    function showLoadingSkeleton() {
+        clientsLoading.innerHTML = Array.from({length: 8}, () => `
+            <div class="bg-white rounded-xl border border-slate-200 p-6 loading-skeleton">
+                <div class="flex items-center space-x-4">
+                    <div class="w-12 h-12 bg-slate-200 rounded-xl loading-skeleton"></div>
+                    <div class="flex-1">
+                        <div class="h-4 bg-slate-200 rounded loading-skeleton mb-2"></div>
+                        <div class="h-3 bg-slate-200 rounded loading-skeleton w-2/3"></div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        clientsLoading.classList.remove('hidden');
+        clientCardsGrid.classList.add('hidden');
+    }
+
+    // Tab switching functionality
+    function switchToAssignedView() {
+        currentView = 'assigned';
+        assignedTab.classList.add('text-green-600', 'border-green-600');
+        assignedTab.classList.remove('text-slate-500', 'border-transparent');
+        historyTab.classList.remove('text-blue-600', 'border-blue-600');
+        historyTab.classList.add('text-slate-500', 'border-transparent');
+        assignedView.classList.remove('hidden');
+        historyView.classList.add('hidden');
+    }
+
+    function switchToHistoryView() {
+        currentView = 'history';
+        historyTab.classList.add('text-blue-600', 'border-blue-600');
+        historyTab.classList.remove('text-slate-500', 'border-transparent');
+        assignedTab.classList.remove('text-green-600', 'border-green-600');
+        assignedTab.classList.add('text-slate-500', 'border-transparent');
+        historyView.classList.remove('hidden');
+        assignedView.classList.add('hidden');
+        fetchHistory();
+    }
+
+    // Fetch assignment history
+    async function fetchHistory() {
+        if (!selectedInstitution) return;
+        
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/institutions/${encodeURIComponent(selectedInstitution.institution_id)}/printers/history`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (res.ok) {
+                allHistory = await res.json();
+                filteredHistory = allHistory;
+                renderHistory();
+            } else {
+                console.error('Failed to fetch history');
+                allHistory = [];
+                filteredHistory = [];
+                renderHistory();
+            }
+        } catch (error) {
+            console.error('Error fetching history:', error);
+            allHistory = [];
+            filteredHistory = [];
+            renderHistory();
+        }
+    }
+
+    // Render history table
+    function renderHistory() {
+        if (filteredHistory.length === 0) {
+            historyEmptyState.classList.remove('hidden');
+            historyTbody.innerHTML = '';
+            historyCount.textContent = '0 records';
+            return;
+        }
+
+        historyEmptyState.classList.add('hidden');
+        historyCount.textContent = `${filteredHistory.length} record${filteredHistory.length === 1 ? '' : 's'}`;
+        
+        historyTbody.innerHTML = filteredHistory.map((record, idx) => {
+            const statusBadge = record.status === 'assigned' 
+                ? '<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 border border-green-200"><i class="fas fa-check-circle mr-1"></i>Assigned</span>'
+                : '<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-200"><i class="fas fa-times-circle mr-1"></i>Unassigned</span>';
+            
+            const assignedDate = record.assigned_at ? new Date(record.assigned_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A';
+            const unassignedDate = record.unassigned_at ? new Date(record.unassigned_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '-';
+            
+            return `
+                <tr class="hover:bg-blue-50 transition-all duration-200 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}">
+                    <td class="px-3 sm:px-6 py-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="flex-shrink-0"><i class="fas fa-printer text-slate-400 text-lg"></i></div>
+                            <div class="font-semibold text-slate-900 text-sm">${escapeHtml(record.name || 'Unknown Printer')}</div>
+                        </div>
+                    </td>
+                    <td class="px-3 sm:px-6 py-4">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                            <i class="fas fa-tag mr-2 text-xs"></i>
+                            ${escapeHtml(record.model || 'Unknown Model')}
+                        </span>
+                    </td>
+                    <td class="px-3 sm:px-6 py-4"><span class="font-mono text-xs text-slate-600 bg-slate-100 px-2 py-1 rounded">${escapeHtml(record.serial_number || 'N/A')}</span></td>
+                    <td class="px-3 sm:px-6 py-4">${statusBadge}</td>
+                    <td class="px-3 sm:px-6 py-4"><span class="text-sm text-slate-600">${assignedDate}</span></td>
+                    <td class="px-3 sm:px-6 py-4"><span class="text-sm text-slate-600">${unassignedDate}</span></td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    // Filter history
+    function filterHistory(searchTerm) {
+        if (!searchTerm.trim()) {
+            filteredHistory = allHistory;
+        } else {
+            const term = searchTerm.toLowerCase();
+            filteredHistory = allHistory.filter(record => 
+                (record.name && record.name.toLowerCase().includes(term)) ||
+                (record.model && record.model.toLowerCase().includes(term)) ||
+                (record.serial_number && record.serial_number.toLowerCase().includes(term)) ||
+                (record.status && record.status.toLowerCase().includes(term))
+            );
+        }
+        renderHistory();
+    }
 
     // Initialize loading skeleton
     function showLoadingSkeleton() {
@@ -118,9 +257,19 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Instead of revealing a section below, open a modal with the client's printers.
-        // This keeps the page in place and prevents scrolling while modal is active.
-        openPrintersModal(institution);
+        // Show the selected client section with tabs
+        selectedClientSection.classList.remove('hidden');
+        selectedClientName.textContent = institution.name;
+        selectedClientId.textContent = `ID: ${institution.institution_id}`;
+        
+        // Reset to assigned view by default
+        switchToAssignedView();
+        
+        // Load printers
+        fetchPrinters();
+        
+        // Scroll to the section
+        selectedClientSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
     // Open a modal showing assigned printers for the given institution.
@@ -373,6 +522,20 @@ document.addEventListener('DOMContentLoaded', () => {
     printerSearch.addEventListener('input', (e) => {
         filterPrinters(e.target.value);
     });
+
+    if (historySearch) {
+        historySearch.addEventListener('input', (e) => {
+            filterHistory(e.target.value);
+        });
+    }
+
+    if (assignedTab) {
+        assignedTab.addEventListener('click', switchToAssignedView);
+    }
+
+    if (historyTab) {
+        historyTab.addEventListener('click', switchToHistoryView);
+    }
 
     deselectClientBtn.addEventListener('click', deselectClient);
 
@@ -654,7 +817,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('Select a printer');
                 return;
             }
-            const payload = { inventory_item_id: inventoryId };
+            const payload = { printer_id: inventoryId };
             try {
                 const token = localStorage.getItem('token');
                 const res = await fetch(`/api/institutions/${encodeURIComponent(selectedInstitution.institution_id)}/printers`, {
@@ -729,3 +892,7 @@ function goToInventoryItems() {
     // Navigate to inventory items page
     window.location.href = '/pages/admin/inventory-items.html';
 }
+
+
+
+

@@ -10,9 +10,9 @@ const mailjet = require('node-mailjet');
 const cloudinary = require('cloudinary').v2;
 const User = require('./models/User');
 const technicianInstitutionsRoute = require('./routes/technician-institutions');
-const coordinatorUsersRoute = require('./routes/coordinator-users');
+const institution_adminUsersRoute = require('./routes/institution-admin-users');
 const db = require('./config/database');
-const { authenticateAdmin, authenticateCoordinator } = require('./middleware/auth');
+const { authenticateAdmin, authenticateinstitution_admin } = require('./middleware/auth');
 const { auth } = require('./middleware/auth');
 const { createNotification } = require('./routes/notifications');
 require('dotenv').config();
@@ -43,8 +43,8 @@ const app = express();
 // Technician institutions API
 app.use('/api/technician', technicianInstitutionsRoute);
 
-// Coordinator users API (only approved users)
-app.use('/api/coordinators', coordinatorUsersRoute);
+// institution_admin users API (only approved users)
+app.use('/api/institution_admins', institution_adminUsersRoute);
 
 // Create temp directory for uploaded photos if it doesn't exist
 const tempPhotosDir = path.join(__dirname, 'temp_photos');
@@ -82,7 +82,9 @@ const upload = multer({
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+// Increase JSON payload limit to 50MB for base64 images
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Serve static files
 app.use(express.static(path.join(__dirname, '..', 'client', 'src')));
@@ -94,365 +96,6 @@ app.use(express.static(path.join(__dirname, '..')));
 app.use(express.static(path.join(__dirname, '../client/src')));
 app.use('/images', express.static(path.join(__dirname, '../client/public/images')));
 app.use('/temp-photos', express.static(tempPhotosDir));
-
-// Ensure printers table exists
-async function ensurePrintersTable() {
-    try {
-        await db.query(`
-            CREATE TABLE IF NOT EXISTS printers (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                institution_id VARCHAR(50) NOT NULL,
-                name VARCHAR(255) NOT NULL,
-                model VARCHAR(255) DEFAULT NULL,
-                serial_number VARCHAR(255) DEFAULT NULL,
-                location VARCHAR(255) DEFAULT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                CONSTRAINT fk_printers_institution
-                    FOREIGN KEY (institution_id) REFERENCES institutions(institution_id)
-                    ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-        `);
-        console.log('Ensured printers table exists');
-    } catch (err) {
-        console.error('Failed to ensure printers table exists:', err);
-    }
-}
-
-// Ensure audit logs table exists
-async function ensureAuditLogsTable() {
-    try {
-        await db.query(`
-            CREATE TABLE IF NOT EXISTS audit_logs (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                user_id INT NOT NULL,
-                user_role ENUM('admin', 'technician', 'operations_officer') NOT NULL,
-                action VARCHAR(255) NOT NULL,
-                action_type ENUM('create', 'read', 'update', 'delete', 'login', 'logout', 'approve', 'reject', 'assign', 'complete', 'other') NOT NULL,
-                target_type VARCHAR(100) NULL,
-                target_id VARCHAR(100) NULL,
-                details TEXT NULL,
-                ip_address VARCHAR(45) NULL,
-                user_agent TEXT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                INDEX idx_user_id (user_id),
-                INDEX idx_user_role (user_role),
-                INDEX idx_action_type (action_type),
-                INDEX idx_created_at (created_at),
-                INDEX idx_target (target_type, target_id),
-                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-        `);
-        console.log('Ensured audit logs table exists');
-    } catch (err) {
-        console.error('Failed to ensure audit logs table exists:', err);
-    }
-}
-
-// Ensure technician_assignments table exists
-async function ensureTechnicianAssignmentsTable() {
-    try {
-        await db.query(`
-            CREATE TABLE IF NOT EXISTS technician_assignments (
-                id INT PRIMARY KEY AUTO_INCREMENT,
-                technician_id INT NOT NULL,
-                institution_id VARCHAR(50) NOT NULL,
-                assigned_by INT NOT NULL,
-                assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                is_active BOOLEAN DEFAULT TRUE,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                FOREIGN KEY (technician_id) REFERENCES users(id) ON DELETE CASCADE,
-                FOREIGN KEY (institution_id) REFERENCES institutions(institution_id) ON DELETE CASCADE,
-                FOREIGN KEY (assigned_by) REFERENCES users(id) ON DELETE CASCADE,
-                INDEX idx_technician_id (technician_id),
-                INDEX idx_institution_id (institution_id),
-                INDEX idx_is_active (is_active),
-                INDEX idx_technician_institution (technician_id, institution_id),
-                INDEX idx_institution_active (institution_id, is_active)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-        `);
-        console.log('Ensured technician_assignments table exists');
-    } catch (err) {
-        console.error('Failed to ensure technician_assignments table exists:', err);
-    }
-}
-
-// Ensure inventory tables exist
-async function ensureInventoryTables() {
-    try {
-        await db.query(`
-            CREATE TABLE IF NOT EXISTS inventory_items (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                category ENUM('printer') NOT NULL DEFAULT 'printer',
-                name VARCHAR(255) NOT NULL,
-                brand VARCHAR(255) DEFAULT NULL,
-                model VARCHAR(255) DEFAULT NULL,
-                serial_number VARCHAR(255) UNIQUE,
-                quantity INT NOT NULL DEFAULT 1,
-                location VARCHAR(255) DEFAULT NULL,
-                status ENUM('available','assigned','retired') NOT NULL DEFAULT 'available',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-        `);
-        
-        // Ensure brand column exists if table was created previously without it
-        const [brandColRows] = await db.query(`
-            SELECT COUNT(*) AS cnt
-            FROM information_schema.COLUMNS
-            WHERE TABLE_SCHEMA = DATABASE()
-              AND TABLE_NAME = 'inventory_items'
-              AND COLUMN_NAME = 'brand'
-        `);
-        if (brandColRows && brandColRows[0] && Number(brandColRows[0].cnt) === 0) {
-            await db.query(`ALTER TABLE inventory_items ADD COLUMN brand VARCHAR(255) NULL AFTER name`);
-        }
-
-        // Ensure quantity column exists if table was created previously without it
-        const [quantityColRows] = await db.query(`
-            SELECT COUNT(*) AS cnt
-            FROM information_schema.COLUMNS
-            WHERE TABLE_SCHEMA = DATABASE()
-              AND TABLE_NAME = 'inventory_items'
-              AND COLUMN_NAME = 'quantity'
-        `);
-        if (quantityColRows && quantityColRows[0] && Number(quantityColRows[0].cnt) === 0) {
-            await db.query(`ALTER TABLE inventory_items ADD COLUMN quantity INT NOT NULL DEFAULT 1 AFTER serial_number`);
-        }
-
-        // Ensure token_version column exists in users table for session invalidation
-        const [tokenVersionColRows] = await db.query(`
-            SELECT COUNT(*) AS cnt
-            FROM information_schema.COLUMNS
-            WHERE TABLE_SCHEMA = DATABASE()
-              AND TABLE_NAME = 'users'
-              AND COLUMN_NAME = 'token_version'
-        `);
-        if (tokenVersionColRows && tokenVersionColRows[0] && Number(tokenVersionColRows[0].cnt) === 0) {
-            await db.query(`ALTER TABLE users ADD COLUMN token_version INT DEFAULT 0`);
-            console.log('✓ Added token_version column to users table');
-        }
-
-        await db.query(`
-            CREATE TABLE IF NOT EXISTS client_printer_assignments (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                institution_id VARCHAR(50) NOT NULL,
-                inventory_item_id INT NOT NULL,
-                assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                location_note VARCHAR(255) DEFAULT NULL,
-                CONSTRAINT fk_cpa_institution FOREIGN KEY (institution_id) REFERENCES institutions(institution_id) ON DELETE CASCADE,
-                CONSTRAINT fk_cpa_item FOREIGN KEY (inventory_item_id) REFERENCES inventory_items(id) ON DELETE CASCADE,
-                UNIQUE KEY unique_inst_item (institution_id, inventory_item_id)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-        `);
-
-        console.log('Ensured inventory tables exist');
-    } catch (err) {
-        console.error('Failed to ensure inventory tables exist:', err);
-    }
-}
-// Initialize printer parts table
-async function ensurePrinterPartsTable() {
-    try {
-        const sql = fs.readFileSync(path.join(__dirname, 'config', 'printer_parts_schema.sql'), 'utf8');
-        await db.executeMultiStatementSql(sql);
-        console.log('Ensured printer parts table exists');
-    } catch (err) {
-        console.error('Failed to ensure printer parts table exists:', err);
-    }
-}
-
-// Ensure service requests table exists
-async function ensureServiceRequestsTables() {
-    try {
-        const sql = fs.readFileSync(path.join(__dirname, 'config', 'service_requests_schema.sql'), 'utf8');
-        await db.executeMultiStatementSql(sql);
-        console.log('Ensured service requests tables exist');
-    } catch (err) {
-        console.error('Failed to ensure service requests tables exist:', err);
-    }
-}
-
-// Ensure notifications table exists
-async function ensureNotificationsTable() {
-    try {
-        await db.query(`
-            CREATE TABLE IF NOT EXISTS notifications (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                type ENUM('coordinator_registration', 'service_request', 'system') NOT NULL,
-                title VARCHAR(255) NOT NULL,
-                message TEXT NOT NULL,
-                related_user_id INT NULL,
-                related_data JSON NULL,
-                is_read BOOLEAN DEFAULT FALSE,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                INDEX idx_type (type),
-                INDEX idx_created_at (created_at),
-                INDEX idx_is_read (is_read),
-                FOREIGN KEY (related_user_id) REFERENCES users(id) ON DELETE SET NULL
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-        `);
-        console.log('Ensured notifications table exists');
-    } catch (err) {
-        console.error('Failed to ensure notifications table exists:', err);
-    }
-}
-
-// Ensure user_printer_assignments table exists
-async function ensureUserAssignmentsTable() {
-    try {
-        // Create user_printer_assignments table to map printers to individual users
-        await db.query(`
-            CREATE TABLE IF NOT EXISTS user_printer_assignments (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                user_id INT NULL,
-                user_first_name VARCHAR(100) NULL,
-                user_last_name VARCHAR(100) NULL,
-                user_email VARCHAR(150) NULL,
-                inventory_item_id INT NOT NULL,
-                institution_id VARCHAR(50) DEFAULT NULL,
-                assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                CONSTRAINT fk_upa_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-                CONSTRAINT fk_upa_item FOREIGN KEY (inventory_item_id) REFERENCES inventory_items(id) ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-        `);
-
-        console.log('Ensured user_printer_assignments table exists');
-        // Ensure 'requester' role exists in users.role enum (add if missing)
-        try {
-            await db.query(`ALTER TABLE users MODIFY role ENUM('admin','coordinator','operations_officer','technician','requester') NOT NULL`);
-            console.log("Ensured 'requester' role exists in users.role enum");
-        } catch (e) {
-            console.warn("Could not modify users.role enum to include 'requester' (it may already include it or DB doesn't allow modification):", e.message);
-        }
-        
-        // REMOVED: institution_id column - system now uses institutions.user_id instead
-        // The original system: institutions.user_id points to the coordinator who owns that institution
-        
-        // Ensure the assignment table only has the columns we want.
-        // Remove denormalized user fields if they exist.
-        try {
-            // drop denormalized columns if present
-            const toDrop = ['user_first_name','user_last_name','user_email'];
-            for (const col of toDrop) {
-                try {
-                    await db.query(`ALTER TABLE user_printer_assignments DROP COLUMN ${col}`);
-                    console.log(`Dropped column ${col} from user_printer_assignments`);
-                } catch (e) {
-                    // ignore if column doesn't exist
-                }
-            }
-
-            // enforce user_id not null
-            try {
-                await db.query('ALTER TABLE user_printer_assignments MODIFY user_id INT NOT NULL');
-                console.log('Ensured user_printer_assignments.user_id is NOT NULL');
-            } catch (e) {
-                // ignore modification failures
-            }
-        } catch (e) {
-            console.warn('Error normalizing user_printer_assignments schema:', e.message);
-        }
-    } catch (err) {
-        console.error('Failed to ensure user_printer_assignments table:', err);
-    }
-}
-
-// Ensure walk-in service request fields exist
-async function ensureWalkInServiceRequestFields() {
-    try {
-        // Add walk_in_customer_name column if it doesn't exist
-        await db.query(`
-            ALTER TABLE service_requests 
-            ADD COLUMN IF NOT EXISTS walk_in_customer_name VARCHAR(255) NULL AFTER requested_by_user_id
-        `).catch(() => {});
-        
-        // Add printer_brand column for walk-in requests if it doesn't exist
-        await db.query(`
-            ALTER TABLE service_requests 
-            ADD COLUMN IF NOT EXISTS printer_brand VARCHAR(100) NULL AFTER walk_in_customer_name
-        `).catch(() => {});
-        
-        // Add is_walk_in flag
-        await db.query(`
-            ALTER TABLE service_requests 
-            ADD COLUMN IF NOT EXISTS is_walk_in BOOLEAN DEFAULT FALSE AFTER printer_brand
-        `).catch(() => {});
-        
-        // Add parts_used field for technician completion
-        await db.query(`
-            ALTER TABLE service_requests 
-            ADD COLUMN IF NOT EXISTS parts_used TEXT NULL AFTER resolution_notes
-        `).catch(() => {});
-        
-        // Add approval fields
-        await db.query(`
-            ALTER TABLE service_requests 
-            ADD COLUMN IF NOT EXISTS requires_approval BOOLEAN DEFAULT FALSE AFTER parts_used
-        `).catch(() => {});
-        
-        await db.query(`
-            ALTER TABLE service_requests 
-            ADD COLUMN IF NOT EXISTS approved_by INT NULL AFTER requires_approval
-        `).catch(() => {});
-        
-        await db.query(`
-            ALTER TABLE service_requests 
-            ADD COLUMN IF NOT EXISTS approved_at TIMESTAMP NULL AFTER approved_by
-        `).catch(() => {});
-        
-        console.log('Ensured walk-in service request fields exist');
-    } catch (err) {
-        console.error('Failed to ensure walk-in service request fields:', err);
-    }
-}
-
-// Drop part_type column - redundant when we have is_universal and brand
-async function dropPartTypeColumn() {
-    try {
-        // Check if column exists
-        const [columns] = await db.query(`
-            SELECT COLUMN_NAME 
-            FROM INFORMATION_SCHEMA.COLUMNS 
-            WHERE TABLE_SCHEMA = DATABASE() 
-            AND TABLE_NAME = 'printer_parts' 
-            AND COLUMN_NAME = 'part_type'
-        `);
-        
-        if (columns.length > 0) {
-            // Drop the index first
-            await db.query(`ALTER TABLE printer_parts DROP INDEX IF EXISTS idx_parts_type`).catch(() => {});
-            
-            // Drop the column
-            await db.query(`ALTER TABLE printer_parts DROP COLUMN part_type`);
-            console.log('Dropped part_type column from printer_parts table');
-        } else {
-            console.log('part_type column does not exist (already removed)');
-        }
-    } catch (err) {
-        console.error('Failed to drop part_type column:', err);
-    }
-}
-
-// Initialize database tables that must exist
-const SKIP_SCHEMA_MIGRATIONS = process.env.SKIP_SCHEMA_MIGRATIONS === 'true';
-if (!SKIP_SCHEMA_MIGRATIONS) {
-    ensurePrintersTable();
-    ensureInventoryTables();
-    ensurePrinterPartsTable();
-    ensureServiceRequestsTables();
-    ensureNotificationsTable();
-    ensureUserAssignmentsTable();
-    ensureWalkInServiceRequestFields();
-    ensureAuditLogsTable();
-    ensureTechnicianAssignmentsTable();
-    dropPartTypeColumn();
-} else {
-    console.log('SKIP_SCHEMA_MIGRATIONS=true — skipping startup schema creation and ALTER statements to avoid DB locks');
-}
-
 
 // Audit logging helper function
 async function logAuditAction(userId, userRole, action, actionType, targetType = null, targetId = null, details = null, req = null) {
@@ -488,6 +131,7 @@ function auditMiddleware(req, res, next) {
                     method: req.method,
                     path: req.path,
                     query: req.query,
+                    params: req.params,
                     body: sanitizeBody(req.body)
                 });
                 
@@ -539,8 +183,8 @@ function extractTarget(req) {
     } else if (path.includes('/parts')) {
         targetType = 'parts';
         targetId = req.params.id || req.body.id;
-    } else if (path.includes('/coordinator')) {
-        targetType = 'coordinator';
+    } else if (path.includes('/institution_admin')) {
+        targetType = 'institution_admin';
         targetId = req.params.id || req.body.id;
     }
     
@@ -608,12 +252,12 @@ app.get('/pages/technician/:page.html', (req, res) => {
     });
 });
 
-// Route for coordinator pages
-app.get('/pages/coordinator/:page.html', (req, res) => {
-    const filePath = path.join(__dirname, '../client/src/pages/coordinator', req.params.page + '.html');
+// Route for institution_admin pages
+app.get('/pages/institution-admin/:page.html', (req, res) => {
+    const filePath = path.join(__dirname, '../client/src/pages/institution-admin', req.params.page + '.html');
     res.sendFile(filePath, (err) => {
         if (err) {
-            console.error(`Error serving coordinator/${req.params.page}.html:`, err);
+            console.error(`Error serving institution-admin/${req.params.page}.html:`, err);
             res.status(500).send('Error loading page');
         }
     });
@@ -715,8 +359,8 @@ app.post('/api/register', upload.fields([
             password: userData.password ? '[PROVIDED]' : '[MISSING]'
         });
 
-        // Validate that institutionId is provided for coordinators/requesters
-        if ((userData.role === 'coordinator' || userData.role === 'requester')) {
+        // Validate that institutionId is provided for institution_admins/institution_users
+        if ((userData.role === 'institution_admin' || userData.role === 'institution_user')) {
             if (!userData.institutionId || userData.institutionId.trim() === '') {
                 return res.status(400).json({ 
                     error: 'Please select an institution from the dropdown' 
@@ -894,20 +538,20 @@ app.post('/api/login', async (req, res) => {
             // If DB check fails, proceed cautiously and allow login to fall through (we don't want to lock out users due to DB hiccup)
         }
         
-        // Check institution status for coordinators and requesters
-        if (user.role === 'coordinator' || user.role === 'requester') {
+        // Check institution status for institution_admins and institution_users
+        if (user.role === 'institution_admin' || user.role === 'institution_user') {
             try {
                 let institutionStatus = null;
                 
-                if (user.role === 'coordinator') {
-                    // Coordinator owns the institution (institutions.user_id)
+                if (user.role === 'institution_admin') {
+                    // institution_admin owns the institution (institutions.user_id)
                     const [instRows] = await db.query(
                         'SELECT status FROM institutions WHERE user_id = ? LIMIT 1',
                         [user.id]
                     );
                     institutionStatus = instRows && instRows.length > 0 ? instRows[0].status : null;
-                } else if (user.role === 'requester') {
-                    // Requester is linked via user_printer_assignments.institution_id
+                } else if (user.role === 'institution_user') {
+                    // institution_user is linked via user_printer_assignments.institution_id
                     const [instRows] = await db.query(
                         `SELECT i.status FROM institutions i
                          JOIN user_printer_assignments upa ON upa.institution_id = i.institution_id
@@ -928,6 +572,7 @@ app.post('/api/login', async (req, res) => {
         }
 
         // Get institution owned by this user (institutions.user_id = user.id)
+        // OR if they're an institution_user, get their institution from user_printer_assignments
         let institutionData = {
             institution_id: null,
             institution_name: null,
@@ -935,19 +580,42 @@ app.post('/api/login', async (req, res) => {
             institution_address: null
         };
 
-        const [institutions] = await db.query(
-            'SELECT institution_id, name, type, address FROM institutions WHERE user_id = ? LIMIT 1',
-            [user.id]
-        );
-        
-        if (institutions && institutions.length > 0) {
-            const inst = institutions[0];
-            institutionData = {
-                institution_id: inst.institution_id,
-                institution_name: inst.name,
-                institution_type: inst.type,
-                institution_address: inst.address
-            };
+        if (user.role === 'institution_user') {
+            // institution_users are linked via user_printer_assignments
+            const [instRows] = await db.query(
+                `SELECT i.institution_id, i.name, i.type, i.address 
+                 FROM institutions i
+                 JOIN user_printer_assignments upa ON upa.institution_id = i.institution_id
+                 WHERE upa.user_id = ? 
+                 LIMIT 1`,
+                [user.id]
+            );
+            
+            if (instRows && instRows.length > 0) {
+                const inst = instRows[0];
+                institutionData = {
+                    institution_id: inst.institution_id,
+                    institution_name: inst.name,
+                    institution_type: inst.type,
+                    institution_address: inst.address
+                };
+            }
+        } else {
+            // For institution_admin and others who own institutions
+            const [institutions] = await db.query(
+                'SELECT institution_id, name, type, address FROM institutions WHERE user_id = ? LIMIT 1',
+                [user.id]
+            );
+            
+            if (institutions && institutions.length > 0) {
+                const inst = institutions[0];
+                institutionData = {
+                    institution_id: inst.institution_id,
+                    institution_name: inst.name,
+                    institution_type: inst.type,
+                    institution_address: inst.address
+                };
+            }
         }
 
         // Log the institution lookup process
@@ -956,6 +624,20 @@ app.post('/api/login', async (req, res) => {
             found_institution: institutionData,
             lookup_success: !!institutionData.institution_id
         });
+
+        // Check if user must change password (for staff with temporary passwords)
+        if (user.must_change_password) {
+            console.log(`User ${user.id} must change password before full access`);
+            return res.json({
+                message: 'Password change required',
+                mustChangePassword: true,
+                userId: user.id,
+                email: user.email,
+                firstName: user.first_name,
+                lastName: user.last_name,
+                role: user.role
+            });
+        }
 
         // Generate JWT token with token_version for session invalidation
         const token = jwt.sign(
@@ -1011,6 +693,126 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
+// Change password for users with temporary passwords
+app.post('/api/change-temporary-password', async (req, res) => {
+    try {
+        const { userId, newPassword } = req.body;
+
+        if (!userId || !newPassword) {
+            return res.status(400).json({ error: 'User ID and new password are required' });
+        }
+
+        // Validate new password strength
+        if (newPassword.length < 8) {
+            return res.status(400).json({ error: 'New password must be at least 8 characters long' });
+        }
+
+        // Get user from database
+        const [users] = await db.query('SELECT * FROM users WHERE id = ?', [userId]);
+        if (users.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const user = users[0];
+
+        // Check if user actually needs to change password
+        if (!user.must_change_password) {
+            return res.status(400).json({ error: 'Password change not required' });
+        }
+
+        // Check if new password is the same as the temporary password
+        const bcrypt = require('bcrypt');
+        const isSamePassword = await bcrypt.compare(newPassword, user.password);
+        if (isSamePassword) {
+            return res.status(400).json({ error: 'New password cannot be the same as your temporary password' });
+        }
+
+        // Hash new password
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        // Update password and remove must_change_password flag
+        await db.query(
+            'UPDATE users SET password = ?, must_change_password = FALSE, updated_at = NOW() WHERE id = ?',
+            [hashedPassword, user.id]
+        );
+
+        console.log(`User ${user.id} (${user.email}) successfully changed temporary password`);
+
+        // Get institution data
+        let institutionData = {
+            institution_id: null,
+            institution_name: null,
+            institution_type: null,
+            institution_address: null
+        };
+
+        const [institutions] = await db.query(
+            'SELECT institution_id, name, type, address FROM institutions WHERE user_id = ? LIMIT 1',
+            [user.id]
+        );
+        
+        if (institutions && institutions.length > 0) {
+            const inst = institutions[0];
+            institutionData = {
+                institution_id: inst.institution_id,
+                institution_name: inst.name,
+                institution_type: inst.type,
+                institution_address: inst.address
+            };
+        }
+
+        // Generate JWT token
+        const token = jwt.sign(
+            {
+                id: user.id,
+                email: user.email,
+                role: user.role,
+                institution_id: institutionData.institution_id,
+                tokenVersion: user.token_version || 0
+            },
+            process.env.JWT_SECRET || 'serviceease_dev_secret',
+            { expiresIn: '24h' }
+        );
+
+        // Return successful login response
+        res.json({ 
+            message: 'Password changed successfully',
+            token: token,
+            user: {
+                id: user.id,
+                email: user.email,
+                firstName: user.first_name,
+                lastName: user.last_name,
+                role: user.role,
+                approvalStatus: user.approval_status,
+                isEmailVerified: user.is_email_verified,
+                institution_id: institutionData.institution_id,
+                institutionName: institutionData.institution_name,
+                institutionType: institutionData.institution_type,
+                institutionAddress: institutionData.institution_address
+            }
+        });
+
+        // Log audit action
+        if (['admin', 'technician', 'operations_officer'].includes(user.role)) {
+            await logAuditAction(
+                user.id, 
+                user.role, 
+                'Changed temporary password', 
+                'update', 
+                'user', 
+                String(user.id),
+                JSON.stringify({ email: user.email }),
+                req
+            );
+        }
+
+    } catch (error) {
+        console.error('Error changing temporary password:', error);
+        res.status(500).json({ error: 'Failed to change password' });
+    }
+});
+
 // API endpoint to get pending user registrations
 app.get('/api/pending-users', async (req, res) => {
     try {
@@ -1031,7 +833,7 @@ app.post('/api/log-document-view', authenticateAdmin, async (req, res) => {
             req.user.id,
             req.user.role,
             `Viewed verification documents for user ID: ${userId}`,
-            'view',
+            'read',
             'user_documents',
             userId,
             JSON.stringify({ action, timestamp }),
@@ -1082,10 +884,10 @@ app.post('/api/approve-user/:userId', authenticateAdmin, async (req, res) => {
             req
         );
         
-        // Send email data for coordinator approvals
-        const emailData = user[0].role === 'coordinator' ? {
-            coordinator_name: `${user[0].first_name} ${user[0].last_name}`,
-            coordinator_email: user[0].email,
+        // Send email data for institution_admin approvals
+        const emailData = user[0].role === 'institution_admin' ? {
+            institution_admin_name: `${user[0].first_name} ${user[0].last_name}`,
+            institution_admin_email: user[0].email,
             to_email: user[0].email
         } : null;
         
@@ -1141,8 +943,8 @@ app.post('/api/reject-user/:userId', authenticateAdmin, async (req, res) => {
             req
         );
         
-        // Send rejection email via Mailjet for coordinators
-        if (user.role === 'coordinator') {
+        // Send rejection email via Mailjet for institution_admins
+        if (user.role === 'institution_admin') {
             try {
                 const emailPayload = {
                     Messages: [
@@ -1159,9 +961,9 @@ app.post('/api/reject-user/:userId', authenticateAdmin, async (req, res) => {
                             ],
                             TemplateID: 7515461,
                             TemplateLanguage: true,
-                            Subject: 'ServiceEase Coordinator Registration Update',
+                            Subject: 'ServiceEase institution_admin Registration Update',
                             Variables: {
-                                coordinator_name: `${user.first_name} ${user.last_name}`,
+                                institution_admin_name: `${user.first_name} ${user.last_name}`,
                                 rejection_reason: reason || 'No specific reason provided'
                             }
                         }
@@ -1232,7 +1034,7 @@ app.get('/api/admin/notifications', authenticateAdmin, async (req, res) => {
                 u.email
             FROM notifications n
             LEFT JOIN users u ON n.related_user_id = u.id
-            WHERE n.user_id = ? OR (n.user_id IS NULL AND n.type IN ('coordinator_registration', 'parts_request'))
+            WHERE n.user_id = ? OR (n.user_id IS NULL AND n.type IN ('institution_admin_registration', 'parts_request'))
             ORDER BY n.created_at DESC
             LIMIT 50
         `, [req.user.id]);
@@ -1251,7 +1053,7 @@ app.get('/api/admin/notifications/count', authenticateAdmin, async (req, res) =>
             SELECT COUNT(*) as unread_count 
             FROM notifications 
             WHERE is_read = FALSE 
-            AND (user_id = ? OR (user_id IS NULL AND type IN ('coordinator_registration', 'parts_request')))
+            AND (user_id = ? OR (user_id IS NULL AND type IN ('institution_admin_registration', 'parts_request')))
         `, [req.user.id]);
 
         res.json({ count: result[0].unread_count });
@@ -1286,7 +1088,7 @@ app.put('/api/admin/notifications/read-all', authenticateAdmin, async (req, res)
             UPDATE notifications 
             SET is_read = TRUE, updated_at = CURRENT_TIMESTAMP
             WHERE is_read = FALSE 
-            AND (user_id = ? OR (user_id IS NULL AND type IN ('coordinator_registration', 'parts_request')))
+            AND (user_id = ? OR (user_id IS NULL AND type IN ('institution_admin_registration', 'parts_request')))
         `, [req.user.id]);
 
         res.json({ message: 'All notifications marked as read' });
@@ -1332,13 +1134,11 @@ app.get('/api/admin/dashboard-stats', authenticateAdmin, async (req, res) => {
         const [usersResult] = await db.query('SELECT COUNT(*) as count FROM users');
         const totalUsers = usersResult[0].count;
 
-        // Get pending coordinators (coordinator role with approval_status = 'pending')
-        const [pendingResult] = await db.query(
-            'SELECT COUNT(*) as count FROM users WHERE role = "coordinator" AND approval_status = "pending"'
-        );
-        const pendingCoordinators = pendingResult[0].count;
-
-        // Get total institutions
+    // Get pending institution_admins (institution_admin role with approval_status = 'pending')
+    const [pendingResult] = await db.query(
+        'SELECT COUNT(*) as count FROM users WHERE role = "institution_admin" AND approval_status = "pending"'
+    );
+    const pendingInstitutionAdmins = pendingResult[0].count;        // Get total institutions
         const [institutionsResult] = await db.query('SELECT COUNT(*) as count FROM institutions');
         const totalInstitutions = institutionsResult[0].count;
 
@@ -1350,15 +1150,15 @@ app.get('/api/admin/dashboard-stats', authenticateAdmin, async (req, res) => {
         const activeServiceRequests = serviceRequestsResult[0].count;
 
         // Get total printers
-        const [printersResult] = await db.query('SELECT COUNT(*) as count FROM inventory_items');
+        const [printersResult] = await db.query('SELECT COUNT(*) as count FROM printers');
         const totalPrinters = printersResult[0].count;
 
         // Get available printers (not assigned to any institution)
         const [availablePrintersResult] = await db.query(
-            `SELECT COUNT(*) as count FROM inventory_items i
+            `SELECT COUNT(*) as count FROM printers i
              WHERE NOT EXISTS (
-                 SELECT 1 FROM client_printer_assignments cpa 
-                 WHERE cpa.inventory_item_id = i.id
+                 SELECT 1 FROM institution_printer_assignments cpa 
+                 WHERE cpa.printer_id = i.id
              )`
         );
         const availablePrinters = availablePrintersResult[0].count;
@@ -1383,7 +1183,7 @@ app.get('/api/admin/dashboard-stats', authenticateAdmin, async (req, res) => {
 
         res.json({
             totalUsers,
-            pendingCoordinators,
+            pendingInstitutionAdmins,
             totalInstitutions,
             activeServiceRequests,
             totalPrinters,
@@ -1398,26 +1198,26 @@ app.get('/api/admin/dashboard-stats', authenticateAdmin, async (req, res) => {
     }
 });
 
-// Coordinator Profile endpoint with institution information
-app.get('/api/coordinator/profile', authenticateCoordinator, async (req, res) => {
+// institution_admin Profile endpoint with institution information
+app.get('/api/institution_admin/profile', authenticateinstitution_admin, async (req, res) => {
     try {
-        const coordinatorId = req.user.id;
+        const institution_adminId = req.user.id;
         
-        // Get coordinator details with institution
-        const [coordinatorRows] = await db.query(`
+        // Get institution_admin details with institution
+        const [institution_adminRows] = await db.query(`
             SELECT 
                 u.id, u.first_name, u.last_name, u.email, u.role,
                 i.institution_id, i.name as institution_name, i.type as institution_type, i.address as institution_address
             FROM users u
             LEFT JOIN institutions i ON i.user_id = u.id
             WHERE u.id = ?
-        `, [coordinatorId]);
+        `, [institution_adminId]);
         
-        if (coordinatorRows.length === 0) {
-            return res.status(404).json({ error: 'Coordinator not found' });
+        if (institution_adminRows.length === 0) {
+            return res.status(404).json({ error: 'institution_admin not found' });
         }
         
-        const profile = coordinatorRows[0];
+        const profile = institution_adminRows[0];
         
         res.json({
             id: profile.id,
@@ -1432,23 +1232,23 @@ app.get('/api/coordinator/profile', authenticateCoordinator, async (req, res) =>
         });
         
     } catch (error) {
-        console.error('Error fetching coordinator profile:', error);
-        res.status(500).json({ error: 'Failed to fetch coordinator profile' });
+        console.error('Error fetching institution_admin profile:', error);
+        res.status(500).json({ error: 'Failed to fetch institution_admin profile' });
     }
 });
 
-// Requester Profile Endpoint
-app.get('/api/requester/profile', auth, async (req, res) => {
+// institution_user Profile Endpoint
+app.get('/api/institution_user/profile', auth, async (req, res) => {
     try {
-        const requesterId = req.user.id;
+        const institution_userId = req.user.id;
         
-        // Verify user is a requester
-        if (req.user.role !== 'requester') {
-            return res.status(403).json({ error: 'Access denied. Requester role required.' });
+        // Verify user is a institution_user
+        if (req.user.role !== 'institution_user') {
+            return res.status(403).json({ error: 'Access denied. institution_user role required.' });
         }
         
-        // Get requester details with institution from user_printer_assignments
-        const [requesterRows] = await db.query(`
+        // Get institution_user details with institution from user_printer_assignments
+        const [institution_userRows] = await db.query(`
             SELECT 
                 u.id, u.first_name, u.last_name, u.email, u.role,
                 i.institution_id, i.name as institution_name, i.type as institution_type, i.address as institution_address
@@ -1457,13 +1257,13 @@ app.get('/api/requester/profile', auth, async (req, res) => {
             LEFT JOIN institutions i ON i.institution_id = upa.institution_id
             WHERE u.id = ?
             LIMIT 1
-        `, [requesterId]);
+        `, [institution_userId]);
         
-        if (requesterRows.length === 0) {
-            return res.status(404).json({ error: 'Requester not found' });
+        if (institution_userRows.length === 0) {
+            return res.status(404).json({ error: 'institution_user not found' });
         }
         
-        const profile = requesterRows[0];
+        const profile = institution_userRows[0];
         
         res.json({
             id: profile.id,
@@ -1478,20 +1278,20 @@ app.get('/api/requester/profile', auth, async (req, res) => {
         });
         
     } catch (error) {
-        console.error('Error fetching requester profile:', error);
-        res.status(500).json({ error: 'Failed to fetch requester profile' });
+        console.error('Error fetching institution_user profile:', error);
+        res.status(500).json({ error: 'Failed to fetch institution_user profile' });
     }
 });
 
-// Coordinator Dashboard Statistics
-app.get('/api/coordinator/dashboard-stats', authenticateCoordinator, async (req, res) => {
+// institution_admin Dashboard Statistics
+app.get('/api/institution_admin/dashboard-stats', authenticateinstitution_admin, async (req, res) => {
     try {
-        const coordinatorId = req.user.id;
+        const institution_adminId = req.user.id;
         
-        // Get coordinator's institution
+        // Get institution_admin's institution
         const [institutionRows] = await db.query(
             'SELECT institution_id FROM institutions WHERE user_id = ?',
-            [coordinatorId]
+            [institution_adminId]
         );
         
         if (institutionRows.length === 0) {
@@ -1505,9 +1305,9 @@ app.get('/api/coordinator/dashboard-stats', authenticateCoordinator, async (req,
         
         const institutionId = institutionRows[0].institution_id;
         
-        // Get total printers for this institution from client_printer_assignments
+        // Get total printers for this institution from institution_printer_assignments
         const [printersResult] = await db.query(
-            'SELECT COUNT(*) as count FROM client_printer_assignments WHERE institution_id = ?',
+            'SELECT COUNT(*) as count FROM institution_printer_assignments WHERE institution_id = ?',
             [institutionId]
         );
         const totalPrinters = printersResult[0].count;
@@ -1546,7 +1346,7 @@ app.get('/api/coordinator/dashboard-stats', authenticateCoordinator, async (req,
             pendingApprovals
         });
     } catch (error) {
-        console.error('Error fetching coordinator dashboard stats:', error);
+        console.error('Error fetching institution_admin dashboard stats:', error);
         res.status(500).json({ error: 'Failed to fetch dashboard statistics' });
     }
 });
@@ -1588,8 +1388,8 @@ app.post('/api/send-verification-email', async (req, res) => {
     }
 });
 
-// API endpoints for coordinator management
-app.get('/api/coordinators', authenticateAdmin, async (req, res) => {
+// API endpoints for institution_admin management
+app.get('/api/institution_admins', authenticateAdmin, async (req, res) => {
     try {
         const { search, status } = req.query;
         
@@ -1609,7 +1409,7 @@ app.get('/api/coordinators', authenticateAdmin, async (req, res) => {
                 i.type as institution_type
             FROM users u 
             LEFT JOIN institutions i ON i.user_id = u.id
-            WHERE u.role = 'coordinator' AND u.approval_status = 'approved'
+            WHERE u.role = 'institution_admin' AND u.approval_status = 'approved'
         `;
         
         const params = [];
@@ -1621,7 +1421,7 @@ app.get('/api/coordinators', authenticateAdmin, async (req, res) => {
             params.push(searchPattern, searchPattern, searchPattern, searchPattern);
         }
         
-        // Add status filter for approved coordinators only
+        // Add status filter for approved institution_admins only
         if (status && status.trim()) {
             query += ` AND u.status = ?`;
             params.push(status.trim());
@@ -1639,36 +1439,36 @@ app.get('/api/coordinators', authenticateAdmin, async (req, res) => {
         
         res.json(formattedRows);
     } catch (error) {
-        console.error('Error fetching coordinators:', error);
-        res.status(500).json({ error: 'Failed to fetch coordinators' });
+        console.error('Error fetching institution_admins:', error);
+        res.status(500).json({ error: 'Failed to fetch institution_admins' });
     }
 });
 
-// Coordinator creates a user under their institution and may assign a printer
-app.post('/api/coordinators/:id/users', authenticateCoordinator, async (req, res) => {
+// institution_admin creates a user under their institution and may assign a printer
+app.post('/api/institution_admins/:id/users', authenticateinstitution_admin, async (req, res) => {
     let connection;
     try {
-        const coordinatorId = parseInt(req.params.id);
+        const institution_adminId = parseInt(req.params.id);
         const creator = req.user;
 
-        // Only allow the logged-in coordinator to create users for their own account
-        if (String(creator.id) !== String(coordinatorId) && creator.role !== 'admin') {
+        // Only allow the logged-in institution_admin to create users for their own account
+        if (String(creator.id) !== String(institution_adminId) && creator.role !== 'admin') {
             return res.status(403).json({ error: 'Access denied' });
         }
 
-    const { firstName, lastName, email, password, inventory_item_ids, department } = req.body;
+    const { firstName, lastName, email, printer_ids, department } = req.body;
     const departmentToSave = department || null;
 
-        if (!firstName || !lastName || !email || !password) {
-            return res.status(400).json({ error: 'firstName, lastName, email and password are required' });
+        if (!firstName || !lastName || !email) {
+            return res.status(400).json({ error: 'firstName, lastName, and email are required' });
         }
 
-        // Support both single inventory_item_id (legacy) and multiple inventory_item_ids (new)
+        // Support both single printer_id (legacy) and multiple printer_ids (new)
         let printerIds = [];
-        if (req.body.inventory_item_ids && Array.isArray(req.body.inventory_item_ids)) {
-            printerIds = req.body.inventory_item_ids.filter(id => id); // Remove null/undefined
-        } else if (req.body.inventory_item_id) {
-            printerIds = [req.body.inventory_item_id];
+        if (req.body.printer_ids && Array.isArray(req.body.printer_ids)) {
+            printerIds = req.body.printer_ids.filter(id => id); // Remove null/undefined
+        } else if (req.body.printer_id) {
+            printerIds = [req.body.printer_id];
         }
 
         // Check email uniqueness
@@ -1677,25 +1477,25 @@ app.post('/api/coordinators/:id/users', authenticateCoordinator, async (req, res
             return res.status(409).json({ error: 'Email already exists' });
         }
 
-        // Get coordinator's institution using the correct architecture:
-        // institutions.user_id points to the coordinator who owns that institution
+        // Get institution_admin's institution using the correct architecture:
+        // institutions.user_id points to the institution_admin who owns that institution
         const [institutionRows] = await db.query(
             'SELECT institution_id, name FROM institutions WHERE user_id = ?', 
-            [coordinatorId]
+            [institution_adminId]
         );
         
-        let coordinatorInstitutionId = null;
+        let institution_adminInstitutionId = null;
         
         if (institutionRows && institutionRows.length > 0) {
-            coordinatorInstitutionId = institutionRows[0].institution_id;
-            console.log(`Found institution for coordinator ${coordinatorId}: ${institutionRows[0].name} (${coordinatorInstitutionId})`);
+            institution_adminInstitutionId = institutionRows[0].institution_id;
+            console.log(`Found institution for institution_admin ${institution_adminId}: ${institutionRows[0].name} (${institution_adminInstitutionId})`);
         } else {
-            console.log(`No institution found for coordinator ${coordinatorId}`);
+            console.log(`No institution found for institution_admin ${institution_adminId}`);
         }
 
-        // If we still couldn't find an institution_id, reject creation - coordinator must be linked to an institution
-        if (!coordinatorInstitutionId) {
-            return res.status(400).json({ error: 'Coordinator has no associated institution. Please set your institution before creating users.' });
+        // If we still couldn't find an institution_id, reject creation - institution_admin must be linked to an institution
+        if (!institution_adminInstitutionId) {
+            return res.status(400).json({ error: 'institution_admin has no associated institution. Please set your institution before creating users.' });
         }
 
 
@@ -1703,22 +1503,90 @@ app.post('/api/coordinators/:id/users', authenticateCoordinator, async (req, res
        connection = await db.getConnection();
        await connection.beginTransaction();
 
-       // Hash password
+       // Generate temporary password
+       const crypto = require('crypto');
+       const temporaryPassword = crypto.randomBytes(4).toString('hex').toUpperCase();
+       
+       console.log(`📧 Generated temporary password for ${email}: ${temporaryPassword}`);
+       
+       // Hash temporary password
        const bcrypt = require('bcrypt');
-       const hashedPassword = await bcrypt.hash(password, 10);
+       const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
 
        // Create the user record in users table (use transactional connection)
        // Note: users table does NOT have institution_id column
        // Institution association is handled through user_printer_assignments.institution_id
-       const assignedRole = 'requester';
-       const userInsertSql = `INSERT INTO users (first_name, last_name, email, password, role, is_email_verified, approval_status, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`;
-       const userInsertParams = [firstName, lastName, email, hashedPassword, assignedRole, true, 'approved'];
+       const assignedRole = 'institution_user';
+       const userInsertSql = `INSERT INTO users (first_name, last_name, email, password, role, is_email_verified, approval_status, must_change_password, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`;
+       const userInsertParams = [firstName, lastName, email, hashedPassword, assignedRole, true, 'approved', true];
 
        console.log('Inserting new user with params (transaction):', userInsertParams);
        const [userResult] = await connection.query(userInsertSql, userInsertParams);
        console.log('User insert result:', userResult);
        const newUserId = userResult.insertId;
+
+        // Send temporary password email using Mailjet
+        try {
+            const institutionName = institutionRows[0]?.name || 'Your Institution';
+            
+            const request = await mailjetClient
+                .post('send', { version: 'v3.1' })
+                .request({
+                    Messages: [
+                        {
+                            From: {
+                                Email: 'serviceeaseph@gmail.com',
+                                Name: 'ServiceEase'
+                            },
+                            To: [
+                                {
+                                    Email: email,
+                                    Name: `${firstName} ${lastName}`
+                                }
+                            ],
+                            Subject: 'Welcome to ServiceEase - Your Account Has Been Created',
+                            HTMLPart: `
+                                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                                    <h2 style="color: #10b981;">Welcome to ServiceEase!</h2>
+                                    <p>Hello ${firstName} ${lastName},</p>
+                                    <p>Your Institution User account has been created by your institution administrator at <strong>${institutionName}</strong>.</p>
+                                    
+                                    <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                                        <h3 style="margin-top: 0; color: #1f2937;">Login Credentials</h3>
+                                        <p style="margin: 10px 0;"><strong>Email:</strong> ${email}</p>
+                                        <p style="margin: 10px 0;"><strong>Temporary Password:</strong> <code style="background-color: #fff; padding: 5px 10px; border-radius: 4px; font-size: 16px; color: #10b981;">${temporaryPassword}</code></p>
+                                    </div>
+                                    
+                                    <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0;">
+                                        <p style="margin: 0; color: #92400e;"><strong>⚠️ Important:</strong> You will be required to change this temporary password when you first log in to the system for security purposes.</p>
+                                    </div>
+                                    
+                                    <p>To access your account:</p>
+                                    <ol>
+                                        <li>Go to the ServiceEase login page</li>
+                                        <li>Enter your email and temporary password</li>
+                                        <li>Create a new secure password when prompted</li>
+                                    </ol>
+                                    
+                                    <p style="margin-top: 30px; color: #6b7280; font-size: 14px;">
+                                        If you did not expect this email or have any questions, please contact your institution administrator.
+                                    </p>
+                                    
+                                    <p style="margin-top: 20px;">Best regards,<br><strong>ServiceEase Team</strong></p>
+                                </div>
+                            `
+                        }
+                    ]
+                });
+            
+            console.log(`✅ Temporary password email sent successfully to: ${email}`);
+            console.log(`   Password: ${temporaryPassword}`);
+        } catch (emailError) {
+            console.error('❌ Failed to send temporary password email:', emailError);
+            console.error('   Email details:', { to: email, password: temporaryPassword });
+            // Don't fail the user creation if email fails
+        }
 
         // Fetch the newly created user row for response
         // Note: users table does NOT have institution_id or institution_name columns
@@ -1740,14 +1608,14 @@ app.post('/api/coordinators/:id/users', authenticateCoordinator, async (req, res
         const assignmentIds = [];
         const assignedPrinters = [];
         
-        for (const inventory_item_id of printerIds) {
-            if (!inventory_item_id) continue;
+        for (const printer_id of printerIds) {
+            if (!printer_id) continue;
             // Validate inventory item exists
-            const [itemRows] = await connection.query('SELECT id, status FROM inventory_items WHERE id = ?', [inventory_item_id]);
+            const [itemRows] = await connection.query('SELECT id, status FROM printers WHERE id = ?', [printer_id]);
             if (itemRows.length === 0) {
                 // rollback and return
                 await connection.rollback();
-                return res.status(400).json({ error: 'Invalid inventory_item_id' });
+                return res.status(400).json({ error: 'Invalid printer_id' });
             }
 
             // Multiple users can share the same printer (common in real institutions)
@@ -1757,8 +1625,8 @@ app.post('/api/coordinators/:id/users', authenticateCoordinator, async (req, res
 
             if (currentStatus === 'available') {
                 // Straightforward: item is available, insert assignment and mark assigned
-                const assignSql = `INSERT INTO user_printer_assignments (user_id, inventory_item_id, institution_id, department) VALUES (?, ?, ?, ?)`;
-                const assignParams = [newUserId, inventory_item_id, coordinatorInstitutionId, departmentToSave];
+                const assignSql = `INSERT INTO user_printer_assignments (user_id, printer_id, institution_id, department) VALUES (?, ?, ?, ?)`;
+                const assignParams = [newUserId, printer_id, institution_adminInstitutionId, departmentToSave];
                 console.log('Inserting user_printer_assignments with params (transaction):', assignParams);
                     const [insertAssign] = await connection.query(assignSql, assignParams);
                     console.log('Assignment insert result:', insertAssign);
@@ -1766,7 +1634,7 @@ app.post('/api/coordinators/:id/users', authenticateCoordinator, async (req, res
 
                 // Fetch the inserted assignment row for response
                 try {
-                    const [assignmentRows] = await db.query('SELECT id, user_id, inventory_item_id, institution_id, department, assigned_at FROM user_printer_assignments WHERE id = ?', [assignmentId]);
+                    const [assignmentRows] = await db.query('SELECT id, user_id, printer_id, institution_id, department, assigned_at FROM user_printer_assignments WHERE id = ?', [assignmentId]);
                     console.log('Inserted assignment row:', assignmentRows[0]);
                     var createdAssignmentRow = assignmentRows[0];
                 } catch (e) {
@@ -1774,30 +1642,30 @@ app.post('/api/coordinators/:id/users', authenticateCoordinator, async (req, res
                 }
 
                 // Mark inventory item as assigned
-                console.log('Updating inventory_items.status to assigned for id', inventory_item_id);
-                await connection.query('UPDATE inventory_items SET status = "assigned" WHERE id = ?', [inventory_item_id]);
+                console.log('Updating printers.status to assigned for id', printer_id);
+                await connection.query('UPDATE printers SET status = "assigned" WHERE id = ?', [printer_id]);
                 
                 // Send notification to new user about printer assignment
                 try {
                     const [printerInfo] = await connection.query(
-                        'SELECT name, brand, model, serial_number FROM inventory_items WHERE id = ?',
-                        [inventory_item_id]
+                        'SELECT name, brand, model, serial_number FROM printers WHERE id = ?',
+                        [printer_id]
                     );
                     const [coordInfo] = await connection.query(
                         'SELECT first_name, last_name FROM users WHERE id = ?',
-                        [coordinatorId]
+                        [institution_adminId]
                     );
                     
                     if (printerInfo[0] && coordInfo[0]) {
                         const printerDetails = `${printerInfo[0].brand} ${printerInfo[0].model} (SN: ${printerInfo[0].serial_number})`;
                         await createNotification({
                             title: 'Printer Assigned',
-                            message: `Coordinator ${coordInfo[0].first_name} ${coordInfo[0].last_name} has assigned you a printer: ${printerDetails}`,
+                            message: `institution_admin ${coordInfo[0].first_name} ${coordInfo[0].last_name} has assigned you a printer: ${printerDetails}`,
                             type: 'info',
                             user_id: newUserId,
-                            sender_id: coordinatorId,
-                            reference_type: 'inventory_item',
-                            reference_id: inventory_item_id,
+                            sender_id: institution_adminId,
+                            reference_type: 'printer',
+                            reference_id: printer_id,
                             priority: 'medium'
                         });
                         console.log('✅ Notification sent to new user about printer assignment');
@@ -1808,30 +1676,30 @@ app.post('/api/coordinators/:id/users', authenticateCoordinator, async (req, res
                 
                     assignmentIds.push(assignmentId);
                     assignedPrinters.push({
-                    inventory_item_id,
+                    printer_id,
                     assignment_id: assignmentId,
                     status: 'available_assigned'
                 });
             } else if (currentStatus === 'assigned') {
                 // If already assigned, ensure it's assigned to the same institution (or no institution mapping exists)
                 const [cpaRows] = await connection.query(
-                    'SELECT institution_id FROM client_printer_assignments WHERE inventory_item_id = ? LIMIT 1',
-                    [inventory_item_id]
+                    'SELECT institution_id FROM institution_printer_assignments WHERE printer_id = ? LIMIT 1',
+                    [printer_id]
                 );
 
-                if (cpaRows.length > 0 && coordinatorInstitutionId && cpaRows[0].institution_id !== coordinatorInstitutionId) {
+                if (cpaRows.length > 0 && institution_adminInstitutionId && cpaRows[0].institution_id !== institution_adminInstitutionId) {
                     return res.status(400).json({ error: 'Inventory item is assigned to a different institution' });
                 }
 
-                // Insert user-printer assignment without changing inventory_items.status (already 'assigned')
-                const assignSql = `INSERT INTO user_printer_assignments (user_id, inventory_item_id, institution_id, department) VALUES (?, ?, ?, ?)`;
-                const assignParams = [newUserId, inventory_item_id, coordinatorInstitutionId, departmentToSave];
+                // Insert user-printer assignment without changing printers.status (already 'assigned')
+                const assignSql = `INSERT INTO user_printer_assignments (user_id, printer_id, institution_id, department) VALUES (?, ?, ?, ?)`;
+                const assignParams = [newUserId, printer_id, institution_adminInstitutionId, departmentToSave];
                 console.log('Inserting user_printer_assignments with params (existing assigned item, transaction):', assignParams);
                 const [insertAssign] = await connection.query(assignSql, assignParams);
                 console.log('Assignment insert result (existing assigned item):', insertAssign);
                 const assignmentId = insertAssign.insertId;
                 try {
-                    const [assignmentRows] = await db.query('SELECT id, user_id, inventory_item_id, institution_id, department, assigned_at FROM user_printer_assignments WHERE id = ?', [assignmentId]);
+                    const [assignmentRows] = await db.query('SELECT id, user_id, printer_id, institution_id, department, assigned_at FROM user_printer_assignments WHERE id = ?', [assignmentId]);
                     console.log('Inserted assignment row (existing assigned item):', assignmentRows[0]);
                     var createdAssignmentRow = assignmentRows[0];
                 } catch (e) {
@@ -1840,13 +1708,13 @@ app.post('/api/coordinators/:id/users', authenticateCoordinator, async (req, res
                 
                 assignmentIds.push(assignmentId);
                 assignedPrinters.push({
-                    inventory_item_id,
+                    printer_id,
                     assignment_id: assignmentId,
                     status: 'already_assigned'
                 });
             } else {
                 // Other statuses (retired, etc.) are not assignable - skip this printer
-                console.warn(`Skipping inventory_item_id ${inventory_item_id} - status ${currentStatus} not assignable`);
+                console.warn(`Skipping printer_id ${printer_id} - status ${currentStatus} not assignable`);
                 continue;
             }
         } // End of for loop for printer assignments
@@ -1862,7 +1730,7 @@ app.post('/api/coordinators/:id/users', authenticateCoordinator, async (req, res
             assignedPrinters
         });
     } catch (error) {
-        console.error('Error creating user by coordinator (transactional):', error);
+        console.error('Error creating user by institution_admin (transactional):', error);
         try {
             if (connection) await connection.rollback();
         } catch (rbErr) {
@@ -1878,36 +1746,36 @@ app.post('/api/coordinators/:id/users', authenticateCoordinator, async (req, res
     }
 });
 
-// Get users for a coordinator's institution (includes printer assignment info)
-app.get('/api/coordinators/:id/users', authenticateCoordinator, async (req, res) => {
+// Get users for a institution_admin's institution (includes printer assignment info)
+app.get('/api/institution_admins/:id/users', authenticateinstitution_admin, async (req, res) => {
     try {
-        const coordinatorId = parseInt(req.params.id);
+        const institution_adminId = parseInt(req.params.id);
         
-        if (isNaN(coordinatorId)) {
-            return res.status(400).json({ error: 'Invalid coordinator ID' });
+        if (isNaN(institution_adminId)) {
+            return res.status(400).json({ error: 'Invalid institution_admin ID' });
         }
         
-        const requester = req.user;
+        const institution_user = req.user;
 
-        // Only allow the logged-in coordinator to view users for their own account (or admin)
-        if (String(requester.id) !== String(coordinatorId) && requester.role !== 'admin') {
+        // Only allow the logged-in institution_admin to view users for their own account (or admin)
+        if (String(institution_user.id) !== String(institution_adminId) && institution_user.role !== 'admin') {
             return res.status(403).json({ error: 'Access denied' });
         }
 
-        // Get coordinator's institution using correct architecture:
-        // institutions.user_id points to the coordinator who owns that institution
+        // Get institution_admin's institution using correct architecture:
+        // institutions.user_id points to the institution_admin who owns that institution
         const [institutionRows] = await db.query(
             'SELECT institution_id, name FROM institutions WHERE user_id = ?', 
-            [coordinatorId]
+            [institution_adminId]
         );
 
         if (!institutionRows || institutionRows.length === 0) {
-            console.warn('Coordinator', coordinatorId, 'has no associated institution.');
-            return res.status(400).json({ error: 'Coordinator has no associated institution.' });
+            console.warn('institution_admin', institution_adminId, 'has no associated institution.');
+            return res.status(400).json({ error: 'institution_admin has no associated institution.' });
         }
 
-        const coordinatorInstitutionId = institutionRows[0].institution_id;
-        console.log(`GET /api/coordinators/:id/users - Coordinator ${coordinatorId} owns institution ${coordinatorInstitutionId} (${institutionRows[0].name})`);
+        const institution_adminInstitutionId = institutionRows[0].institution_id;
+        console.log(`GET /api/institution_admins/:id/users - institution_admin ${institution_adminId} owns institution ${institution_adminInstitutionId} (${institutionRows[0].name})`);
 
         // Fetch users that have printers assigned to this institution
         // Note: Users don't have institution_id, but user_printer_assignments does
@@ -1923,16 +1791,16 @@ app.get('/api/coordinators/:id/users', authenticateCoordinator, async (req, res)
                     WHEN u.approval_status = 'approved' THEN 'active'
                     ELSE COALESCE(u.status, u.approval_status)
                 END AS status,
-                upa.inventory_item_id,
+                upa.printer_id,
                 COALESCE(ii.name, CONCAT_WS(' ', ii.brand, ii.model, ii.serial_number)) AS printer_name,
                 upa.department,
                 upa.assigned_at
             FROM user_printer_assignments upa
             JOIN users u ON upa.user_id = u.id
-            LEFT JOIN inventory_items ii ON upa.inventory_item_id = ii.id
+            LEFT JOIN printers ii ON upa.printer_id = ii.id
             WHERE upa.institution_id = ?
             ORDER BY u.created_at DESC, upa.assigned_at DESC
-        `, [coordinatorInstitutionId]);
+        `, [institution_adminInstitutionId]);
 
         // Group results by user to return array of printers for each user
         const userMap = new Map();
@@ -1950,34 +1818,34 @@ app.get('/api/coordinators/:id/users', authenticateCoordinator, async (req, res)
                 });
             }
             userMap.get(row.user_id).printers.push({
-                inventory_item_id: row.inventory_item_id,
+                printer_id: row.printer_id,
                 printer_name: row.printer_name,
                 assigned_at: row.assigned_at
             });
         });
 
         const groupedUsers = Array.from(userMap.values());
-        console.log(`Fetched ${groupedUsers.length} users with ${rows.length} total printer assignments for institution ${coordinatorInstitutionId}`);
+        console.log(`Fetched ${groupedUsers.length} users with ${rows.length} total printer assignments for institution ${institution_adminInstitutionId}`);
         res.json(groupedUsers);
     } catch (error) {
-        console.error('Error fetching coordinator users:', error);
+        console.error('Error fetching institution_admin users:', error);
         res.status(500).json({ error: 'Failed to fetch users' });
     }
 });
 
-// Update user status (active/inactive) by coordinator for their institution users
-app.patch('/api/coordinators/:id/users/:userId/status', authenticateCoordinator, async (req, res) => {
+// Update user status (active/inactive) by institution_admin for their institution users
+app.patch('/api/institution_admins/:id/users/:userId/status', authenticateinstitution_admin, async (req, res) => {
     try {
-        const coordinatorId = parseInt(req.params.id);
+        const institution_adminId = parseInt(req.params.id);
         const userId = parseInt(req.params.userId);
         
-        if (isNaN(coordinatorId) || isNaN(userId)) {
+        if (isNaN(institution_adminId) || isNaN(userId)) {
             return res.status(400).json({ error: 'Invalid ID parameters' });
         }
         
-        const requester = req.user;
+        const institution_user = req.user;
 
-        if (String(requester.id) !== String(coordinatorId) && requester.role !== 'admin') {
+        if (String(institution_user.id) !== String(institution_adminId) && institution_user.role !== 'admin') {
             return res.status(403).json({ error: 'Access denied' });
         }
 
@@ -1986,23 +1854,23 @@ app.patch('/api/coordinators/:id/users/:userId/status', authenticateCoordinator,
             return res.status(400).json({ error: 'Invalid status. Must be active or inactive' });
         }
 
-        // Get coordinator's institution using correct architecture
+        // Get institution_admin's institution using correct architecture
         const [institutionRows] = await db.query(
             'SELECT institution_id, name FROM institutions WHERE user_id = ?', 
-            [coordinatorId]
+            [institution_adminId]
         );
 
         if (!institutionRows || institutionRows.length === 0) {
-            return res.status(400).json({ error: 'Coordinator has no associated institution.' });
+            return res.status(400).json({ error: 'institution_admin has no associated institution.' });
         }
 
-        const coordinatorInstitutionId = institutionRows[0].institution_id;
+        const institution_adminInstitutionId = institutionRows[0].institution_id;
 
-        // Verify target user belongs to coordinator's institution
+        // Verify target user belongs to institution_admin's institution
         // Since users don't have institution_id, check via user_printer_assignments
         const [targetAssignments] = await db.query(
             'SELECT user_id FROM user_printer_assignments WHERE user_id = ? AND institution_id = ? LIMIT 1', 
-            [userId, coordinatorInstitutionId]
+            [userId, institution_adminInstitutionId]
         );
         
         if (!targetAssignments || targetAssignments.length === 0) {
@@ -2013,67 +1881,67 @@ app.patch('/api/coordinators/:id/users/:userId/status', authenticateCoordinator,
         const [targetUserRows] = await db.query('SELECT status FROM users WHERE id = ? LIMIT 1', [userId]);
         const previousUserStatus = targetUserRows && targetUserRows.length > 0 ? targetUserRows[0].status : 'active';
 
-        // If coordinator (or admin) is deactivating the user, increment token_version to invalidate sessions
+        // If institution_admin (or admin) is deactivating the user, increment token_version to invalidate sessions
         if (previousUserStatus !== status && status === 'inactive') {
             await db.query('UPDATE users SET status = ?, token_version = COALESCE(token_version, 0) + 1, updated_at = NOW() WHERE id = ?', [status, userId]);
-            console.log(`Coordinator deactivated user ${userId} — token_version incremented to invalidate sessions`);
+            console.log(`institution_admin deactivated user ${userId} — token_version incremented to invalidate sessions`);
         } else {
             await db.query('UPDATE users SET status = ?, updated_at = NOW() WHERE id = ?', [status, userId]);
         }
 
         res.json({ message: `User status updated to ${status}` });
     } catch (error) {
-        console.error('Error updating user status by coordinator:', error);
+        console.error('Error updating user status by institution_admin:', error);
         res.status(500).json({ error: 'Failed to update user status' });
     }
 });
 
-// Edit a user created by a coordinator (details + assignment)
-app.put('/api/coordinators/:id/users/:userId', authenticateCoordinator, async (req, res) => {
+// Edit a user created by a institution_admin (details + assignment)
+app.put('/api/institution_admins/:id/users/:userId', authenticateinstitution_admin, async (req, res) => {
     try {
-        const coordinatorId = parseInt(req.params.id);
+        const institution_adminId = parseInt(req.params.id);
         const userId = parseInt(req.params.userId);
         
-        if (isNaN(coordinatorId) || isNaN(userId)) {
+        if (isNaN(institution_adminId) || isNaN(userId)) {
             return res.status(400).json({ error: 'Invalid ID parameters' });
         }
         
-        const requester = req.user;
+        const institution_user = req.user;
 
-        if (String(requester.id) !== String(coordinatorId) && requester.role !== 'admin') {
+        if (String(institution_user.id) !== String(institution_adminId) && institution_user.role !== 'admin') {
             return res.status(403).json({ error: 'Access denied' });
         }
 
-        const { firstName, lastName, email, department, inventory_item_ids } = req.body;
+        const { firstName, lastName, email, department, printer_ids } = req.body;
 
         if (!firstName || !lastName || !email) {
             return res.status(400).json({ error: 'firstName, lastName and email are required' });
         }
 
-        // Support both single inventory_item_id (legacy) and multiple inventory_item_ids (new)
+        // Support both single printer_id (legacy) and multiple printer_ids (new)
         let printerIds = [];
-        if (req.body.inventory_item_ids && Array.isArray(req.body.inventory_item_ids)) {
-            printerIds = req.body.inventory_item_ids.filter(id => id);
-        } else if (req.body.inventory_item_id) {
-            printerIds = [req.body.inventory_item_id];
+        if (req.body.printer_ids && Array.isArray(req.body.printer_ids)) {
+            printerIds = req.body.printer_ids.filter(id => id);
+        } else if (req.body.printer_id) {
+            printerIds = [req.body.printer_id];
         }
 
-        // Get coordinator's institution using correct architecture
+        // Get institution_admin's institution using correct architecture
         const [institutionRows] = await db.query(
             'SELECT institution_id, name FROM institutions WHERE user_id = ?', 
-            [coordinatorId]
+            [institution_adminId]
         );
 
         if (!institutionRows || institutionRows.length === 0) {
-            return res.status(400).json({ error: 'Coordinator has no associated institution.' });
+            return res.status(400).json({ error: 'institution_admin has no associated institution.' });
         }
 
-        const coordinatorInstitutionId = institutionRows[0].institution_id;
+        const institution_adminInstitutionId = institutionRows[0].institution_id;
 
-        // Verify target user belongs to coordinator's institution
+        // Verify target user belongs to institution_admin's institution
         const [targetAssignments] = await db.query(
             'SELECT user_id FROM user_printer_assignments WHERE user_id = ? AND institution_id = ? LIMIT 1', 
-            [userId, coordinatorInstitutionId]
+            [userId, institution_adminInstitutionId]
         );
         
         if (!targetAssignments || targetAssignments.length === 0) {
@@ -2093,11 +1961,11 @@ app.put('/api/coordinators/:id/users/:userId', authenticateCoordinator, async (r
         // Handle printer assignment changes
         // Get all current assignments for this user
         const [currentAssignments] = await db.query(
-            'SELECT id, inventory_item_id, department FROM user_printer_assignments WHERE user_id = ? AND institution_id = ?',
-            [userId, coordinatorInstitutionId]
+            'SELECT id, printer_id, department FROM user_printer_assignments WHERE user_id = ? AND institution_id = ?',
+            [userId, institution_adminInstitutionId]
         );
         
-        const currentPrinterIds = currentAssignments.map(a => Number(a.inventory_item_id));
+        const currentPrinterIds = currentAssignments.map(a => Number(a.printer_id));
         const newPrinterIds = printerIds.map(id => Number(id));
         
         // Determine which assignments to add and which to remove
@@ -2109,66 +1977,66 @@ app.put('/api/coordinators/:id/users/:userId', authenticateCoordinator, async (r
         
         // Remove old assignments that are no longer selected
         for (const printerIdToRemove of toRemove) {
-            const assignmentToRemove = currentAssignments.find(a => Number(a.inventory_item_id) === printerIdToRemove);
+            const assignmentToRemove = currentAssignments.find(a => Number(a.printer_id) === printerIdToRemove);
             if (assignmentToRemove) {
                 await db.query('DELETE FROM user_printer_assignments WHERE id = ?', [assignmentToRemove.id]);
                 // Check if any other user has this printer assigned
                 const [otherAssignments] = await db.query(
-                    'SELECT id FROM user_printer_assignments WHERE inventory_item_id = ? LIMIT 1',
+                    'SELECT id FROM user_printer_assignments WHERE printer_id = ? LIMIT 1',
                     [printerIdToRemove]
                 );
                 if (!otherAssignments || otherAssignments.length === 0) {
                     // No other user has this printer, mark as available
-                    await db.query('UPDATE inventory_items SET status = "available" WHERE id = ?', [printerIdToRemove]);
+                    await db.query('UPDATE printers SET status = "available" WHERE id = ?', [printerIdToRemove]);
                 }
                 console.log(`Removed printer ${printerIdToRemove} from user ${userId}`);
             }
         }
         
         // Add new assignments
-        for (const inventory_item_id of toAdd) {
+        for (const printer_id of toAdd) {
             // Validate inventory item
-            const [itemRows] = await db.query('SELECT id, status FROM inventory_items WHERE id = ?', [inventory_item_id]);
+            const [itemRows] = await db.query('SELECT id, status FROM printers WHERE id = ?', [printer_id]);
             if (itemRows.length === 0) {
-                console.warn(`Invalid inventory_item_id ${inventory_item_id} - skipping`);
+                console.warn(`Invalid printer_id ${printer_id} - skipping`);
                 continue;
             }
 
             // Insert new assignment
             await db.query(
-                'INSERT INTO user_printer_assignments (user_id, inventory_item_id, institution_id, department) VALUES (?, ?, ?, ?)',
-                [userId, inventory_item_id, coordinatorInstitutionId, department || null]
+                'INSERT INTO user_printer_assignments (user_id, printer_id, institution_id, department) VALUES (?, ?, ?, ?)',
+                [userId, printer_id, institution_adminInstitutionId, department || null]
             );
             
             // Mark inventory as assigned
-            await db.query('UPDATE inventory_items SET status = "assigned" WHERE id = ?', [inventory_item_id]);
+            await db.query('UPDATE printers SET status = "assigned" WHERE id = ?', [printer_id]);
             
-            console.log(`Added printer ${inventory_item_id} to user ${userId}`);
+            console.log(`Added printer ${printer_id} to user ${userId}`);
             
-            // Send notification to requester about new printer assignment
+            // Send notification to institution_user about new printer assignment
             try {
                 const [printerInfo] = await db.query(
-                    'SELECT name, brand, model, serial_number FROM inventory_items WHERE id = ?',
-                    [inventory_item_id]
+                    'SELECT name, brand, model, serial_number FROM printers WHERE id = ?',
+                    [printer_id]
                 );
                 const [coordInfo] = await db.query(
                     'SELECT first_name, last_name FROM users WHERE id = ?',
-                    [coordinatorId]
+                    [institution_adminId]
                 );
                 
                 if (printerInfo[0] && coordInfo[0]) {
                     const printerDetails = `${printerInfo[0].brand || ''} ${printerInfo[0].model || ''} (SN: ${printerInfo[0].serial_number || 'N/A'})`;
                     await createNotification({
                         title: 'New Printer Assigned',
-                        message: `Coordinator ${coordInfo[0].first_name} ${coordInfo[0].last_name} has assigned you a new printer: ${printerDetails}`,
+                        message: `institution_admin ${coordInfo[0].first_name} ${coordInfo[0].last_name} has assigned you a new printer: ${printerDetails}`,
                         type: 'info',
                         user_id: userId,
-                        sender_id: coordinatorId,
-                        reference_type: 'inventory_item',
-                        reference_id: inventory_item_id,
+                        sender_id: institution_adminId,
+                        reference_type: 'printer',
+                        reference_id: printer_id,
                         priority: 'medium'
                     });
-                    console.log('✅ Notification sent to requester about new printer assignment');
+                    console.log('✅ Notification sent to institution_user about new printer assignment');
                 }
             } catch (notifError) {
                 console.error('❌ Failed to send printer assignment notification:', notifError);
@@ -2179,7 +2047,7 @@ app.put('/api/coordinators/:id/users/:userId', authenticateCoordinator, async (r
         if (department !== undefined && toKeep.length > 0) {
             await db.query(
                 'UPDATE user_printer_assignments SET department = ? WHERE user_id = ? AND institution_id = ?',
-                [department || null, userId, coordinatorInstitutionId]
+                [department || null, userId, institution_adminInstitutionId]
             );
         }
 
@@ -2189,12 +2057,12 @@ app.put('/api/coordinators/:id/users/:userId', authenticateCoordinator, async (r
         
         // Fetch all assignments
         const [newAssignRows] = await db.query(
-            `SELECT upa.id, upa.inventory_item_id, upa.department, upa.assigned_at,
+            `SELECT upa.id, upa.printer_id, upa.department, upa.assigned_at,
                     COALESCE(ii.name, CONCAT_WS(' ', ii.brand, ii.model)) as printer_name
              FROM user_printer_assignments upa
-             LEFT JOIN inventory_items ii ON upa.inventory_item_id = ii.id
+             LEFT JOIN printers ii ON upa.printer_id = ii.id
              WHERE upa.user_id = ? AND upa.institution_id = ?`,
-            [userId, coordinatorInstitutionId]
+            [userId, institution_adminInstitutionId]
         );
 
         res.json({ 
@@ -2208,26 +2076,26 @@ app.put('/api/coordinators/:id/users/:userId', authenticateCoordinator, async (r
             }
         });
     } catch (error) {
-        console.error('Error editing user by coordinator:', error);
+        console.error('Error editing user by institution_admin:', error);
         res.status(500).json({ error: 'Failed to edit user' });
     }
 });
 
-// Coordinator change user password
-app.patch('/api/coordinators/:id/users/:userId/password', authenticateCoordinator, async (req, res) => {
+// institution_admin change user password
+app.patch('/api/institution_admins/:id/users/:userId/password', authenticateinstitution_admin, async (req, res) => {
     try {
-        const coordinatorId = parseInt(req.params.id);
+        const institution_adminId = parseInt(req.params.id);
         const userId = parseInt(req.params.userId);
         
-        if (isNaN(coordinatorId) || isNaN(userId)) {
+        if (isNaN(institution_adminId) || isNaN(userId)) {
             return res.status(400).json({ error: 'Invalid ID parameters' });
         }
         
-        const requester = req.user;
+        const institution_user = req.user;
         const { newPassword } = req.body;
 
-        // Verify coordinator is updating their own institution's users
-        if (String(requester.id) !== String(coordinatorId) && requester.role !== 'admin') {
+        // Verify institution_admin is updating their own institution's users
+        if (String(institution_user.id) !== String(institution_adminId) && institution_user.role !== 'admin') {
             return res.status(403).json({ error: 'Access denied' });
         }
 
@@ -2236,29 +2104,29 @@ app.patch('/api/coordinators/:id/users/:userId/password', authenticateCoordinato
             return res.status(400).json({ error: 'Password must be at least 6 characters long' });
         }
 
-        // Get coordinator's institution
+        // Get institution_admin's institution
         const [institutionRows] = await db.query(
             'SELECT institution_id, name FROM institutions WHERE user_id = ?', 
-            [coordinatorId]
+            [institution_adminId]
         );
 
         if (!institutionRows || institutionRows.length === 0) {
-            return res.status(400).json({ error: 'Coordinator has no associated institution' });
+            return res.status(400).json({ error: 'institution_admin has no associated institution' });
         }
 
-        const coordinatorInstitutionId = institutionRows[0].institution_id;
+        const institution_adminInstitutionId = institutionRows[0].institution_id;
 
-        // Verify target user belongs to coordinator's institution
+        // Verify target user belongs to institution_admin's institution
         const [targetAssignments] = await db.query(
             'SELECT user_id FROM user_printer_assignments WHERE user_id = ? AND institution_id = ? LIMIT 1', 
-            [userId, coordinatorInstitutionId]
+            [userId, institution_adminInstitutionId]
         );
         
         if (!targetAssignments || targetAssignments.length === 0) {
             return res.status(403).json({ error: 'User does not belong to your institution' });
         }
 
-        // Verify user exists and is a requester
+        // Verify user exists and is a institution_user
         const [userRows] = await db.query(
             'SELECT id, role, first_name, last_name FROM users WHERE id = ?',
             [userId]
@@ -2270,9 +2138,9 @@ app.patch('/api/coordinators/:id/users/:userId/password', authenticateCoordinato
 
         const user = userRows[0];
 
-        // Prevent coordinators from changing passwords of non-requester users
-        if (user.role !== 'requester') {
-            return res.status(403).json({ error: 'You can only change passwords for requester users' });
+        // Prevent institution_admins from changing passwords of non-institution_user users
+        if (user.role !== 'institution_user') {
+            return res.status(403).json({ error: 'You can only change passwords for institution_user users' });
         }
 
         // Hash the new password
@@ -2284,7 +2152,7 @@ app.patch('/api/coordinators/:id/users/:userId/password', authenticateCoordinato
             [hashedPassword, userId]
         );
 
-        console.log(`[COORDINATOR] Coordinator ${coordinatorId} changed password for user ${userId} (${user.first_name} ${user.last_name}) - All sessions invalidated`);
+        console.log(`[institution_admin] institution_admin ${institution_adminId} changed password for user ${userId} (${user.first_name} ${user.last_name}) - All sessions invalidated`);
 
         res.json({ 
             message: 'Password updated successfully',
@@ -2295,7 +2163,7 @@ app.patch('/api/coordinators/:id/users/:userId/password', authenticateCoordinato
             }
         });
     } catch (error) {
-        console.error('Error changing user password by coordinator:', error);
+        console.error('Error changing user password by institution_admin:', error);
         res.status(500).json({ error: 'Failed to change password' });
     }
 });
@@ -2323,7 +2191,7 @@ app.patch('/api/admin/staff/:staffId/password', authenticateAdmin, async (req, r
 
         const user = userRows[0];
 
-        // Verify user is staff (not admin, coordinator, or requester)
+        // Verify user is staff (not admin, institution_admin, or institution_user)
         if (!['technician', 'operations_officer'].includes(user.role)) {
             return res.status(403).json({ error: 'Can only change passwords for staff members (technician or operations officer)' });
         }
@@ -2355,10 +2223,10 @@ app.patch('/api/admin/staff/:staffId/password', authenticateAdmin, async (req, r
     }
 });
 
-// Admin change coordinator password
-app.patch('/api/admin/coordinators/:coordinatorId/password', authenticateAdmin, async (req, res) => {
+// Admin change institution_admin password
+app.patch('/api/admin/institution_admins/:institution_adminId/password', authenticateAdmin, async (req, res) => {
     try {
-        const coordinatorId = req.params.coordinatorId;
+        const institution_adminId = req.params.institution_adminId;
         const { newPassword } = req.body;
 
         // Validate password
@@ -2366,21 +2234,21 @@ app.patch('/api/admin/coordinators/:coordinatorId/password', authenticateAdmin, 
             return res.status(400).json({ error: 'Password must be at least 6 characters long' });
         }
 
-        // Verify coordinator exists and is a coordinator
+        // Verify institution_admin exists and is a institution_admin
         const [userRows] = await db.query(
             'SELECT id, role, first_name, last_name, email, status FROM users WHERE id = ?',
-            [coordinatorId]
+            [institution_adminId]
         );
 
         if (!userRows || userRows.length === 0) {
-            return res.status(404).json({ error: 'Coordinator not found' });
+            return res.status(404).json({ error: 'institution_admin not found' });
         }
 
         const user = userRows[0];
 
-        // Verify user is coordinator
-        if (user.role !== 'coordinator') {
-            return res.status(403).json({ error: 'Can only change passwords for coordinator accounts' });
+        // Verify user is institution_admin
+        if (user.role !== 'institution_admin') {
+            return res.status(403).json({ error: 'Can only change passwords for institution_admin accounts' });
         }
 
         // Hash the new password
@@ -2389,10 +2257,10 @@ app.patch('/api/admin/coordinators/:coordinatorId/password', authenticateAdmin, 
         // Update password and increment token_version to invalidate all existing sessions
         await db.query(
             'UPDATE users SET password = ?, token_version = COALESCE(token_version, 0) + 1, updated_at = NOW() WHERE id = ?',
-            [hashedPassword, coordinatorId]
+            [hashedPassword, institution_adminId]
         );
 
-        console.log(`[ADMIN] Admin changed password for coordinator ${coordinatorId} (${user.first_name} ${user.last_name}) - All sessions invalidated`);
+        console.log(`[ADMIN] Admin changed password for institution_admin ${institution_adminId} (${user.first_name} ${user.last_name}) - All sessions invalidated`);
 
         res.json({ 
             message: 'Password updated successfully',
@@ -2405,17 +2273,17 @@ app.patch('/api/admin/coordinators/:coordinatorId/password', authenticateAdmin, 
             }
         });
     } catch (error) {
-        console.error('Error changing coordinator password by admin:', error);
+        console.error('Error changing institution_admin password by admin:', error);
         res.status(500).json({ error: 'Failed to change password' });
     }
 });
 
-// Get pending coordinators for approval page
-app.get('/api/coordinators/pending', authenticateAdmin, async (req, res) => {
+// Get pending institution_admins for approval page
+app.get('/api/institution_admins/pending', authenticateAdmin, async (req, res) => {
     try {
         const { search } = req.query;
         
-        // Query pending coordinators and get institution info from notifications.related_data
+        // Query pending institution_admins and get institution info from notifications.related_data
         // since institutions.user_id is only set after approval
         let query = `
             SELECT 
@@ -2433,8 +2301,8 @@ app.get('/api/coordinators/pending', authenticateAdmin, async (req, res) => {
                 n.related_data
             FROM users u 
             LEFT JOIN temp_user_photos tp ON tp.user_id = u.id
-            LEFT JOIN notifications n ON n.related_user_id = u.id AND n.type = 'coordinator_registration'
-            WHERE u.role = 'coordinator' AND u.approval_status = 'pending'
+            LEFT JOIN notifications n ON n.related_user_id = u.id AND n.type = 'institution_admin_registration'
+            WHERE u.role = 'institution_admin' AND u.approval_status = 'pending'
         `;
         
         const params = [];
@@ -2484,28 +2352,28 @@ app.get('/api/coordinators/pending', authenticateAdmin, async (req, res) => {
         
         res.json(formattedRows);
     } catch (error) {
-        console.error('Error fetching pending coordinators:', error);
-        res.status(500).json({ error: 'Failed to fetch pending coordinators' });
+        console.error('Error fetching pending institution_admins:', error);
+        res.status(500).json({ error: 'Failed to fetch pending institution_admins' });
     }
 });
 
-// Approve coordinator
-app.post('/api/coordinators/:id/approve', authenticateAdmin, async (req, res) => {
+// Approve institution_admin
+app.post('/api/institution_admins/:id/approve', authenticateAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         
-        // Get current coordinator status
+        // Get current institution_admin status
         const [user] = await db.query(
-            'SELECT approval_status, first_name, last_name, email FROM users WHERE id = ? AND role = "coordinator"',
+            'SELECT approval_status, first_name, last_name, email FROM users WHERE id = ? AND role = "institution_admin"',
             [id]
         );
         
         if (!user[0]) {
-            return res.status(404).json({ error: 'Coordinator not found' });
+            return res.status(404).json({ error: 'institution_admin not found' });
         }
 
         if (user[0].approval_status === 'approved') {
-            return res.status(400).json({ error: 'Coordinator is already approved' });
+            return res.status(400).json({ error: 'institution_admin is already approved' });
         }
 
         // Use the shared approveUser helper so institution linking happens at approval time
@@ -2515,15 +2383,15 @@ app.post('/api/coordinators/:id/approve', authenticateAdmin, async (req, res) =>
         await logAuditAction(
             req.user.id,
             req.user.role,
-            `Approved coordinator registration: ${user[0].first_name} ${user[0].last_name} (${user[0].email})`,
+            `Approved institution_admin registration: ${user[0].first_name} ${user[0].last_name} (${user[0].email})`,
             'approve',
             'user',
             id,
             JSON.stringify({
-                action: 'coordinator_approval',
-                coordinator_id: id,
-                coordinator_name: `${user[0].first_name} ${user[0].last_name}`,
-                coordinator_email: user[0].email,
+                action: 'institution_admin_approval',
+                institution_admin_id: id,
+                institution_admin_name: `${user[0].first_name} ${user[0].last_name}`,
+                institution_admin_email: user[0].email,
                 previous_status: user[0].approval_status,
                 new_status: 'approved'
             }),
@@ -2532,43 +2400,43 @@ app.post('/api/coordinators/:id/approve', authenticateAdmin, async (req, res) =>
 
         // Send approval email notification (frontend will trigger actual email)
         const emailData = {
-            coordinator_name: `${user[0].first_name} ${user[0].last_name}`,
-            coordinator_email: user[0].email,
+            institution_admin_name: `${user[0].first_name} ${user[0].last_name}`,
+            institution_admin_email: user[0].email,
             to_email: user[0].email
         };
 
         res.json({ 
-            message: 'Coordinator approved successfully',
-            coordinator: user[0],
+            message: 'institution_admin approved successfully',
+            institution_admin: user[0],
             emailData // Send email data to frontend to trigger EmailJS
         });
     } catch (error) {
-        console.error('Error approving coordinator:', error);
-        res.status(500).json({ error: 'Failed to approve coordinator' });
+        console.error('Error approving institution_admin:', error);
+        res.status(500).json({ error: 'Failed to approve institution_admin' });
     }
 });
 
-// Reject coordinator
-app.post('/api/coordinators/:id/reject', authenticateAdmin, async (req, res) => {
+// Reject institution_admin
+app.post('/api/institution_admins/:id/reject', authenticateAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const { reason } = req.body;
         
-        // Get current coordinator status
+        // Get current institution_admin status
         const [user] = await db.query(
-            'SELECT approval_status, first_name, last_name, email FROM users WHERE id = ? AND role = "coordinator"',
+            'SELECT approval_status, first_name, last_name, email FROM users WHERE id = ? AND role = "institution_admin"',
             [id]
         );
         
         if (!user[0]) {
-            return res.status(404).json({ error: 'Coordinator not found' });
+            return res.status(404).json({ error: 'institution_admin not found' });
         }
 
         if (user[0].approval_status === 'rejected') {
-            return res.status(400).json({ error: 'Coordinator is already rejected' });
+            return res.status(400).json({ error: 'institution_admin is already rejected' });
         }
 
-        // Reject the coordinator
+        // Reject the institution_admin
         await db.query(
             'UPDATE users SET approval_status = ?, updated_at = NOW() WHERE id = ?',
             ['rejected', id]
@@ -2578,15 +2446,15 @@ app.post('/api/coordinators/:id/reject', authenticateAdmin, async (req, res) => 
         await logAuditAction(
             req.user.id,
             req.user.role,
-            `Rejected coordinator registration: ${user[0].first_name} ${user[0].last_name} (${user[0].email})`,
+            `Rejected institution_admin registration: ${user[0].first_name} ${user[0].last_name} (${user[0].email})`,
             'reject',
             'user',
             id,
             JSON.stringify({
-                action: 'coordinator_rejection',
-                coordinator_id: id,
-                coordinator_name: `${user[0].first_name} ${user[0].last_name}`,
-                coordinator_email: user[0].email,
+                action: 'institution_admin_rejection',
+                institution_admin_id: id,
+                institution_admin_name: `${user[0].first_name} ${user[0].last_name}`,
+                institution_admin_email: user[0].email,
                 previous_status: user[0].approval_status,
                 new_status: 'rejected',
                 reason: reason || 'No reason provided'
@@ -2595,16 +2463,16 @@ app.post('/api/coordinators/:id/reject', authenticateAdmin, async (req, res) => 
         );
 
         res.json({ 
-            message: 'Coordinator rejected successfully',
-            coordinator: user[0]
+            message: 'institution_admin rejected successfully',
+            institution_admin: user[0]
         });
     } catch (error) {
-        console.error('Error rejecting coordinator:', error);
-        res.status(500).json({ error: 'Failed to reject coordinator' });
+        console.error('Error rejecting institution_admin:', error);
+        res.status(500).json({ error: 'Failed to reject institution_admin' });
     }
 });
 
-app.get('/api/coordinators/:id', authenticateAdmin, async (req, res) => {
+app.get('/api/institution_admins/:id', authenticateAdmin, async (req, res) => {
     try {
         const [rows] = await db.query(
             `SELECT 
@@ -2614,67 +2482,86 @@ app.get('/api/coordinators/:id', authenticateAdmin, async (req, res) => {
                 i.type as institution_type
             FROM users u 
             LEFT JOIN institutions i ON i.user_id = u.id
-            WHERE u.id = ? AND u.role = 'coordinator'`,
+            WHERE u.id = ? AND u.role = 'institution_admin'`,
             [req.params.id]
         );
         if (rows.length === 0) {
-            return res.status(404).json({ error: 'Coordinator not found' });
+            return res.status(404).json({ error: 'institution_admin not found' });
         }
         // Add institution field for frontend compatibility
-        const coordinator = {
+        const institution_admin = {
             ...rows[0],
             institution: rows[0].institution_name || 'No Organization'
         };
-        res.json(coordinator);
+        res.json(institution_admin);
     } catch (error) {
-        console.error('Error fetching coordinator:', error);
-        res.status(500).json({ error: 'Failed to fetch coordinator details' });
+        console.error('Error fetching institution_admin:', error);
+        res.status(500).json({ error: 'Failed to fetch institution_admin details' });
     }
 });
 
-// Activate or deactivate coordinator account
-app.post('/api/coordinators/:id/toggle-status', authenticateAdmin, async (req, res) => {
+// Activate or deactivate institution_admin account
+app.post('/api/institution_admins/:id/toggle-status', authenticateAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         
-        // Get current coordinator status
+        // Get current institution_admin status
         const [user] = await db.query(
-            'SELECT status, approval_status, first_name, last_name, email FROM users WHERE id = ? AND role = "coordinator"',
+            'SELECT status, approval_status, first_name, last_name, email FROM users WHERE id = ? AND role = "institution_admin"',
             [id]
         );
         
         if (!user[0]) {
-            return res.status(404).json({ error: 'Coordinator not found' });
+            return res.status(404).json({ error: 'institution_admin not found' });
         }
 
         const currentUser = user[0];
         
-        // Only allow status changes for approved coordinators
+        // Only allow status changes for approved institution_admins
         if (currentUser.approval_status !== 'approved') {
-            return res.status(400).json({ error: 'Can only activate/deactivate approved coordinators' });
+            return res.status(400).json({ error: 'Can only activate/deactivate approved institution_admins' });
         }
 
         // Toggle the status
         const newStatus = currentUser.status === 'active' ? 'inactive' : 'active';
         const actionMessage = newStatus === 'active' 
-            ? 'Coordinator account activated successfully' 
-            : 'Coordinator account deactivated successfully';
+            ? 'Institution Admin Account Activated Successfully' 
+            : 'Institution Admin Account Deactivated Successfully';
 
-        // Update the coordinator status and invalidate sessions if deactivating
+        // Update the institution_admin status and invalidate sessions if deactivating
         if (currentUser.status !== newStatus && newStatus === 'inactive') {
             await db.query('UPDATE users SET status = ?, token_version = COALESCE(token_version, 0) + 1, updated_at = NOW() WHERE id = ?', [newStatus, id]);
-            console.log(`Admin deactivated coordinator ${id} — token_version incremented to invalidate sessions`);
+            console.log(`Admin deactivated institution_admin ${id} — token_version incremented to invalidate sessions`);
         } else {
             await db.query('UPDATE users SET status = ?, updated_at = NOW() WHERE id = ?', [newStatus, id]);
         }
+        
+        // Log audit action
+        await logAuditAction(
+            req.user.id,
+            req.user.role,
+            `${newStatus === 'active' ? 'Activated' : 'Deactivated'} institution_admin: ${currentUser.first_name} ${currentUser.last_name} (${currentUser.email})`,
+            'update',
+            'user',
+            String(id),
+            JSON.stringify({
+                action: `institution_admin_${newStatus === 'active' ? 'activation' : 'deactivation'}`,
+                institution_admin_id: id,
+                institution_admin_name: `${currentUser.first_name} ${currentUser.last_name}`,
+                institution_admin_email: currentUser.email,
+                previous_status: currentUser.status,
+                new_status: newStatus
+            }),
+            req
+        );
 
         res.json({ 
             message: actionMessage,
             newStatus: newStatus
         });
     } catch (error) {
-        console.error('Error updating coordinator status:', error);
-        res.status(500).json({ error: 'Failed to update coordinator status' });
+        console.error('Error updating institution_admin status:', error);
+        res.status(500).json({ error: 'Failed to update institution_admin status' });
     }
 });
 
@@ -2688,15 +2575,16 @@ app.get('/api/institutions/:institutionId/printers', async (req, res) => {
         const [rows] = await db.query(
             `SELECT 
                 cpa.id as assignment_id,
-                ii.id as inventory_item_id,
+                ii.id as printer_id,
                 ii.name,
                 ii.model,
                 ii.serial_number,
-                cpa.location_note as location,
-                cpa.assigned_at
-            FROM client_printer_assignments cpa
-            JOIN inventory_items ii ON cpa.inventory_item_id = ii.id
+                cpa.assigned_at,
+                cpa.status
+            FROM institution_printer_assignments cpa
+            JOIN printers ii ON cpa.printer_id = ii.id
             WHERE cpa.institution_id COLLATE utf8mb4_unicode_ci = ? COLLATE utf8mb4_unicode_ci
+            AND cpa.status = 'assigned'
             ORDER BY cpa.assigned_at DESC`,
             [institutionId]
         );
@@ -2711,17 +2599,53 @@ app.get('/api/institutions/:institutionId/printers', async (req, res) => {
     }
 });
 
+// Get printer assignment history for an institution (includes both assigned and unassigned)
+app.get('/api/institutions/:institutionId/printers/history', authenticateAdmin, async (req, res) => {
+    try {
+        const { institutionId } = req.params;
+        console.log(`📋 Fetching printer assignment history for institution: ${institutionId}`);
+        
+        const [rows] = await db.query(
+            `SELECT 
+                cpa.id as assignment_id,
+                ii.id as printer_id,
+                ii.name,
+                ii.brand,
+                ii.model,
+                ii.serial_number,
+                cpa.assigned_at,
+                cpa.unassigned_at,
+                cpa.status
+            FROM institution_printer_assignments cpa
+            JOIN printers ii ON cpa.printer_id = ii.id
+            WHERE cpa.institution_id COLLATE utf8mb4_unicode_ci = ? COLLATE utf8mb4_unicode_ci
+            ORDER BY 
+                CASE WHEN cpa.status = 'assigned' THEN 0 ELSE 1 END,
+                cpa.assigned_at DESC`,
+            [institutionId]
+        );
+        
+        console.log(`✅ Found ${rows.length} assignment records for institution ${institutionId}`);
+        res.json(rows);
+    } catch (error) {
+        console.error('❌ Error fetching printer history:', error);
+        console.error('Institution ID:', institutionId);
+        console.error('Error details:', error.message);
+        res.status(500).json({ error: 'Failed to fetch printer history', details: error.message });
+    }
+});
+
 // Assign a printer (from inventory) to an institution
 app.post('/api/institutions/:institutionId/printers', authenticateAdmin, async (req, res) => {
     try {
         const { institutionId } = req.params;
-        const { inventory_item_id, location_note } = req.body;
+        const { printer_id } = req.body;
 
-        if (!inventory_item_id) {
-            return res.status(400).json({ error: 'inventory_item_id is required' });
+        if (!printer_id) {
+            return res.status(400).json({ error: 'printer_id is required' });
         }
 
-        // Validate institution exists and get coordinator
+        // Validate institution exists and get institution_admin
         const [inst] = await db.query(
             'SELECT institution_id, name, user_id FROM institutions WHERE institution_id = ?', 
             [institutionId]
@@ -2732,8 +2656,8 @@ app.post('/api/institutions/:institutionId/printers', authenticateAdmin, async (
 
         // Validate inventory item exists and is available
         const [item] = await db.query(
-            'SELECT id, name, brand, model, serial_number, status FROM inventory_items WHERE id = ?', 
-            [inventory_item_id]
+            'SELECT id, name, brand, model, serial_number, status FROM printers WHERE id = ?', 
+            [printer_id]
         );
         if (item.length === 0) {
             return res.status(400).json({ error: 'Invalid inventory item' });
@@ -2742,17 +2666,39 @@ app.post('/api/institutions/:institutionId/printers', authenticateAdmin, async (
             return res.status(400).json({ error: 'Item is not available' });
         }
 
-        // Create assignment
-        const [result] = await db.query(
-            `INSERT INTO client_printer_assignments (institution_id, inventory_item_id, location_note)
-             VALUES (?, ?, ?)`,
-            [institutionId, inventory_item_id, location_note || null]
+        // Check if there's an existing assignment record (could be unassigned)
+        const [existing] = await db.query(
+            'SELECT id, status FROM institution_printer_assignments WHERE institution_id = ? AND printer_id = ?',
+            [institutionId, printer_id]
         );
 
-        // Mark item as assigned
-        await db.query('UPDATE inventory_items SET status = "assigned" WHERE id = ?', [inventory_item_id]);
+        let assignmentId;
+        
+        if (existing.length > 0) {
+            // Record exists - update it to reassign
+            assignmentId = existing[0].id;
+            await db.query(
+                `UPDATE institution_printer_assignments 
+                 SET status = 'assigned', assigned_at = NOW(), unassigned_at = NULL 
+                 WHERE id = ?`,
+                [assignmentId]
+            );
+            console.log(`♻️ Re-assigned printer ${printer_id} to institution ${institutionId} (updated existing record)`);
+        } else {
+            // No existing record - create new assignment
+            const [result] = await db.query(
+                `INSERT INTO institution_printer_assignments (institution_id, printer_id, status, assigned_at)
+                 VALUES (?, ?, 'assigned', NOW())`,
+                [institutionId, printer_id]
+            );
+            assignmentId = result.insertId;
+            console.log(`✅ Assigned printer ${printer_id} to institution ${institutionId} (new record)`);
+        }
 
-        // Send notification to coordinator about new printer assignment
+        // Mark item as assigned
+        await db.query('UPDATE printers SET status = "assigned" WHERE id = ?', [printer_id]);
+
+        // Send notification to institution_admin about new printer assignment
         if (inst[0].user_id) {
             try {
                 const printerName = item[0].name || `${item[0].brand} ${item[0].model}`.trim();
@@ -2761,45 +2707,51 @@ app.post('/api/institutions/:institutionId/printers', authenticateAdmin, async (
                 
                 await createNotification({
                     title: 'New Printer Assigned to Your Institution',
-                    message: `A printer has been assigned to ${inst[0].name}: ${printerDetails}. ${location_note ? `Location: ${location_note}` : ''}`,
+                    message: `A printer has been assigned to ${inst[0].name}: ${printerDetails}.`,
                     type: 'info',
                     user_id: inst[0].user_id,
                     sender_id: null, // Admin assignment
-                    reference_type: 'inventory_item',
-                    reference_id: inventory_item_id,
+                    reference_type: 'printer',
+                    reference_id: printer_id,
                     priority: 'medium'
                 });
-                console.log('✅ Notification sent to coordinator about printer assignment');
+                console.log('✅ Notification sent to institution_admin about printer assignment');
             } catch (notifError) {
                 console.error('❌ Failed to send printer assignment notification:', notifError);
             }
         }
 
-        res.status(201).json({ message: 'Printer assigned', assignment_id: result.insertId });
+        res.status(201).json({ message: 'Printer assigned', assignment_id: assignmentId });
     } catch (error) {
         console.error('Error assigning printer:', error);
         res.status(500).json({ error: 'Failed to assign printer' });
     }
 });
 
-// Update an assignment's location note
+// Unassign a printer from an institution
 app.put('/api/printers/:id', authenticateAdmin, async (req, res) => {
     try {
         const { id } = req.params;
-        const { location_note } = req.body;
+        const { unassign } = req.body;
 
         // Check exists
-        const [existing] = await db.query('SELECT id FROM client_printer_assignments WHERE id = ?', [id]);
+        const [existing] = await db.query('SELECT id, printer_id FROM institution_printer_assignments WHERE id = ?', [id]);
         if (existing.length === 0) {
             return res.status(404).json({ error: 'Assignment not found' });
         }
 
-        await db.query(
-            `UPDATE client_printer_assignments SET 
-                location_note = COALESCE(?, location_note)
-             WHERE id = ?`,
-            [location_note, id]
-        );
+        if (unassign) {
+            // Set status to unassigned and mark printer as available
+            await db.query(
+                `UPDATE institution_printer_assignments SET 
+                    status = 'unassigned'
+                 WHERE id = ?`,
+                [id]
+            );
+            
+            // Update printer status to available
+            await db.query('UPDATE printers SET status = "available" WHERE id = ?', [existing[0].printer_id]);
+        }
 
         res.json({ message: 'Assignment updated' });
     } catch (error) {
@@ -2808,17 +2760,23 @@ app.put('/api/printers/:id', authenticateAdmin, async (req, res) => {
     }
 });
 
-// Unassign a printer
+// Unassign a printer (soft delete - keep record with unassigned status)
 app.delete('/api/printers/:id', authenticateAdmin, async (req, res) => {
     try {
         const { id } = req.params;
-        const [existing] = await db.query('SELECT inventory_item_id FROM client_printer_assignments WHERE id = ?', [id]);
+        const [existing] = await db.query('SELECT printer_id FROM institution_printer_assignments WHERE id = ?', [id]);
         if (existing.length === 0) {
             return res.status(404).json({ error: 'Assignment not found' });
         }
-        const itemId = existing[0].inventory_item_id;
-        await db.query('DELETE FROM client_printer_assignments WHERE id = ?', [id]);
-        await db.query('UPDATE inventory_items SET status = "available" WHERE id = ?', [itemId]);
+        const itemId = existing[0].printer_id;
+        
+        // Instead of deleting, update status to unassigned and set unassigned_at timestamp
+        await db.query(
+            'UPDATE institution_printer_assignments SET status = "unassigned", unassigned_at = NOW() WHERE id = ?', 
+            [id]
+        );
+        
+        await db.query('UPDATE printers SET status = "available" WHERE id = ?', [itemId]);
         res.json({ message: 'Printer unassigned' });
     } catch (error) {
         console.error('Error unassigning printer:', error);
@@ -2831,7 +2789,7 @@ app.get('/api/institutions/:institutionId/printer/:printerId', auth, async (req,
     try {
         const { institutionId, printerId } = req.params;
         
-        // Query using client_printer_assignments and inventory_items
+        // Query using institution_printer_assignments and printers
         const [rows] = await db.query(
             `SELECT 
                 cpa.id as assignment_id,
@@ -2840,13 +2798,13 @@ app.get('/api/institutions/:institutionId/printer/:printerId', auth, async (req,
                 ii.brand,
                 ii.model,
                 ii.serial_number,
-                cpa.location_note as location,
                 ii.status,
                 cpa.assigned_at as installation_date,
+                cpa.status as assignment_status,
                 cpa.institution_id,
                 inst.name as institution_name
-            FROM client_printer_assignments cpa
-            JOIN inventory_items ii ON cpa.inventory_item_id = ii.id
+            FROM institution_printer_assignments cpa
+            JOIN printers ii ON cpa.printer_id = ii.id
             JOIN institutions inst ON cpa.institution_id = inst.institution_id
             WHERE cpa.institution_id = ? AND ii.id = ?`,
             [institutionId, printerId]
@@ -2883,7 +2841,7 @@ app.get('/api/institutions/:institutionId/printer/:printerId/service-history', a
                 sr.status as service_type
             FROM service_requests sr
             LEFT JOIN users tech ON sr.technician_id = tech.id
-            WHERE sr.institution_id = ? AND sr.inventory_item_id = ?
+            WHERE sr.institution_id = ? AND sr.printer_id = ?
             ORDER BY sr.created_at DESC`,
             [institutionId, printerId]
         );
@@ -2928,12 +2886,12 @@ app.post('/api/staff', authenticateAdmin, async (req, res) => {
     try {
         console.log('Creating new staff member with data:', req.body);
         
-        const { firstName, lastName, email, password, role } = req.body;
+        const { firstName, lastName, email, role } = req.body;
         
         // Validate required fields
-        if (!firstName || !lastName || !email || !password || !role) {
+        if (!firstName || !lastName || !email || !role) {
             return res.status(400).json({ 
-                error: 'First name, last name, email, password, and role are required' 
+                error: 'First name, last name, email, and role are required' 
             });
         }
         
@@ -2954,17 +2912,21 @@ app.post('/api/staff', authenticateAdmin, async (req, res) => {
             return res.status(400).json({ error: 'Email already exists' });
         }
         
+        // Generate temporary password (8 characters: letters + numbers)
+        const crypto = require('crypto');
+        const temporaryPassword = crypto.randomBytes(4).toString('hex').toUpperCase();
+        
         // Hash password
         const bcrypt = require('bcrypt');
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
         
         // Insert new staff member with approved status and verified email
         const [result] = await db.query(
             `INSERT INTO users (
                 first_name, last_name, email, password, role, 
                 is_email_verified, approval_status, status,
-                created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+                must_change_password, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
             [
                 firstName, 
                 lastName, 
@@ -2973,14 +2935,94 @@ app.post('/api/staff', authenticateAdmin, async (req, res) => {
                 role, 
                 true, // Staff are automatically verified
                 'approved', // Staff are automatically approved
-                'active' // Staff are automatically active
+                'active', // Staff are automatically active
+                true // Must change password on first login
             ]
         );
         
         console.log('Staff member created successfully with ID:', result.insertId);
         
+        // Log audit action
+        await logAuditAction(
+            req.user.id,
+            req.user.role,
+            `Created new ${role} account: ${firstName} ${lastName} (${email})`,
+            'create',
+            'user',
+            String(result.insertId),
+            JSON.stringify({
+                action: 'staff_creation',
+                staff_id: result.insertId,
+                staff_name: `${firstName} ${lastName}`,
+                staff_email: email,
+                staff_role: role,
+                status: 'active'
+            }),
+            req
+        );
+        
+        // Send email with temporary password using Mailjet
+        try {
+            const roleDisplay = role === 'operations_officer' ? 'Operations Officer' : 'Technician';
+            
+            const request = await mailjetClient
+                .post('send', { version: 'v3.1' })
+                .request({
+                    Messages: [
+                        {
+                            From: {
+                                Email: 'serviceeaseph@gmail.com',
+                                Name: 'ServiceEase'
+                            },
+                            To: [
+                                {
+                                    Email: email,
+                                    Name: `${firstName} ${lastName}`
+                                }
+                            ],
+                            Subject: 'Welcome to ServiceEase - Your Account Has Been Created',
+                            HTMLPart: `
+                                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                                    <h2 style="color: #10b981;">Welcome to ServiceEase!</h2>
+                                    <p>Hello ${firstName} ${lastName},</p>
+                                    <p>Your ${roleDisplay} account has been created by the administrator.</p>
+                                    
+                                    <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                                        <h3 style="margin-top: 0; color: #1f2937;">Login Credentials</h3>
+                                        <p style="margin: 10px 0;"><strong>Email:</strong> ${email}</p>
+                                        <p style="margin: 10px 0;"><strong>Temporary Password:</strong> <code style="background-color: #fff; padding: 5px 10px; border-radius: 4px; font-size: 16px; color: #10b981;">${temporaryPassword}</code></p>
+                                    </div>
+                                    
+                                    <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0;">
+                                        <p style="margin: 0; color: #92400e;"><strong>⚠️ Important:</strong> You will be required to change this temporary password when you first log in to the system for security purposes.</p>
+                                    </div>
+                                    
+                                    <p>To access your account:</p>
+                                    <ol>
+                                        <li>Go to the ServiceEase login page</li>
+                                        <li>Enter your email and temporary password</li>
+                                        <li>Create a new secure password when prompted</li>
+                                    </ol>
+                                    
+                                    <p style="margin-top: 30px; color: #6b7280; font-size: 14px;">
+                                        If you did not expect this email or have any questions, please contact the administrator.
+                                    </p>
+                                    
+                                    <p style="margin-top: 20px;">Best regards,<br><strong>ServiceEase Team</strong></p>
+                                </div>
+                            `
+                        }
+                    ]
+                });
+            
+            console.log('Temporary password email sent successfully to:', email);
+        } catch (emailError) {
+            console.error('Error sending temporary password email:', emailError);
+            // Don't fail the whole operation if email fails
+        }
+        
         res.status(201).json({ 
-            message: 'Staff member created successfully',
+            message: 'Staff member created successfully. Temporary password has been sent to their email.',
             staffId: result.insertId 
         });
         
@@ -3033,6 +3075,25 @@ app.put('/api/staff/:id', authenticateAdmin, async (req, res) => {
                     [first_name, last_name, role, status, id]
                 );
             }
+            
+            // Log audit action
+            await logAuditAction(
+                req.user.id,
+                req.user.role,
+                `Updated ${role} account: ${first_name} ${last_name} - Status: ${status}`,
+                'update',
+                'user',
+                String(id),
+                JSON.stringify({
+                    action: 'staff_update',
+                    staff_id: id,
+                    staff_name: `${first_name} ${last_name}`,
+                    staff_role: role,
+                    previous_status: previousStatus,
+                    new_status: status
+                }),
+                req
+            );
 
             res.json({ message: 'Staff member updated successfully' });
     } catch (error) {
@@ -3079,10 +3140,10 @@ app.get('/api/users/me/printers', auth, async (req, res) => {
         if (!userId) return res.status(401).json({ error: 'Not authenticated' });
 
         const [rows] = await db.query(`
-            SELECT upa.id as assignment_id, upa.inventory_item_id, upa.department, upa.assigned_at,
+            SELECT upa.id as assignment_id, upa.printer_id, upa.department, upa.assigned_at,
                    ii.name, ii.brand, ii.model, ii.serial_number
             FROM user_printer_assignments upa
-            LEFT JOIN inventory_items ii ON upa.inventory_item_id = ii.id
+            LEFT JOIN printers ii ON upa.printer_id = ii.id
             WHERE upa.user_id = ?
             ORDER BY upa.assigned_at DESC
         `, [userId]);
@@ -3094,18 +3155,18 @@ app.get('/api/users/me/printers', auth, async (req, res) => {
     }
 });
 
-// Get service requests for the currently authenticated user (requester)
+// Get service requests for the currently authenticated user (institution_user)
 app.get('/api/users/me/service-requests', auth, async (req, res) => {
     try {
         const userId = req.user && req.user.id;
         if (!userId) return res.status(401).json({ error: 'Not authenticated' });
 
-        // For requesters, get institution from their printer assignment
-        // For coordinators/admins, get institution they own
+        // For institution_users, get institution from their printer assignment
+        // For institution_admins/admins, get institution they own
         const userRole = req.user.role;
         let institutionId = null;
         
-        if (userRole === 'requester') {
+        if (userRole === 'institution_user') {
             const [assignRows] = await db.query(
                 'SELECT institution_id FROM user_printer_assignments WHERE user_id = ? LIMIT 1',
                 [userId]
@@ -3113,7 +3174,7 @@ app.get('/api/users/me/service-requests', auth, async (req, res) => {
             if (assignRows && assignRows.length > 0) {
                 institutionId = assignRows[0].institution_id;
             }
-        } else if (userRole === 'coordinator' || userRole === 'admin') {
+        } else if (userRole === 'institution_admin' || userRole === 'admin') {
             const [instRows] = await db.query(
                 'SELECT institution_id FROM institutions WHERE user_id = ? LIMIT 1',
                 [userId]
@@ -3127,15 +3188,15 @@ app.get('/api/users/me/service-requests', auth, async (req, res) => {
             return res.json([]); // User has no institution, return empty array
         }
 
-        // For requesters: show ALL service requests for printers assigned to them
-        // For coordinators: show ALL service requests for their institution
+        // For institution_users: show ALL service requests for printers assigned to them
+        // For institution_admins: show ALL service requests for their institution
         let query = '';
         let queryParams = [];
         
-        if (userRole === 'requester') {
-            // Get all printers assigned to this requester
+        if (userRole === 'institution_user') {
+            // Get all printers assigned to this institution_user
             const [assignedPrinters] = await db.query(
-                'SELECT inventory_item_id FROM user_printer_assignments WHERE user_id = ?',
+                'SELECT printer_id FROM user_printer_assignments WHERE user_id = ?',
                 [userId]
             );
             
@@ -3143,39 +3204,39 @@ app.get('/api/users/me/service-requests', auth, async (req, res) => {
                 return res.json([]); // No printers assigned
             }
             
-            const printerIds = assignedPrinters.map(p => p.inventory_item_id);
+            const printerIds = assignedPrinters.map(p => p.printer_id);
             
             // Get all service requests for these printers
             query = `
-                SELECT sr.id, sr.request_number, sr.inventory_item_id, sr.institution_id, sr.priority, sr.description,
-                       sr.location, sr.status, sr.created_at, sr.updated_at, sr.completed_at, sr.requested_by_user_id,
+                SELECT sr.id, sr.request_number, sr.printer_id, sr.institution_id, sr.priority, sr.description,
+                       sr.location, sr.status, sr.created_at, sr.completed_at, sr.requested_by,
                        ii.name as printer_name, ii.brand as printer_brand, ii.model as printer_model,
                        i.name as institution_name,
-                       requester.first_name as requester_first_name, requester.last_name as requester_last_name,
+                       institution_user.first_name as institution_user_first_name, institution_user.last_name as institution_user_last_name,
                        tech.first_name as technician_first_name, tech.last_name as technician_last_name
                 FROM service_requests sr
-                LEFT JOIN inventory_items ii ON sr.inventory_item_id = ii.id
+                LEFT JOIN printers ii ON sr.printer_id = ii.id
                 LEFT JOIN institutions i ON sr.institution_id = i.institution_id
-                LEFT JOIN users requester ON sr.requested_by_user_id = requester.id
-                LEFT JOIN users tech ON sr.assigned_technician_id = tech.id
-                WHERE sr.inventory_item_id IN (${printerIds.map(() => '?').join(',')})
+                LEFT JOIN users institution_user ON sr.requested_by = institution_user.id
+                LEFT JOIN users tech ON sr.technician_id = tech.id
+                WHERE sr.printer_id IN (${printerIds.map(() => '?').join(',')})
                 ORDER BY sr.created_at DESC
             `;
             queryParams = printerIds;
         } else {
-            // For coordinators/admins: show all requests for their institution
+            // For institution_admins/admins: show all requests for their institution
             query = `
-                SELECT sr.id, sr.request_number, sr.inventory_item_id, sr.institution_id, sr.priority, sr.description,
-                       sr.location, sr.status, sr.created_at, sr.updated_at, sr.completed_at, sr.requested_by_user_id,
+                SELECT sr.id, sr.request_number, sr.printer_id, sr.institution_id, sr.priority, sr.description,
+                       sr.location, sr.status, sr.created_at, sr.completed_at, sr.requested_by,
                        ii.name as printer_name, ii.brand as printer_brand, ii.model as printer_model,
                        i.name as institution_name,
-                       requester.first_name as requester_first_name, requester.last_name as requester_last_name,
+                       institution_user.first_name as institution_user_first_name, institution_user.last_name as institution_user_last_name,
                        tech.first_name as technician_first_name, tech.last_name as technician_last_name
                 FROM service_requests sr
-                LEFT JOIN inventory_items ii ON sr.inventory_item_id = ii.id
+                LEFT JOIN printers ii ON sr.printer_id = ii.id
                 LEFT JOIN institutions i ON sr.institution_id = i.institution_id
-                LEFT JOIN users requester ON sr.requested_by_user_id = requester.id
-                LEFT JOIN users tech ON sr.assigned_technician_id = tech.id
+                LEFT JOIN users institution_user ON sr.requested_by = institution_user.id
+                LEFT JOIN users tech ON sr.technician_id = tech.id
                 WHERE sr.institution_id = ?
                 ORDER BY sr.created_at DESC
             `;
@@ -3191,7 +3252,126 @@ app.get('/api/users/me/service-requests', auth, async (req, res) => {
     }
 });
 
-// Requester: Approve or reject completed service request
+// Create service request (institution_user)
+app.post('/api/service-requests', auth, async (req, res) => {
+    try {
+        const userId = req.user && req.user.id;
+        if (!userId) return res.status(401).json({ error: 'Not authenticated' });
+
+        const { printerId, priority, description } = req.body;
+        
+        console.log('Service request received:', { printerId, priority, description, userId });
+
+        // Validation
+        if (!printerId || !description) {
+            console.log('Validation failed:', { printerId: !!printerId, description: !!description });
+            return res.status(400).json({ error: 'Printer and issue description are required' });
+        }
+
+        // Get printer details and verify user has access
+        const [printerRows] = await db.query(
+            `SELECT p.*, upa.institution_id 
+             FROM printers p
+             JOIN user_printer_assignments upa ON p.id = upa.printer_id
+             WHERE p.id = ? AND upa.user_id = ?`,
+            [printerId, userId]
+        );
+
+        if (printerRows.length === 0) {
+            return res.status(403).json({ error: 'You do not have access to this printer' });
+        }
+
+        const printer = printerRows[0];
+        const institutionId = printer.institution_id;
+
+        // Check if there's already an active request for this printer
+        const [activeRequests] = await db.query(
+            `SELECT sr.id, sr.request_number, sr.status, 
+                    CONCAT(COALESCE(p.brand, ''), ' ', COALESCE(p.model, '')) as printer_name
+             FROM service_requests sr
+             LEFT JOIN printers p ON sr.printer_id = p.id
+             WHERE sr.printer_id = ? 
+             AND sr.status IN ('pending', 'assigned', 'in_progress', 'pending_approval')
+             LIMIT 1`,
+            [printerId]
+        );
+
+        if (activeRequests.length > 0) {
+            return res.status(400).json({ 
+                error: 'This printer already has an active service request',
+                activeRequest: activeRequests[0]
+            });
+        }
+
+        // Generate request number
+        const [countResult] = await db.query('SELECT COUNT(*) as count FROM service_requests');
+        const requestNumber = `SR-${new Date().getFullYear()}-${String(countResult[0].count + 1).padStart(4, '0')}`;
+
+        // Create service request
+        const [result] = await db.query(
+            `INSERT INTO service_requests (
+                request_number,
+                printer_id,
+                institution_id,
+                priority,
+                description,
+                location,
+                status,
+                requested_by,
+                is_walk_in,
+                created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, FALSE, NOW())`,
+            [
+                requestNumber,
+                printerId,
+                institutionId,
+                priority || 'medium',
+                description,
+                printer.location || '',
+                userId
+            ]
+        );
+
+        // Get available technicians to notify
+        const [technicians] = await db.query(
+            `SELECT id FROM users 
+             WHERE role = 'technician' 
+             AND status = 'active' 
+             AND approval_status = 'approved'`
+        );
+
+        // Create notification for all technicians
+        const printerName = [printer.brand, printer.model].filter(Boolean).join(' ') || 'Unknown Printer';
+        for (const tech of technicians) {
+            try {
+                await createNotification({
+                    title: 'New Service Request',
+                    message: `New service request for ${printerName}. Issue: ${description.substring(0, 100)}${description.length > 100 ? '...' : ''}`,
+                    type: 'service_request',
+                    user_id: tech.id,
+                    sender_id: userId,
+                    reference_type: 'service_request',
+                    reference_id: result.insertId,
+                    priority: priority === 'urgent' ? 'urgent' : priority === 'high' ? 'high' : 'medium'
+                });
+            } catch (notifError) {
+                console.error('Failed to create notification for technician:', tech.id, notifError);
+            }
+        }
+
+        res.status(201).json({
+            message: 'Service request created successfully',
+            id: result.insertId,
+            request_number: requestNumber
+        });
+
+    } catch (error) {
+        console.error('Error creating service request:', error);
+        res.status(500).json({ error: 'Failed to create service request' });
+    }
+});
+
+// institution_user: Approve or reject completed service request
 app.patch('/api/users/me/service-requests/:id/approve', auth, async (req, res) => {
     try {
         const requestId = req.params.id;
@@ -3199,13 +3379,13 @@ app.patch('/api/users/me/service-requests/:id/approve', auth, async (req, res) =
         const { approved, feedback } = req.body; // approved: true/false, feedback: optional string
         
         if (!userId) return res.status(401).json({ error: 'Not authenticated' });
-        if (req.user.role !== 'requester') {
-            return res.status(403).json({ error: 'Only requesters can approve service requests' });
+        if (req.user.role !== 'institution_user') {
+            return res.status(403).json({ error: 'Only institution_users can approve service requests' });
         }
         
-        // Verify this service request belongs to the requester
+        // Verify this service request belongs to the institution_user
         const [requests] = await db.query(
-            'SELECT id, status, requested_by_user_id, assigned_technician_id, request_number FROM service_requests WHERE id = ?',
+            'SELECT id, status, requested_by, technician_id, request_number FROM service_requests WHERE id = ?',
             [requestId]
         );
         
@@ -3215,9 +3395,9 @@ app.patch('/api/users/me/service-requests/:id/approve', auth, async (req, res) =
         
         const request = requests[0];
         
-        // Check if this requester has access to the printer in this service request
+        // Check if this institution_user has access to the printer in this service request
         const [printerAccess] = await db.query(
-            'SELECT id FROM user_printer_assignments WHERE user_id = ? AND inventory_item_id = (SELECT inventory_item_id FROM service_requests WHERE id = ?)',
+            'SELECT id FROM user_printer_assignments WHERE user_id = ? AND printer_id = (SELECT printer_id FROM service_requests WHERE id = ?)',
             [userId, requestId]
         );
         
@@ -3230,19 +3410,16 @@ app.patch('/api/users/me/service-requests/:id/approve', auth, async (req, res) =
         }
         
         const newStatus = approved ? 'completed' : 'in_progress';
-        const resolutionNotes = feedback || (approved ? 'Approved by requester' : 'Rejected by requester - needs revision');
+        const resolutionNotes = feedback || (approved ? 'Approved by institution_user' : 'Rejected by institution_user - needs revision');
         
         // Update the service request
         await db.query(
             `UPDATE service_requests 
              SET status = ?, 
-                 resolved_by = ?, 
-                 resolved_at = NOW(), 
-                 completed_at = ${approved ? 'NOW()' : 'NULL'},
-                 resolution_notes = ?,
-                 updated_at = NOW() 
+                 ${approved ? 'completed_at = NOW(),' : ''}
+                 resolution_notes = ?
              WHERE id = ?`,
-            [newStatus, userId, resolutionNotes, requestId]
+            [newStatus, resolutionNotes, requestId]
         );
         
         // Create history entry for the status change
@@ -3252,7 +3429,7 @@ app.patch('/api/users/me/service-requests/:id/approve', auth, async (req, res) =
             [requestId, request.status, newStatus, userId, resolutionNotes]
         );
         
-        console.log(`📝 Service request ${requestId} status updated: ${request.status} → ${newStatus} by requester ${userId}`);
+        console.log(`📝 Service request ${requestId} status updated: ${request.status} → ${newStatus} by institution_user ${userId}`);
         
         // If approved, deduct parts from technician inventory
         if (approved) {
@@ -3291,23 +3468,23 @@ app.patch('/api/users/me/service-requests/:id/approve', auth, async (req, res) =
         }
         
         // Send notification to technician
-        if (request.assigned_technician_id) {
-            const [requesterInfo] = await db.query(
+        if (request.technician_id) {
+            const [institution_userInfo] = await db.query(
                 'SELECT first_name, last_name FROM users WHERE id = ?',
                 [userId]
             );
             
-            if (requesterInfo && requesterInfo.length > 0) {
+            if (institution_userInfo && institution_userInfo.length > 0) {
                 const notifTitle = approved ? 'Service Request Approved' : 'Service Request Rejected';
                 const notifMessage = approved 
-                    ? `${requesterInfo[0].first_name} ${requesterInfo[0].last_name} approved your completed work on ${request.request_number}`
-                    : `${requesterInfo[0].first_name} ${requesterInfo[0].last_name} rejected your work on ${request.request_number}. ${feedback || 'Please review and revise.'}`;
+                    ? `${institution_userInfo[0].first_name} ${institution_userInfo[0].last_name} approved your completed work on ${request.request_number}`
+                    : `${institution_userInfo[0].first_name} ${institution_userInfo[0].last_name} rejected your work on ${request.request_number}. ${feedback || 'Please review and revise.'}`;
                 
                 await createNotification({
                     title: notifTitle,
                     message: notifMessage,
                     type: approved ? 'success' : 'warning',
-                    user_id: request.assigned_technician_id,
+                    user_id: request.technician_id,
                     sender_id: userId,
                     reference_type: 'service_request',
                     reference_id: requestId,
@@ -3611,44 +3788,44 @@ app.patch('/api/institutions/:id/status', authenticateAdmin, async (req, res) =>
                 [status, institution_id]
             );
             
-            // CASCADE: Deactivate the coordinator who owns this institution
-            // institutions.user_id points to the coordinator
-            const [coordinatorUpdate] = await db.query(
+            // CASCADE: Deactivate the institution_admin who owns this institution
+            // institutions.user_id points to the institution_admin
+            const [institution_adminUpdate] = await db.query(
                 `UPDATE users u
                  JOIN institutions i ON i.user_id = u.id
                  SET u.status = 'inactive', u.token_version = COALESCE(u.token_version, 0) + 1, u.updated_at = NOW()
-                 WHERE i.institution_id = ? AND u.role = 'coordinator'`,
+                 WHERE i.institution_id = ? AND u.role = 'institution_admin'`,
                 [institution_id]
             );
             
-            // CASCADE: Deactivate all requesters assigned to this institution
-            // Requesters are linked via user_printer_assignments.institution_id
-            const [requesterUpdate] = await db.query(
+            // CASCADE: Deactivate all institution_users assigned to this institution
+            // institution_users are linked via user_printer_assignments.institution_id
+            const [institution_userUpdate] = await db.query(
                 `UPDATE users u
                  JOIN user_printer_assignments upa ON upa.user_id = u.id
                  SET u.status = 'inactive', u.token_version = COALESCE(u.token_version, 0) + 1, u.updated_at = NOW()
-                 WHERE upa.institution_id = ? AND u.role = 'requester'`,
+                 WHERE upa.institution_id = ? AND u.role = 'institution_user'`,
                 [institution_id]
             );
             
             console.log(`Institution ${institution_id} deactivated:`);
-            console.log(`  - Deactivated ${coordinatorUpdate.affectedRows} coordinator(s)`);
-            console.log(`  - Deactivated ${requesterUpdate.affectedRows} requester(s)`);
+            console.log(`  - Deactivated ${institution_adminUpdate.affectedRows} institution_admin(s)`);
+            console.log(`  - Deactivated ${institution_userUpdate.affectedRows} institution_user(s)`);
             console.log(`  - All sessions invalidated (token_version incremented)`);
             
             // Log audit action
             await logAuditAction(
                 req.user.id,
                 req.user.role,
-                `Deactivated institution: ${institutionName} (${institution_id}) - Cascaded to ${coordinatorUpdate.affectedRows} coordinator(s) and ${requesterUpdate.affectedRows} requester(s)`,
+                `Deactivated institution: ${institutionName} (${institution_id}) - Cascaded to ${institution_adminUpdate.affectedRows} institution_admin(s) and ${institution_userUpdate.affectedRows} institution_user(s)`,
                 'deactivate',
                 'institution',
                 institution_id,
                 JSON.stringify({
                     institution_id,
                     institution_name: institutionName,
-                    coordinators_deactivated: coordinatorUpdate.affectedRows,
-                    requesters_deactivated: requesterUpdate.affectedRows
+                    institution_admins_deactivated: institution_adminUpdate.affectedRows,
+                    institution_users_deactivated: institution_userUpdate.affectedRows
                 }),
                 req
             );
@@ -3658,41 +3835,41 @@ app.patch('/api/institutions/:id/status', authenticateAdmin, async (req, res) =>
                 [status, institution_id]
             );
             
-            // CASCADE: Reactivate the coordinator who owns this institution
-            const [coordinatorUpdate] = await db.query(
+            // CASCADE: Reactivate the institution_admin who owns this institution
+            const [institution_adminUpdate] = await db.query(
                 `UPDATE users u
                  JOIN institutions i ON i.user_id = u.id
                  SET u.status = 'active', u.updated_at = NOW()
-                 WHERE i.institution_id = ? AND u.role = 'coordinator'`,
+                 WHERE i.institution_id = ? AND u.role = 'institution_admin'`,
                 [institution_id]
             );
             
-            // CASCADE: Reactivate all requesters assigned to this institution
-            const [requesterUpdate] = await db.query(
+            // CASCADE: Reactivate all institution_users assigned to this institution
+            const [institution_userUpdate] = await db.query(
                 `UPDATE users u
                  JOIN user_printer_assignments upa ON upa.user_id = u.id
                  SET u.status = 'active', u.updated_at = NOW()
-                 WHERE upa.institution_id = ? AND u.role = 'requester'`,
+                 WHERE upa.institution_id = ? AND u.role = 'institution_user'`,
                 [institution_id]
             );
             
             console.log(`Institution ${institution_id} activated:`);
-            console.log(`  - Activated ${coordinatorUpdate.affectedRows} coordinator(s)`);
-            console.log(`  - Activated ${requesterUpdate.affectedRows} requester(s)`);
+            console.log(`  - Activated ${institution_adminUpdate.affectedRows} institution_admin(s)`);
+            console.log(`  - Activated ${institution_userUpdate.affectedRows} institution_user(s)`);
             
             // Log audit action
             await logAuditAction(
                 req.user.id,
                 req.user.role,
-                `Activated institution: ${institutionName} (${institution_id}) - Cascaded to ${coordinatorUpdate.affectedRows} coordinator(s) and ${requesterUpdate.affectedRows} requester(s)`,
+                `Activated institution: ${institutionName} (${institution_id}) - Cascaded to ${institution_adminUpdate.affectedRows} institution_admin(s) and ${institution_userUpdate.affectedRows} institution_user(s)`,
                 'activate',
                 'institution',
                 institution_id,
                 JSON.stringify({
                     institution_id,
                     institution_name: institutionName,
-                    coordinators_activated: coordinatorUpdate.affectedRows,
-                    requesters_activated: requesterUpdate.affectedRows
+                    institution_admins_activated: institution_adminUpdate.affectedRows,
+                    institution_users_activated: institution_userUpdate.affectedRows
                 }),
                 req
             );
@@ -3996,14 +4173,13 @@ app.get('/api/service-requests', async (req, res) => {
                 sr.description,
                 sr.location,
                 sr.created_at,
-                sr.updated_at,
-                sr.inventory_item_id,
+                sr.printer_id,
                 i.name as client_name,
                 i.type as institution_type,
-                requester.first_name as requester_first_name,
-                requester.last_name as requester_last_name,
-                requester.email as requester_email,
-                requester.role as requester_role,
+                institution_user.first_name as institution_user_first_name,
+                institution_user.last_name as institution_user_last_name,
+                institution_user.email as institution_user_email,
+                institution_user.role as institution_user_role,
                 tech.first_name as technician_first_name,
                 tech.last_name as technician_last_name,
                 tech.email as technician_email,
@@ -4014,12 +4190,12 @@ app.get('/api/service-requests', async (req, res) => {
                 CONCAT(ii.name, ' (', ii.brand, ' ', ii.model, ' SN:', ii.serial_number, ')') as printer_full_details,
                     '' as client_contact,
                 '' as department,
-                sr.updated_at as last_updated
+                sr.created_at as last_updated
             FROM service_requests sr
             JOIN institutions i ON sr.institution_id = i.institution_id
-            LEFT JOIN users requester ON sr.requested_by_user_id = requester.id
-            LEFT JOIN users tech ON sr.assigned_technician_id = tech.id
-            LEFT JOIN inventory_items ii ON sr.inventory_item_id = ii.id
+            LEFT JOIN users institution_user ON sr.requested_by = institution_user.id
+            LEFT JOIN users tech ON sr.technician_id = tech.id
+            LEFT JOIN printers ii ON sr.printer_id = ii.id
             ORDER BY sr.created_at DESC
         `);
         res.json(rows);
@@ -4038,24 +4214,26 @@ app.get('/api/institutions/:institutionId/service-requests', async (req, res) =>
             SELECT 
                 sr.id,
                 sr.request_number,
-                sr.inventory_item_id,
+                sr.printer_id,
                 sr.priority,
                 sr.status,
                 sr.location,
                 sr.description,
                 sr.created_at,
-                sr.updated_at,
                 sr.started_at,
                 sr.completed_at,
-                sr.resolved_at,
                 sr.resolution_notes,
                 ii.name as equipment_name,
                 ii.brand,
                 ii.model,
                 ii.serial_number,
-                CONCAT(ii.name, ' (', ii.brand, ' ', ii.model, ' SN:', ii.serial_number, ')') as printer_full_details
+                CONCAT(ii.name, ' (', ii.brand, ' ', ii.model, ' SN:', ii.serial_number, ')') as printer_full_details,
+                tech.first_name as technician_first_name,
+                tech.last_name as technician_last_name,
+                CONCAT(tech.first_name, ' ', tech.last_name) as technician_name
             FROM service_requests sr
-            LEFT JOIN inventory_items ii ON sr.inventory_item_id = ii.id
+            LEFT JOIN printers ii ON sr.printer_id = ii.id
+            LEFT JOIN users tech ON sr.technician_id = tech.id
             WHERE sr.institution_id = ?
             ORDER BY sr.created_at DESC
         `, [institutionId]);
@@ -4074,24 +4252,29 @@ app.get('/api/service-requests/:id', async (req, res) => {
     try {
         const { id } = req.params;
         
-        // Get main request data
+        // Get main request data with printer serial number and completion details
         const [requestRows] = await db.query(`
             SELECT 
                 sr.*,
                 i.name as client_name,
                 i.type as institution_type,
                 i.address as institution_address,
-                requester.first_name as requester_first_name,
-                requester.last_name as requester_last_name,
-                requester.email as requester_email,
-                requester.role as requester_role,
+                institution_user.first_name as institution_user_first_name,
+                institution_user.last_name as institution_user_last_name,
+                institution_user.email as institution_user_email,
+                institution_user.role as institution_user_role,
                 tech.first_name as technician_first_name,
                 tech.last_name as technician_last_name,
-                tech.email as technician_email
+                tech.email as technician_email,
+                p.serial_number,
+                p.brand as printer_brand,
+                p.model as printer_model,
+                p.name as printer_name
             FROM service_requests sr
-            JOIN institutions i ON sr.institution_id = i.institution_id
-            LEFT JOIN users requester ON sr.requested_by_user_id = requester.id
-            LEFT JOIN users tech ON sr.assigned_technician_id = tech.id
+            LEFT JOIN institutions i ON sr.institution_id = i.institution_id
+            LEFT JOIN users institution_user ON sr.requested_by = institution_user.id
+            LEFT JOIN users tech ON sr.technician_id = tech.id
+            LEFT JOIN printers p ON sr.printer_id = p.id
             WHERE sr.id = ?
         `, [id]);
         
@@ -4114,8 +4297,29 @@ app.get('/api/service-requests/:id', async (req, res) => {
             ORDER BY srh.created_at DESC
         `, [id]);
         
+        // Get parts used for this service request
+        const [partsRows] = await db.query(`
+            SELECT 
+                spu.id,
+                spu.quantity_used,
+                spu.notes as part_notes,
+                spu.used_at,
+                pp.name as part_name,
+                pp.brand,
+                pp.unit,
+                pp.category,
+                u.first_name as used_by_first_name,
+                u.last_name as used_by_last_name
+            FROM service_parts_used spu
+            LEFT JOIN printer_parts pp ON spu.part_id = pp.id
+            LEFT JOIN users u ON spu.used_by = u.id
+            WHERE spu.service_request_id = ?
+            ORDER BY spu.used_at ASC
+        `, [id]);
+        
         const request = requestRows[0];
         request.history = historyRows;
+        request.parts_used = partsRows;
         request.client_contact = request.contact_phone || request.contact_email || 'N/A';
         request.department = 'N/A'; // This field might be removed from frontend
         
@@ -4184,7 +4388,7 @@ app.post('/api/walk-in-service-requests', authenticateAdmin, async (req, res) =>
                 description,
                 location,
                 status,
-                requested_by_user_id,
+                requested_by,
                 institution_id,
                 created_at
             ) VALUES (?, ?, ?, TRUE, ?, ?, ?, 'pending', ?, NULL, NOW())`,
@@ -4239,17 +4443,17 @@ app.get('/api/walk-in-service-requests', authenticateAdmin, async (req, res) => 
                 tech.first_name as technician_first_name,
                 tech.last_name as technician_last_name,
                 sa.status as approval_status,
-                sa.coordinator_id as approved_by,
+                sa.institution_admin_id as approved_by,
                 sa.reviewed_at as approved_at,
                 sa.technician_notes,
-                sa.coordinator_notes,
+                sa.institution_admin_notes,
                 approver.first_name as approved_by_first_name,
                 approver.last_name as approved_by_last_name
             FROM service_requests sr
-            LEFT JOIN users creator ON sr.requested_by_user_id = creator.id
-            LEFT JOIN users tech ON sr.assigned_technician_id = tech.id
+            LEFT JOIN users creator ON sr.requested_by = creator.id
+            LEFT JOIN users tech ON sr.technician_id = tech.id
             LEFT JOIN service_approvals sa ON sr.id = sa.service_request_id
-            LEFT JOIN users approver ON sa.coordinator_id = approver.id
+            LEFT JOIN users approver ON sa.institution_admin_id = approver.id
             WHERE sr.is_walk_in = TRUE
         `;
         
@@ -4274,12 +4478,17 @@ app.get('/api/walk-in-service-requests', authenticateAdmin, async (req, res) => 
 app.post('/api/service-requests/:id/complete', auth, async (req, res) => {
     try {
         const { id } = req.params;
-        const { parts, resolution_notes } = req.body; // Changed from parts_used to parts (array)
+        const { parts, resolution_notes, completion_photo } = req.body; // Added completion_photo
         const technician_id = req.user.id;
         
         // Verify user is technician
         if (req.user.role !== 'technician') {
             return res.status(403).json({ error: 'Only technicians can complete service requests' });
+        }
+
+        // Require completion photo
+        if (!completion_photo) {
+            return res.status(400).json({ error: 'Completion photo is required' });
         }
         
         // Get the service request
@@ -4293,17 +4502,30 @@ app.post('/api/service-requests/:id/complete', auth, async (req, res) => {
         }
         
         const request = requests[0];
+
+        // Upload photo to Cloudinary
+        let photoUrl = null;
+        try {
+            const uploadResult = await cloudinary.uploader.upload(completion_photo, {
+                folder: 'serviceease/completion_photos',
+                resource_type: 'auto'
+            });
+            photoUrl = uploadResult.secure_url;
+        } catch (uploadError) {
+            console.error('Error uploading completion photo:', uploadError);
+            return res.status(500).json({ error: 'Failed to upload completion photo' });
+        }
         
-        // Update service request to pending_approval status
+        // Update service request to pending_approval status with photo
         await db.query(
             `UPDATE service_requests 
              SET status = 'pending_approval',
                  completed_at = NOW(),
                  resolution_notes = ?,
-                 assigned_technician_id = ?,
-                 updated_at = NOW()
+                 completion_photo_url = ?,
+                 technician_id = ?
              WHERE id = ?`,
-            [resolution_notes, technician_id, id]
+            [resolution_notes, photoUrl, technician_id, id]
         );
         
         // Delete existing parts if resubmitting (to prevent duplicates)
@@ -4314,12 +4536,63 @@ app.post('/api/service-requests/:id/complete', auth, async (req, res) => {
         
         // Save parts used to service_parts_used table
         if (parts && Array.isArray(parts) && parts.length > 0) {
+            console.log(`Saving ${parts.length} parts for service request ${id}:`, parts);
+            
             for (const part of parts) {
-                await db.query(
-                    `INSERT INTO service_parts_used (service_request_id, part_name, quantity, part_brand, notes)
-                     VALUES (?, ?, ?, ?, ?)`,
-                    [id, part.name, part.quantity || 1, part.brand || null, part.notes || null]
+                // Frontend sends { name, brand, quantity/qty, notes, unit }
+                // We need to look up the part_id from printer_parts table
+                const partName = part.name;
+                const partBrand = part.brand || null;
+                const partQuantity = part.quantity || part.qty || 1;
+                const partNotes = part.notes || null;
+                
+                if (!partName) {
+                    console.warn('Skipping part with no name:', part);
+                    continue;
+                }
+                
+                // Look up part ID from printer_parts table
+                // Priority: parts in technician's inventory first, then any matching part
+                const [partRows] = await db.query(
+                    `SELECT pp.id, 
+                            CASE WHEN ti.id IS NOT NULL THEN 1 ELSE 0 END as in_inventory
+                     FROM printer_parts pp
+                     LEFT JOIN technician_inventory ti ON pp.id = ti.part_id 
+                         AND ti.technician_id = ? 
+                         AND ti.quantity > 0
+                     WHERE pp.name = ? 
+                         AND (pp.brand = ? OR (pp.brand IS NULL AND ? IS NULL))
+                     ORDER BY in_inventory DESC, pp.is_universal DESC, pp.id ASC
+                     LIMIT 1`,
+                    [technician_id, partName, partBrand, partBrand]
                 );
+                
+                let partId;
+                if (partRows.length > 0) {
+                    partId = partRows[0].id;
+                    console.log(`✓ Found part ${partName} (${partBrand}): ID ${partId}, in_inventory: ${partRows[0].in_inventory}`);
+                } else {
+                    // Part doesn't exist, create it
+                    console.log(`Creating new part: ${partName} (${partBrand || 'Generic'})`);
+                    const [insertResult] = await db.query(
+                        `INSERT INTO printer_parts (name, brand, category, unit, is_universal)
+                         VALUES (?, ?, 'other', ?, ?)`,
+                        [partName, partBrand, part.unit || 'pieces', partBrand ? 0 : 1]
+                    );
+                    partId = insertResult.insertId;
+                }
+                
+                // Insert into service_parts_used with correct schema
+                await db.query(
+                    `INSERT INTO service_parts_used (service_request_id, part_id, quantity_used, notes, used_by)
+                     VALUES (?, ?, ?, ?, ?)`,
+                    [id, partId, partQuantity, partNotes, technician_id]
+                );
+                
+                console.log(`✅ Saved part: ${partName} (ID: ${partId}), Quantity: ${partQuantity}`);
+                
+                // DO NOT deduct from inventory here - will be deducted upon approval
+                console.log(`  📦 Part will be deducted from inventory upon approval`);
             }
         }
         
@@ -4342,8 +4615,8 @@ app.post('/api/service-requests/:id/complete', auth, async (req, res) => {
                  SET status = 'pending_approval', 
                      technician_notes = ?,
                      submitted_at = NOW(),
-                     coordinator_id = NULL,
-                     coordinator_notes = NULL,
+                     institution_admin_id = NULL,
+                     institution_admin_notes = NULL,
                      reviewed_at = NULL
                  WHERE service_request_id = ?`,
                 [resolution_notes, id]
@@ -4392,21 +4665,68 @@ app.post('/api/service-requests/:id/complete', auth, async (req, res) => {
 });
 
 // Admin/Operations Officer approves completed service request
+// Get approval details with parts used - for institution admin approval modal
+app.get('/api/institution_admin/service-approvals/:id/details', authenticateAdmin, async (req, res) => {
+    try {
+        const approvalId = req.params.id;
+        
+        // Get approval details
+        const [approvals] = await db.query(
+            `SELECT sa.*, sr.request_number, sr.status, sr.problem_description, 
+                    sr.resolution_notes, sr.completed_at,
+                    u.first_name as technician_first_name, u.last_name as technician_last_name,
+                    iu.first_name as institution_user_first_name, iu.last_name as institution_user_last_name,
+                    p.name as printer_name, p.brand as printer_brand, p.model as printer_model
+             FROM service_approvals sa
+             JOIN service_requests sr ON sa.service_request_id = sr.id
+             LEFT JOIN users u ON sr.technician_id = u.id
+             LEFT JOIN institution_users iu ON sr.institution_user_id = iu.id
+             LEFT JOIN printers p ON sr.printer_id = p.id
+             WHERE sa.id = ?`,
+            [approvalId]
+        );
+        
+        if (approvals.length === 0) {
+            return res.status(404).json({ error: 'Approval not found' });
+        }
+        
+        const approval = approvals[0];
+        
+        // Get parts used for this service request
+        const [partsUsed] = await db.query(
+            `SELECT spu.*, pp.name as part_name, pp.brand, pp.unit, pp.category
+             FROM service_parts_used spu
+             JOIN printer_parts pp ON spu.part_id = pp.id
+             WHERE spu.service_request_id = ?
+             ORDER BY spu.id`,
+            [approval.service_request_id]
+        );
+        
+        res.json({
+            approval,
+            parts_used: partsUsed
+        });
+    } catch (error) {
+        console.error('[ERROR] Failed to fetch approval details:', error);
+        res.status(500).json({ error: 'Failed to fetch approval details' });
+    }
+});
+
 app.post('/api/service-requests/:id/approve-completion', authenticateAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const { approved, notes } = req.body;
         const approver_id = req.user.id;
         
-        // Get the service request with requester info
+        // Get the service request with institution_user info
         const [requests] = await db.query(
             `SELECT sr.*, 
-                    u.first_name as requester_first_name,
-                    u.last_name as requester_last_name,
+                    u.first_name as institution_user_first_name,
+                    u.last_name as institution_user_last_name,
                     ii.name as printer_name
              FROM service_requests sr
-             LEFT JOIN users u ON sr.requested_by_user_id = u.id
-             LEFT JOIN inventory_items ii ON sr.inventory_item_id = ii.id
+             LEFT JOIN users u ON sr.requested_by = u.id
+             LEFT JOIN printers ii ON sr.printer_id = ii.id
              WHERE sr.id = ?`,
             [id]
         );
@@ -4421,10 +4741,9 @@ app.post('/api/service-requests/:id/approve-completion', authenticateAdmin, asyn
             id: request.id,
             request_number: request.request_number,
             status: request.status,
-            assigned_technician_id: request.assigned_technician_id,
-            resolved_by: request.resolved_by,
-            requester_first_name: request.requester_first_name,
-            requester_last_name: request.requester_last_name,
+            technician_id: request.technician_id,
+            institution_user_first_name: request.institution_user_first_name,
+            institution_user_last_name: request.institution_user_last_name,
             printer_name: request.printer_name,
             is_walk_in: request.is_walk_in,
             walk_in_customer_name: request.walk_in_customer_name
@@ -4438,22 +4757,22 @@ app.post('/api/service-requests/:id/approve-completion', authenticateAdmin, asyn
         const approvalStatus = approved ? 'approved' : 'revision_requested';
         
         if (approved) {
-            // Only set coordinator_id on actual approval
+            // Only set institution_admin_id on actual approval
             await db.query(
                 `UPDATE service_approvals 
                  SET status = ?,
-                     coordinator_id = ?,
-                     coordinator_notes = ?,
+                     institution_admin_id = ?,
+                     institution_admin_notes = ?,
                      reviewed_at = NOW()
                  WHERE service_request_id = ? AND status = 'pending_approval'`,
                 [approvalStatus, approver_id, notes || null, id]
             );
         } else {
-            // On rejection, don't set coordinator_id to avoid showing "approved by"
+            // On rejection, don't set institution_admin_id to avoid showing "approved by"
             await db.query(
                 `UPDATE service_approvals 
                  SET status = ?,
-                     coordinator_notes = ?,
+                     institution_admin_notes = ?,
                      reviewed_at = NOW()
                  WHERE service_request_id = ? AND status = 'pending_approval'`,
                 [approvalStatus, notes || null, id]
@@ -4464,15 +4783,13 @@ app.post('/api/service-requests/:id/approve-completion', authenticateAdmin, asyn
         const newStatus = approved ? 'completed' : 'in_progress';
         await db.query(
             `UPDATE service_requests 
-             SET status = ?,
-                 resolved_at = ${approved ? 'NOW()' : 'NULL'},
-                 updated_at = NOW()
+             SET status = ?
              WHERE id = ?`,
             [newStatus, id]
         );
         
         // If approved, deduct parts from technician inventory
-        const technicianId = request.assigned_technician_id || request.resolved_by;
+        const technicianId = request.technician_id;
         
         if (approved && technicianId) {
             try {
@@ -4489,19 +4806,20 @@ app.post('/api/service-requests/:id/approve-completion', authenticateAdmin, asyn
                 
                 console.log(`[INVENTORY DEDUCTION] Found ${partsUsed.length} parts to deduct for service request ${id}`, partsUsed);
                 
-                // Deduct each part from technician inventory
+                // Deduct each part from technician inventory or central stock (for universal parts)
                 for (const part of partsUsed) {
                     try {
-                        // Check current inventory
+                        // Check if part is in technician's personal inventory
                         const [inventory] = await db.query(
                             `SELECT quantity FROM technician_inventory 
                              WHERE technician_id = ? AND part_id = ?`,
                             [technicianId, part.part_id]
                         );
                         
-                        console.log(`[INVENTORY DEDUCTION] Current inventory for part ${part.part_id}:`, inventory);
+                        console.log(`[INVENTORY DEDUCTION] Checking part ${part.part_id} (${part.part_name}) for technician ${technicianId}`);
                         
                         if (inventory.length > 0) {
+                            // Part is in technician's personal inventory - deduct from there
                             const currentQty = inventory[0].quantity;
                             const newQty = currentQty - part.quantity_used;
                             
@@ -4512,12 +4830,43 @@ app.post('/api/service-requests/:id/approve-completion', authenticateAdmin, asyn
                                      WHERE technician_id = ? AND part_id = ?`,
                                     [newQty, technicianId, part.part_id]
                                 );
-                                console.log(`[INVENTORY DEDUCTION] ✅ Deducted ${part.quantity_used}x ${part.part_name} from technician ${technicianId}. Old: ${currentQty}, New: ${newQty}`);
+                                console.log(`[INVENTORY DEDUCTION] ✅ Deducted ${part.quantity_used}x ${part.part_name} from technician's personal inventory. Old: ${currentQty}, New: ${newQty}`);
                             } else {
-                                console.warn(`[INVENTORY WARNING] ⚠️ Cannot deduct ${part.quantity_used}x ${part.part_name} - insufficient inventory (current: ${currentQty})`);
+                                console.warn(`[INVENTORY WARNING] ⚠️ Cannot deduct ${part.quantity_used}x ${part.part_name} - insufficient technician inventory (current: ${currentQty})`);
                             }
                         } else {
-                            console.warn(`[INVENTORY WARNING] ⚠️ Part ${part.part_name} (ID: ${part.part_id}) not found in technician ${technicianId}'s inventory`);
+                            // Part not in technician inventory - check if it's a universal part in central stock
+                            const [centralPart] = await db.query(
+                                `SELECT quantity, is_universal, name FROM printer_parts WHERE id = ?`,
+                                [part.part_id]
+                            );
+                            
+                            console.log(`[INVENTORY DEDUCTION DEBUG] Central part lookup for ID ${part.part_id}:`, centralPart);
+                            
+                            if (centralPart.length > 0) {
+                                const centralStock = centralPart[0].quantity;
+                                const isUniversal = centralPart[0].is_universal;
+                                const newCentralStock = centralStock - part.quantity_used;
+                                
+                                console.log(`[INVENTORY DEDUCTION DEBUG] Part ${part.part_id} - Stock: ${centralStock}, is_universal: ${isUniversal}, Will deduct: ${part.quantity_used}, New stock: ${newCentralStock}`);
+                                
+                                if (isUniversal && newCentralStock >= 0) {
+                                    // Universal part - deduct from central inventory
+                                    await db.query(
+                                        `UPDATE printer_parts 
+                                         SET quantity = ? 
+                                         WHERE id = ?`,
+                                        [newCentralStock, part.part_id]
+                                    );
+                                    console.log(`[INVENTORY DEDUCTION] ✅ Deducted ${part.quantity_used}x ${part.part_name} (UNIVERSAL) from central stock. Old: ${centralStock}, New: ${newCentralStock}`);
+                                } else if (isUniversal && newCentralStock < 0) {
+                                    console.warn(`[INVENTORY WARNING] ⚠️ Cannot deduct ${part.quantity_used}x ${part.part_name} - insufficient central stock (current: ${centralStock})`);
+                                } else {
+                                    console.warn(`[INVENTORY WARNING] ⚠️ Part ${part.part_name} (ID: ${part.part_id}) not found in technician ${technicianId}'s inventory and is not universal`);
+                                }
+                            } else {
+                                console.error(`[INVENTORY ERROR] ❌ Part ${part.part_name} (ID: ${part.part_id}) not found in printer_parts table`);
+                            }
                         }
                     } catch (partError) {
                         console.error(`[INVENTORY ERROR] ❌ Failed to deduct part ${part.part_name}:`, partError);
@@ -4534,22 +4883,22 @@ app.post('/api/service-requests/:id/approve-completion', authenticateAdmin, asyn
         
         // Notify technician
         console.log('[APPROVAL DEBUG] Checking if should notify technician...', {
-            has_assigned_technician: !!request.assigned_technician_id,
-            assigned_technician_id: request.assigned_technician_id
+            has_technician: !!request.technician_id,
+            technician_id: request.technician_id
         });
         
-        if (request.assigned_technician_id) {
+        if (request.technician_id) {
             try {
                 // Determine customer name
                 const customerName = request.is_walk_in 
                     ? request.walk_in_customer_name 
-                    : (request.requester_first_name ? `${request.requester_first_name} ${request.requester_last_name}` : 'Unknown');
+                    : (request.institution_user_first_name ? `${request.institution_user_first_name} ${request.institution_user_last_name}` : 'Unknown');
                 
                 const printerInfo = request.printer_name || 'the printer';
                 
                 console.log('[APPROVAL DEBUG] Creating notification with data:', {
                     title: approved ? 'Service Completion Approved' : 'Service Needs Revision',
-                    user_id: request.assigned_technician_id,
+                    user_id: request.technician_id,
                     sender_id: approver_id,
                     customerName,
                     printerInfo
@@ -4558,17 +4907,17 @@ app.post('/api/service-requests/:id/approve-completion', authenticateAdmin, asyn
                 await createNotification({
                     title: approved ? 'Service Completion Approved' : 'Service Needs Revision',
                     message: approved 
-                        ? `Your completed service for ${customerName}'s ${printerInfo} (Request #${request.request_number}) has been approved by the coordinator.`
+                        ? `Your completed service for ${customerName}'s ${printerInfo} (Request #${request.request_number}) has been approved by the institution_admin.`
                         : `Your service for ${customerName}'s ${printerInfo} (Request #${request.request_number}) needs revision. ${notes ? `Notes: ${notes}` : 'Please review and resubmit.'}`,
                     type: approved ? 'service_approved' : 'service_revision_requested',
-                    user_id: request.assigned_technician_id,
+                    user_id: request.technician_id,
                     sender_id: approver_id,
                     reference_type: 'service_request',
                     reference_id: id,
                     priority: 'high'
                 });
                 
-                console.log(`[NOTIFICATION SUCCESS] Sent ${approved ? 'approval' : 'revision'} notification to technician ${request.assigned_technician_id} for service request ${id}`);
+                console.log(`[NOTIFICATION SUCCESS] Sent ${approved ? 'approval' : 'revision'} notification to technician ${request.technician_id} for service request ${id}`);
             } catch (notifError) {
                 console.error('[NOTIFICATION ERROR] Failed to create notification:', notifError);
                 console.error('[NOTIFICATION ERROR] Stack:', notifError.stack);
@@ -4630,8 +4979,8 @@ app.get('/api/debug/assignments', async (req, res) => {
     try {
         console.log('=== DEBUG: Checking assignments ===');
         
-        // Check client_printer_assignments table
-        const [assignments] = await db.query('SELECT * FROM client_printer_assignments LIMIT 10');
+        // Check institution_printer_assignments table
+        const [assignments] = await db.query('SELECT * FROM institution_printer_assignments LIMIT 10');
         console.log('Assignments found:', assignments.length);
         console.log('Sample assignments:', assignments);
         
@@ -4641,7 +4990,7 @@ app.get('/api/debug/assignments', async (req, res) => {
         console.log('Sample institutions:', institutions);
         
         // Check assigned inventory items
-        const [assignedItems] = await db.query('SELECT * FROM inventory_items WHERE status = "assigned" LIMIT 10');
+        const [assignedItems] = await db.query('SELECT * FROM printers WHERE status = "assigned" LIMIT 10');
         console.log('Assigned items found:', assignedItems.length);
         console.log('Sample assigned items:', assignedItems);
         
@@ -4649,11 +4998,12 @@ app.get('/api/debug/assignments', async (req, res) => {
         const [joinResult] = await db.query(`
             SELECT 
                 ii.id, ii.brand, ii.model, ii.serial_number, ii.status,
-                cpa.location_note,
+                cpa.assigned_at,
+                cpa.status as assignment_status,
                 i.name as institution_name,
                 i.type as institution_type
-            FROM inventory_items ii
-            LEFT JOIN client_printer_assignments cpa ON ii.id = cpa.inventory_item_id
+            FROM printers ii
+            LEFT JOIN institution_printer_assignments cpa ON ii.id = cpa.printer_id
             LEFT JOIN institutions i ON cpa.institution_id = i.institution_id
             WHERE ii.status = 'assigned'
         `);
@@ -4682,21 +5032,22 @@ app.get('/api/inventory-items', async (req, res) => {
         
         if (includeAssignments) {
             // Debug: First let's check if assignments exist
-            const [assignmentCount] = await db.query('SELECT COUNT(*) as count FROM client_printer_assignments');
+            const [assignmentCount] = await db.query('SELECT COUNT(*) as count FROM institution_printer_assignments');
             console.log('Total assignments in database:', assignmentCount[0].count);
             
-            const [assignmentSample] = await db.query('SELECT * FROM client_printer_assignments LIMIT 3');
+            const [assignmentSample] = await db.query('SELECT * FROM institution_printer_assignments LIMIT 3');
             console.log('Sample assignments:', assignmentSample);
             
             // Include assignment information with institution details
             query = `
                 SELECT 
                     ii.*,
-                    cpa.location_note,
+                    cpa.assigned_at,
+                    cpa.status as assignment_status,
                     i.name as institution_name,
                     i.type as institution_type
-                FROM inventory_items ii
-                LEFT JOIN client_printer_assignments cpa ON ii.id = cpa.inventory_item_id
+                FROM printers ii
+                LEFT JOIN institution_printer_assignments cpa ON ii.id = cpa.printer_id AND cpa.status = 'assigned'
                 LEFT JOIN institutions i ON cpa.institution_id = i.institution_id
                 ${onlyAvailable ? 'WHERE ii.status = "available"' : ''}
                 ORDER BY ii.created_at DESC
@@ -4704,8 +5055,8 @@ app.get('/api/inventory-items', async (req, res) => {
         } else {
             // Original query without assignments
             query = onlyAvailable ?
-                'SELECT * FROM inventory_items WHERE status = "available" ORDER BY created_at DESC' :
-                'SELECT * FROM inventory_items ORDER BY created_at DESC';
+                'SELECT * FROM printers WHERE status = "available" ORDER BY created_at DESC' :
+                'SELECT * FROM printers ORDER BY created_at DESC';
         }
         
         console.log('Executing query:', query);
@@ -4732,11 +5083,12 @@ app.get('/api/inventory-items/:id', async (req, res) => {
         const [rows] = await db.query(`
             SELECT 
                 ii.*,
-                cpa.location_note,
+                cpa.assigned_at,
+                cpa.status as assignment_status,
                 i.name as institution_name,
                 i.type as institution_type
-            FROM inventory_items ii
-            LEFT JOIN client_printer_assignments cpa ON ii.id = cpa.inventory_item_id
+            FROM printers ii
+            LEFT JOIN institution_printer_assignments cpa ON ii.id = cpa.printer_id AND cpa.status = 'assigned'
             LEFT JOIN institutions i ON cpa.institution_id = i.institution_id
             WHERE ii.id = ?
         `, [id]);
@@ -4763,7 +5115,7 @@ app.post('/api/inventory-items', authenticateAdmin, async (req, res) => {
         const itemQuantity = quantity && Number(quantity) > 0 ? Number(quantity) : 1;
         
         const [result] = await db.query(
-            `INSERT INTO inventory_items (category, name, brand, model, serial_number, quantity, location, status)
+            `INSERT INTO printers (category, name, brand, model, serial_number, quantity, location, status)
              VALUES ('printer', ?, ?, ?, ?, ?, ?, 'available')`,
             [composedName, brand || null, model || null, serial_number || null, itemQuantity, location || null]
         );
@@ -4779,7 +5131,7 @@ app.put('/api/inventory-items/:id', authenticateAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const { name, brand, model, serial_number, location, status, quantity } = req.body;
-        const [existing] = await db.query('SELECT id, name, brand, model FROM inventory_items WHERE id = ?', [id]);
+        const [existing] = await db.query('SELECT id, name, brand, model FROM printers WHERE id = ?', [id]);
         if (existing.length === 0) {
             return res.status(404).json({ error: 'Item not found' });
         }
@@ -4791,7 +5143,7 @@ app.put('/api/inventory-items/:id', authenticateAdmin, async (req, res) => {
             : [nextBrand, nextModel].filter(Boolean).join(' ').trim() || current.name;
         
         await db.query(
-            `UPDATE inventory_items SET 
+            `UPDATE printers SET 
                 name = ?,
                 brand = COALESCE(?, brand),
                 model = COALESCE(?, model),
@@ -4813,11 +5165,11 @@ app.put('/api/inventory-items/:id', authenticateAdmin, async (req, res) => {
 app.delete('/api/inventory-items/:id', authenticateAdmin, async (req, res) => {
     try {
         const { id } = req.params;
-        const [assigned] = await db.query('SELECT id FROM client_printer_assignments WHERE inventory_item_id = ?', [id]);
+        const [assigned] = await db.query('SELECT id FROM institution_printer_assignments WHERE printer_id = ?', [id]);
         if (assigned.length > 0) {
             return res.status(400).json({ error: 'Item is assigned to a client' });
         }
-        await db.query('DELETE FROM inventory_items WHERE id = ?', [id]);
+        await db.query('DELETE FROM printers WHERE id = ?', [id]);
         res.json({ message: 'Item deleted' });
     } catch (error) {
         console.error('Error deleting inventory item:', error);
@@ -4829,9 +5181,9 @@ app.delete('/api/inventory-items/:id', authenticateAdmin, async (req, res) => {
 const passwordResetRouter = require('./routes/password-reset');
 app.use('/api/auth', passwordResetRouter);
 
-// Requester Registration API Routes
-const requesterRegistrationRouter = require('./routes/requester-registration');
-app.use('/api/requester-registration', requesterRegistrationRouter);
+// institution_user Registration API Routes
+const institution_userRegistrationRouter = require('./routes/requester-registration');
+app.use('/api/requester-registration', institution_userRegistrationRouter);
 
 // Parts API Routes
 const partsRouter = require('./routes/parts');
@@ -4845,9 +5197,9 @@ app.use('/api/parts-requests', partsRequestsRouter);
 const institutionsRouter = require('./routes/institutions');
 app.use('/api/institutions', institutionsRouter);
 
-// Coordinator Printers API Routes
-const coordinatorPrintersRouter = require('./routes/coordinator-printers');
-app.use('/api/coordinators', coordinatorPrintersRouter);
+// institution_admin Printers API Routes
+const institution_adminPrintersRouter = require('./routes/institution-admin-printers');
+app.use('/api/institution_admins', institution_adminPrintersRouter);
 
 // Technician Service Requests API Routes
 const technicianServiceRequestsRouter = require('./routes/technician-service-requests');
@@ -4873,21 +5225,59 @@ app.use('/api/technician', technicianHistoryRouter);
 const notificationsRouter = require('./routes/notifications');
 app.use('/api/notifications', notificationsRouter);
 
-// Coordinator service approvals routes
-const coordinatorServiceApprovalsRouter = require('./routes/coordinator-service-approvals');
-app.use('/api/coordinator/service-approvals', coordinatorServiceApprovalsRouter);
+// institution_admin service approvals routes
+const institution_adminServiceApprovalsRouter = require('./routes/institution-admin-service-approvals');
+app.use('/api/institution_admin/service-approvals', institution_adminServiceApprovalsRouter);
 
 // Association Rule Mining Routes
 const armRouter = require('./routes/arm');
 app.use('/api/arm', armRouter);
 
-// Voluntary Services Routes
-const voluntaryServicesRouter = require('./routes/voluntary-services');
-app.use('/api/voluntary-services', voluntaryServicesRouter);
+// Maintenance Services Routes
+const maintenanceServicesRouter = require('./routes/maintenance-services');
+app.use('/api/maintenance-services', maintenanceServicesRouter);
 
 // Admin Routes
 const adminRouter = require('./routes/admin');
 app.use('/api/admin', adminRouter);
+
+// ============================================
+// IMAGE UPLOAD ENDPOINT (Cloudinary)
+// ============================================
+app.post('/api/upload-image', auth, upload.single('image'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'No image file provided' });
+        }
+
+        console.log('📸 Uploading image to Cloudinary:', req.file.filename);
+
+        // Upload to Cloudinary
+        const result = await cloudinary.uploader.upload(req.file.path, {
+            folder: 'maintenance_services',
+            resource_type: 'image'
+        });
+
+        console.log('✅ Image uploaded successfully:', result.secure_url);
+
+        // Delete temporary file
+        fs.unlinkSync(req.file.path);
+
+        res.json({ 
+            url: result.secure_url,
+            public_id: result.public_id 
+        });
+    } catch (error) {
+        console.error('❌ Error uploading image:', error);
+        
+        // Clean up temp file if it exists
+        if (req.file && fs.existsSync(req.file.path)) {
+            fs.unlinkSync(req.file.path);
+        }
+        
+        res.status(500).json({ error: 'Failed to upload image' });
+    }
+});
 
 // ============================================
 // AUDIT LOGS API ENDPOINTS
@@ -5074,134 +5464,184 @@ app.get('/:page.html', (req, res, next) => {
     });
 });
 
-// Start server
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, '0.0.0.0', async () => {
-    console.log(`Server running on http://0.0.0.0:${PORT}`);
-    
-    // Update notifications table schema
+// Database migration for printer_parts industry standard fields
+async function migratePrinterPartsTable() {
     try {
-        console.log('Checking notifications table schema...');
+        // Check if the new columns already exist
+        const [columns] = await db.query(`
+            SELECT COLUMN_NAME 
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_SCHEMA = 'serviceease' 
+            AND TABLE_NAME = 'printer_parts'
+            AND COLUMN_NAME IN ('page_yield', 'ink_volume', 'color')
+        `);
         
-        // Add user_id column if it doesn't exist
-        try {
-            await db.query('ALTER TABLE notifications ADD COLUMN user_id INT NULL AFTER id');
-            console.log('Added user_id column to notifications');
-        } catch (e) {
-            if (!e.message.includes('Duplicate column')) {
-                console.log('user_id column already exists or error:', e.message);
-            }
+        const existingColumns = columns.map(col => col.COLUMN_NAME);
+        
+        // Add missing columns
+        if (!existingColumns.includes('page_yield')) {
+            console.log('📦 Adding page_yield column to printer_parts table...');
+            await db.query(`
+                ALTER TABLE printer_parts 
+                ADD COLUMN page_yield INT DEFAULT NULL COMMENT 'Approximate number of pages the consumable can print'
+            `);
+            console.log('✅ page_yield column added successfully');
         }
         
-        // Add reference_type column if it doesn't exist
-        try {
-            await db.query('ALTER TABLE notifications ADD COLUMN reference_type VARCHAR(50) NULL AFTER message');
-            console.log('Added reference_type column to notifications');
-        } catch (e) {
-            if (!e.message.includes('Duplicate column')) {
-                console.log('reference_type column already exists or error:', e.message);
-            }
+        if (!existingColumns.includes('ink_volume')) {
+            console.log('📦 Adding ink_volume column to printer_parts table...');
+            await db.query(`
+                ALTER TABLE printer_parts 
+                ADD COLUMN ink_volume DECIMAL(10,2) DEFAULT NULL COMMENT 'Volume of ink in milliliters for ink bottles'
+            `);
+            console.log('✅ ink_volume column added successfully');
         }
         
-        // Add reference_id column if it doesn't exist
-        try {
-            await db.query('ALTER TABLE notifications ADD COLUMN reference_id VARCHAR(50) NULL AFTER reference_type');
-            console.log('Added reference_id column to notifications');
-        } catch (e) {
-            if (!e.message.includes('Duplicate column')) {
-                console.log('reference_id column already exists or error:', e.message);
-            }
+        if (!existingColumns.includes('color')) {
+            console.log('📦 Adding color column to printer_parts table...');
+            await db.query(`
+                ALTER TABLE printer_parts 
+                ADD COLUMN color VARCHAR(50) DEFAULT NULL COMMENT 'Color of ink/toner (black, cyan, magenta, yellow, etc.)'
+            `);
+            console.log('✅ color column added successfully');
         }
         
-        // Add sender_id column if it doesn't exist
-        try {
-            await db.query('ALTER TABLE notifications ADD COLUMN sender_id INT NULL AFTER user_id');
-            console.log('Added sender_id column to notifications');
-        } catch (e) {
-            if (!e.message.includes('Duplicate column')) {
-                console.log('sender_id column already exists or error:', e.message);
-            }
+        if (existingColumns.length === 3) {
+            console.log('✅ All printer parts industry fields already exist');
         }
-        
-        // Update type enum to include new types
-        try {
-            await db.query(`ALTER TABLE notifications MODIFY COLUMN type VARCHAR(100) NOT NULL`);
-            console.log('Updated notifications type column to VARCHAR');
-        } catch (e) {
-            console.log('Type column update skipped or error:', e.message);
-        }
-        
-        console.log('Notifications table schema updated');
     } catch (error) {
-        console.error('Error updating notifications schema:', error);
+        console.error('❌ Error during printer_parts migration:', error);
+        // Don't stop the server if migration fails
     }
-    
-    // Fix database constraint on startup
-    try {
-        // Try to drop the constraint - ignore error if it doesn't exist
-        try {
-            await db.query('ALTER TABLE technician_assignments DROP INDEX unique_active_assignment');
-            console.log('Dropped unique_active_assignment constraint');
-        } catch (dropError) {
-            console.log('Constraint unique_active_assignment does not exist or already dropped');
-        }
-        
-        // Create indexes with error handling for existing indexes
-        try {
-            await db.query('CREATE INDEX idx_technician_institution ON technician_assignments (technician_id, institution_id)');
-            console.log('Created idx_technician_institution index');
-        } catch (indexError) {
-            console.log('Index idx_technician_institution already exists');
-        }
-        
-        try {
-            await db.query('CREATE INDEX idx_institution_active ON technician_assignments (institution_id, is_active)');
-            console.log('Created idx_institution_active index');
-        } catch (indexError) {
-            console.log('Index idx_institution_active already exists');
-        }
-        
-        console.log('Database constraint fixed: Multiple technicians can now be assigned to institutions');
-    } catch (error) {
-        console.error('Error fixing database constraint:', error.message);
-    }
-});
+}
 
-// Geocoding API endpoint (proxy for Nominatim to avoid CORS issues)
+// Run migrations before starting server
+(async () => {
+    await migratePrinterPartsTable();
+    
+    // Start server
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, '0.0.0.0', () => {
+        console.log(`Server running on http://0.0.0.0:${PORT}`);
+    });
+})();
+
+// Enhanced Geocoding API endpoint with Photon (primary) and Nominatim (fallback)
 app.get('/api/geocode', async (req, res) => {
     try {
-        const { q, countrycodes = 'ph', limit = '8', addressdetails = '1' } = req.query;
+        const { q, limit = '10' } = req.query;
 
         if (!q) {
             return res.status(400).json({ error: 'Query parameter "q" is required' });
         }
 
-        // Construct the Nominatim API URL
-        const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q + ', Philippines')}&countrycodes=${countrycodes}&limit=${limit}&addressdetails=${addressdetails}`;
+        let results = [];
 
-        console.log('Geocoding request:', nominatimUrl);
+        // Try Photon first (Komoot's geocoding - faster, more recent data)
+        try {
+            const photonUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=${limit}&lang=en&lon=123.8854&lat=10.3157`;
+            console.log('🌍 Trying Photon geocoding:', q);
 
-        // Make request to Nominatim
-        const response = await fetch(nominatimUrl, {
-            headers: {
-                'User-Agent': 'ServiceEase/1.0 (https://serviceease.onrender.com)'
+            const photonResponse = await fetch(photonUrl, {
+                headers: {
+                    'User-Agent': 'ServiceEase/1.0'
+                },
+                timeout: 3000
+            });
+
+            if (photonResponse.ok) {
+                const photonData = await photonResponse.json();
+                
+                if (photonData.features && photonData.features.length > 0) {
+                    // Transform Photon results to Nominatim-compatible format
+                    results = photonData.features.map(feature => {
+                        const props = feature.properties;
+                        const parts = [];
+                        
+                        if (props.name) parts.push(props.name);
+                        if (props.street) parts.push(props.street);
+                        if (props.city) parts.push(props.city);
+                        if (props.state) parts.push(props.state);
+                        if (props.country) parts.push(props.country);
+                        
+                        return {
+                            display_name: parts.join(', '),
+                            type: props.osm_value || props.type || 'place',
+                            osm_type: props.osm_type,
+                            osm_id: props.osm_id,
+                            lat: feature.geometry.coordinates[1],
+                            lon: feature.geometry.coordinates[0],
+                            address: {
+                                city: props.city,
+                                state: props.state,
+                                country: props.country,
+                                postcode: props.postcode,
+                                street: props.street,
+                                name: props.name
+                            }
+                        };
+                    }).filter(r => r.display_name.toLowerCase().includes('philippines') || 
+                                   r.address?.country === 'Philippines');
+                    
+                    console.log(`✅ Photon returned ${results.length} results`);
+                }
             }
-        });
-
-        if (!response.ok) {
-            throw new Error(`Nominatim API error: ${response.status}`);
+        } catch (photonError) {
+            console.log('⚠️ Photon failed, trying Nominatim:', photonError.message);
         }
 
-        const data = await response.json();
+        // Fallback to Nominatim if Photon didn't return enough results
+        if (results.length < 3) {
+            const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q + ', Philippines')}&countrycodes=ph&limit=${limit}&addressdetails=1`;
+            console.log('🗺️ Using Nominatim geocoding');
+
+            const nominatimResponse = await fetch(nominatimUrl, {
+                headers: {
+                    'User-Agent': 'ServiceEase/1.0 (https://serviceease.onrender.com)'
+                }
+            });
+
+            if (nominatimResponse.ok) {
+                const nominatimData = await nominatimResponse.json();
+                // Combine results, preferring Photon
+                const newResults = nominatimData.filter(nom => 
+                    !results.some(r => r.display_name === nom.display_name)
+                );
+                results = [...results, ...newResults];
+                console.log(`✅ Nominatim added ${newResults.length} results`);
+            }
+        }
+
+        // Sort by relevance (prioritize exact matches and cities)
+        results.sort((a, b) => {
+            const queryLower = q.toLowerCase();
+            const aName = a.display_name.toLowerCase();
+            const bName = b.display_name.toLowerCase();
+            
+            // Exact match priority
+            if (aName.startsWith(queryLower) && !bName.startsWith(queryLower)) return -1;
+            if (!aName.startsWith(queryLower) && bName.startsWith(queryLower)) return 1;
+            
+            // City/municipality priority
+            const aPriority = ['city', 'municipality', 'town'].includes(a.type);
+            const bPriority = ['city', 'municipality', 'town'].includes(b.type);
+            if (aPriority && !bPriority) return -1;
+            if (!aPriority && bPriority) return 1;
+            
+            return 0;
+        });
+
+        // Limit final results
+        results = results.slice(0, parseInt(limit));
 
         // Add CORS headers
         res.header('Access-Control-Allow-Origin', '*');
         res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
         res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-        res.json(data);
+        res.json(results);
     } catch (error) {
-        console.error('Geocoding error:', error);
+        console.error('❌ Geocoding error:', error);
         res.status(500).json({ error: 'Geocoding service unavailable', details: error.message });
     }
 });
@@ -5213,3 +5653,245 @@ app.options('/api/geocode', (req, res) => {
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     res.sendStatus(200);
 });
+
+// ===== TECHNICIAN PROGRESS TRACKING API =====
+
+// Get all technicians with their service request statistics
+app.get('/api/admin/technician-progress', authenticateAdmin, async (req, res) => {
+    try {
+        // Get all technicians with request counts
+        const query = `
+            SELECT 
+                u.id,
+                u.first_name,
+                u.last_name,
+                u.email,
+                COUNT(sr.id) as total,
+                SUM(CASE WHEN sr.status = 'pending' THEN 1 ELSE 0 END) as pending,
+                SUM(CASE WHEN sr.status = 'in_progress' THEN 1 ELSE 0 END) as in_progress,
+                SUM(CASE WHEN sr.status = 'pending_approval' THEN 1 ELSE 0 END) as pending_approval,
+                SUM(CASE WHEN sr.status = 'completed' THEN 1 ELSE 0 END) as completed
+            FROM users u
+            LEFT JOIN service_requests sr ON u.id = sr.technician_id
+            WHERE u.role = 'technician' AND u.approval_status = 'approved'
+            GROUP BY u.id, u.first_name, u.last_name, u.email
+            ORDER BY u.first_name, u.last_name
+        `;
+
+        const [technicians] = await db.query(query);
+
+        // Calculate summary
+        const summary = {
+            totalTechnicians: technicians.length,
+            totalInProgress: technicians.reduce((sum, t) => sum + (parseInt(t.in_progress) || 0), 0),
+            totalPendingApproval: technicians.reduce((sum, t) => sum + (parseInt(t.pending_approval) || 0), 0),
+            totalCompleted: technicians.reduce((sum, t) => sum + (parseInt(t.completed) || 0), 0)
+        };
+
+        res.json({
+            technicians: technicians.map(t => ({
+                ...t,
+                total: parseInt(t.total) || 0,
+                pending: parseInt(t.pending) || 0,
+                in_progress: parseInt(t.in_progress) || 0,
+                pending_approval: parseInt(t.pending_approval) || 0,
+                completed: parseInt(t.completed) || 0
+            })),
+            summary
+        });
+
+    } catch (error) {
+        console.error('Error fetching technician progress:', error);
+        res.status(500).json({ error: 'Failed to fetch technician progress' });
+    }
+});
+
+// Get detailed information for a specific technician
+app.get('/api/admin/technician-progress/:technicianId', authenticateAdmin, async (req, res) => {
+    try {
+        const { technicianId } = req.params;
+
+        // Get technician info
+        const [technicianRows] = await db.query(
+            'SELECT id, first_name, last_name, email FROM users WHERE id = ? AND role = "technician"',
+            [technicianId]
+        );
+
+        if (technicianRows.length === 0) {
+            return res.status(404).json({ error: 'Technician not found' });
+        }
+
+        const technician = technicianRows[0];
+
+        // Get all service requests for this technician
+        const query = `
+            SELECT 
+                sr.id,
+                sr.request_number,
+                sr.printer_id,
+                sr.institution_id,
+                sr.priority,
+                sr.description,
+                sr.location,
+                sr.status,
+                sr.created_at,
+                sr.completed_at,
+                sr.requested_by,
+                sr.technician_id,
+                sr.walk_in_customer_name,
+                sr.printer_brand as walk_in_printer_brand,
+                sr.is_walk_in,
+                sr.resolution_notes,
+                sr.completion_photo_url,
+                u.first_name as institution_user_first_name,
+                u.last_name as institution_user_last_name,
+                u.email as institution_user_email,
+                u.role as user_role,
+                ii.brand as printer_brand,
+                ii.model as printer_model,
+                ii.serial_number as printer_serial,
+                ii.name as printer_name,
+                i.name as institution_name
+            FROM service_requests sr
+            LEFT JOIN users u ON sr.requested_by = u.id
+            LEFT JOIN printers ii ON sr.printer_id = ii.id
+            LEFT JOIN institutions i ON sr.institution_id = i.institution_id
+            WHERE sr.technician_id = ?
+            ORDER BY sr.created_at DESC
+        `;
+
+        const [requests] = await db.query(query, [technicianId]);
+
+        // Get parts used for each request from service_parts_used table
+        for (const request of requests) {
+            const [parts] = await db.query(
+                `SELECT 
+                    spu.id,
+                    pp.name as part_name,
+                    spu.quantity_used,
+                    pp.brand,
+                    pp.unit,
+                    pp.category
+                FROM service_parts_used spu
+                JOIN printer_parts pp ON spu.part_id = pp.id
+                WHERE spu.service_request_id = ?`,
+                [request.id]
+            );
+            request.parts_used = parts; // Return as array, not JSON string
+        }
+
+        res.json({
+            technician,
+            requests
+        });
+
+    } catch (error) {
+        console.error('Error fetching technician details:', error);
+        res.status(500).json({ error: 'Failed to fetch technician details' });
+    }
+});
+
+// ===== END TECHNICIAN PROGRESS TRACKING API =====
+
+// ===== ADMIN TECHNICIAN INVENTORY API =====
+
+// Get all technicians with their inventory summary
+app.get('/api/admin/technician-inventory', authenticateAdmin, async (req, res) => {
+    try {
+        // Get all technicians
+        const [technicians] = await db.query(`
+            SELECT 
+                u.id,
+                u.first_name,
+                u.last_name,
+                u.email
+            FROM users u
+            WHERE u.role = 'technician' AND u.approval_status = 'approved'
+            ORDER BY u.first_name, u.last_name
+        `);
+
+        // Get inventory summary for each technician
+        for (const tech of technicians) {
+            const [inventory] = await db.query(`
+                SELECT 
+                    COUNT(DISTINCT ti.part_id) as total_parts,
+                    SUM(ti.quantity) as total_items
+                FROM technician_inventory ti
+                WHERE ti.technician_id = ? AND ti.quantity > 0
+            `, [tech.id]);
+            
+            tech.inventory_summary = inventory[0];
+        }
+
+        res.json(technicians);
+    } catch (error) {
+        console.error('Error fetching technician inventory summary:', error);
+        res.status(500).json({ error: 'Failed to fetch technician inventory' });
+    }
+});
+
+// Get detailed inventory for a specific technician
+app.get('/api/admin/technician-inventory/:technicianId', authenticateAdmin, async (req, res) => {
+    try {
+        const { technicianId } = req.params;
+
+        // Get technician info
+        const [technicianRows] = await db.query(`
+            SELECT 
+                u.id,
+                u.first_name,
+                u.last_name,
+                u.email
+            FROM users u
+            WHERE u.id = ? AND u.role = 'technician'
+        `, [technicianId]);
+
+        if (technicianRows.length === 0) {
+            return res.status(404).json({ error: 'Technician not found' });
+        }
+
+        const technician = technicianRows[0];
+
+        // Get detailed inventory
+        const [inventory] = await db.query(`
+            SELECT 
+                ti.id as inventory_id,
+                ti.quantity,
+                ti.assigned_at,
+                ti.last_updated,
+                ti.notes,
+                pp.id as part_id,
+                pp.name as part_name,
+                pp.brand,
+                pp.category,
+                pp.color,
+                pp.page_yield,
+                pp.ink_volume,
+                pp.is_universal,
+                pp.unit,
+                CONCAT(assigned_by_user.first_name, ' ', assigned_by_user.last_name) as assigned_by_name
+            FROM technician_inventory ti
+            JOIN printer_parts pp ON ti.part_id = pp.id
+            LEFT JOIN users assigned_by_user ON ti.assigned_by = assigned_by_user.id
+            WHERE ti.technician_id = ? AND ti.quantity > 0
+            ORDER BY pp.name ASC, pp.brand ASC
+        `, [technicianId]);
+
+        res.json({
+            technician,
+            inventory
+        });
+
+    } catch (error) {
+        console.error('Error fetching technician inventory details:', error);
+        res.status(500).json({ error: 'Failed to fetch inventory details' });
+    }
+});
+
+// ===== END ADMIN TECHNICIAN INVENTORY API =====
+
+
+
+
+
+

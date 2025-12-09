@@ -460,7 +460,7 @@ function formatDetailsSection(details) {
 // Format action description to be more readable
 function formatAction(action, actionType, targetType) {
     // The action field from the backend already contains descriptive text
-    // Just return it as-is (e.g., "Approved coordinator registration: John Doe (john@email.com)")
+    // Just return it as-is (e.g., "Approved institutionAdmin registration: John Doe (john@email.com)")
     return escapeHtml(action);
 }
 
@@ -516,3 +516,8 @@ function escapeHtml(text) {
 function showError(message) {
     alert(message);
 }
+
+
+
+
+

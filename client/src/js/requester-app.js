@@ -1,9 +1,9 @@
-// Requester mobile app JS - loads components, handles simple hash routing, and provides request form UX
+// Institution User mobile app JS - loads components, handles simple hash routing, and provides request form UX
 document.addEventListener('DOMContentLoaded', () => {
-  initRequesterApp();
+  initInstitutionUserApp();
 });
 
-async function initRequesterApp() {
+async function initInstitutionUserApp() {
   await loadTopnav();
   await loadBottomnav();
   // Handle hash routing
@@ -12,10 +12,10 @@ async function initRequesterApp() {
 }
 
 async function loadTopnav() {
-  const c = document.getElementById('requester-topnav-container');
+  const c = document.getElementById('institution-user-topnav-container');
   if (!c) return;
   try {
-    const r = await fetch('/components/requester-topnav.html');
+    const r = await fetch('/components/institution-user-topnav.html');
     c.innerHTML = await r.text();
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     const firstName = user.first_name || '';
@@ -27,15 +27,15 @@ async function loadTopnav() {
       _reqUserInitials.textContent = initials;
     }
     
-    // Fetch and display requester profile (institution name)
-    await loadRequesterProfile();
+    // Fetch and display institution_user profile (institution name)
+    await loadInstitutionUserProfile();
     
     // Setup notification system
     setupNotifications();
   } catch (e) { console.error('loadTopnav', e); }
 }
 
-async function loadRequesterProfile() {
+async function loadInstitutionUserProfile() {
   try {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -43,7 +43,7 @@ async function loadRequesterProfile() {
       return;
     }
     
-    const response = await fetch('/api/requester/profile', {
+    const response = await fetch('/api/institution_user/profile', {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -51,7 +51,7 @@ async function loadRequesterProfile() {
     
     if (response.ok) {
       const profile = await response.json();
-      console.log('Requester profile loaded:', profile);
+      console.log('Institution user profile loaded:', profile);
       
       // Update institution name in banner
       const institutionNameEl = document.getElementById('req-institution-name');
@@ -59,19 +59,19 @@ async function loadRequesterProfile() {
         institutionNameEl.textContent = profile.institution_name || 'No Institution';
       }
       
-      // Update requester name in banner
-      const requesterNameEl = document.getElementById('req-requester-name');
-      if (requesterNameEl) {
+      // Update institution_user name in banner
+      const institutionUserNameEl = document.getElementById('req-institution_user-name');
+      if (institutionUserNameEl) {
         const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'User';
-        requesterNameEl.textContent = fullName;
+        institutionUserNameEl.textContent = fullName;
       }
     } else {
-      console.error('Failed to load requester profile:', response.status);
+      console.error('Failed to load institution_user profile:', response.status);
       // Use fallback from localStorage
       useFallbackProfileData();
     }
   } catch (error) {
-    console.error('Error loading requester profile:', error);
+    console.error('Error loading institution_user profile:', error);
     // Use fallback from localStorage
     useFallbackProfileData();
   }
@@ -85,10 +85,10 @@ function useFallbackProfileData() {
     institutionNameEl.textContent = user.institution_name || 'No Institution';
   }
   
-  const requesterNameEl = document.getElementById('req-requester-name');
-  if (requesterNameEl) {
+  const institutionUserNameEl = document.getElementById('req-institution_user-name');
+  if (institutionUserNameEl) {
     const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'User';
-    requesterNameEl.textContent = fullName;
+    institutionUserNameEl.textContent = fullName;
   }
 }
 
@@ -99,25 +99,25 @@ function setupNotifications() {
   const closeNotificationModal = document.getElementById('req-close-notification-modal');
   
   if (!notificationBtn || !notificationModal) {
-    console.warn('[REQUESTER] Notification elements not found');
+    console.warn('[institution_user] Notification elements not found');
     return;
   }
   
   let notificationsLoaded = false;
   
   // Load notification JS module if not already loaded
-  if (!window.RequesterNotifications) {
-    console.log('🔔 [REQUESTER] Loading notification module...');
+  if (!window.institution_userNotifications) {
+    console.log('ð [institution_user] Loading notification module...');
     const script = document.createElement('script');
     script.src = '/js/requester-notifications.js';
-    script.onload = () => console.log('🔔 [REQUESTER] Notification module loaded');
-    script.onerror = () => console.error('🔔 [REQUESTER] Failed to load notification module');
+    script.onload = () => console.log('ð [institution_user] Notification module loaded');
+    script.onerror = () => console.error('ð [institution_user] Failed to load notification module');
     document.head.appendChild(script);
   }
   
   notificationBtn.addEventListener('click', function(e) {
     e.stopPropagation();
-    console.log('🔔 [REQUESTER] Notification button clicked');
+    console.log('ð [institution_user] Notification button clicked');
     
     // Open modal
     notificationModal.classList.remove('hidden');
@@ -125,7 +125,7 @@ function setupNotifications() {
     
     if (!notificationsLoaded) {
       // First time - load the HTML
-      console.log('🔔 [REQUESTER] Loading notifications component...');
+      console.log('ð [institution_user] Loading notifications component...');
       fetch('/components/requester-notifications.html')
         .then(res => res.text())
         .then(html => {
@@ -134,23 +134,23 @@ function setupNotifications() {
           
           // Initialize notifications module
           setTimeout(() => {
-            if (window.RequesterNotifications) {
-              console.log('🔔 [REQUESTER] Initializing RequesterNotifications module...');
-              window.RequesterNotifications.init();
+            if (window.institution_userNotifications) {
+              console.log('ð [institution_user] Initializing institution_userNotifications module...');
+              window.institution_userNotifications.init();
             } else {
-              console.error('🔔 [REQUESTER] RequesterNotifications module not loaded!');
+              console.error('ð [institution_user] institution_userNotifications module not loaded!');
             }
           }, 100);
         })
         .catch(err => {
-          console.error('🔔 [REQUESTER] Failed to load notifications component', err);
+          console.error('ð [institution_user] Failed to load notifications component', err);
           notificationModalContent.innerHTML = '<div class="p-4 text-center text-gray-500">Unable to load notifications.</div>';
         });
     } else {
       // Already loaded - just refresh the data
-      console.log('🔔 [REQUESTER] Refreshing notifications...');
-      if (window.RequesterNotifications) {
-        window.RequesterNotifications.refresh();
+      console.log('ð [institution_user] Refreshing notifications...');
+      if (window.institution_userNotifications) {
+        window.institution_userNotifications.refresh();
       }
     }
   });
@@ -172,10 +172,10 @@ function setupNotifications() {
 }
 
 async function loadBottomnav() {
-  const c = document.getElementById('requester-bottomnav-container');
+  const c = document.getElementById('institution-user-bottomnav-container');
   if (!c) return;
   try {
-    const r = await fetch('/components/requester-bottomnav.html');
+    const r = await fetch('/components/institution-user-bottomnav.html');
     c.innerHTML = await r.text();
     // bind nav links
     document.getElementById('nav-home')?.addEventListener('click', (ev) => { ev.preventDefault(); navigateTo('home'); });
@@ -191,18 +191,18 @@ function navigateTo(route) {
 
 async function renderRoute() {
   const hash = (window.location.hash || '#home').replace('#','');
-  const container = document.getElementById('requester-service-component');
+  const container = document.getElementById('institution_user-service-component');
   if (!container) return;
   
   // Update bottom nav active state
   updateBottomNavActiveState(hash);
   
   try {
-    let path = '/pages/requester/requester-home.html';
-    if (hash === 'request') path = '/pages/requester/requester-request.html';
-    if (hash === 'settings') path = '/pages/requester/requester-settings.html';
-    if (hash === 'history') path = '/pages/requester/requester-history.html';
-    if (hash === 'voluntary') path = '/pages/requester/requester-voluntary.html';
+    let path = '/pages/institution_user/institution-user-home.html';
+    if (hash === 'request') path = '/pages/institution_user/institution-user-request.html';
+    if (hash === 'settings') path = '/pages/institution_user/institution-user-settings.html';
+    if (hash === 'history') path = '/pages/institution_user/institution-user-history.html';
+    if (hash === 'voluntary') path = '/pages/institution_user/institution-user-voluntary.html';
 
     const res = await fetch(path);
     container.innerHTML = await res.text();
@@ -230,7 +230,7 @@ async function renderRoute() {
 
 function updateBottomNavActiveState(currentRoute) {
   // Remove active classes from all nav items
-  const navItems = document.querySelectorAll('#requester-bottomnav-container a');
+  const navItems = document.querySelectorAll('#institution-user-bottomnav-container a');
   navItems.forEach(item => {
     item.classList.remove('bg-blue-50', 'text-blue-600');
     item.classList.add('text-gray-700');
@@ -292,7 +292,7 @@ function displayHomePrinters(printers) {
   if (!printers || printers.length === 0) {
     container.innerHTML = `
       <div class="p-6 text-center">
-        <div class="text-4xl mb-2">🖨️</div>
+        <div class="text-4xl mb-2">ð¨ï¸</div>
         <div class="text-gray-500 text-sm">No printers assigned yet</div>
         <p class="text-xs text-gray-400 mt-1">Contact your coordinator to assign a printer</p>
       </div>
@@ -317,7 +317,7 @@ function displayHomePrinters(printers) {
             <div class="font-medium text-gray-800">${printerName}</div>
             <div class="text-xs text-gray-500 mt-1 flex flex-wrap gap-2">
               ${serialNumber ? `<span>${serialNumber}</span>` : ''}
-              ${department ? `<span>• ${department}</span>` : ''}
+              ${department ? `<span>â¢ ${department}</span>` : ''}
             </div>
           </div>
           <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -347,7 +347,7 @@ function displayRecentRequests(requests) {
   if (!requests || requests.length === 0) {
     container.innerHTML = `
       <div class="p-6 text-center">
-        <div class="text-4xl mb-2">📝</div>
+        <div class="text-4xl mb-2">ð</div>
         <div class="text-gray-500 text-sm">No service requests yet</div>
         <button onclick="navigateTo('request')" class="mt-3 text-blue-600 text-sm hover:underline">Create your first request</button>
       </div>
@@ -396,7 +396,7 @@ function displayRecentRequests(requests) {
             </div>
             <div class="text-xs text-gray-600 mb-2 line-clamp-2">${req.description}</div>
             <div class="flex items-center gap-3 text-xs text-gray-500">
-              <span>📅 ${timeAgo}</span>
+              <span>ð ${timeAgo}</span>
               ${req.priority ? `<span class="px-2 py-0.5 rounded ${getPriorityColorCompact(req.priority)}">${req.priority.toUpperCase()}</span>` : ''}
             </div>
           </div>
@@ -479,9 +479,9 @@ function displayHistoryRequests(requests) {
     const date = new Date(req.created_at).toLocaleDateString();
     const time = new Date(req.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     
-    // Show requester name (the person who created the request)
-    const requesterName = req.requester_first_name && req.requester_last_name 
-      ? `${req.requester_first_name} ${req.requester_last_name}`
+    // Show institution_user name (the person who created the request)
+    const institutionUserName = req.institution_user_first_name && req.institution_user_last_name 
+      ? `${req.institution_user_first_name} ${req.institution_user_last_name}`
       : 'Unknown';
       
     // Show technician name if assigned
@@ -505,7 +505,7 @@ function displayHistoryRequests(requests) {
         ${needsApproval ? `
           <div class="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-3">
             <p class="text-sm text-orange-800 font-medium mb-2">
-              ⚠️ Work completed - Please review and approve
+              â ï¸ Work completed - Please review and approve
             </p>
             ${technicianName ? `<p class="text-xs text-orange-700">Technician: ${technicianName}</p>` : ''}
           </div>
@@ -513,12 +513,12 @@ function displayHistoryRequests(requests) {
         
         <div class="space-y-2 mb-3">
           <div class="text-sm text-gray-700">${req.description}</div>
-          ${req.location ? `<div class="text-xs text-gray-500">📍 ${req.location}</div>` : ''}
-          ${technicianName && !needsApproval ? `<div class="text-xs text-gray-500">👷 ${technicianName}</div>` : ''}
+          ${req.location ? `<div class="text-xs text-gray-500">ð ${req.location}</div>` : ''}
+          ${technicianName && !needsApproval ? `<div class="text-xs text-gray-500">ð· ${technicianName}</div>` : ''}
         </div>
         
         <div class="flex items-center justify-between text-xs text-gray-500 pt-3 border-t">
-          <div>👤 ${requesterName}</div>
+          <div>ð¤ ${institutionUserName}</div>
           <div>${date} ${time}</div>
         </div>
         
@@ -576,10 +576,10 @@ async function initRequestForm() {
         const res = await fetch('/api/users/me/printers', {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token') || ''}` }
         });
-        console.debug('[requester] GET /api/users/me/printers status=', res.status);
+        console.debug('[institution_user] GET /api/users/me/printers status=', res.status);
         if (res.status === 401) {
           // Not authenticated or token expired
-          console.warn('[requester] printers fetch unauthorized (401) - token may be missing/expired');
+          console.warn('[institution_user] printers fetch unauthorized (401) - token may be missing/expired');
           const container = document.getElementById('requestForm');
           if (container) {
             const note = document.createElement('p');
@@ -593,7 +593,7 @@ async function initRequestForm() {
 
         if (!res.ok) {
           const err = await res.json().catch(() => ({ error: 'Unknown error' }));
-          console.error('[requester] printers fetch failed:', res.status, err);
+          console.error('[institution_user] printers fetch failed:', res.status, err);
           const container = document.getElementById('requestForm');
           if (container) {
             const note = document.createElement('p');
@@ -606,9 +606,9 @@ async function initRequestForm() {
         }
 
         const printers = await res.json();
-        console.debug('[requester] printers response', printers);
+        console.debug('[institution_user] printers response', printers);
         if (!printers || printers.length === 0) {
-          // No printers assigned to this requester - show message and disable submit
+          // No printers assigned to this institution_user - show message and disable submit
           const container = document.getElementById('requestForm');
           const submitBtn = document.getElementById('rq-submit');
           if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'No assigned printers'; }
@@ -786,7 +786,7 @@ async function handleApproval(approved) {
     const data = await response.json();
     
     if (response.ok) {
-      alert(approved ? '✅ Service request approved!' : '❌ Service request rejected. Technician will be notified.');
+      alert(approved ? 'â Service request approved!' : 'â Service request rejected. Technician will be notified.');
       closeApprovalModal();
       // Reload the history page
       await initHistoryPage();
@@ -798,8 +798,8 @@ async function handleApproval(approved) {
     alert('Failed to process approval');
   } finally {
     // Re-enable buttons
-    if (approveBtn) { approveBtn.disabled = false; approveBtn.textContent = '✅ Approve'; }
-    if (rejectBtn) { rejectBtn.disabled = false; rejectBtn.textContent = '❌ Reject'; }
+    if (approveBtn) { approveBtn.disabled = false; approveBtn.textContent = 'â Approve'; }
+    if (rejectBtn) { rejectBtn.disabled = false; rejectBtn.textContent = 'â Reject'; }
   }
 }
 
@@ -820,7 +820,7 @@ async function initVoluntaryPage() {
 async function loadVoluntaryServices() {
   try {
     const token = localStorage.getItem('token');
-    const response = await fetch('/api/voluntary-services/requester/pending', {
+    const response = await fetch('/api/voluntary-services/institution_user/pending', {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     
@@ -841,7 +841,7 @@ async function loadVoluntaryServices() {
 async function loadVoluntaryHistory() {
   try {
     const token = localStorage.getItem('token');
-    const response = await fetch('/api/voluntary-services/requester/history', {
+    const response = await fetch('/api/voluntary-services/institution_user/history', {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     
@@ -878,7 +878,7 @@ function displayVoluntaryServices() {
   const container = document.getElementById('pending-voluntary-list');
   if (!container) return;
   
-  const pending = voluntaryServices.filter(s => s.requester_approval_status === 'pending');
+  const pending = voluntaryServices.filter(s => s.institution_user_approval_status === 'pending');
   
   if (pending.length === 0) {
     container.innerHTML = `
@@ -916,9 +916,9 @@ function displayVoluntaryServices() {
         <button onclick="viewVoluntaryDetails(${service.id})" class="flex-1 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium hover:bg-blue-100 transition">
           View Details
         </button>
-        ${service.requester_approval_status === 'pending' ? `
+        ${service.institution_user_approval_status === 'pending' ? `
           <button onclick="approveVoluntaryService(${service.id})" class="flex-1 px-3 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition">
-            ✓ Approve
+            â Approve
           </button>
         ` : ''}
       </div>
@@ -962,13 +962,13 @@ function displayVoluntaryHistory() {
 function getVoluntaryStatusColor(service) {
   if (service.status === 'completed') return 'bg-green-100 text-green-800';
   if (service.status === 'rejected') return 'bg-red-100 text-red-800';
-  if (service.requester_approval_status === 'pending') return 'bg-yellow-100 text-yellow-800';
+  if (service.institution_user_approval_status === 'pending') return 'bg-yellow-100 text-yellow-800';
   if (service.coordinator_approval_status === 'approved') return 'bg-blue-100 text-blue-800';
   return 'bg-gray-100 text-gray-800';
 }
 
 function getVoluntaryStatusText(service) {
-  if (service.requester_approval_status === 'pending') return 'Your Approval Needed';
+  if (service.institution_user_approval_status === 'pending') return 'Your Approval Needed';
   if (service.coordinator_approval_status === 'approved') return 'Approved by Coordinator';
   if (service.status === 'completed') return 'Completed';
   if (service.status === 'rejected') return 'Rejected';
@@ -1076,7 +1076,7 @@ function viewVoluntaryDetails(serviceId) {
       </div>
       
       ${service.status !== 'completed' && service.status !== 'rejected' && 
-        service.requester_approval_status === 'pending' && 
+        service.institution_user_approval_status === 'pending' && 
         service.coordinator_approval_status === 'pending' ? `
       <div class="flex space-x-3 pt-4 border-t">
         <button onclick="rejectVoluntaryService(${service.id})" class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition">
@@ -1111,17 +1111,17 @@ async function approveVoluntaryService(serviceId) {
   
   try {
     const token = localStorage.getItem('token');
-    const response = await fetch(`/api/voluntary-services/requester/${serviceId}/approve`, {
+    const response = await fetch(`/api/voluntary-services/institution_user/${serviceId}/approve`, {
       method: 'PATCH',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ notes: 'Approved by requester' })
+      body: JSON.stringify({ notes: 'Approved by institution_user' })
     });
     
     if (response.ok) {
-      alert('✅ Service approved successfully!');
+      alert('â Service approved successfully!');
       closeVoluntaryModal();
       await loadVoluntaryServices();
     } else {
@@ -1140,7 +1140,7 @@ async function rejectVoluntaryService(serviceId) {
   
   try {
     const token = localStorage.getItem('token');
-    const response = await fetch(`/api/voluntary-services/requester/${serviceId}/reject`, {
+    const response = await fetch(`/api/voluntary-services/institution_user/${serviceId}/reject`, {
       method: 'PATCH',
       headers: {
         'Authorization': `Bearer ${token}`,

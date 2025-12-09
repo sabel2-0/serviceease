@@ -19,7 +19,7 @@ This document provides guidance on how to maintain and extend the role-based sid
 - `client/src/js/operations-officer-sidebar.js`: Operations Officer-specific sidebar functionality
 - `client/src/js/coordinator-sidebar.js`: Coordinator-specific sidebar functionality
 - `client/src/js/unified-sidebar.js`: Shared sidebar functionality
-- `client/src/js/technician-assignments.js`: Technician assignment functionality for coordinators
+- `client/src/js/technician-assignments.js`: Technician assignment functionality for institution_admins
 
 ## How to Add a New Section to a Sidebar
 
@@ -124,7 +124,7 @@ function setupTabNavigation() {
 
 ## Technician Assignment Component
 
-The technician assignment component was recently added to allow coordinators to view which technicians are assigned to their institution's printers. This is a read-only view for coordinators, as only admins can assign or change technician assignments.
+The technician assignment component was recently added to allow coordinators to view which technicians are assigned to their institution's printers. This is a read-only view for institution_admins, as only admins can assign or change technician assignments.
 
 ### Files Involved:
 - `client/src/js/technician-assignments.js`: Main functionality
@@ -132,7 +132,7 @@ The technician assignment component was recently added to allow coordinators to 
 - `client/src/pages/coordinator.html`: Contains the technician assignment tab content
 
 ### How It Works:
-1. The `technician-assignments.js` file initializes when the coordinator page loads
+1. The `technician-assignments.js` file initializes when The institution_admin page loads
 2. It adds a technician assignment card to the dashboard
 3. It creates a new tab for technician assignments with a detailed view
 4. It adds a technician column to the printer table in the printer management tab

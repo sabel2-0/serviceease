@@ -81,9 +81,9 @@ async function sendPasswordResetEmail(to, resetToken, firstName) {
 }
 
 /**
- * Send email verification for requester registration
+ * Send email verification for institution_user registration
  */
-async function sendRequesterVerificationEmail(to, verificationCode, firstName) {
+async function sendinstitution_userVerificationEmail(to, verificationCode, firstName) {
     try {
         const result = await mailjetClient
             .post('send', { version: 'v3.1' })
@@ -130,7 +130,7 @@ async function sendRequesterVerificationEmail(to, verificationCode, firstName) {
                                         </div>
                                         <p>Enter this code on the registration page to verify your email address.</p>
                                         <p style="color: #dc2626; font-weight: bold;">⏰ This code will expire in 24 hours.</p>
-                                        <p style="color: #6b7280; font-size: 14px;">After verification, your registration will be sent to your institution's coordinator for approval.</p>
+                                        <p style="color: #6b7280; font-size: 14px;">After verification, your registration will be sent to your institution's institution_admin for approval.</p>
                                         <p>Best regards,<br><strong>ServiceEase Team</strong></p>
                                     </div>
                                     <div class="footer">
@@ -153,9 +153,9 @@ async function sendRequesterVerificationEmail(to, verificationCode, firstName) {
 }
 
 /**
- * Send requester registration approved notification
+ * Send institution_user registration approved notification
  */
-async function sendRequesterApprovedEmail(to, firstName, printerCount) {
+async function sendinstitution_userApprovedEmail(to, firstName, printerCount) {
     try {
         const loginLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/pages/login.html`;
         
@@ -185,7 +185,7 @@ async function sendRequesterApprovedEmail(to, firstName, printerCount) {
                                     </div>
                                     <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px;">
                                         <p>Hi ${firstName},</p>
-                                        <p>Great news! Your ServiceEase account has been approved by your institution's coordinator.</p>
+                                        <p>Great news! Your ServiceEase account has been approved by your institution's institution_admin.</p>
                                         <p>✅ <strong>${printerCount} printer(s)</strong> have been assigned to your account.</p>
                                         <p>You can now log in and start submitting service requests:</p>
                                         <center>
@@ -210,9 +210,9 @@ async function sendRequesterApprovedEmail(to, firstName, printerCount) {
 }
 
 /**
- * Send requester registration rejected notification
+ * Send institution_user registration rejected notification
  */
-async function sendRequesterRejectedEmail(to, firstName, reason) {
+async function sendinstitution_userRejectedEmail(to, firstName, reason) {
     try {
         const result = await mailjetClient
             .post('send', { version: 'v3.1' })
@@ -242,7 +242,7 @@ async function sendRequesterRejectedEmail(to, firstName, reason) {
                                         <p>Hi ${firstName},</p>
                                         <p>We regret to inform you that your ServiceEase registration was not approved.</p>
                                         ${reason ? `<p><strong>Reason:</strong> ${reason}</p>` : ''}
-                                        <p>If you believe this was an error, please contact your institution's coordinator for more information.</p>
+                                        <p>If you believe this was an error, please contact your institution's institution_admin for more information.</p>
                                         <p>Best regards,<br><strong>ServiceEase Team</strong></p>
                                     </div>
                                 </div>
@@ -263,7 +263,11 @@ async function sendRequesterRejectedEmail(to, firstName, reason) {
 
 module.exports = {
     sendPasswordResetEmail,
-    sendRequesterVerificationEmail,
-    sendRequesterApprovedEmail,
-    sendRequesterRejectedEmail
+    sendinstitution_userVerificationEmail,
+    sendinstitution_userApprovedEmail,
+    sendinstitution_userRejectedEmail
 };
+
+
+
+

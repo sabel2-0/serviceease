@@ -461,24 +461,24 @@ document.addEventListener('DOMContentLoaded', function() {
     tryFetchRequest()
             .then(request => {
                 console.log('Service request:', request);
-                console.log('Requester data:', {
-                    first_name: request.requester_first_name,
-                    last_name: request.requester_last_name,
-                    email: request.requester_email
+                console.log('institution_user data:', {
+                    first_name: request.institution_user_first_name,
+                    last_name: request.institution_user_last_name,
+                    email: request.institution_user_email
                 });
                 
                 // DEBUG: Alert to verify data
-                if (!request.requester_first_name && !request.requester_last_name) {
-                    alert('WARNING: No requester data found in API response!');
+                if (!request.institution_user_first_name && !request.institution_user_last_name) {
+                    alert('WARNING: No institution_user data found in API response!');
                 } else {
-                    alert(`Requester found: ${request.requester_first_name} ${request.requester_last_name}`);
+                    alert(`institution_user found: ${request.institution_user_first_name} ${request.institution_user_last_name}`);
                 }
                 
                 const formattedDate = formatDate(request.created_at);
                 const statusColor = getStatusColor(request.status);
                 // Printer request block
                 let printerRequestHtml = '';
-                if (request.inventory_item_id || request.printer_name || request.brand || request.model) {
+                if (request.printer_id || request.printer_name || request.brand || request.model) {
                     printerRequestHtml = `
                         <div class="rounded-xl border border-slate-100 bg-slate-50 p-4 mb-2">
                             <div class="font-semibold text-slate-700 mb-2 flex items-center gap-2"><svg class='w-4 h-4 text-slate-400' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z'></path></svg>Printer/Equipment</div>
@@ -552,7 +552,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 </div>
                             </div>
 
-                            <!-- Requester Information Card - DEBUG: Always show -->
+                            <!-- institution_user Information Card - DEBUG: Always show -->
                             <div class="glass-info-card requester-card">
                                 <div class="glass-card-icon requester-icon">
                                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -564,25 +564,25 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <div class="glass-detail-rows">
                                         <div class="detail-row">
                                             <span class="detail-label">Name:</span>
-                                            <span class="detail-value">${[request.requester_first_name, request.requester_last_name].filter(Boolean).join(' ') || 'N/A'}</span>
+                                            <span class="detail-value">${[request.institution_user_first_name, request.institution_user_last_name].filter(Boolean).join(' ') || 'N/A'}</span>
                                         </div>
                                         <div class="detail-row">
                                             <span class="detail-label">Email:</span>
-                                            <span class="detail-value">${request.requester_email || 'N/A'}</span>
+                                            <span class="detail-value">${request.institution_user_email || 'N/A'}</span>
                                         </div>
                                         <div class="detail-row">
                                             <span class="detail-label">DEBUG first_name:</span>
-                                            <span class="detail-value">${request.requester_first_name || 'undefined'}</span>
+                                            <span class="detail-value">${request.institution_user_first_name || 'undefined'}</span>
                                         </div>
                                         <div class="detail-row">
                                             <span class="detail-label">DEBUG last_name:</span>
-                                            <span class="detail-value">${request.requester_last_name || 'undefined'}</span>
+                                            <span class="detail-value">${request.institution_user_last_name || 'undefined'}</span>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            ${(request.inventory_item_id || request.printer_name || request.brand || request.model) ? `
+                            ${(request.printer_id || request.printer_name || request.brand || request.model) ? `
                             <!-- Printer Request Card -->
                             <div class="glass-info-card printer-card">
                                 <div class="glass-card-icon printer-icon">
@@ -720,10 +720,10 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(request => {
                 console.log(`%c==== SERVICE REQUEST #${requestId} ====`, 'color: blue; font-weight: bold;');
                 console.log('Request Data:', request);
-                console.log('inventory_item_id:', request.inventory_item_id);
+                console.log('printer_id:', request.printer_id);
                 
-                if (request.inventory_item_id) {
-                    return window.debugInventoryItem(request.inventory_item_id)
+                if (request.printer_id) {
+                    return window.debugInventoryItem(request.printer_id)
                         .then(inventoryData => {
                             console.log(`%c==== COMBINED DATA ====`, 'color: purple; font-weight: bold;');
                             console.log('Service Request + Inventory:', {
@@ -733,7 +733,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         });
                 }
                 
-                console.log('No inventory_item_id found for this request');
+                console.log('No printer_id found for this request');
                 return request;
             })
             .catch(err => {
@@ -1049,3 +1049,8 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     }
 });
+
+
+
+
+

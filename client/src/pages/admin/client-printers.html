@@ -103,43 +103,102 @@
                     
                     <!-- Printers Table -->
                     <div class="p-6">
-                        <div class="flex items-center justify-between mb-4">
-                            <h4 class="text-lg font-semibold text-slate-900">Assigned Printers</h4>
-                            <div class="bg-green-100 px-3 py-1 rounded-full">
-                                <span id="totalCount" class="text-sm font-semibold text-green-800">0 printers</span>
+                        <!-- Tabs for Assigned vs History -->
+                        <div class="flex items-center space-x-2 mb-6 border-b border-slate-200">
+                            <button id="assignedTab" class="px-4 py-3 font-semibold text-green-600 border-b-2 border-green-600 transition-all">
+                                <i class="fas fa-check-circle mr-2"></i>Assigned Printers
+                            </button>
+                            <button id="historyTab" class="px-4 py-3 font-semibold text-slate-500 border-b-2 border-transparent hover:text-slate-700 transition-all">
+                                <i class="fas fa-history mr-2"></i>Assignment History
+                            </button>
+                        </div>
+
+                        <!-- Assigned Printers View -->
+                        <div id="assignedView">
+                            <div class="flex items-center justify-between mb-4">
+                                <h4 class="text-lg font-semibold text-slate-900">Assigned Printers</h4>
+                                <div class="bg-green-100 px-3 py-1 rounded-full">
+                                    <span id="totalCount" class="text-sm font-semibold text-green-800">0 printers</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Printer Search -->
+                            <div class="mb-4">
+                                <div class="relative">
+                                    <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 text-sm"></i>
+                                    <input 
+                                        type="text" 
+                                        id="printerSearch" 
+                                        placeholder="Search assigned printers..." 
+                                        class="w-full pl-12 pr-4 py-3 border-2 border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all duration-200 bg-white shadow-sm"
+                                    />
+                                </div>
+                            </div>
+                            
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full text-sm border-collapse">
+                                    <thead class="bg-gradient-to-r from-slate-50 to-slate-100 border-b-2 border-slate-200">
+                                        <tr>
+                                            <th class="text-left px-3 sm:px-6 py-4 font-semibold text-slate-700 tracking-wide">Printer Name</th>
+                                            <th class="text-left px-3 sm:px-6 py-4 font-semibold text-slate-700 tracking-wide">Model</th>
+                                            <th class="text-left px-3 sm:px-6 py-4 font-semibold text-slate-700 tracking-wide">Serial Number</th>
+                                            <th class="text-right px-3 sm:px-6 py-4 font-semibold text-slate-700 tracking-wide">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="printersTbody" class="divide-y divide-slate-100"></tbody>
+                                </table>
+                                <div id="emptyState" class="text-center py-16">
+                                    <div class="flex flex-col items-center">
+                                        <i class="fas fa-inbox text-4xl text-slate-300 mb-4"></i>
+                                        <p class="text-lg font-medium text-slate-400">No printers assigned yet</p>
+                                        <p class="text-sm text-slate-400 mt-1">Click "Assign Printer" to add printers to this client</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        
-                        <!-- Printer Search -->
-                        <div class="mb-4">
-                            <div class="relative">
-                                <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 text-sm"></i>
-                                <input 
-                                    type="text" 
-                                    id="printerSearch" 
-                                    placeholder="Search assigned printers..." 
-                                    class="w-full pl-12 pr-4 py-3 border-2 border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all duration-200 bg-white shadow-sm"
-                                />
+
+                        <!-- History View -->
+                        <div id="historyView" class="hidden">
+                            <div class="flex items-center justify-between mb-4">
+                                <h4 class="text-lg font-semibold text-slate-900">Assignment History</h4>
+                                <div class="bg-blue-100 px-3 py-1 rounded-full">
+                                    <span id="historyCount" class="text-sm font-semibold text-blue-800">0 records</span>
+                                </div>
                             </div>
-                        </div>
-                        
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full text-sm border-collapse">
-                                <thead class="bg-gradient-to-r from-slate-50 to-slate-100 border-b-2 border-slate-200">
-                                    <tr>
-                                        <th class="text-left px-3 sm:px-6 py-4 font-semibold text-slate-700 tracking-wide">Printer Name</th>
-                                        <th class="text-left px-3 sm:px-6 py-4 font-semibold text-slate-700 tracking-wide">Model</th>
-                                        <th class="text-left px-3 sm:px-6 py-4 font-semibold text-slate-700 tracking-wide">Serial Number</th>
-                                        <th class="text-right px-3 sm:px-6 py-4 font-semibold text-slate-700 tracking-wide">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="printersTbody" class="divide-y divide-slate-100"></tbody>
-                            </table>
-                            <div id="emptyState" class="text-center py-16">
-                                <div class="flex flex-col items-center">
-                                    <i class="fas fa-inbox text-4xl text-slate-300 mb-4"></i>
-                                    <p class="text-lg font-medium text-slate-400">No printers assigned yet</p>
-                                    <p class="text-sm text-slate-400 mt-1">Click "Assign Printer" to add printers to this client</p>
+                            
+                            <!-- History Search -->
+                            <div class="mb-4">
+                                <div class="relative">
+                                    <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 text-sm"></i>
+                                    <input 
+                                        type="text" 
+                                        id="historySearch" 
+                                        placeholder="Search assignment history..." 
+                                        class="w-full pl-12 pr-4 py-3 border-2 border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 bg-white shadow-sm"
+                                    />
+                                </div>
+                            </div>
+                            
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full text-sm border-collapse">
+                                    <thead class="bg-gradient-to-r from-slate-50 to-slate-100 border-b-2 border-slate-200">
+                                        <tr>
+                                            <th class="text-left px-3 sm:px-6 py-4 font-semibold text-slate-700 tracking-wide">Printer Name</th>
+                                            <th class="text-left px-3 sm:px-6 py-4 font-semibold text-slate-700 tracking-wide">Model</th>
+                                            <th class="text-left px-3 sm:px-6 py-4 font-semibold text-slate-700 tracking-wide">Serial Number</th>
+                                            <th class="text-left px-3 sm:px-6 py-4 font-semibold text-slate-700 tracking-wide">Status</th>
+                                            <th class="text-left px-3 sm:px-6 py-4 font-semibold text-slate-700 tracking-wide">Assigned Date</th>
+                                            <th class="text-left px-3 sm:px-6 py-4 font-semibold text-slate-700 tracking-wide">Unassigned Date</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="historyTbody" class="divide-y divide-slate-100"></tbody>
+                                </table>
+                                <div id="historyEmptyState" class="text-center py-16">
+                                    <div class="flex flex-col items-center">
+                                        <i class="fas fa-history text-4xl text-slate-300 mb-4"></i>
+                                        <p class="text-lg font-medium text-slate-400">No history records</p>
+                                        <p class="text-sm text-slate-400 mt-1">Assignment history will appear here</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -242,8 +301,9 @@
         }
     </style>
 
-    <script src="../../js/auth.js"></script>
-    <script src="../../js/dynamic-sidebar-loader.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/dynamic-sidebar-loader.js"></script>
     <script src="../../js/client-printers.js"></script>
 </body>
 </html>
+

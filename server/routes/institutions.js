@@ -69,7 +69,7 @@ router.post('/search', async (req, res) => {
 /**
  * @route GET /api/institutions/:id/printers
  * @desc Get printers assigned to a specific institution
- * @access Private (Coordinator only)
+ * @access Private (institution_admin only)
  */
 router.get('/:id/printers', async (req, res) => {
     try {
@@ -77,15 +77,16 @@ router.get('/:id/printers', async (req, res) => {
         
         const [rows] = await db.query(`
             SELECT 
-                ii.id as inventory_item_id,
+                ii.id as printer_id,
                 ii.name,
                 ii.model,
                 ii.serial_number,
-                ii.location_note,
-                ii.status
-            FROM inventory_items ii
-            JOIN client_printer_assignments cpa ON ii.id = cpa.inventory_item_id
-            WHERE cpa.institution_id = ?
+                ii.status,
+                cpa.assigned_at,
+                cpa.status as assignment_status
+            FROM printers ii
+            JOIN institution_printer_assignments cpa ON ii.id = cpa.printer_id
+            WHERE cpa.institution_id = ? AND cpa.status = 'assigned'
             ORDER BY ii.name ASC
         `, [institutionId]);
 
@@ -97,3 +98,6 @@ router.get('/:id/printers', async (req, res) => {
 });
 
 module.exports = router;
+
+
+

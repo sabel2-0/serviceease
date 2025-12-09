@@ -25,3 +25,7 @@ const API_URL = getApiUrl();  // For files that add /api in their fetch calls
 const WS_BASE_URL = getWebSocketUrl();
 
 console.log('API Configuration:', { API_BASE_URL, API_URL, WS_BASE_URL, hostname: window.location.hostname });
+
+
+
+

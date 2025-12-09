@@ -39,8 +39,11 @@ router.get('/inventory', authenticateTechnician, async (req, res) => {
                 pp.name,
                 pp.brand,
                 pp.category,
-                pp.unit,
+                pp.color,
+                pp.page_yield,
+                pp.ink_volume,
                 pp.is_universal,
+                pp.unit,
                 CONCAT(u.first_name, ' ', u.last_name) as assigned_by_name
             FROM technician_inventory ti
             JOIN printer_parts pp ON ti.part_id = pp.id
@@ -56,6 +59,40 @@ router.get('/inventory', authenticateTechnician, async (req, res) => {
         console.error('Error fetching technician inventory:', error);
         res.status(500).json({ 
             error: 'Failed to fetch inventory',
+            message: error.message 
+        });
+    }
+});
+
+// Get technician's parts for service completion (from personal inventory only)
+router.get('/parts', authenticateTechnician, async (req, res) => {
+    try {
+        const technicianId = req.user.id;
+        
+        const [rows] = await db.query(`
+            SELECT 
+                pp.id,
+                pp.name,
+                pp.brand,
+                pp.category,
+                pp.unit,
+                pp.is_universal,
+                ti.quantity as stock,
+                ti.quantity as technician_stock,
+                ti.id as tech_inventory_id
+            FROM technician_inventory ti
+            JOIN printer_parts pp ON ti.part_id = pp.id
+            WHERE ti.technician_id = ? AND ti.quantity > 0
+            ORDER BY pp.name ASC
+        `, [technicianId]);
+        
+        console.log(`[GET /api/technician/parts] Loaded ${rows.length} parts for technician ${technicianId}`);
+        res.json(rows);
+        
+    } catch (error) {
+        console.error('Error fetching technician parts:', error);
+        res.status(500).json({ 
+            error: 'Failed to fetch parts',
             message: error.message 
         });
     }
@@ -164,9 +201,9 @@ router.post('/request', authenticateTechnician, async (req, res) => {
             });
         }
         
-        if (reason.trim().length < 10) {
+        if (!reason || reason.trim().length === 0) {
             return res.status(400).json({ 
-                error: 'Reason must be at least 10 characters long' 
+                error: 'Reason is required' 
             });
         }
         
@@ -397,3 +434,5 @@ router.post('/use-part', authenticateTechnician, async (req, res) => {
 });
 
 module.exports = router;
+
+

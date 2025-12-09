@@ -25,7 +25,6 @@ async function detectNotificationSchema() {
     notifHasSenderId = colNames.includes('sender_id');
     notifHasRelatedData = colNames.includes('related_data');
     notifHasPriority = colNames.includes('priority');
-        console.log('Notification schema detection:', { notifHasUserId, notifHasRelatedUserId, notifHasSenderId, notifHasRelatedData });
     } catch (err) {
         console.warn('Failed to detect notifications schema, defaulting to new schema assumptions', err.message);
         notifHasUserId = true;
@@ -331,3 +330,5 @@ router.put('/preferences', async (req, res) => {
 // Export the createNotification function for use in other modules
 module.exports = router;
 module.exports.createNotification = createNotification;
+
+

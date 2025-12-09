@@ -3,7 +3,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const db = require('../config/database');
-const { sendRequesterVerificationEmail, sendRequesterApprovedEmail, sendRequesterRejectedEmail } = require('../utils/emailService');
+const { sendinstitution_userVerificationEmail, sendinstitution_userApprovedEmail, sendinstitution_userRejectedEmail } = require('../utils/emailService');
 const { auth } = require('../middleware/auth');
 const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
@@ -36,17 +36,16 @@ router.post('/validate-printers', async (req, res) => {
                 continue;
             }
             
-            // Check if printer exists in institution's inventory via client_printer_assignments
+            // Check if printer exists in institution's inventory via institution_printer_assignments
             const [matches] = await db.query(
                 `SELECT 
                     ii.id,
                     ii.name,
                     ii.brand,
                     ii.model,
-                    ii.serial_number,
-                    cpa.location_note
+                    ii.serial_number
                 FROM client_printer_assignments cpa
-                INNER JOIN inventory_items ii ON cpa.inventory_item_id = ii.id
+                INNER JOIN printers ii ON cpa.printer_id = ii.id
                 WHERE cpa.institution_id COLLATE utf8mb4_unicode_ci = ? COLLATE utf8mb4_unicode_ci
                 AND LOWER(TRIM(ii.serial_number)) = LOWER(TRIM(?))
                 AND LOWER(TRIM(ii.brand)) LIKE LOWER(TRIM(?))
@@ -57,10 +56,9 @@ router.post('/validate-printers', async (req, res) => {
             if (matches.length > 0) {
                 validated.push({
                     ...printer,
-                    inventory_item_id: matches[0].id,
+                    printer_id: matches[0].id,
                     name: matches[0].name,
                     model: matches[0].model,
-                    location: matches[0].location_note,
                     matched: true
                 });
             } else {
@@ -83,7 +81,7 @@ router.post('/validate-printers', async (req, res) => {
 });
 
 /**
- * Submit requester registration
+ * Submit institution_user registration
  * POST /api/requester-registration/submit
  */
 router.post('/submit', upload.fields([
@@ -102,7 +100,7 @@ router.post('/submit', upload.fields([
             printer_serial_numbers // JSON string
         } = req.body;
         
-        console.log('📝 Requester registration submission:', { first_name, last_name, email, institution_id });
+        console.log('📝 institution_user registration submission:', { first_name, last_name, email, institution_id });
         
         // Validate required fields
         if (!first_name || !last_name || !email || !password || !institution_id || !printer_serial_numbers) {
@@ -121,7 +119,7 @@ router.post('/submit', upload.fields([
         
         // Check if email already in pending registrations
         const [existingRegs] = await db.query(
-            'SELECT id FROM requester_registrations WHERE email = ? AND status != "rejected"',
+            'SELECT id FROM institution_user_registrations WHERE email = ? AND status != "rejected"',
             [email]
         );
         
@@ -142,8 +140,8 @@ router.post('/submit', upload.fields([
         for (const printer of printers) {
             const [matches] = await db.query(
                 `SELECT ii.id
-                FROM client_printer_assignments cpa
-                INNER JOIN inventory_items ii ON cpa.inventory_item_id = ii.id
+                FROM institution_printer_assignments cpa
+                INNER JOIN printers ii ON cpa.printer_id = ii.id
                 WHERE cpa.institution_id COLLATE utf8mb4_unicode_ci = ? COLLATE utf8mb4_unicode_ci
                 AND LOWER(TRIM(ii.serial_number)) = LOWER(TRIM(?))
                 AND LOWER(TRIM(ii.brand)) LIKE LOWER(TRIM(?))`,
@@ -168,7 +166,7 @@ router.post('/submit', upload.fields([
             if (req.files.id_front) {
                 const result = await new Promise((resolve, reject) => {
                     const uploadStream = cloudinary.uploader.upload_stream(
-                        { folder: 'requester_registrations/id_front' },
+                        { folder: 'institution_user_registrations/id_front' },
                         (error, result) => error ? reject(error) : resolve(result)
                     );
                     uploadStream.end(req.files.id_front[0].buffer);
@@ -179,7 +177,7 @@ router.post('/submit', upload.fields([
             if (req.files.id_back) {
                 const result = await new Promise((resolve, reject) => {
                     const uploadStream = cloudinary.uploader.upload_stream(
-                        { folder: 'requester_registrations/id_back' },
+                        { folder: 'institution_user_registrations/id_back' },
                         (error, result) => error ? reject(error) : resolve(result)
                     );
                     uploadStream.end(req.files.id_back[0].buffer);
@@ -190,7 +188,7 @@ router.post('/submit', upload.fields([
             if (req.files.selfie) {
                 const result = await new Promise((resolve, reject) => {
                     const uploadStream = cloudinary.uploader.upload_stream(
-                        { folder: 'requester_registrations/selfie' },
+                        { folder: 'institution_user_registrations/selfie' },
                         (error, result) => error ? reject(error) : resolve(result)
                     );
                     uploadStream.end(req.files.selfie[0].buffer);
@@ -207,7 +205,7 @@ router.post('/submit', upload.fields([
         
         // Insert registration
         const [result] = await db.query(
-            `INSERT INTO requester_registrations (
+            `INSERT INTO institution_user_registrations (
                 first_name, last_name, email, password_hash,
                 institution_id, institution_type,
                 printer_serial_numbers, matched_printer_ids,
@@ -224,9 +222,9 @@ router.post('/submit', upload.fields([
         );
         
         // Send verification code email
-        await sendRequesterVerificationEmail(email, email_verification_code, first_name);
+        await sendinstitution_userVerificationEmail(email, email_verification_code, first_name);
         
-        console.log('✅ Requester registration created, ID:', result.insertId);
+        console.log('✅ institution_user registration created, ID:', result.insertId);
         
         res.json({
             message: 'Registration submitted successfully. Please check your email for the verification code.',
@@ -234,7 +232,7 @@ router.post('/submit', upload.fields([
         });
         
     } catch (error) {
-        console.error('❌ Requester registration error:', error);
+        console.error('❌ institution_user registration error:', error);
         res.status(500).json({ error: 'Failed to submit registration' });
     }
 });
@@ -252,7 +250,7 @@ router.post('/verify-code', async (req, res) => {
         }
         
         const [registrations] = await db.query(
-            'SELECT * FROM requester_registrations WHERE id = ? AND status = "pending_verification"',
+            'SELECT * FROM institution_user_registrations WHERE id = ? AND status = "pending_verification"',
             [registration_id]
         );
         
@@ -267,17 +265,17 @@ router.post('/verify-code', async (req, res) => {
             return res.status(400).json({ error: 'Invalid verification code' });
         }
         
-        // Update status to pending coordinator approval
+        // Update status to pending institution_admin approval
         await db.query(
-            `UPDATE requester_registrations 
+            `UPDATE institution_user_registrations 
              SET email_verified = TRUE, 
                  email_verified_at = NOW(), 
-                 status = 'pending_coordinator'
+                 status = 'pending_institution_admin'
              WHERE id = ?`,
             [registration_id]
         );
         
-        // Create notification for coordinator
+        // Create notification for institution_admin
         const [institution] = await db.query(
             'SELECT user_id, name FROM institutions WHERE institution_id = ?',
             [registration.institution_id]
@@ -286,7 +284,7 @@ router.post('/verify-code', async (req, res) => {
         if (institution.length > 0 && institution[0].user_id) {
             await db.query(
                 `INSERT INTO notifications (user_id, type, title, message, reference_id)
-                 VALUES (?, 'requester_registration', 'New Requester Registration', ?, ?)`,
+                 VALUES (?, 'institution_user_registration', 'New institution_user Registration', ?, ?)`,
                 [
                     institution[0].user_id,
                     `${registration.first_name} ${registration.last_name} has registered and is awaiting your approval.`,
@@ -297,7 +295,7 @@ router.post('/verify-code', async (req, res) => {
         
         console.log('✅ Email verified with code for registration ID:', registration_id);
         
-        res.json({ message: 'Email verified successfully. Your registration is now pending coordinator approval.' });
+        res.json({ message: 'Email verified successfully. Your registration is now pending institution_admin approval.' });
         
     } catch (error) {
         console.error('❌ Code verification error:', error);
@@ -306,7 +304,7 @@ router.post('/verify-code', async (req, res) => {
 });
 
 /**
- * Verify email for requester registration (legacy token-based)
+ * Verify email for institution_user registration (legacy token-based)
  * GET /api/requester-registration/verify-email/:token
  */
 router.get('/verify-email/:token', async (req, res) => {
@@ -314,7 +312,7 @@ router.get('/verify-email/:token', async (req, res) => {
         const { token } = req.params;
         
         const [registrations] = await db.query(
-            'SELECT * FROM requester_registrations WHERE email_verification_token = ? AND status = "pending_verification"',
+            'SELECT * FROM institution_user_registrations WHERE email_verification_token = ? AND status = "pending_verification"',
             [token]
         );
         
@@ -322,17 +320,17 @@ router.get('/verify-email/:token', async (req, res) => {
             return res.status(400).json({ error: 'Invalid or expired verification token' });
         }
         
-        // Update status to pending coordinator approval
+        // Update status to pending institution_admin approval
         await db.query(
-            `UPDATE requester_registrations 
+            `UPDATE institution_user_registrations 
              SET email_verified = TRUE, 
                  email_verified_at = NOW(), 
-                 status = 'pending_coordinator'
+                 status = 'pending_institution_admin'
              WHERE id = ?`,
             [registrations[0].id]
         );
         
-        // Create notification for coordinator
+        // Create notification for institution_admin
         const [institution] = await db.query(
             'SELECT user_id, name FROM institutions WHERE institution_id = ?',
             [registrations[0].institution_id]
@@ -341,7 +339,7 @@ router.get('/verify-email/:token', async (req, res) => {
         if (institution.length > 0 && institution[0].user_id) {
             await db.query(
                 `INSERT INTO notifications (user_id, type, title, message, reference_id)
-                 VALUES (?, 'requester_registration', 'New Requester Registration', ?, ?)`,
+                 VALUES (?, 'institution_user_registration', 'New institution_user Registration', ?, ?)`,
                 [
                     institution[0].user_id,
                     `${registrations[0].first_name} ${registrations[0].last_name} has registered and is awaiting your approval.`,
@@ -352,7 +350,7 @@ router.get('/verify-email/:token', async (req, res) => {
         
         console.log('✅ Email verified for registration ID:', registrations[0].id);
         
-        res.json({ message: 'Email verified successfully. Your registration is now pending coordinator approval.' });
+        res.json({ message: 'Email verified successfully. Your registration is now pending institution_admin approval.' });
         
     } catch (error) {
         console.error('❌ Email verification error:', error);
@@ -361,17 +359,17 @@ router.get('/verify-email/:token', async (req, res) => {
 });
 
 /**
- * Get pending requester registrations for coordinator
+ * Get pending institution_user registrations for institution_admin
  * GET /api/requester-registration/pending
  */
 router.get('/pending', auth, async (req, res) => {
     try {
-        const coordinatorId = req.user.id;
+        const institution_adminId = req.user.id;
         
-        // Get coordinator's institutions
+        // Get institution_admin's institutions
         const [institutions] = await db.query(
             'SELECT institution_id FROM institutions WHERE user_id = ?',
-            [coordinatorId]
+            [institution_adminId]
         );
         
         if (institutions.length === 0) {
@@ -384,10 +382,10 @@ router.get('/pending', auth, async (req, res) => {
             `SELECT 
                 rr.*,
                 i.name as institution_name
-            FROM requester_registrations rr
+            FROM institution_user_registrations rr
             INNER JOIN institutions i ON rr.institution_id COLLATE utf8mb4_unicode_ci = i.institution_id
             WHERE rr.institution_id IN (?)
-            AND rr.status = 'pending_coordinator'
+            AND rr.status = 'pending_institution_admin'
             ORDER BY rr.created_at DESC`,
             [institutionIds]
         );
@@ -407,16 +405,16 @@ router.get('/pending', auth, async (req, res) => {
 });
 
 /**
- * Get requester registration history for coordinator
+ * Get institution_user registration history for institution_admin
  * GET /api/requester-registration/history
  */
 router.get('/history', auth, async (req, res) => {
     try {
-        const coordinatorId = req.user.id;
+        const institution_adminId = req.user.id;
         
         const [institutions] = await db.query(
             'SELECT institution_id FROM institutions WHERE user_id = ?',
-            [coordinatorId]
+            [institution_adminId]
         );
         
         if (institutions.length === 0) {
@@ -429,7 +427,7 @@ router.get('/history', auth, async (req, res) => {
             `SELECT 
                 rr.*,
                 i.name as institution_name
-            FROM requester_registrations rr
+            FROM institution_user_registrations rr
             INNER JOIN institutions i ON rr.institution_id COLLATE utf8mb4_unicode_ci = i.institution_id
             WHERE rr.institution_id IN (?)
             AND rr.status IN ('approved', 'rejected')
@@ -451,16 +449,16 @@ router.get('/history', auth, async (req, res) => {
 });
 
 /**
- * Approve requester registration
+ * Approve institution_user registration
  * POST /api/requester-registration/:id/approve
  */
 router.post('/:id/approve', auth, async (req, res) => {
     try {
         const { id } = req.params;
-        const coordinatorId = req.user.id;
+        const institution_adminId = req.user.id;
         
         const [registrations] = await db.query(
-            'SELECT * FROM requester_registrations WHERE id = ? AND status = "pending_coordinator"',
+            'SELECT * FROM institution_user_registrations WHERE id = ? AND status = "pending_institution_admin"',
             [id]
         );
         
@@ -476,13 +474,13 @@ router.post('/:id/approve', auth, async (req, res) => {
             `INSERT INTO users (
                 first_name, last_name, email, password, role,
                 status, approval_status, approved_at, approved_by
-            ) VALUES (?, ?, ?, ?, 'requester', 'active', 'approved', NOW(), ?)`,
+            ) VALUES (?, ?, ?, ?, 'institution_user', 'active', 'approved', NOW(), ?)`,
             [
                 registration.first_name,
                 registration.last_name,
                 registration.email,
                 registration.password_hash,
-                coordinatorId
+                institution_adminId
             ]
         );
         
@@ -491,7 +489,7 @@ router.post('/:id/approve', auth, async (req, res) => {
         // Assign printers to user
         for (const printer_id of matched_printer_ids) {
             await db.query(
-                `INSERT INTO user_printer_assignments (user_id, inventory_item_id, institution_id, assigned_at)
+                `INSERT INTO user_printer_assignments (user_id, printer_id, institution_id, assigned_at)
                  VALUES (?, ?, ?, NOW())`,
                 [newUserId, printer_id, registration.institution_id]
             );
@@ -499,22 +497,22 @@ router.post('/:id/approve', auth, async (req, res) => {
         
         // Update registration status
         await db.query(
-            `UPDATE requester_registrations 
+            `UPDATE institution_user_registrations 
              SET status = 'approved',
-                 coordinator_reviewed_at = NOW(),
-                 coordinator_reviewed_by = ?
+                 institution_admin_reviewed_at = NOW(),
+                 institution_admin_reviewed_by = ?
              WHERE id = ?`,
-            [coordinatorId, id]
+            [institution_adminId, id]
         );
         
         // Send approval email
-        await sendRequesterApprovedEmail(
+        await sendinstitution_userApprovedEmail(
             registration.email,
             registration.first_name,
             matched_printer_ids.length
         );
         
-        console.log('✅ Requester registration approved, user ID:', newUserId);
+        console.log('✅ institution_user registration approved, user ID:', newUserId);
         
         res.json({ 
             message: 'Registration approved successfully',
@@ -528,17 +526,17 @@ router.post('/:id/approve', auth, async (req, res) => {
 });
 
 /**
- * Reject requester registration
+ * Reject institution_user registration
  * POST /api/requester-registration/:id/reject
  */
 router.post('/:id/reject', auth, async (req, res) => {
     try {
         const { id } = req.params;
         const { notes } = req.body;
-        const coordinatorId = req.user.id;
+        const institution_adminId = req.user.id;
         
         const [registrations] = await db.query(
-            'SELECT * FROM requester_registrations WHERE id = ? AND status = "pending_coordinator"',
+            'SELECT * FROM institution_user_registrations WHERE id = ? AND status = "pending_institution_admin"',
             [id]
         );
         
@@ -549,23 +547,23 @@ router.post('/:id/reject', auth, async (req, res) => {
         const registration = registrations[0];
         
         await db.query(
-            `UPDATE requester_registrations 
+            `UPDATE institution_user_registrations 
              SET status = 'rejected',
-                 coordinator_reviewed_at = NOW(),
-                 coordinator_reviewed_by = ?,
-                 coordinator_notes = ?
+                 institution_admin_reviewed_at = NOW(),
+                 institution_admin_reviewed_by = ?,
+                 institution_admin_notes = ?
              WHERE id = ?`,
-            [coordinatorId, notes, id]
+            [institution_adminId, notes, id]
         );
         
         // Send rejection email
-        await sendRequesterRejectedEmail(
+        await sendinstitution_userRejectedEmail(
             registration.email,
             registration.first_name,
             notes
         );
         
-        console.log('✅ Requester registration rejected, ID:', id);
+        console.log('✅ institution_user registration rejected, ID:', id);
         
         res.json({ message: 'Registration rejected' });
         
@@ -578,7 +576,7 @@ router.post('/:id/reject', auth, async (req, res) => {
 module.exports = router;
 
 /**
- * Dev-only: find a requester registration by email (for debugging)
+ * Dev-only: find a institution_user registration by email (for debugging)
  * GET /api/requester-registration/dev/find-by-email?email=
  * NOTE: This endpoint is only enabled when NODE_ENV !== 'production'
  */
@@ -590,7 +588,7 @@ if (process.env.NODE_ENV !== 'production') {
 
             const [rows] = await db.query(
                 `SELECT id, first_name, last_name, email, status, institution_id, printer_serial_numbers, matched_printer_ids, email_verification_token, created_at, updated_at
-                 FROM requester_registrations
+                 FROM institution_user_registrations
                  WHERE email = ?
                  ORDER BY created_at DESC
                  LIMIT 1`,
@@ -611,3 +609,8 @@ if (process.env.NODE_ENV !== 'production') {
         }
     });
 }
+
+
+
+
+

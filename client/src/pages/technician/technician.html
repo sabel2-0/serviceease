@@ -1602,6 +1602,8 @@
             }
             
             .glass-modal-content {
+                padding-left: 0 !important;
+                padding-right: 0 !important;
                 padding-bottom: 100px !important; /* Space for fixed buttons */
                 max-height: calc(100vh - 140px) !important; /* Account for header and buttons */
                 overflow-y: auto !important;
@@ -2650,19 +2652,24 @@
                             <input type="text" id="modalPartName" readonly class="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-900">
                         </div>
                         
+                        <!-- Part Details Section (Dynamic) -->
+                        <div id="modalPartDetails" class="mb-4 hidden">
+                            <!-- Will be populated dynamically with part details -->
+                        </div>
+                        
                         <!-- Quantity Selection -->
                         <div class="mb-4">
                             <label class="block text-sm font-medium text-gray-700 mb-2">Quantity Requested</label>
                             <div class="flex items-center space-x-3">
-                                <button type="button" onclick="changeQuantity(-1)" class="w-10 h-10 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-50">
+                                <button type="button" onclick="changeQuantity(-1)" class="w-10 h-10 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-50 transition-colors">
                                     <span class="text-lg font-medium">-</span>
                                 </button>
                                 <input type="number" id="modalQuantity" value="1" min="1" class="flex-1 p-3 border border-gray-300 rounded-lg text-center text-lg font-medium">
-                                <button type="button" onclick="changeQuantity(1)" class="w-10 h-10 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-50">
+                                <button type="button" onclick="changeQuantity(1)" class="w-10 h-10 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-50 transition-colors">
                                     <span class="text-lg font-medium">+</span>
                                 </button>
                             </div>
-                            <p class="text-xs text-gray-500 mt-1">Available: <span id="modalAvailable">0</span></p>
+                            <p class="text-xs text-gray-500 mt-1 flex items-center"><i class="fas fa-box mr-1"></i>Available in stock: <span id="modalAvailable" class="font-semibold ml-1">0</span></p>
                         </div>
                         
                         <!-- Priority Level -->
@@ -2924,6 +2931,7 @@
     </div>
 
     <!-- Load Scripts -->
+    <script src="/js/auth.js"></script>
     <script src="/js/config.js"></script>
     <script src="/js/technician.js?v=20251016-002"></script>
     <script>
@@ -3658,7 +3666,7 @@
                 });
 
             // Load Requests Tab Content
-            fetch('/pages/technician/requests.html')
+            fetch('/pages/technician/requests.html?v=' + Date.now())
                 .then(response => response.text())
                 .then(html => {
                     const requestsInner = document.getElementById('requests-tab-inner');
@@ -3671,9 +3679,19 @@
 
                     // Load requests page JavaScript
                     const requestsScript = document.createElement('script');
-                    requestsScript.src = '/pages/technician/requests.js';
+                    requestsScript.src = '/pages/technician/requests.js?v=' + Date.now();
                     requestsScript.onload = () => {
                         console.log('✓ requests.js script loaded successfully');
+                        
+                        // Load completion photo handler
+                        const photoScript = document.createElement('script');
+                        photoScript.src = '/pages/technician/completion-photo.js?v=' + Date.now();
+                        photoScript.onload = () => {
+                            console.log('✓ completion-photo.js loaded successfully');
+                        };
+                        photoScript.onerror = () => console.error('❌ Failed to load completion-photo.js');
+                        document.body.appendChild(photoScript);
+                        
                         componentsLoaded.requestsContent = true;
                         // Slight delay for any initialization in requests.js
                         setTimeout(() => {
@@ -3984,11 +4002,21 @@
                 let partsArray = [];
                 if (Array.isArray(data)) {
                     partsArray = data;
+                } else if (data.rows && Array.isArray(data.rows)) {
+                    // New format from parts API
+                    partsArray = data.rows;
                 } else if (data.success && data.parts) {
                     partsArray = data.parts;
                 } else if (data.parts) {
                     partsArray = data.parts;
                 }
+                
+                // Map field names to ensure consistency (quantity vs stock)
+                partsArray = partsArray.map(part => ({
+                    ...part,
+                    stock: part.quantity || part.stock || 0,
+                    minimum_stock: part.minimum_stock || 5
+                }));
                 
                 console.log('📋 Parts array to display:', partsArray);
                 
@@ -4021,42 +4049,57 @@
             partsGrid.className = 'grid gap-3 grid-cols-1';
             
             partsGrid.innerHTML = parts.map(part => `
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow">
                     <div class="flex justify-between items-start mb-3">
                         <div class="flex-1">
                             <h3 class="font-semibold text-gray-900 text-base">${part.name || 'Unknown Part'}</h3>
-                            <p class="text-xs text-gray-500 mt-1">ID: ${part.id}</p>
+                            ${part.brand ? `<p class="text-sm text-blue-600 mt-1"><i class="fas fa-building text-xs mr-1"></i>${part.brand}</p>` : ''}
+                            ${part.is_universal ? `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 mt-1"><i class="fas fa-globe mr-1"></i>Universal</span>` : ''}
                         </div>
                         <span class="px-2 py-1 text-xs font-semibold rounded-full ml-2 ${getStockBadgeClasses(part.stock, part.minimum_stock)}">
                             ${getStockStatus(part.stock, part.minimum_stock)}
                         </span>
                     </div>
                     
-                    <div class="space-y-2 mb-4 text-sm">
+                    <div class="space-y-2 mb-4 text-sm bg-gray-50 rounded-lg p-3">
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Category:</span>
-                            <span class="font-medium">${part.category || 'N/A'}</span>
+                            <span class="text-gray-600"><i class="fas fa-tag text-xs mr-1"></i>Category:</span>
+                            <span class="font-medium capitalize">${part.category ? part.category.replace(/-/g, ' ') : 'N/A'}</span>
                         </div>
+                        ${part.color ? `
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Available:</span>
-                            <span class="font-medium">${part.stock || 0} ${part.unit || 'pcs'}</span>
+                            <span class="text-gray-600"><i class="fas fa-palette text-xs mr-1"></i>Color:</span>
+                            <span class="font-medium capitalize">${part.color.replace(/-/g, ' ')}</span>
+                        </div>
+                        ` : ''}
+                        ${part.page_yield ? `
+                        <div class="flex justify-between">
+                            <span class="text-gray-600"><i class="fas fa-file-alt text-xs mr-1"></i>Page Yield:</span>
+                            <span class="font-medium">~${parseInt(part.page_yield).toLocaleString()} pages</span>
+                        </div>
+                        ` : ''}
+                        ${part.ink_volume ? `
+                        <div class="flex justify-between">
+                            <span class="text-gray-600"><i class="fas fa-flask text-xs mr-1"></i>Volume:</span>
+                            <span class="font-medium">${parseFloat(part.ink_volume)} ml</span>
+                        </div>
+                        ` : ''}
+                        <div class="flex justify-between border-t border-gray-200 pt-2 mt-2">
+                            <span class="text-gray-600"><i class="fas fa-warehouse text-xs mr-1"></i>Available:</span>
+                            <span class="font-semibold text-lg ${part.stock > 5 ? 'text-green-600' : part.stock > 0 ? 'text-yellow-600' : 'text-red-600'}">${part.stock || 0}</span>
                         </div>
                         ${part.description ? `
-                        <div class="mt-2">
-                            <span class="text-gray-600 text-xs">Description:</span>
-                            <p class="text-xs text-gray-700 mt-1">${part.description}</p>
+                        <div class="mt-2 pt-2 border-t border-gray-200">
+                            <span class="text-gray-600 text-xs block mb-1"><i class="fas fa-info-circle text-xs mr-1"></i>Description:</span>
+                            <p class="text-xs text-gray-700">${part.description}</p>
                         </div>
                         ` : ''}
                     </div>
                     
-                    <button onclick="openRequestModal(${part.id}, '${(part.name || 'Unknown Part').replace(/'/g, "\\'")}', ${part.stock || 0})" 
-                            class="w-full py-3 text-sm font-medium rounded-lg transition-colors ${
-                                part.stock > 0 
-                                    ? 'bg-blue-500 text-white hover:bg-blue-600' 
-                                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                            }"
+                    <button onclick="openRequestModal(${part.id}, '${(part.name || 'Unknown Part').replace(/'/g, "\\'")}', ${part.stock || 0}, ${JSON.stringify(part).replace(/'/g, "\\'").replace(/"/g, '&quot;')})" 
+                            class="w-full py-3 text-sm font-medium rounded-lg transition-all transform hover:scale-[1.02] ${part.stock > 0 ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 shadow-md hover:shadow-lg' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}"
                             ${part.stock <= 0 ? 'disabled' : ''}>
-                        ${part.stock <= 0 ? 'Out of Stock' : 'Request Part'}
+                        <i class="fas ${part.stock > 0 ? 'fa-paper-plane' : 'fa-ban'} mr-2"></i>${part.stock <= 0 ? 'Out of Stock' : 'Request Part'}
                     </button>
                 </div>
             `).join('');
@@ -4086,7 +4129,7 @@
         // Modal functions for part requests
         let currentPartRequest = null;
         
-        function openRequestModal(partId, partName, availableQuantity) {
+        function openRequestModal(partId, partName, availableQuantity, partDataJson) {
             console.log('🔄 Opening request modal for:', partId, partName, availableQuantity);
             
             if (availableQuantity <= 0) {
@@ -4094,11 +4137,24 @@
                 return;
             }
             
+            // Parse part data if provided
+            let partData = null;
+            try {
+                if (partDataJson && typeof partDataJson === 'string') {
+                    partData = JSON.parse(partDataJson.replace(/&quot;/g, '"'));
+                } else if (typeof partDataJson === 'object') {
+                    partData = partDataJson;
+                }
+            } catch (e) {
+                console.warn('Could not parse part data:', e);
+            }
+            
             // Store current part data
             currentPartRequest = {
                 id: partId,
                 name: partName,
-                availableQuantity: availableQuantity
+                availableQuantity: availableQuantity,
+                partData: partData
             };
             
             // Populate modal
@@ -4108,6 +4164,43 @@
             document.getElementById('modalAvailable').textContent = availableQuantity;
             document.getElementById('modalReason').value = '';
             document.getElementById('modalPriority').value = 'medium';
+            
+            // Update part details section if exists
+            const partDetailsSection = document.getElementById('modalPartDetails');
+            if (partDetailsSection && partData) {
+                let detailsHtml = '<div class="bg-blue-50 rounded-lg p-3 space-y-2 text-sm">';
+                detailsHtml += '<div class="font-semibold text-blue-900 mb-2"><i class="fas fa-info-circle mr-1"></i>Part Details</div>';
+                
+                if (partData.brand) {
+                    detailsHtml += `<div class="flex justify-between"><span class="text-gray-600">Brand:</span><span class="font-medium">${partData.brand}</span></div>`;
+                }
+                
+                if (partData.category) {
+                    detailsHtml += `<div class="flex justify-between"><span class="text-gray-600">Category:</span><span class="font-medium capitalize">${partData.category.replace(/-/g, ' ')}</span></div>`;
+                }
+                
+                if (partData.color) {
+                    detailsHtml += `<div class="flex justify-between"><span class="text-gray-600">Color:</span><span class="font-medium capitalize">${partData.color.replace(/-/g, ' ')}</span></div>`;
+                }
+                
+                if (partData.page_yield) {
+                    detailsHtml += `<div class="flex justify-between"><span class="text-gray-600">Page Yield:</span><span class="font-medium">~${parseInt(partData.page_yield).toLocaleString()} pages</span></div>`;
+                }
+                
+                if (partData.ink_volume) {
+                    detailsHtml += `<div class="flex justify-between"><span class="text-gray-600">Ink Volume:</span><span class="font-medium">${parseFloat(partData.ink_volume)} ml</span></div>`;
+                }
+                
+                if (partData.is_universal) {
+                    detailsHtml += `<div class="flex items-center text-purple-700"><i class="fas fa-globe mr-2"></i><span class="text-xs font-medium">Universal - Compatible with all brands</span></div>`;
+                }
+                
+                detailsHtml += '</div>';
+                partDetailsSection.innerHTML = detailsHtml;
+                partDetailsSection.classList.remove('hidden');
+            } else if (partDetailsSection) {
+                partDetailsSection.classList.add('hidden');
+            }
             
             // Show modal
             document.getElementById('partsRequestModal').classList.remove('hidden');

@@ -1,7 +1,7 @@
 # Requester Interface Improvements
 
 ## Overview
-The requester interface has been completely redesigned to provide a better user experience with clear navigation, comprehensive dashboards, and easy access to all features.
+The institution_user interface has been completely redesigned to provide a better user experience with clear navigation, comprehensive dashboards, and easy access to all features.
 
 ## What's New
 
@@ -262,7 +262,7 @@ The requester interface has been completely redesigned to provide a better user 
 
 ### Manual Testing Steps
 
-1. **Login as requester**
+1. **Login as institution_user**
 2. **Home Page:**
    - Verify printers are displayed
    - Check stats are accurate
@@ -327,3 +327,4 @@ For issues or questions:
 
 **Last Updated:** October 14, 2025
 **Version:** 1.0.0
+

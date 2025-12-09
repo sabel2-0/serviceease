@@ -442,12 +442,12 @@
             // Only allow admin and operations_officer to access this page
             if (user.role !== 'admin' && user.role !== 'operations_officer') {
                 // Redirect to appropriate dashboard based on role
-                if (user.role === 'requester') {
-                    window.location.href = '/pages/requester/dashboard.html';
+                if (user.role === 'institution_user') {
+                    window.location.href = '/pages/institution_user/dashboard.html';
                 } else if (user.role === 'technician') {
                     window.location.href = '/pages/technician/home.html';
-                } else if (user.role === 'coordinator') {
-                    window.location.href = '/pages/coordinator/dashboard.html';
+                } else if (user.role === 'institution-admin') {
+                    window.location.href = '/pages/institution-admin/dashboard.html';
                 } else {
                     window.location.href = '/pages/login.html';
                 }
@@ -561,3 +561,5 @@
     </script>
 </body>
 </html>
+
+

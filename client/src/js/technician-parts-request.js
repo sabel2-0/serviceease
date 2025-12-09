@@ -461,3 +461,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize the parts manager
     window.partsManager = new TechnicianPartsManager();
 });
+
+
+

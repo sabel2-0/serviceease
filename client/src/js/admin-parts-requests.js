@@ -251,12 +251,25 @@ class AdminPartsRequestsManager {
                             <i class="fas fa-user-cog text-gray-400 mr-3 w-4 flex-shrink-0"></i>
                             <span class="font-medium truncate">${this.escapeHtml(technicianName)}</span>
                         </div>
+                        ${request.status === 'approved' ? `
+                        <div class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-boxes text-gray-400 mr-3 w-4 flex-shrink-0"></i>
+                            <span>Qty: <span class="font-semibold text-gray-900">${request.quantity_requested}</span> units</span>
+                        </div>
+                        <div class="flex items-center text-xs text-gray-500">
+                            <i class="fas fa-history text-gray-400 mr-3 w-4 flex-shrink-0"></i>
+                            <span>Before: <span class="font-semibold text-blue-600">${request.available_stock}</span></span>
+                            <span class="mx-2">→</span>
+                            <span>After: <span class="font-semibold ${(request.available_stock - request.quantity_requested) > 0 ? 'text-green-600' : 'text-orange-600'}">${request.available_stock - request.quantity_requested}</span></span>
+                        </div>
+                        ` : `
                         <div class="flex items-center text-sm text-gray-600">
                             <i class="fas fa-boxes text-gray-400 mr-3 w-4 flex-shrink-0"></i>
                             <span>Qty: <span class="font-semibold text-gray-900">${request.quantity_requested}</span> units</span>
                             <span class="mx-2 text-gray-400">|</span>
                             <span>Stock: <span class="font-semibold ${request.available_stock > 0 ? 'text-green-600' : 'text-red-600'}">${request.available_stock}</span></span>
                         </div>
+                        `}
                     </div>
                     
                     <!-- Reason Section -->
@@ -364,16 +377,47 @@ class AdminPartsRequestsManager {
                             <label class="text-sm font-medium text-gray-600">Part Name</label>
                             <div class="text-gray-800 font-medium">${this.escapeHtml(request.part_name)}</div>
                         </div>
-                        ${request.part_number ? `
+                        ${request.part_brand ? `
                         <div>
-                            <label class="text-sm font-medium text-gray-600">Part Number</label>
-                            <div class="text-gray-800">${this.escapeHtml(request.part_number)}</div>
+                            <label class="text-sm font-medium text-gray-600"><i class="fas fa-building text-blue-500 mr-1"></i>Brand</label>
+                            <div class="text-gray-800">${this.escapeHtml(request.part_brand)}</div>
                         </div>
                         ` : ''}
                         ${request.part_category ? `
                         <div>
-                            <label class="text-sm font-medium text-gray-600">Category</label>
-                            <div class="text-gray-800">${this.escapeHtml(request.part_category)}</div>
+                            <label class="text-sm font-medium text-gray-600"><i class="fas fa-tag text-purple-500 mr-1"></i>Category</label>
+                            <div class="text-gray-800 capitalize">${this.escapeHtml(request.part_category).replace(/-/g, ' ')}</div>
+                        </div>
+                        ` : ''}
+                        ${request.part_color ? `
+                        <div>
+                            <label class="text-sm font-medium text-gray-600"><i class="fas fa-palette text-pink-500 mr-1"></i>Color</label>
+                            <div class="text-gray-800 capitalize">${this.escapeHtml(request.part_color).replace(/-/g, ' ')}</div>
+                        </div>
+                        ` : ''}
+                        ${request.part_page_yield ? `
+                        <div>
+                            <label class="text-sm font-medium text-gray-600"><i class="fas fa-file-alt text-orange-500 mr-1"></i>Page Yield</label>
+                            <div class="text-gray-800">~${parseInt(request.part_page_yield).toLocaleString()} pages</div>
+                        </div>
+                        ` : ''}
+                        ${request.part_ink_volume ? `
+                        <div>
+                            <label class="text-sm font-medium text-gray-600"><i class="fas fa-flask text-cyan-500 mr-1"></i>Ink Volume</label>
+                            <div class="text-gray-800">${parseFloat(request.part_ink_volume)} ml</div>
+                        </div>
+                        ` : ''}
+                        ${request.part_is_universal ? `
+                        <div>
+                            <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                                <i class="fas fa-globe mr-1"></i>Universal - Compatible with all brands
+                            </span>
+                        </div>
+                        ` : ''}
+                        ${request.part_number ? `
+                        <div>
+                            <label class="text-sm font-medium text-gray-600"><i class="fas fa-barcode text-gray-500 mr-1"></i>Part Number</label>
+                            <div class="text-gray-800">${this.escapeHtml(request.part_number)}</div>
                         </div>
                         ` : ''}
                         <div>
@@ -381,11 +425,22 @@ class AdminPartsRequestsManager {
                             <div class="text-gray-800 font-medium">${request.quantity_requested} units</div>
                         </div>
                         <div>
-                            <label class="text-sm font-medium text-gray-600">Available Stock</label>
+                            <label class="text-sm font-medium text-gray-600">
+                                ${request.status === 'approved' ? 'Stock Before Approval' : 'Current Available Stock'}
+                            </label>
                             <div class="font-medium ${request.available_stock > 0 ? 'text-green-600' : 'text-red-600'}">
                                 ${request.available_stock} units
                             </div>
                         </div>
+                        ${request.status === 'approved' ? `
+                        <div>
+                            <label class="text-sm font-medium text-gray-600">Stock After Approval</label>
+                            <div class="font-medium ${(request.available_stock - request.quantity_requested) > 0 ? 'text-blue-600' : 'text-orange-600'}">
+                                ${request.available_stock - request.quantity_requested} units
+                                <span class="text-xs text-gray-500 ml-1">(${request.available_stock} - ${request.quantity_requested})</span>
+                            </div>
+                        </div>
+                        ` : ''}
                     </div>
                 </div>
             </div>
@@ -750,3 +805,6 @@ document.addEventListener('DOMContentLoaded', function() {
     window.partsRequestsManager = new AdminPartsRequestsManager();
     window.AdminPartsRequestsManager = AdminPartsRequestsManager;
 });
+
+
+

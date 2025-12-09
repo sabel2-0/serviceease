@@ -199,6 +199,39 @@
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
             background: #94a3b8;
         }
+        
+        /* Fix dropdown positioning - force downward opening */
+        #inkColor {
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* Ensure sufficient space for dropdown to open downward */
+        #colorField {
+            position: relative;
+            z-index: 10;
+            min-height: 80px;
+        }
+        
+        /* Prevent parent containers from causing dropdown flip */
+        #additionalDetailsSection {
+            position: relative;
+            z-index: 5;
+        }
+        
+        /* Override browser's auto-flip behavior for select dropdowns */
+        select {
+            -webkit-appearance: menulist;
+            -moz-appearance: menulist;
+            appearance: menulist;
+        }
+        
+        /* Ensure form container allows dropdown to overflow properly */
+        #partForm {
+            position: relative;
+            overflow-y: auto;
+            overflow-x: visible;
+        }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen">
@@ -351,8 +384,8 @@
                 </div>
 
                 <!-- Enhanced Add/Edit Part Modal with Progressive Disclosure -->
-                <div id="partModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 opacity-0 transition-all duration-300">
-                    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl transform transition-all duration-300 scale-95 border border-white/20">
+                <div id="partModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 opacity-0 transition-all duration-300" style="overflow-y: auto;">
+                    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl transform transition-all duration-300 scale-95 border border-white/20 my-8"   style="position: relative; z-index: 51;">
                         <!-- Enhanced Header with Gradient -->
                         <div class="bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-600 p-5 rounded-t-2xl relative overflow-hidden">
                             <div class="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20"></div>
@@ -372,7 +405,7 @@
                             </div>
                         </div>
                         
-                        <form id="partForm" class="p-6 space-y-6 min-h-[500px] max-h-[600px] overflow-y-auto">
+                        <form id="partForm" class="p-6 space-y-6 min-h-[500px] max-h-[75vh] overflow-y-auto pb-8">
                             <!-- Step 1: Item Type Selection - Show First -->
                             <div class="space-y-4">
                                 <div class="text-center mb-6">
@@ -523,17 +556,17 @@
                                     <!-- Right Side: Additional Details Section -->
                                     <div id="additionalDetailsSection" class="flex-1 hidden transition-all duration-500">
                                         <div class="bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 rounded-xl p-4 border-2 border-blue-200">
-                                            <div class="space-y-3">
+                                            <div class="space-y-3 pb-4">
                                                 <!-- Color Selection for Ink -->
-                                                <div id="colorField" class="hidden">
+                                                <div id="colorField" class="hidden mb-6">
                                                     <label class="flex items-center text-sm font-semibold text-slate-700 mb-2">
                                                         <div class="w-6 h-6 bg-gradient-to-br from-red-100 to-blue-100 rounded mr-2">
                                                             <i class="fas fa-palette text-purple-600 text-xs mt-1 ml-1"></i>
                                                         </div>
                                                         <span>Color</span>
                                                     </label>
-                                                    <select id="inkColor" name="inkColor" 
-                                                        class="w-full px-3 py-3 rounded-lg border-2 border-slate-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 appearance-none bg-white cursor-pointer text-sm">
+                                                    <!-- Hidden select for form submission -->
+                                                    <select id="inkColor" name="inkColor" class="hidden">
                                                         <option value="">Select color...</option>
                                                         <option value="black">⚫ Black</option>
                                                         <option value="cyan">🔵 Cyan</option>
@@ -543,8 +576,43 @@
                                                         <option value="light-cyan">🔵 Light Cyan</option>
                                                         <option value="light-magenta">🔴 Light Magenta</option>
                                                         <option value="gray">⚪ Gray</option>
+                                                        <option value="light-gray">⚪ Light Gray</option>
+                                                        <option value="tri-color">🎨 Tri-Color (CMY)</option>
+                                                        <option value="orange">🟠 Orange</option>
+                                                        <option value="green">🟢 Green</option>
+                                                        <option value="blue">🔵 Blue</option>
+                                                        <option value="red">🔴 Red</option>
                                                         <option value="other">🎨 Other</option>
                                                     </select>
+                                                    <!-- Custom dropdown UI -->
+                                                    <div class="relative">
+                                                        <button type="button" id="colorDropdownBtn" 
+                                                            class="w-full px-3 py-3 rounded-lg border-2 border-slate-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white cursor-pointer text-sm text-left flex items-center justify-between">
+                                                            <span id="colorSelectedText" class="text-slate-400">Select color...</span>
+                                                            <i class="fas fa-chevron-down text-slate-400 transition-transform" id="colorChevron"></i>
+                                                        </button>
+                                                        <!-- Dropdown menu - always opens downward -->
+                                                        <div id="colorDropdownMenu" class="hidden absolute top-full left-0 right-0 mt-1 bg-white border-2 border-slate-200 rounded-lg shadow-lg max-h-60 overflow-y-auto z-50">
+                                                            <div class="py-1">
+                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm text-slate-400" data-value="">Select color...</div>
+                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="black">⚫ Black</div>
+                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="cyan">🔵 Cyan</div>
+                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="magenta">🔴 Magenta</div>
+                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="yellow">🟡 Yellow</div>
+                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="photo-black">⚫ Photo Black</div>
+                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="light-cyan">🔵 Light Cyan</div>
+                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="light-magenta">🔴 Light Magenta</div>
+                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="gray">⚪ Gray</div>
+                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="light-gray">⚪ Light Gray</div>
+                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="tri-color">🎨 Tri-Color (CMY)</div>
+                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="orange">🟠 Orange</div>
+                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="green">🟢 Green</div>
+                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="blue">🔵 Blue</div>
+                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="red">🔴 Red</div>
+                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="other">🎨 Other</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                                 
                                                 <!-- Volume for Ink Bottles -->
@@ -556,12 +624,13 @@
                                                         <span>Volume</span>
                                                     </label>
                                                     <div class="relative">
-                                                        <input type="number" id="inkVolume" name="inkVolume" min="0" step="0.1"
+                                                        <input type="number" id="inkVolume" name="inkVolume" min="5" max="1000" step="0.1"
                                                             placeholder="e.g., 100"
                                                             class="w-full px-3 py-3 rounded-lg border-2 border-slate-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white placeholder-slate-400 pr-10 text-sm">
                                                         <div class="absolute right-3 top-3 text-slate-400 text-xs">
                                                             ml
                                                         </div>
+                                                        <div class="text-xs text-slate-500 mt-1 ml-1">Typical range: 10-500ml</div>
                                                     </div>
                                                 </div>
                                                 
@@ -574,12 +643,13 @@
                                                         <span>Page Yield (approx.)</span>
                                                     </label>
                                                     <div class="relative">
-                                                        <input type="number" id="pageYield" name="pageYield" min="0"
+                                                        <input type="number" id="pageYield" name="pageYield" min="100" max="50000"
                                                             placeholder="e.g., 2000"
                                                             class="w-full px-3 py-3 rounded-lg border-2 border-slate-200 focus:border-yellow-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 transition-all duration-200 bg-white placeholder-slate-400 pr-14 text-sm">
                                                         <div class="absolute right-3 top-3 text-slate-400 text-xs">
                                                             pages
                                                         </div>
+                                                        <div class="text-xs text-slate-500 mt-1 ml-1">Typical range: 200-30,000 pages</div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -710,6 +780,7 @@
                     break;
                     
                 case 'toner':
+                    colorField.classList.remove('hidden');
                     pageYieldField.classList.remove('hidden');
                     showSection = true;
                     break;
@@ -762,6 +833,72 @@
             console.log('Category changed to:', this.value); // Debug log
             showAdditionalDetails(this.value);
         });
+        
+        // Custom color dropdown functionality (always opens downward)
+        const colorDropdownBtn = document.getElementById('colorDropdownBtn');
+        const colorDropdownMenu = document.getElementById('colorDropdownMenu');
+        const colorSelectedText = document.getElementById('colorSelectedText');
+        const colorChevron = document.getElementById('colorChevron');
+        const inkColorSelect = document.getElementById('inkColor');
+        
+        if (colorDropdownBtn && colorDropdownMenu) {
+            // Toggle dropdown
+            colorDropdownBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const isOpen = !colorDropdownMenu.classList.contains('hidden');
+                
+                if (isOpen) {
+                    colorDropdownMenu.classList.add('hidden');
+                    colorChevron.classList.remove('rotate-180');
+                } else {
+                    colorDropdownMenu.classList.remove('hidden');
+                    colorChevron.classList.add('rotate-180');
+                }
+            });
+            
+            // Select color option
+            const colorOptions = colorDropdownMenu.querySelectorAll('[data-value]');
+            colorOptions.forEach(option => {
+                option.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const value = this.getAttribute('data-value');
+                    const text = this.textContent;
+                    
+                    // Update hidden select
+                    inkColorSelect.value = value;
+                    
+                    // Update display text
+                    colorSelectedText.textContent = text;
+                    if (value) {
+                        colorSelectedText.classList.remove('text-slate-400');
+                        colorSelectedText.classList.add('text-slate-900');
+                    } else {
+                        colorSelectedText.classList.add('text-slate-400');
+                        colorSelectedText.classList.remove('text-slate-900');
+                    }
+                    
+                    // Close dropdown
+                    colorDropdownMenu.classList.add('hidden');
+                    colorChevron.classList.remove('rotate-180');
+                    
+                    // Remove selection highlight from all options
+                    colorOptions.forEach(opt => opt.classList.remove('bg-blue-100'));
+                    // Add selection highlight to selected option
+                    this.classList.add('bg-blue-100');
+                });
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!colorDropdownBtn.contains(e.target) && !colorDropdownMenu.contains(e.target)) {
+                    colorDropdownMenu.classList.add('hidden');
+                    colorChevron.classList.remove('rotate-180');
+                }
+            });
+        }
         
         // Form validation with visual feedback
         const form = document.getElementById('partForm');
@@ -825,8 +962,8 @@
     });
     </script>
 
-    <script src="../../js/auth.js"></script>
-    <script src="../../js/dynamic-sidebar-loader.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/dynamic-sidebar-loader.js"></script>
     <script src="../../js/inventory-parts.js"></script>
 </body>
 </html>

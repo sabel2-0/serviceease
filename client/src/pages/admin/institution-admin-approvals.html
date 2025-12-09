@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Registration Approvals | ServiceEase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script type="text/javascript">
+        (function() {
+            emailjs.init("QjWuxszKzF9KLYlVZ");
+        })();
+    </script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/dynamic-sidebar-loader.js"></script>
+    <script src="../../js/institution-admin-approvals.js"></script>
+    <style>
+        #registrationsContainer {
+            min-height: calc(100vh - 300px);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
+    <div class="flex h-screen">
+        <!-- Dynamic Sidebar Container -->
+        <div id="dynamic-sidebar"></div>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-auto bg-gradient-to-br from-slate-50 to-white p-8">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold text-gray-900">User Registration Approvals</h2>
+                <p class="text-gray-600">Review and approve pending user registrations</p>
+            </div>
+
+            <!-- Filters -->
+            <div class="bg-white p-4 rounded-lg shadow mb-6">
+                <div class="flex items-center space-x-4">
+                    <div class="flex-1">
+                        <input type="text" id="searchInput" placeholder="Search by name or email..." 
+                            class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <select id="institutionFilter" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">All Institution Types</option>
+                        <option value="public_school">Public School</option>
+                        <option value="private_school">Private School</option>
+                        <option value="private_company">Private Company</option>
+                        <option value="lgu">Local Government Unit</option>
+                    </select>
+                    <button id="refreshBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <i class="fas fa-sync-alt mr-2"></i>Refresh
+                    </button>
+                </div>
+            </div>
+
+            <!-- Pending Registrations -->
+            <div id="pendingRegistrations">
+                <!-- Loading State -->
+                <div id="loadingState" class="bg-white rounded-lg shadow p-8 text-center">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p class="text-gray-600">Loading pending registrations...</p>
+                </div>
+
+                <!-- No Registrations State -->
+                <div id="emptyState" class="bg-white rounded-lg shadow p-8 text-center hidden">
+                    <div class="mb-4">
+                        <i class="fas fa-user-check text-4xl text-gray-400"></i>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">No Pending Registrations</h3>
+                    <p class="text-gray-600">All user registrations have been processed.</p>
+                </div>
+
+                <!-- Registration Cards Container -->
+                <div id="registrationsContainer" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Registration cards will be dynamically inserted here -->
+                </div>
+            </div>
+
+
+            <!-- Secure Document Viewer Modal -->
+            <div id="secureDocumentModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden">
+                <div class="bg-white rounded-lg w-full max-w-4xl mx-4">
+                    <div class="border-b p-4">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-lg font-semibold text-gray-900">Secure Document Viewer</h3>
+                            <button id="closeSecureModal" class="text-gray-500 hover:text-gray-700">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="mt-2">
+                            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+                                <div class="flex">
+                                    <div class="flex-shrink-0">
+                                        <i class="fas fa-exclamation-triangle text-yellow-400"></i>
+                                    </div>
+                                    <div class="ml-3">
+                                        <p class="text-sm text-yellow-700">
+                                            You are about to view sensitive verification documents. This action will be logged.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="secureDocumentContainer">
+                            <!-- Documents will be inserted here -->
+                        </div>
+                    </div>
+                    <div class="border-t p-4 bg-gray-50">
+                        <div class="flex justify-end">
+                            <button id="closeSecureModalBtn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">
+                                Close Viewer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
+

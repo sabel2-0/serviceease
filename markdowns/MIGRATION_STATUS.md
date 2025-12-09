@@ -32,9 +32,9 @@
 2. **client/src/js/requester-app.js** - Already handled (uses auth token)
 
 ## Testing Needed
-- Coordinator creating service requests
-- Requester creating service requests  
-- Coordinator viewing their requests
+- Institution Admin creating service requests
+- Institution User creating service requests  
+- Institution Admin viewing their requests
 - Service approval workflow
 - Technician history views
 
@@ -44,3 +44,5 @@ After thorough testing, we can drop it with:
 ```sql
 ALTER TABLE service_requests DROP COLUMN coordinator_id;
 ```
+
+

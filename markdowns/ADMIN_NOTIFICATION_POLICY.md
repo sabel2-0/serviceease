@@ -40,7 +40,7 @@ This document outlines which events trigger admin notifications in the ServiceEa
 ## Notification Flow Summary
 
 ```
-User Registration (Coordinator)
+User Registration (institution_admin)
     ↓
 Admin Notification Created
     ↓
@@ -143,7 +143,8 @@ if (assignedTechnicianIds.length > 0) {
 
 ## Related Files
 
-- `server/models/User.js` - Coordinator registration notifications
+- `server/models/User.js` - Institution Admin registration notifications
 - `server/routes/parts-requests.js` - Parts request notifications
 - `server/routes/service-requests.js` - Service request notifications (technicians only)
 - `server/routes/notifications.js` - Notification creation and retrieval logic
+

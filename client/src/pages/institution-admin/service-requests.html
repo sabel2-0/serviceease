@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Requests | Institution Admin Portal | ServiceEase</title>
+    <!-- Tailwind CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        /* Dropdown Menu Styles */
+        .dropdown-toggle .fa-chevron-down {
+            transition: transform 0.3s ease;
+        }
+        
+        .dropdown-menu {
+            overflow: hidden;
+            max-height: 0;
+            transition: max-height 0.3s ease-out, opacity 0.2s ease-out;
+            opacity: 0;
+        }
+        
+        .dropdown-menu:not(.hidden) {
+            max-height: 500px;
+            opacity: 1;
+            transition: max-height 0.5s ease-in, opacity 0.3s ease-in;
+        }
+        
+        .sidenav-item.active {
+            background-color: rgba(31, 41, 55, var(--tw-bg-opacity));
+            color: white;
+            border-left: 3px solid #3b82f6;
+            padding-left: calc(1rem - 3px);
+        }
+        
+        /* Tab button styles */
+        .tab-button {
+            position: relative;
+        }
+        
+        .tab-button.active {
+            background: white;
+            color: #2563eb;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Enhanced card styles */
+        .service-card {
+            animation: fadeInUp 0.5s ease-out;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Line clamp utility */
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        /* Glassmorphism effect */
+        .backdrop-blur-sm {
+            backdrop-filter: blur(4px);
+        }
+        
+        /* Smooth animations */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Button hover effects */
+        button:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar Container -->
+        <div id="sidebar-container" class="flex-shrink-0 w-64 bg-gray-900 text-white">
+            <!-- The dynamic sidebar will be loaded here via institution-admin-sidenav.js -->
+        </div>
+        
+        <!-- Main Content -->
+        <div class="flex-1 overflow-auto">
+            <!-- Unified Header -->
+            <div id="institution-admin-header-container"></div>
+
+            <!-- Main Content Area - Full Width -->
+            <main class="w-full">
+                <!-- Service Requests Header -->
+                <div class="bg-white border-b border-gray-200 shadow-sm">
+                    <div class="px-6 py-4">
+                        <div class="flex justify-between items-center">
+                            <h2 class="text-2xl font-bold text-gray-800 flex items-center">
+                                <i class="fas fa-clipboard-list mr-3 text-blue-600"></i>
+                                Service Requests
+                            </h2>
+                            <button id="new-service-request-btn" class="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105">
+                                <i class="fas fa-plus mr-2"></i>New Request
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Content Area -->
+                <div class="bg-white">
+                    <div class="px-6 py-6">
+                        <!-- Filter Controls -->
+                        <div class="mb-6 bg-gray-50 rounded-xl p-5 border border-gray-200">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                                <i class="fas fa-filter mr-2 text-blue-600"></i>
+                                Filter & Search
+                            </h3>
+                            <div class="flex flex-wrap gap-4">
+                                <div class="flex-1 min-w-64">
+                                    <div class="relative">
+                                        <input type="text" id="searchInput" placeholder="Search requests, IDs, or descriptions..." class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                                        <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                                    </div>
+                                </div>
+                                <div class="w-full md:w-48">
+                                    <select id="priorityFilter" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                                        <option value="">All Priorities</option>
+                                        <option value="urgent">Urgent</option>
+                                        <option value="high">High</option>
+                                        <option value="medium">Medium</option>
+                                        <option value="low">Low</option>
+                                    </select>
+                                </div>
+                                <button id="refreshBtn" class="bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 px-6 py-3 rounded-lg transition-all duration-200 border border-gray-300 shadow-sm hover:shadow-md">
+                                    <i class="fas fa-sync-alt mr-2 text-gray-700"></i>
+                                    <span class="text-gray-700 font-medium">Refresh</span>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Tabs Navigation - Modern Design -->
+                        <div class="mb-6">
+                            <div class="flex overflow-x-auto gap-2 pb-1">
+                                <button id="tab-all" class="tab-button flex-shrink-0 group relative px-5 py-3 rounded-xl font-semibold transition-all duration-300 text-sm flex items-center space-x-2 bg-white text-blue-600 shadow-md border-2 border-blue-500">
+                                    <div class="absolute inset-0 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl opacity-0 group-hover:opacity-10 transition-opacity"></div>
+                                    <i class="fas fa-list-ul relative z-10"></i>
+                                    <span class="relative z-10">All Requests</span>
+                                    <span id="all-count" class="relative z-10 ml-1 min-w-[24px] h-6 flex items-center justify-center bg-blue-600 text-white px-2 rounded-full text-xs font-bold shadow-sm">0</span>
+                                </button>
+                                <button id="tab-new" class="tab-button flex-shrink-0 group relative px-5 py-3 rounded-xl font-semibold transition-all duration-300 text-sm flex items-center space-x-2 bg-gray-50 text-gray-600 hover:bg-white hover:shadow-md border-2 border-transparent hover:border-blue-200">
+                                    <div class="absolute inset-0 bg-gradient-to-r from-blue-400 to-blue-500 rounded-xl opacity-0 group-hover:opacity-10 transition-opacity"></div>
+                                    <i class="fas fa-plus-circle relative z-10"></i>
+                                    <span class="relative z-10">New</span>
+                                    <span id="new-count" class="relative z-10 ml-1 min-w-[24px] h-6 flex items-center justify-center bg-blue-100 text-blue-700 px-2 rounded-full text-xs font-bold">0</span>
+                                </button>
+                                <button id="tab-in-progress" class="tab-button flex-shrink-0 group relative px-5 py-3 rounded-xl font-semibold transition-all duration-300 text-sm flex items-center space-x-2 bg-gray-50 text-gray-600 hover:bg-white hover:shadow-md border-2 border-transparent hover:border-yellow-200">
+                                    <div class="absolute inset-0 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-xl opacity-0 group-hover:opacity-10 transition-opacity"></div>
+                                    <i class="fas fa-sync-alt relative z-10"></i>
+                                    <span class="relative z-10">In Progress</span>
+                                    <span id="progress-count" class="relative z-10 ml-1 min-w-[24px] h-6 flex items-center justify-center bg-yellow-100 text-yellow-700 px-2 rounded-full text-xs font-bold">0</span>
+                                </button>
+                                <button id="tab-pending-approval" class="tab-button flex-shrink-0 group relative px-5 py-3 rounded-xl font-semibold transition-all duration-300 text-sm flex items-center space-x-2 bg-gray-50 text-gray-600 hover:bg-white hover:shadow-md border-2 border-transparent hover:border-orange-200">
+                                    <div class="absolute inset-0 bg-gradient-to-r from-orange-400 to-orange-500 rounded-xl opacity-0 group-hover:opacity-10 transition-opacity"></div>
+                                    <i class="fas fa-hourglass-half relative z-10"></i>
+                                    <span class="relative z-10">Pending Approval</span>
+                                    <span id="pending-approval-count" class="relative z-10 ml-1 min-w-[24px] h-6 flex items-center justify-center bg-orange-100 text-orange-700 px-2 rounded-full text-xs font-bold">0</span>
+                                </button>
+                                <button id="tab-completed" class="tab-button flex-shrink-0 group relative px-5 py-3 rounded-xl font-semibold transition-all duration-300 text-sm flex items-center space-x-2 bg-gray-50 text-gray-600 hover:bg-white hover:shadow-md border-2 border-transparent hover:border-green-200">
+                                    <div class="absolute inset-0 bg-gradient-to-r from-green-400 to-green-500 rounded-xl opacity-0 group-hover:opacity-10 transition-opacity"></div>
+                                    <i class="fas fa-check-circle relative z-10"></i>
+                                    <span class="relative z-10">Completed</span>
+                                    <span id="completed-count" class="relative z-10 ml-1 min-w-[24px] h-6 flex items-center justify-center bg-green-100 text-green-700 px-2 rounded-full text-xs font-bold">0</span>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Quick Stats Overview (smaller, more compact) -->
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                            <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 text-center">
+                                <p class="text-sm font-medium text-blue-700">Total Requests</p>
+                                <p id="totalRequests" class="text-2xl font-bold text-blue-600">0</p>
+                            </div>
+                            <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg p-4 text-center">
+                                <p class="text-sm font-medium text-yellow-700">Active</p>
+                                <p id="activeRequests" class="text-2xl font-bold text-yellow-600">0</p>
+                            </div>
+                            <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 text-center">
+                                <p class="text-sm font-medium text-green-700">Completed</p>
+                                <p id="completedRequests" class="text-2xl font-bold text-green-600">0</p>
+                            </div>
+                            <div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 text-center">
+                                <p class="text-sm font-medium text-gray-700">This Month</p>
+                                <p id="monthlyRequests" class="text-2xl font-bold text-gray-600">0</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Service Request Cards -->
+                        <div id="loadingState" class="py-12 text-center">
+                            <i class="fas fa-spinner fa-spin text-3xl text-gray-400 mb-3"></i>
+                            <p class="text-gray-500">Loading service requests...</p>
+                        </div>
+                        
+                        <div id="emptyState" class="py-12 text-center hidden">
+                            <i class="fas fa-clipboard-list text-5xl text-gray-300 mb-3"></i>
+                            <p class="text-lg text-gray-500">No service requests found</p>
+                            <p class="text-gray-400">Try adjusting your filters or create a new request</p>
+                        </div>
+                        
+                        <div id="requestsContainer" class="space-y-4 hidden">
+                            <!-- Service request cards will be loaded here -->
+                        </div>
+                        
+                        <!-- Pagination Controls -->
+                        <div id="paginationControls" class="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 hidden">
+                            <div class="flex items-center gap-2">
+                                <button id="prevPageBtn" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium shadow-sm hover:shadow-md">
+                                    <i class="fas fa-chevron-left mr-2"></i>Previous
+                                </button>
+                                <div id="pageNumbers" class="flex items-center gap-1">
+                                    <!-- Page numbers will be generated here -->
+                                </div>
+                                <button id="nextPageBtn" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium shadow-sm hover:shadow-md">
+                                    Next<i class="fas fa-chevron-right ml-2"></i>
+                                </button>
+                            </div>
+                            <div id="pageInfo" class="text-sm text-gray-600 font-medium">
+                                <!-- Page info will be displayed here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- New Service Request Modal -->
+    <div id="newRequestModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="absolute inset-0 bg-black/60"></div>
+        <div class="relative bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 ease-in-out scale-100">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-800">Submit New Service Request</h3>
+            </div>
+            <div class="p-6">
+                <form id="newRequestForm">
+                    <div class="mb-6">
+                        <h4 class="text-md font-medium text-gray-800 mb-3">Printer Information</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label for="servicePrinterSelect" class="block text-sm font-medium text-gray-700 mb-2">Select Printer</label>
+                                <select id="servicePrinterSelect" class="w-full px-4 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 transition-colors" required>
+                                    <option value="">Choose a printer</option>
+                                </select>
+                                <p class="text-xs text-gray-500 mt-1">Only printers assigned to your institution will be shown</p>
+                            </div>
+                            <div>
+                                <label for="printerLocation" class="block text-sm font-medium text-gray-700 mb-2">Location</label>
+                                <input type="text" id="printerLocation" class="w-full px-4 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 transition-colors" placeholder="e.g., Room 101, 2nd Floor">
+                                <p class="text-xs text-gray-500 mt-1">Optional - will be pre-filled if known</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <h4 class="text-md font-medium text-gray-800 mb-3">Service Details</h4>
+
+                        <div class="mb-4">
+                            <label for="priority" class="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+                            <select id="priority" class="w-full px-4 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 transition-colors" required>
+                                <option value="low">Low</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="high">High</option>
+                                <option value="urgent">Urgent</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="issueDescription" class="block text-sm font-medium text-gray-700 mb-2">Issue Description</label>
+                            <textarea id="issueDescription" class="w-full px-4 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 transition-colors h-32" placeholder="Please describe the issue in detail..." required></textarea>
+                            <p class="text-xs text-gray-500 mt-1">Include any relevant details about the problem</p>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="px-6 py-4 border-t bg-gray-50 flex justify-end gap-3">
+                <button id="submitNewRequest" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors transform hover:scale-105">
+                    Submit Request
+                </button>
+                <button id="cancelNewRequest" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300 transition-colors">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Service Request Detail Modal -->
+    <div id="requestModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="requestModalBackdrop"></div>
+        <div class="relative bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[75vh] overflow-y-auto transform transition-all duration-300 ease-in-out m-4">
+            <div class="px-4 py-3 border-b flex justify-between items-center sticky top-0 bg-white z-10 shadow-sm">
+                <h3 class="text-lg font-bold text-gray-800">Service Request Details</h3>
+                <button id="closeRequestModal" class="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+            <div id="requestModalContent" class="p-4">
+                <!-- Request details will be loaded here -->
+            </div>
+            <div class="px-4 py-3 border-t bg-gray-50 flex justify-end gap-3 sticky bottom-0 shadow-sm">
+                <button id="closeModalBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors font-medium text-sm">
+                    <i class="fas fa-times mr-2"></i>Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Service Approval Modal -->
+    <div id="approvalModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+        <div class="relative bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[85vh] overflow-hidden transform transition-all duration-300 ease-in-out">
+            <div class="px-6 py-4 border-b flex justify-between items-center bg-white">
+                <h3 class="text-lg font-semibold text-gray-800 flex items-center">
+                    <i class="fas fa-check-circle mr-2 text-orange-600"></i>
+                    Service Completion Approval
+                </h3>
+                <button id="closeApprovalModal" class="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="approvalModalContent" class="p-6 overflow-y-auto" style="max-height: calc(85vh - 140px);">
+                <!-- Approval details will be loaded here -->
+            </div>
+            <div class="px-6 py-4 border-t bg-gray-50 flex justify-between">
+                <div class="flex space-x-3">
+                    <button id="rejectServiceBtn" class="bg-red-600 text-white px-5 py-2 rounded-lg hover:bg-red-700 transition-all duration-200 shadow-md hover:shadow-lg">
+                        <i class="fas fa-times mr-2"></i>Reject
+                    </button>
+                    <button id="approveServiceBtn" class="bg-green-600 text-white px-5 py-2 rounded-lg hover:bg-green-700 transition-all duration-200 shadow-md hover:shadow-lg">
+                        <i class="fas fa-check mr-2"></i>Approve
+                    </button>
+                </div>
+                <button id="closeApprovalModalBtn" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300 transition-colors">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Approval Action Modal (for adding notes) -->
+    <div id="approvalActionModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+        <div class="relative bg-white rounded-lg shadow-xl w-full max-w-md transform transition-all duration-300 ease-in-out">
+            <div class="px-6 py-4 border-b flex justify-between items-center">
+                <h3 id="approvalActionTitle" class="text-lg font-semibold text-gray-800">Approve Service</h3>
+                <button id="closeApprovalActionModal" class="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="p-6">
+                <div class="mb-4">
+                    <label for="approvalNotes" class="block text-sm font-medium text-gray-700 mb-2">
+                        <span id="approvalNotesLabel">Approval Notes</span>
+                        <span id="approvalNotesRequired" class="text-red-500 hidden">*</span>
+                    </label>
+                    <textarea id="approvalNotes" class="w-full px-4 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 transition-colors h-24" placeholder="Add any notes or comments..."></textarea>
+                    <p id="approvalNotesHelpText" class="text-xs text-gray-500 mt-1">Optional notes for this approval</p>
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t bg-gray-50 flex justify-end space-x-3">
+                <button id="cancelApprovalAction" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300 transition-colors">
+                    Cancel
+                </button>
+                <button id="confirmApprovalAction" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105">
+                    <i class="fas fa-check mr-2"></i>Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Center -->
+    <div id="notification-center" class="fixed inset-y-0 right-0 max-w-sm w-full bg-white shadow-lg z-40 transform translate-x-full transition-transform duration-300">
+        <div class="p-6 border-b flex justify-between items-center">
+            <h3 class="text-lg font-semibold text-gray-800">Notifications</h3>
+            <button id="close-notifications" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div id="notification-list" class="p-4 overflow-y-auto h-[calc(100%-4rem)]">
+            <!-- Notifications will be loaded here -->
+            <div class="text-center py-8 text-gray-500">
+                <i class="fas fa-bell-slash text-4xl mb-3"></i>
+                <p>No new notifications</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="/js/auth.js"></script>
+    <script src="/js/institution-admin-sidenav.js"></script>
+    <script src="../../js/institution-admin-header-loader.js"></script>
+    <script src="/js/institution-admin-service-requests.js"></script>
+    
+    <!-- <script>
+        // Load header with page-specific content
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.loadInstitutionAdminHeader) {
+                window.loadInstitutionAdminHeader({
+                    title: 'Service Requests'
+                });
+            }
+        });
+    </script> -->
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set the active sidebar item
+            window.location.hash = '#service-requests';
+            
+            // Close notification center (if exists) when clicking outside
+            document.getElementById('close-notifications')?.addEventListener('click', () => {
+                document.getElementById('notification-center').classList.add('translate-x-full');
+                document.getElementById('notification-center').classList.remove('translate-x-0');
+            });
+            
+            // Modal Controls
+            const _newServiceRequestBtn = document.getElementById('new-service-request-btn');
+            if (_newServiceRequestBtn && !_newServiceRequestBtn.dataset.listenerSet) {
+                _newServiceRequestBtn.addEventListener('click', () => {
+                    document.getElementById('newRequestModal').classList.remove('hidden');
+                });
+                _newServiceRequestBtn.dataset.listenerSet = 'true';
+            }
+            
+            // Close all modals when clicking outside
+            document.querySelectorAll('.fixed.inset-0').forEach(modal => {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.classList.add('hidden');
+                    }
+                });
+            });
+            
+            // Cancel button for modal
+            const _cancelNewRequestBtn = document.getElementById('cancelNewRequest');
+            if (_cancelNewRequestBtn && !_cancelNewRequestBtn.dataset.listenerSet) {
+                _cancelNewRequestBtn.addEventListener('click', () => {
+                    document.getElementById('newRequestModal').classList.add('hidden');
+                });
+                _cancelNewRequestBtn.dataset.listenerSet = 'true';
+            }
+            
+                // Form submission - avoid adding duplicate handler if module already bound it
+                const _submitNewRequestBtn = document.getElementById('submitNewRequest');
+                if (_submitNewRequestBtn && !_submitNewRequestBtn.dataset.listenerSet) {
+                    _submitNewRequestBtn.addEventListener('click', async () => {
+                        const printerId = parseInt(document.getElementById('servicePrinterSelect').value, 10);
+                        const location = document.getElementById('printerLocation').value;
+                        const priority = document.getElementById('priority').value;
+                        const description = document.getElementById('issueDescription').value;
+
+                        console.log('Form values:', {
+                            printerId,
+                            location,
+                            priority,
+                            description
+                        });
+
+                        if (!printerId || isNaN(printerId)) {
+                            showNotification('Error', 'Please select a valid printer', 'error');
+                            return;
+                        }
+
+                        if (!priority || !description) {
+                            showNotification('Error', 'Please fill out all required fields', 'error');
+                            return;
+                        }
+
+                        const user = JSON.parse(localStorage.getItem('user'));
+                        // Fetch assigned technician for this institution
+                        let assignedTechnicianId = null;
+                        try {
+                            const techRes = await fetch(`/api/institutions/${user.institution_id}/technician`, {
+                                headers: {
+                                    'Authorization': 'Bearer ' + localStorage.getItem('token')
+                                }
+                            });
+                            const techData = await techRes.json();
+                            if (techData.assigned && techData.technician && techData.technician.technician_id) {
+                                assignedTechnicianId = techData.technician.technician_id;
+                                console.log('Fetched assigned_technician_id:', assignedTechnicianId);
+                            } else {
+                                console.log('No assigned technician found for institution:', user.institution_id);
+                            }
+                        } catch (err) {
+                            console.warn('Could not fetch assigned technician:', err);
+                        }
+
+                        const requestData = {
+                            printer_id: printerId,
+                            priority: priority,
+                            description: description,
+                            location: location || null,
+                            institution_id: user.institution_id,
+                            institution_admin_id: user.id,
+                            status: 'new',
+                            assigned_technician_id: assignedTechnicianId || null
+                        };
+                        console.log('Request data:', requestData);
+
+                        try {
+                            console.log('Sending request data:', requestData);
+                            const response = await fetch('/api/service-requests', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': 'Bearer ' + localStorage.getItem('token') // Add authentication token
+                                },
+                                body: JSON.stringify(requestData),
+                            });
+
+                            const responseData = await response.json();
+                            console.log('Server response:', responseData);
+
+                            if (response.ok) {
+                                showNotification('Success', 'Service request submitted successfully', 'success');
+                                document.getElementById('newRequestModal').classList.add('hidden');
+                            } else {
+                                // Check if error is about active request
+                                if (responseData.activeRequest) {
+                                    // Close the new request modal
+                                    document.getElementById('newRequestModal').classList.add('hidden');
+                                    
+                                    // Show active request modal with details
+                                    const activeReq = responseData.activeRequest;
+                                    document.getElementById('activeRequestNumber').textContent = activeReq.request_number || '-';
+                                    document.getElementById('activeRequestStatus').textContent = (activeReq.status || '-').toUpperCase();
+                                    document.getElementById('activeRequestPrinter').textContent = activeReq.printer_name || 'Unknown Printer';
+                                    
+                                    const modal = document.getElementById('activeRequestModal');
+                                    modal.classList.remove('hidden');
+                                    
+                                    // Setup close handlers
+                                    document.getElementById('activeRequestCloseBtn').onclick = () => {
+                                        modal.classList.add('hidden');
+                                    };
+                                    document.getElementById('activeRequestViewBtn').onclick = () => {
+                                        modal.classList.add('hidden');
+                                        // Scroll to the active request or refresh the list
+                                        location.reload();
+                                    };
+                                } else {
+                                    showNotification('Error', responseData.error || responseData.message || 'Failed to submit request', 'error');
+                                }
+                            }
+                        } catch (error) {
+                            showNotification('Error', 'An error occurred while submitting the request', 'error');
+                        }
+                    });
+                    _submitNewRequestBtn.dataset.listenerSet = 'true';
+                }
+            
+            // Helper function to show notifications
+            function showNotification(title, message, type = 'info') {
+                const toast = document.createElement('div');
+                const bgColor = type === 'success' ? 'bg-green-100 border-green-500' : 
+                               type === 'error' ? 'bg-red-100 border-red-500' : 
+                               'bg-blue-100 border-blue-500';
+                const textColor = type === 'success' ? 'text-green-700' : 
+                                 type === 'error' ? 'text-red-700' : 
+                                 'text-blue-700';
+                const icon = type === 'success' ? 'fa-check-circle' : 
+                           type === 'error' ? 'fa-exclamation-circle' : 
+                           'fa-info-circle';
+                
+                toast.className = `fixed bottom-4 right-4 ${bgColor} border-l-4 p-4 rounded shadow-lg max-w-md z-50`;
+                toast.innerHTML = `
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas ${icon} ${textColor}"></i>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium ${textColor}">${title}</p>
+                            <p class="text-sm ${textColor} opacity-90">${message}</p>
+                        </div>
+                        <button onclick="this.parentElement.parentElement.remove()" class="ml-4 ${textColor}">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `;
+                document.body.appendChild(toast);
+                setTimeout(() => {
+                    if (document.body.contains(toast)) {
+                        document.body.removeChild(toast);
+                    }
+                }, 5000);
+            }
+        });
+    </script>
+</script>
+<script>
+    window.addEventListener('DOMContentLoaded', function() {
+        console.log('[DEBUG] Auto-load script running after DOMContentLoaded');
+            let attempts = 0;
+            const maxAttempts = 50; // Stop after 5 seconds (50 * 100ms)
+            function tryLoadServiceRequests() {
+                if (window.loadAssignedPrinters && window.loadServiceRequests) {
+                    const result = window.loadAssignedPrinters();
+                    if (result && typeof result.then === 'function') {
+                        result.then(function() {
+                            console.log('[DEBUG] loadAssignedPrinters finished (Promise), now calling loadServiceRequests');
+                            window.loadServiceRequests();
+                        });
+                    } else {
+                        console.log('[DEBUG] loadAssignedPrinters finished (sync), now calling loadServiceRequests');
+                        window.loadServiceRequests();
+                    }
+                } else {
+                    attempts++;
+                    if (attempts < maxAttempts) {
+                        console.warn('[DEBUG] Waiting for loadAssignedPrinters and loadServiceRequests to be available... (attempt ' + attempts + '/' + maxAttempts + ')');
+                        setTimeout(tryLoadServiceRequests, 100);
+                    } else {
+                        console.error('[DEBUG] Failed to load functions after ' + maxAttempts + ' attempts. Functions not available.');
+                    }
+                }
+            }
+            tryLoadServiceRequests();
+    });
+</script>
+</body>
+</html>
+
+

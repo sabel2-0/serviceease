@@ -38,12 +38,12 @@ def fetch_transactions(printer_brand=None, printer_model=None):
         SELECT 
             sr.id as request_id,
             sr.request_number,
-            ii.brand as printer_brand,
-            ii.model as printer_model,
+            p.brand as printer_brand,
+            p.model as printer_model,
             pp.name as part_name,
             pp.id as part_id
         FROM service_requests sr
-        INNER JOIN inventory_items ii ON sr.inventory_item_id = ii.id
+        INNER JOIN printers p ON sr.printer_id = p.id
         INNER JOIN service_parts_used spu ON sr.id = spu.service_request_id
         INNER JOIN printer_parts pp ON spu.part_id = pp.id
         WHERE sr.status = 'completed'
@@ -51,10 +51,10 @@ def fetch_transactions(printer_brand=None, printer_model=None):
     
     params = []
     if printer_brand:
-        query += " AND ii.brand = %s"
+        query += " AND p.brand = %s"
         params.append(printer_brand)
     if printer_model:
-        query += " AND ii.model = %s"
+        query += " AND p.model = %s"
         params.append(printer_model)
     
     query += " ORDER BY sr.id, pp.name"

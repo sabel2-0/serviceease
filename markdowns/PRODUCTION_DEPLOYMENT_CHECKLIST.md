@@ -181,7 +181,7 @@ Test these scenarios on production:
 
 2. **Token Invalidation - Admin Changes Coordinator Password**
    - [ ] Login as admin
-   - [ ] Login as coordinator (different browser)
+   - [ ] Login as institution_admin (different browser)
    - [ ] Admin changes coordinator password
    - [ ] Coordinator clicks anything → logged out
    - [ ] No infinite redirect loop
@@ -370,3 +370,4 @@ If issues occur in production:
 **Last Updated:** November 25, 2025
 **Deployment Version:** main@322aa14
 **System Status:** ✅ Production Ready
+

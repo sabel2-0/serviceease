@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Technician Inventory</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+        
+        .card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .inventory-card {
+            transition: all 0.2s ease;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .inventory-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stock-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        .stock-high { background-color: #10b981; }
+        .stock-medium { background-color: #f59e0b; }
+        .stock-low { background-color: #ef4444; }
+        .stock-out { background-color: #6b7280; }
+        
+        .category-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .badge-consumable {
+            background: rgba(34, 197, 94, 0.1);
+            color: #059669;
+        }
+        
+        .badge-printer-part {
+            background: rgba(59, 130, 246, 0.1);
+            color: #2563eb;
+        }
+    </style>
+</head>
+<body class="p-4">
+    <!-- Header -->
+    <div class="bg-white rounded-2xl shadow-lg border-2 border-emerald-100 p-5 mb-5">
+        <div class="flex justify-between items-center pb-4 border-b-2 border-emerald-50">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-gradient-to-br from-emerald-500 to-green-600 rounded-lg flex items-center justify-center shadow-md">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-gray-900">My Inventory</h1>
+                    <p class="text-xs text-emerald-600">Parts assigned to you by administrators</p>
+                </div>
+            </div>
+            <button onclick="history.back()" class="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors font-medium text-sm shadow-md hover:shadow-lg flex items-center space-x-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                <span>Back</span>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Search and Filters -->
+    <div class="bg-white rounded-2xl shadow-lg border-2 border-emerald-100 p-5 mb-5">
+        <div class="flex flex-col gap-3">
+            <input type="text" id="searchInput" placeholder="Search parts by name, category, or SKU" 
+                   class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
+            
+            <div class="grid grid-cols-2 gap-3">
+                <select id="categoryFilter" class="px-3 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 text-sm font-medium">
+                    <option value="">All Categories</option>
+                    <option value="ink-bottle">Ink Bottles</option>
+                    <option value="toner">Toner Cartridges</option>
+                    <option value="maintenance">Maintenance Kits</option>
+                    <option value="hardware">Hardware Parts</option>
+                    <option value="accessories">Accessories</option>
+                </select>
+                
+                <select id="stockFilter" class="px-3 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 text-sm font-medium">
+                    <option value="">All Stock Levels</option>
+                    <option value="high">High Stock (>20)</option>
+                    <option value="medium">Medium Stock (11-20)</option>
+                    <option value="low">Low Stock (1-10)</option>
+                    <option value="out">Out of Stock</option>
+                </select>
+            </div>
+            
+            <button id="refreshBtn" class="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 font-semibold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                <span>Refresh</span>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Inventory Stats -->
+    <div class="grid grid-cols-2 gap-3 mb-5">
+        <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border-2 border-blue-200">
+            <div class="text-3xl font-bold text-blue-600" id="totalItems">0</div>
+            <div class="text-sm font-medium text-blue-700">Total Items</div>
+        </div>
+        <div class="bg-gradient-to-br from-green-50 to-emerald-100 rounded-xl p-4 border-2 border-green-200">
+            <div class="text-3xl font-bold text-green-600" id="inStock">0</div>
+            <div class="text-sm font-medium text-green-700">In Stock</div>
+        </div>
+        <div class="bg-gradient-to-br from-yellow-50 to-amber-100 rounded-xl p-4 border-2 border-yellow-200">
+            <div class="text-3xl font-bold text-yellow-600" id="lowStock">0</div>
+            <div class="text-sm font-medium text-yellow-700">Low Stock</div>
+        </div>
+        <div class="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-4 border-2 border-red-200">
+            <div class="text-3xl font-bold text-red-600" id="outOfStock">0</div>
+            <div class="text-sm font-medium text-red-700">Out of Stock</div>
+        </div>
+    </div>
+    
+    <!-- Loading State -->
+    <div id="loadingState" class="text-center py-12">
+        <div class="inline-flex items-center space-x-2">
+            <div class="w-3 h-3 bg-emerald-500 rounded-full animate-bounce" style="animation-delay: 0s;"></div>
+            <div class="w-3 h-3 bg-green-500 rounded-full animate-bounce" style="animation-delay: 0.1s;"></div>
+            <div class="w-3 h-3 bg-teal-500 rounded-full animate-bounce" style="animation-delay: 0.2s;"></div>
+        </div>
+        <p class="mt-4 text-emerald-700 font-semibold">Loading inventory...</p>
+    </div>
+    
+    <!-- Empty State -->
+    <div id="emptyState" class="hidden bg-white rounded-xl border-2 border-emerald-100 p-8 text-center">
+        <div class="text-emerald-200 mb-4">
+            <svg class="mx-auto h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+            </svg>
+        </div>
+        <h3 class="text-lg font-bold text-gray-900 mb-2">No Inventory Items</h3>
+        <p class="text-gray-600 mb-4" id="emptyMessage">No parts are currently assigned to your inventory.</p>
+        <button onclick="window.location.href='/client/src/pages/technician/parts-request.html'" class="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-3 rounded-xl transition-all shadow-md hover:shadow-lg font-semibold">
+            Request Parts
+        </button>
+    </div>
+    
+    <!-- Inventory Grid -->
+    <div id="inventoryGrid" class="hidden grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <!-- Inventory items will be loaded here -->
+    </div>
+    
+    <!-- Error State -->
+    <div id="errorState" class="hidden glass-card rounded-2xl shadow-xl p-12 text-center">
+        <div class="text-red-500 mb-4">
+            <svg class="mx-auto h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+        </div>
+        <h3 class="text-xl font-medium text-gray-900 mb-2">Error Loading Inventory</h3>
+        <p class="text-gray-500 mb-4" id="errorMessage">Failed to load inventory data.</p>
+        <button onclick="loadInventory()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors">
+            Try Again
+        </button>
+    </div>
+
+    <!-- Part Details Modal -->
+    <div id="partDetailsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <!-- Modal Header -->
+            <div class="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4 rounded-t-2xl">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold flex items-center space-x-2">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <span>Part Details</span>
+                    </h2>
+                    <button onclick="closePartDetailsModal()" class="text-white hover:bg-white hover:bg-opacity-20 rounded-lg p-2 transition-all">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-6 space-y-6">
+                <!-- Part Name & Brand -->
+                <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border-2 border-blue-200">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <h3 id="modalPartName" class="text-2xl font-bold text-gray-900 mb-2">HP Drum Cartridge</h3>
+                            <div class="flex items-center space-x-3 flex-wrap gap-2">
+                                <span id="modalPartBrand" class="inline-flex items-center px-3 py-1 bg-blue-600 text-white rounded-full text-sm font-semibold">
+                                    HP
+                                </span>
+                                <span id="modalPartCategory" class="inline-flex items-center px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-semibold">
+                                    drum-cartridge
+                                </span>
+                            </div>
+                        </div>
+                        <div id="modalStockIndicator" class="w-16 h-16 rounded-full flex items-center justify-center bg-green-100 border-4 border-green-300">
+                            <svg class="w-8 h-8 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quantity & Stock Status -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-5 border-2 border-green-200">
+                        <div class="text-xs font-semibold text-green-700 mb-1 uppercase tracking-wider">Current Stock</div>
+                        <div class="flex items-baseline space-x-2">
+                            <span id="modalQuantity" class="text-4xl font-bold text-green-600">8</span>
+                            <span id="modalUnit" class="text-lg text-green-600 font-medium">pieces</span>
+                        </div>
+                    </div>
+                    <div class="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-xl p-5 border-2 border-amber-200">
+                        <div class="text-xs font-semibold text-amber-700 mb-1 uppercase tracking-wider">Stock Status</div>
+                        <div id="modalStockStatus" class="text-xl font-bold text-amber-600">Low Stock</div>
+                    </div>
+                </div>
+
+                <!-- Part Information -->
+                <div class="space-y-4">
+                    <h4 class="text-lg font-bold text-gray-900 flex items-center space-x-2 border-b-2 border-gray-200 pb-2">
+                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <span>Part Information</span>
+                    </h4>
+                    
+                    <div class="grid gap-3">
+                        <div id="modalPartNumberSection" class="flex items-start">
+                            <div class="w-32 text-sm font-semibold text-gray-600">Part Number:</div>
+                            <div id="modalPartNumber" class="flex-1 text-sm text-gray-900 font-mono bg-gray-50 px-3 py-1 rounded">N/A</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Assignment Information -->
+                <div class="space-y-4">
+                    <h4 class="text-lg font-bold text-gray-900 flex items-center space-x-2 border-b-2 border-gray-200 pb-2">
+                        <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                        </svg>
+                        <span>Assignment Details</span>
+                    </h4>
+                    
+                    <div class="grid gap-3">
+                        <div class="flex items-center space-x-3 bg-blue-50 rounded-lg p-3">
+                            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                            <div class="flex-1">
+                                <div class="text-xs font-semibold text-blue-700 uppercase tracking-wider">Assigned Date</div>
+                                <div id="modalAssignedDate" class="text-sm font-medium text-gray-900">11/22/2025</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-3 bg-purple-50 rounded-lg p-3">
+                            <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                            </svg>
+                            <div class="flex-1">
+                                <div class="text-xs font-semibold text-purple-700 uppercase tracking-wider">Assigned By</div>
+                                <div id="modalAssignedBy" class="text-sm font-medium text-gray-900">Admin User</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="sticky bottom-0 bg-gray-50 px-6 py-4 rounded-b-2xl border-t-2 border-gray-200">
+                <button onclick="closePartDetailsModal()" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 rounded-xl transition-all shadow-md hover:shadow-lg">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let allParts = [];
+        let filteredParts = [];
+        
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔧 Initializing Inventory Page');
+            loadInventory();
+            setupEventListeners();
+        });
+        
+        // Setup event listeners
+        function setupEventListeners() {
+            const searchInput = document.getElementById('searchInput');
+            const categoryFilter = document.getElementById('categoryFilter');
+            const stockFilter = document.getElementById('stockFilter');
+            const refreshBtn = document.getElementById('refreshBtn');
+            
+            searchInput.addEventListener('input', debounce(filterParts, 300));
+            categoryFilter.addEventListener('change', filterParts);
+            stockFilter.addEventListener('change', filterParts);
+            refreshBtn.addEventListener('click', loadInventory);
+        }
+        
+        // Debounce function for search
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+        
+        // Load inventory from API
+        async function loadInventory() {
+            console.log('📦 Loading technician inventory...');
+            showLoadingState();
+            
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    showEmptyState('Please log in to view your inventory.');
+                    return;
+                }
+                
+                const response = await fetch('/api/technician/inventory', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                // Handle case where technician has no inventory assigned yet
+                if (response.status === 500 || response.status === 404) {
+                    showEmptyState('No parts have been assigned to your inventory yet. Contact an administrator to request part assignments, or submit parts requests through the Parts Request page.');
+                    return;
+                }
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('📦 Technician inventory data received:', data);
+                
+                allParts = Array.isArray(data) ? data : [];
+                
+                if (allParts.length === 0) {
+                    showEmptyState('No parts are currently assigned to your inventory. Contact an administrator to request part assignments, or submit parts requests through the Parts Request page.');
+                } else {
+                    filteredParts = [...allParts];
+                    updateStats();
+                    displayParts();
+                    showInventoryGrid();
+                }
+                
+            } catch (error) {
+                console.error('❌ Error loading technician inventory:', error);
+                showEmptyState('Unable to load inventory. This might be because no parts have been assigned to you yet, or there was a connection error. Contact an administrator if this problem persists.');
+            }
+        }
+        
+        // Filter parts based on search and filters
+        function filterParts() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const category = document.getElementById('categoryFilter').value;
+            const stock = document.getElementById('stockFilter').value;
+            
+            filteredParts = allParts.filter(part => {
+                // Search filter
+                const matchesSearch = !search || 
+                    part.name?.toLowerCase().includes(search) ||
+                    part.category?.toLowerCase().includes(search) ||
+                    part.brand?.toLowerCase().includes(search) ||
+                    part.part_number?.toLowerCase().includes(search);
+                
+                // Category filter
+                const matchesCategory = !category || part.category === category;
+                
+                // Stock filter
+                let matchesStock = true;
+                if (stock) {
+                    const quantity = parseInt(part.assigned_quantity) || 0;
+                    switch (stock) {
+                        case 'high': matchesStock = quantity > 20; break;
+                        case 'medium': matchesStock = quantity >= 11 && quantity <= 20; break;
+                        case 'low': matchesStock = quantity >= 1 && quantity <= 10; break;
+                        case 'out': matchesStock = quantity === 0; break;
+                    }
+                }
+                
+                return matchesSearch && matchesCategory && matchesStock;
+            });
+            
+            updateStats();
+            displayParts();
+            
+            if (filteredParts.length === 0 && allParts.length > 0) {
+                showEmptyState('No parts match your current filter criteria.');
+            } else {
+                showInventoryGrid();
+            }
+        }
+        
+        // Check if a category is consumable
+        function isConsumable(category) {
+            const consumableCategories = [
+                'paper', 'cleaning-supplies', 'tools', 'cables', 
+                'batteries', 'lubricants', 'labels', 'other-consumable'
+            ];
+            return consumableCategories.includes(category);
+        }
+        
+        // Update statistics
+        function updateStats() {
+            const total = allParts.length;
+            const inStock = allParts.filter(p => (parseInt(p.assigned_quantity) || 0) > 0).length;
+            const lowStock = allParts.filter(p => {
+                const qty = parseInt(p.assigned_quantity) || 0;
+                return qty >= 1 && qty <= 10;
+            }).length;
+            const outOfStock = allParts.filter(p => (parseInt(p.assigned_quantity) || 0) === 0).length;
+            
+            document.getElementById('totalItems').textContent = total;
+            document.getElementById('inStock').textContent = inStock;
+            document.getElementById('lowStock').textContent = lowStock;
+            document.getElementById('outOfStock').textContent = outOfStock;
+        }
+        
+        // Display parts in grid
+        function displayParts() {
+            const grid = document.getElementById('inventoryGrid');
+            grid.innerHTML = filteredParts.map(part => createPartCard(part)).join('');
+        }
+        
+        // Create individual part card
+        function createPartCard(part) {
+            const quantity = parseInt(part.assigned_quantity) || 0;
+            const stockClass = quantity > 20 ? 'stock-high' : 
+                              quantity > 10 ? 'stock-medium' : 
+                              quantity > 0 ? 'stock-low' : 'stock-out';
+            
+            const stockText = quantity > 20 ? 'High Stock' : 
+                             quantity > 10 ? 'Medium Stock' : 
+                             quantity > 0 ? 'Low Stock' : 'Out of Stock';
+            
+            const typeClass = isConsumable(part.category) ? 'badge-consumable' : 'badge-printer-part';
+            const typeText = isConsumable(part.category) ? 'Consumable' : 'Printer Part';
+            
+            return `
+                <div class="inventory-card glass-card rounded-xl p-4 relative">
+                    <div class="stock-indicator ${stockClass}" title="${stockText}"></div>
+                    
+                    <div class="mb-4">
+                        <h3 class="font-semibold text-gray-900 mb-1">${part.name || 'Unknown Part'}</h3>
+                        <div class="space-y-1">
+                            <span class="category-badge ${typeClass}">
+                                ${typeText}
+                            </span>
+                            <p class="text-sm text-gray-600">${part.category || 'No Category'}</p>
+                            ${part.brand ? `<p class="text-xs text-gray-500">Brand: ${part.brand}</p>` : ''}
+                            ${part.part_number ? `<p class="text-xs text-gray-500">PN: ${part.part_number}</p>` : ''}
+                            ${part.description ? `<p class="text-sm text-gray-600 mt-2">${part.description}</p>` : ''}
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between pt-3 border-t border-gray-100">
+                        <div>
+                            <span class="text-2xl font-bold ${quantity > 0 ? 'text-blue-600' : 'text-red-500'}">${quantity}</span>
+                            <span class="text-sm text-gray-500 ml-1">${part.unit || 'pieces'}</span>
+                        </div>
+                        <button onclick="viewPartDetails('${part.inventory_id}')" class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1 rounded-lg text-sm transition-colors">
+                            Details
+                        </button>
+                    </div>
+                    
+                    ${part.assigned_at ? `<p class="text-xs text-gray-500 mt-2">📅 Assigned: ${new Date(part.assigned_at).toLocaleDateString()}</p>` : ''}
+                    ${part.notes ? `<p class="text-xs text-gray-600 mt-1">📝 ${part.notes}</p>` : ''}
+                </div>
+            `;
+        }
+        
+        // State management functions
+        function showLoadingState() {
+            document.getElementById('loadingState').classList.remove('hidden');
+            document.getElementById('emptyState').classList.add('hidden');
+            document.getElementById('inventoryGrid').classList.add('hidden');
+            document.getElementById('errorState').classList.add('hidden');
+        }
+        
+        function showEmptyState(message = 'No parts are currently assigned to your inventory.') {
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('emptyState').classList.remove('hidden');
+            document.getElementById('inventoryGrid').classList.add('hidden');
+            document.getElementById('errorState').classList.add('hidden');
+            
+            const emptyState = document.getElementById('emptyState');
+            const messageEl = emptyState.querySelector('p');
+            if (messageEl) messageEl.textContent = message;
+        }
+        
+        function showInventoryGrid() {
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('emptyState').classList.add('hidden');
+            document.getElementById('inventoryGrid').classList.remove('hidden');
+            document.getElementById('errorState').classList.add('hidden');
+        }
+        
+        function showErrorState(message) {
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('emptyState').classList.add('hidden');
+            document.getElementById('inventoryGrid').classList.add('hidden');
+            document.getElementById('errorState').classList.remove('hidden');
+            document.getElementById('errorMessage').textContent = message;
+        }
+        
+        // Part details function
+        function viewPartDetails(inventoryId) {
+            const part = allParts.find(p => p.inventory_id == inventoryId);
+            if (!part) return;
+            
+            // Populate modal with part data
+            document.getElementById('modalPartName').textContent = part.name || 'Unknown Part';
+            document.getElementById('modalPartBrand').textContent = part.brand || 'Generic';
+            document.getElementById('modalPartCategory').textContent = part.category || 'N/A';
+            
+            // Handle part number - hide section if N/A
+            const partNumberSection = document.getElementById('modalPartNumberSection');
+            if (part.part_number && part.part_number.trim() && part.part_number !== 'N/A') {
+                document.getElementById('modalPartNumber').textContent = part.part_number;
+                partNumberSection.classList.remove('hidden');
+            } else {
+                partNumberSection.classList.add('hidden');
+            }
+            
+            const quantity = parseInt(part.assigned_quantity) || 0;
+            document.getElementById('modalQuantity').textContent = quantity;
+            document.getElementById('modalUnit').textContent = part.unit || 'pieces';
+            
+            // Stock status
+            let stockStatus = '';
+            let stockClass = '';
+            let stockIcon = '';
+            
+            if (quantity > 20) {
+                stockStatus = 'High Stock';
+                stockClass = 'text-green-600';
+                stockIcon = '<svg class="w-8 h-8 text-green-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>';
+            } else if (quantity > 10) {
+                stockStatus = 'Medium Stock';
+                stockClass = 'text-yellow-600';
+                stockIcon = '<svg class="w-8 h-8 text-yellow-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>';
+            } else if (quantity > 0) {
+                stockStatus = 'Low Stock';
+                stockClass = 'text-orange-600';
+                stockIcon = '<svg class="w-8 h-8 text-orange-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>';
+            } else {
+                stockStatus = 'Out of Stock';
+                stockClass = 'text-red-600';
+                stockIcon = '<svg class="w-8 h-8 text-red-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>';
+            }
+            
+            document.getElementById('modalStockStatus').textContent = stockStatus;
+            document.getElementById('modalStockStatus').className = `text-xl font-bold ${stockClass}`;
+            document.getElementById('modalStockIndicator').innerHTML = stockIcon;
+            
+            // Update stock indicator background
+            const indicator = document.getElementById('modalStockIndicator');
+            if (quantity > 20) {
+                indicator.className = 'w-16 h-16 rounded-full flex items-center justify-center bg-green-100 border-4 border-green-300';
+            } else if (quantity > 10) {
+                indicator.className = 'w-16 h-16 rounded-full flex items-center justify-center bg-yellow-100 border-4 border-yellow-300';
+            } else if (quantity > 0) {
+                indicator.className = 'w-16 h-16 rounded-full flex items-center justify-center bg-orange-100 border-4 border-orange-300';
+            } else {
+                indicator.className = 'w-16 h-16 rounded-full flex items-center justify-center bg-red-100 border-4 border-red-300';
+            }
+            
+            // Assignment details
+            const assignedDate = part.assigned_at ? new Date(part.assigned_at).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            }) : 'Unknown';
+            document.getElementById('modalAssignedDate').textContent = assignedDate;
+            document.getElementById('modalAssignedBy').textContent = part.assigned_by_name || 'System';
+            
+            // Show modal
+            document.getElementById('partDetailsModal').classList.remove('hidden');
+        }
+        
+        function closePartDetailsModal() {
+            document.getElementById('partDetailsModal').classList.add('hidden');
+        }
+        
+        // Close modal when clicking outside
+        document.getElementById('partDetailsModal')?.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closePartDetailsModal();
+            }
+        });
+        
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closePartDetailsModal();
+            }
+        });
+    </script>
+</body>
+</html>

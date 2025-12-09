@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>institution_user Registrations | ServiceEase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="../../js/auth.js" defer></script>
+    <script src="../../js/institution-admin-header-loader.js" defer></script>
+    <style>
+        .sidenav-active {
+            background-color: #f3f4f6;
+            color: #111827;
+            font-weight: 500;
+        }
+        
+        .tab-active {
+            border-bottom: 2px solid #4f46e5;
+            color: #4f46e5;
+        }
+        
+        .image-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+        }
+        
+        .image-modal img {
+            max-width: 90%;
+            max-height: 90%;
+            margin: auto;
+            display: block;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .image-modal .close {
+            position: absolute;
+            top: 20px;
+            right: 35px;
+            color: #fff;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Load Sidenav -->
+    <div id="sidenav-container"></div>
+
+    <!-- Main Content -->
+    <div class="ml-64 p-8">
+        <!-- Header -->
+        <div id="header-container" class="mb-8"></div>
+
+        <!-- Page Title -->
+        <div class="mb-6">
+            <h1 class="text-3xl font-light text-gray-900">institution_user Registrations</h1>
+            <p class="text-gray-600 mt-1">Review and approve institution_user registration requests</p>
+        </div>
+
+        <!-- Tabs -->
+        <div class="border-b border-gray-200 mb-6">
+            <nav class="flex space-x-8">
+                <button id="pendingTab" onclick="switchTab('pending')" 
+                    class="tab-active py-4 px-1 text-sm font-medium transition-colors">
+                    Pending Registrations
+                    <span id="pendingCount" class="ml-2 bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full">0</span>
+                </button>
+                <button id="historyTab" onclick="switchTab('history')" 
+                    class="py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors">
+                    History
+                </button>
+            </nav>
+        </div>
+
+        <!-- Pending Registrations -->
+        <div id="pendingSection">
+            <div id="pendingList" class="space-y-4">
+                <!-- Loading -->
+                <div id="pendingLoading" class="text-center py-12">
+                    <i class="fas fa-spinner fa-spin text-3xl text-gray-400 mb-4"></i>
+                    <p class="text-gray-500">Loading registrations...</p>
+                </div>
+
+                <!-- Empty State -->
+                <div id="pendingEmpty" class="hidden text-center py-12 bg-white rounded-lg border border-gray-200">
+                    <i class="fas fa-inbox text-5xl text-gray-300 mb-4"></i>
+                    <p class="text-gray-500">No pending registrations</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Section -->
+        <div id="historySection" class="hidden">
+            <div id="historyList" class="space-y-4">
+                <!-- Loading -->
+                <div id="historyLoading" class="text-center py-12">
+                    <i class="fas fa-spinner fa-spin text-3xl text-gray-400 mb-4"></i>
+                    <p class="text-gray-500">Loading history...</p>
+                </div>
+
+                <!-- Empty State -->
+                <div id="historyEmpty" class="hidden text-center py-12 bg-white rounded-lg border border-gray-200">
+                    <i class="fas fa-history text-5xl text-gray-300 mb-4"></i>
+                    <p class="text-gray-500">No registration history</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Modal -->
+    <div id="imageModal" class="image-modal">
+        <span class="close" onclick="closeImageModal()">&times;</span>
+        <img id="modalImage" src="" alt="ID Photo">
+    </div>
+
+    <!-- Rejection Modal -->
+    <div id="rejectModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+            <h3 class="text-xl font-medium text-gray-900 mb-4">Reject Registration</h3>
+            <p class="text-sm text-gray-600 mb-4">Please provide a reason for rejection:</p>
+            <textarea id="rejectionNotes" rows="4" 
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                placeholder="Enter reason for rejection..."></textarea>
+            <div class="mt-6 flex justify-end space-x-3">
+                <button onclick="closeRejectModal()" 
+                    class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button onclick="confirmReject()" 
+                    class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md">
+                    Reject Registration
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Expose rejectRegistration globally for inline onclick
+        window.rejectRegistration = function(id) {
+            openRejectModal(id);
+        }
+        let currentRejectId = null;
+
+        // Load sidenav and execute any scripts contained in the component
+        fetch('../../components/institution-admin-sidenav.html')
+            .then(response => response.text())
+            .then(html => {
+                const container = document.getElementById('sidenav-container');
+                container.innerHTML = html;
+
+                // Parse the fetched HTML and re-run any <script> elements so they execute
+                try {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const scripts = doc.querySelectorAll('script');
+
+                    scripts.forEach(s => {
+                        const newScript = document.createElement('script');
+                        if (s.src) {
+                            newScript.src = s.src;
+                            newScript.async = false;
+                        } else {
+                            newScript.textContent = s.textContent || s.innerText || '';
+                        }
+                        document.body.appendChild(newScript);
+                    });
+                } catch (e) {
+                    console.warn('Failed to rehydrate sidenav scripts:', e);
+                }
+
+                // Small delay to allow any appended external scripts to load, then initialize UI state
+                setTimeout(() => {
+                    // Mark current page as active
+                    const activeLink = document.querySelector('a[href="/pages/institution-admin/requester-registrations.html"]');
+                    if (activeLink) activeLink.classList.add('sidenav-active');
+
+                    // If the sidenav exposes initializer functions, call them
+                    if (typeof initializeDropdowns === 'function') {
+                        try { initializeDropdowns(); } catch (e) { console.warn(e); }
+                    }
+                    if (typeof updateActiveNavItem === 'function') {
+                        try { updateActiveNavItem(); } catch (e) { console.warn(e); }
+                    }
+                }, 80);
+            });
+
+        // Tab switching
+        function switchTab(tab) {
+            document.getElementById('pendingTab').classList.remove('tab-active');
+            document.getElementById('historyTab').classList.remove('tab-active');
+            
+            if (tab === 'pending') {
+                document.getElementById('pendingTab').classList.add('tab-active');
+                document.getElementById('pendingSection').classList.remove('hidden');
+                document.getElementById('historySection').classList.add('hidden');
+                loadPendingRegistrations();
+            } else {
+                document.getElementById('historyTab').classList.add('tab-active');
+                document.getElementById('pendingSection').classList.add('hidden');
+                document.getElementById('historySection').classList.remove('hidden');
+                loadHistory();
+            }
+        }
+
+        // Load pending registrations
+        async function loadPendingRegistrations() {
+            const loading = document.getElementById('pendingLoading');
+            const empty = document.getElementById('pendingEmpty');
+            const list = document.getElementById('pendingList');
+            
+            loading.classList.remove('hidden');
+            empty.classList.add('hidden');
+            
+            // Remove existing items
+            list.querySelectorAll('.registration-card').forEach(card => card.remove());
+            
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/requester-registration/pending', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                console.log('📋 Pending registrations response:', data);
+                
+                if (response.ok) {
+                    loading.classList.add('hidden');
+                    
+                    // Handle both array and object response formats
+                    const registrations = Array.isArray(data) ? data : (data.registrations || []);
+                    
+                    if (registrations.length > 0) {
+                        document.getElementById('pendingCount').textContent = registrations.length;
+                        
+                        registrations.forEach(reg => {
+                            list.appendChild(createRegistrationCard(reg));
+                        });
+                    } else {
+                        empty.classList.remove('hidden');
+                        document.getElementById('pendingCount').textContent = '0';
+                    }
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                console.error('Error loading registrations:', error);
+                loading.classList.add('hidden');
+                alert('Failed to load registrations: ' + error.message);
+            }
+        }
+
+        // Load history
+        async function loadHistory() {
+            const loading = document.getElementById('historyLoading');
+            const empty = document.getElementById('historyEmpty');
+            const list = document.getElementById('historyList');
+            
+            loading.classList.remove('hidden');
+            empty.classList.add('hidden');
+            
+            // Remove existing items
+            list.querySelectorAll('.registration-card').forEach(card => card.remove());
+            
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/requester-registration/history', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    loading.classList.add('hidden');
+                    
+                    if (data.registrations && data.registrations.length > 0) {
+                        data.registrations.forEach(reg => {
+                            list.appendChild(createHistoryCard(reg));
+                        });
+                    } else {
+                        empty.classList.remove('hidden');
+                    }
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                console.error('Error loading history:', error);
+                loading.classList.add('hidden');
+                alert('Failed to load history: ' + error.message);
+            }
+        }
+
+        // Create registration card
+        function createRegistrationCard(reg) {
+            const card = document.createElement('div');
+            card.className = 'registration-card bg-white rounded-lg border border-gray-200 p-6';
+            
+            // Use new photo fields
+            const frontId = reg.front_id_photo || reg.id_front_url || '';
+            const backId = reg.back_id_photo || reg.id_back_url || '';
+            const selfie = reg.selfie_photo || reg.selfie_url || '';
+            // Handle institution(s)
+            const institutionNames = reg.institution_names ? reg.institution_names : 'N/A';
+            // Handle printers (show details)
+            let printers = [];
+            try {
+                if (Array.isArray(reg.printer_serial_numbers)) {
+                    printers = reg.printer_serial_numbers;
+                } else if (typeof reg.printer_serial_numbers === 'string') {
+                    printers = JSON.parse(reg.printer_serial_numbers);
+                }
+            } catch (e) { printers = []; }
+
+            let printersHtml = '';
+            if (printers && printers.length > 0) {
+                printersHtml = `<ul class=\"list-disc ml-5\">${printers.map(p => `<li><b>${p.serial_number}</b> - ${p.brand || ''} ${p.model ? '(' + p.model + ')' : ''} ${p.name ? '- ' + p.name : ''} ${p.location ? '- ' + p.location : ''}</li>`).join('')}</ul>`;
+            } else {
+                printersHtml = '<span class=\"text-gray-500\">No printers assigned</span>';
+            }
+
+            card.innerHTML = `
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900">${reg.first_name} ${reg.last_name}</h3>
+                        <p class="text-sm text-gray-600">${reg.email}</p>
+                        <p class="text-xs text-gray-500 mt-1">Submitted: ${new Date(reg.created_at).toLocaleString()}</p>
+                        <p class="text-xs text-gray-500 mt-1"><b>Department:</b> ${printers[0]?.department || 'N/A'}</p>
+                    </div>
+                    <span class="px-3 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800">
+                        Pending Review
+                    </span>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <p class="text-sm text-gray-500">Institution(s)</p>
+                        <p class="text-sm font-medium text-gray-900">${institutionNames}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Printers</p>
+                        <div class="text-sm font-medium text-gray-900">${printersHtml}</div>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <p class="text-sm text-gray-500 mb-2">ID Verification Photos:</p>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div class="cursor-pointer" onclick="viewImage('${frontId}')">
+                            <img src="${frontId}" alt="ID Front" class="w-full h-24 object-cover rounded border border-gray-200 hover:border-indigo-500">
+                            <p class="text-xs text-center text-gray-500 mt-1">ID Front</p>
+                        </div>
+                        <div class="cursor-pointer" onclick="viewImage('${backId}')">
+                            <img src="${backId}" alt="ID Back" class="w-full h-24 object-cover rounded border border-gray-200 hover:border-indigo-500">
+                            <p class="text-xs text-center text-gray-500 mt-1">ID Back</p>
+                        </div>
+                        <div class="cursor-pointer" onclick="viewImage('${selfie}')">
+                            <img src="${selfie}" alt="Selfie" class="w-full h-24 object-cover rounded border border-gray-200 hover:border-indigo-500">
+                            <p class="text-xs text-center text-gray-500 mt-1">Selfie</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex gap-3 pt-4 border-t border-gray-200">
+                    <button onclick="approveRegistration(${reg.id})" 
+                        class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Approve</button>
+                    <button onclick="rejectRegistration(${reg.id})" 
+                        class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Reject</button>
+                </div>
+            `;
+            return card;
+        }
+
+        // Create history card
+        function createHistoryCard(reg) {
+            const card = document.createElement('div');
+            card.className = 'registration-card bg-white rounded-lg border border-gray-200 p-6';
+            
+            const printers = JSON.parse(reg.printer_serial_numbers || '[]');
+            const statusColor = reg.status === 'approved' ? 'green' : 'red';
+            
+            card.innerHTML = `
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900">${reg.first_name} ${reg.last_name}</h3>
+                        <p class="text-sm text-gray-600">${reg.email}</p>
+                        <p class="text-xs text-gray-500 mt-1">
+                            Submitted: ${new Date(reg.created_at).toLocaleString()}<br>
+                            Reviewed: ${new Date(reg.institution-admin_reviewed_at).toLocaleString()}
+                        </p>
+                    </div>
+                    <span class="px-3 py-1 text-xs font-medium rounded-full bg-${statusColor}-100 text-${statusColor}-800">
+                        ${reg.status.charAt(0).toUpperCase() + reg.status.slice(1)}
+                    </span>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <p class="text-sm text-gray-500">Institution</p>
+                        <p class="text-sm font-medium text-gray-900">${reg.institution_id}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Printers</p>
+                        <p class="text-sm font-medium text-gray-900">${printers.length} printer(s)</p>
+                    </div>
+                </div>
+                
+                ${reg.institution-admin_notes ? `
+                    <div class="bg-gray-50 p-3 rounded mb-4">
+                        <p class="text-sm text-gray-500">institution-admin Notes:</p>
+                        <p class="text-sm text-gray-700 mt-1">${reg.institution-admin_notes}</p>
+                    </div>
+                ` : ''}
+            `;
+            
+            return card;
+        }
+
+        // Approve registration
+        async function approveRegistration(id) {
+            if (!confirm('Are you sure you want to approve this registration? This will create a new user account.')) {
+                return;
+            }
+            
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/requester-registration/${id}/approve`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert('Registration approved successfully! User account has been created.');
+                    loadPendingRegistrations();
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                console.error('Error approving registration:', error);
+                alert('Failed to approve registration: ' + error.message);
+            }
+        }
+
+        // Reject modal functions
+        function openRejectModal(id) {
+            currentRejectId = id;
+            document.getElementById('rejectionNotes').value = '';
+            document.getElementById('rejectModal').classList.remove('hidden');
+        }
+
+        function closeRejectModal() {
+            currentRejectId = null;
+            document.getElementById('rejectModal').classList.add('hidden');
+        }
+
+        async function confirmReject() {
+            const notes = document.getElementById('rejectionNotes').value.trim();
+            
+            if (!notes) {
+                alert('Please provide a reason for rejection');
+                return;
+            }
+            
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/requester-registration/${currentRejectId}/reject`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ notes })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert('Registration rejected. User has been notified.');
+                    closeRejectModal();
+                    loadPendingRegistrations();
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                console.error('Error rejecting registration:', error);
+                alert('Failed to reject registration: ' + error.message);
+            }
+        }
+
+        // Image modal functions
+        function viewImage(url) {
+            document.getElementById('modalImage').src = url;
+            document.getElementById('imageModal').style.display = 'block';
+        }
+
+        function closeImageModal() {
+            document.getElementById('imageModal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside image
+        document.getElementById('imageModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeImageModal();
+            }
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadPendingRegistrations();
+        });
+    </script>
+</body>
+</html>
+
+
+

@@ -559,13 +559,42 @@ class InventoryPartsManager {
     }
 
     getFormData() {
-        return {
+        const category = document.getElementById('partCategory')?.value || '';
+        const formData = {
             name: document.getElementById('partName')?.value.trim() || '',
             brand: document.getElementById('partBrand')?.value.trim() || '',
-            category: document.getElementById('partCategory')?.value || '',
+            category: category,
             quantity: parseInt(document.getElementById('partStock')?.value) || 0,
             is_universal: document.getElementById('partUniversal')?.checked ? 1 : 0
         };
+
+        // Add page yield for toner, ink cartridges, and drum cartridges
+        const pageYieldCategories = ['toner', 'ink', 'drum-cartridge'];
+        if (pageYieldCategories.includes(category)) {
+            const pageYield = document.getElementById('pageYield')?.value;
+            if (pageYield && parseInt(pageYield) > 0) {
+                formData.page_yield = parseInt(pageYield);
+            }
+        }
+
+        // Add ink volume for ink bottles
+        if (category === 'ink-bottle') {
+            const inkVolume = document.getElementById('inkVolume')?.value;
+            if (inkVolume && parseFloat(inkVolume) > 0) {
+                formData.ink_volume = parseFloat(inkVolume);
+            }
+        }
+
+        // Add color for ink and ink bottles
+        const colorCategories = ['ink', 'ink-bottle', 'toner'];
+        if (colorCategories.includes(category)) {
+            const color = document.getElementById('inkColor')?.value?.trim();
+            if (color) {
+                formData.color = color;
+            }
+        }
+
+        return formData;
     }
 
     validateForm(formData) {
@@ -587,6 +616,34 @@ class InventoryPartsManager {
             return false;
         }
 
+        // Industry-standard validation for page yield
+        if (formData.page_yield !== undefined && formData.page_yield !== null) {
+            if (formData.page_yield < 100 || formData.page_yield > 50000) {
+                this.showError('Page yield must be between 100 and 50,000 pages (industry standard range)');
+                document.getElementById('pageYield')?.focus();
+                return false;
+            }
+        }
+
+        // Industry-standard validation for ink volume
+        if (formData.ink_volume !== undefined && formData.ink_volume !== null) {
+            if (formData.ink_volume < 5 || formData.ink_volume > 1000) {
+                this.showError('Ink volume must be between 5ml and 1000ml (industry standard range)');
+                document.getElementById('inkVolume')?.focus();
+                return false;
+            }
+        }
+
+        // Validate color is provided for ink/toner when applicable
+        const colorRequiredCategories = ['ink', 'ink-bottle', 'toner'];
+        if (colorRequiredCategories.includes(formData.category)) {
+            if (!formData.color || formData.color.trim() === '') {
+                this.showError('Color is required for ink and toner products');
+                document.getElementById('inkColor')?.focus();
+                return false;
+            }
+        }
+
         return true;
     }
 
@@ -596,10 +653,65 @@ class InventoryPartsManager {
         document.getElementById('partCategory').value = part.category || '';
         document.getElementById('partStock').value = part.quantity || 0;
         document.getElementById('partUniversal').checked = part.is_universal === 1;
+        
+        // Populate additional fields if they exist
+        if (part.page_yield) {
+            const pageYieldInput = document.getElementById('pageYield');
+            if (pageYieldInput) {
+                pageYieldInput.value = part.page_yield;
+            }
+        }
+        
+        if (part.ink_volume) {
+            const inkVolumeInput = document.getElementById('inkVolume');
+            if (inkVolumeInput) {
+                inkVolumeInput.value = part.ink_volume;
+            }
+        }
+        
+        if (part.color) {
+            // Update hidden select
+            const colorInput = document.getElementById('inkColor');
+            if (colorInput) {
+                colorInput.value = part.color;
+            }
+            
+            // Update custom dropdown display
+            const colorSelectedText = document.getElementById('colorSelectedText');
+            const colorOptions = document.querySelectorAll('#colorDropdownMenu [data-value]');
+            
+            if (colorSelectedText) {
+                // Find the matching option and set its text
+                colorOptions.forEach(option => {
+                    if (option.getAttribute('data-value') === part.color) {
+                        colorSelectedText.textContent = option.textContent;
+                        colorSelectedText.classList.remove('text-slate-400');
+                        colorSelectedText.classList.add('text-slate-900');
+                        option.classList.add('bg-blue-100');
+                    } else {
+                        option.classList.remove('bg-blue-100');
+                    }
+                });
+            }
+        }
     }
 
     resetForm() {
         document.getElementById('partForm')?.reset();
+        
+        // Reset custom color dropdown
+        const colorSelectedText = document.getElementById('colorSelectedText');
+        const colorOptions = document.querySelectorAll('#colorDropdownMenu [data-value]');
+        
+        if (colorSelectedText) {
+            colorSelectedText.textContent = 'Select color...';
+            colorSelectedText.classList.add('text-slate-400');
+            colorSelectedText.classList.remove('text-slate-900');
+        }
+        
+        if (colorOptions) {
+            colorOptions.forEach(option => option.classList.remove('bg-blue-100'));
+        }
     }
 
     updateModalForAdd() {
@@ -794,3 +906,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Export for global access
 window.inventoryManager = inventoryManager;
+
+
+
+

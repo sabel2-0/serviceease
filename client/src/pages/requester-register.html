@@ -66,7 +66,7 @@
                     </a>
                     <div>
                         <h1 class="text-2xl font-semibold text-gray-900 leading-tight">ServiceEase</h1>
-                        <p class="text-sm text-gray-500 mt-0.5">Requester Registration</p>
+                        <p class="text-sm text-gray-500 mt-0.5">requester Registration</p>
                     </div>
                 </div>
                 <a href="register-select.html" class="hidden lg:inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
@@ -86,7 +86,7 @@
                         <div>
                             <h3 class="text-base font-medium text-green-800 mb-1">Registration Submitted Successfully!</h3>
                             <div class="text-sm text-green-700 space-y-2">
-                                <p class="font-medium">Your registration is pending coordinator approval.</p>
+                                <p class="font-medium">Your registration is pending institution admin approval.</p>
                                 <p>You will receive an email notification once your account is approved. You can then log in using your registered email and password.</p>
                                 <p class="mt-2">Redirecting to login page in 5 seconds...</p>
                             </div>
@@ -517,7 +517,7 @@
                 btn.disabled = true;
                 btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Sending...';
                 
-                const response = await fetch('/api/requester-registration/send-code', {
+                const response = await fetch('/api/Requester-registration/send-code', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email })
@@ -558,7 +558,7 @@
             }
             
             try {
-                const response = await fetch('/api/requester-registration/verify-code', {
+                const response = await fetch('/api/Requester-registration/verify-code', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, code })
@@ -603,7 +603,7 @@
             try {
                 btn.disabled = true;
                 
-                const response = await fetch('/api/requester-registration/send-code', {
+                const response = await fetch('/api/Requester-registration/send-code', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email })
@@ -876,7 +876,7 @@
             validationIcon.innerHTML = '<i class="fas fa-spinner fa-spin text-gray-400"></i>';
             
             try {
-                const response = await fetch('/api/requester-registration/validate-printers', {
+                const response = await fetch('/api/Requester-registration/validate-printers', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -1141,7 +1141,7 @@
                 formData.append('id_back', document.getElementById('idBack').files[0]);
                 formData.append('selfie', document.getElementById('selfie').files[0]);
                 
-                const response = await fetch('/api/requester-registration/submit', {
+                const response = await fetch('/api/Requester-registration/submit', {
                     method: 'POST',
                     body: formData
                 });
@@ -1172,3 +1172,6 @@
     </script>
 </body>
 </html>
+
+
+

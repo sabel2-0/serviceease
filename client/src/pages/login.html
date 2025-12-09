@@ -11,7 +11,8 @@
     <script>
         // Check for verification alert on page load
         document.addEventListener('DOMContentLoaded', function() {
-            const user = JSON.parse(localStorage.getItem('user'));
+            const userStr = localStorage.getItem('user');
+            const user = userStr ? JSON.parse(userStr) : null;
             const showAlert = localStorage.getItem('showVerificationAlert');
             
             if (user && showAlert === 'true' && !user.isEmailVerified) {
@@ -54,18 +55,6 @@
             background-image: url('../images/img-art-left.jpg');
             background-size: cover;
             background-position: center;
-            position: relative;
-        }
-        
-        .bg-image::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(135deg, rgba(15, 23, 42, 0.7), rgba(30, 41, 59, 0.7));
-            border-radius: inherit;
         }
         
         .error-input {
@@ -78,41 +67,41 @@
         }
     </style>
 </head>
-<body class="min-h-screen bg-slate-900">
+<body class="min-h-screen bg-white">
     <div class="min-h-screen flex">
-        <!-- Left side - Dark Image Section -->
-        <div class="hidden lg:flex lg:w-1/2 items-center justify-center bg-slate-800">
+        <!-- Left side - Minimalist Image Section -->
+        <div class="hidden lg:flex lg:w-1/2 items-center justify-center bg-gray-50">
             <div class="text-center">
-                <div class="w-80 h-80 mx-auto mb-8 bg-image rounded-lg shadow-2xl"></div>
-                <h1 class="text-4xl font-light tracking-tight text-white mb-2">ServiceEase</h1>
-                <p class="text-slate-400 text-base font-light">Efficient Service Management</p>
+                <div class="w-80 h-80 mx-auto mb-8 bg-image rounded-lg shadow-sm"></div>
+                <h1 class="text-4xl font-light tracking-tight text-gray-900 mb-2">ServiceEase</h1>
+                <p class="text-gray-500 text-base font-light">Efficient Service Management</p>
             </div>
         </div>
 
         <!-- Right side - Login Form -->
-        <div class="w-full lg:w-1/2 flex flex-col bg-slate-900">
+        <div class="w-full lg:w-1/2 flex flex-col">
             <!-- Mobile Brand Header -->
-            <div class="lg:hidden p-6 text-center border-b border-slate-700">
-                <h1 class="text-2xl font-light text-white">ServiceEase</h1>
+            <div class="lg:hidden p-6 text-center border-b border-gray-100">
+                <h1 class="text-2xl font-light text-gray-900">ServiceEase</h1>
             </div>
             
             <!-- Login Form Container -->
             <div class="flex-1 flex items-center justify-center p-6 lg:p-12">
                     <div class="w-full max-w-md lg:max-w-lg">
                     <div class="mb-10 text-center lg:text-left">
-                        <h2 class="text-4xl lg:text-5xl font-light text-white mb-3">Sign In</h2>
-                        <p class="text-base lg:text-lg text-slate-400 font-light">Enter your credentials</p>
+                        <h2 class="text-4xl lg:text-5xl font-light text-gray-900 mb-3">Sign In</h2>
+                        <p class="text-base lg:text-lg text-gray-600 font-light">Enter your credentials</p>
                     </div>
 
                 <!-- Error Message Space -->
                 <div class="mb-6" style="min-height: 48px;">
-                    <div id="errorMessage" class="hidden p-3 bg-red-900/30 border border-red-800 rounded-md">
+                    <div id="errorMessage" class="hidden p-3 bg-red-50 border border-red-100 rounded-md">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center">
                                 <i class="fas fa-exclamation-circle text-red-400 text-sm mr-2"></i>
-                                <p id="errorText" class="text-xs text-red-300"></p>
+                                <p id="errorText" class="text-xs text-red-700"></p>
                             </div>
-                            <button type="button" onclick="hideError()" class="text-red-400 hover:text-red-300 ml-2">
+                            <button type="button" onclick="hideError()" class="text-red-400 hover:text-red-600 ml-2">
                                 <i class="fas fa-times text-xs"></i>
                             </button>
                         </div>
@@ -122,25 +111,25 @@
                 <form id="loginForm" class="space-y-5">
                     <!-- Email Input -->
                     <div>
-                        <label for="email" class="block text-sm font-medium text-slate-300 mb-2">Email</label>
+                        <label for="email" class="block text-sm font-medium text-gray-600 mb-2">Email</label>
                         <input type="email" id="email" name="email" required
-                            class="block w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-md text-base text-white 
-                            placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                            class="block w-full px-4 py-3 border border-gray-200 rounded-md text-base text-gray-900 
+                            focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900
                             transition-all"
                             placeholder="your@email.com">
                     </div>
 
                     <!-- Password Input -->
                     <div>
-                        <label for="password" class="block text-sm font-medium text-slate-300 mb-2">Password</label>
+                        <label for="password" class="block text-sm font-medium text-gray-600 mb-2">Password</label>
                         <div class="relative">
                             <input type="password" id="password" name="password" required
-                                class="block w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-md text-base text-white 
-                                placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                                class="block w-full px-4 py-3 border border-gray-200 rounded-md text-base text-gray-900 
+                                focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900
                                 transition-all"
                                 placeholder="Enter password">
                             <button type="button" onclick="togglePassword('password')"
-                                class="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-300">
+                                class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
                                 <i class="fas fa-eye text-sm"></i>
                             </button>
                         </div>
@@ -150,24 +139,24 @@
                     <div class="flex items-center justify-between text-sm">
                         <div class="flex items-center">
                             <input type="checkbox" id="remember" name="remember"
-                                class="h-3.5 w-3.5 text-blue-600 focus:ring-blue-500 bg-slate-800 border-slate-600 rounded">
-                            <label for="remember" class="ml-2 text-slate-300">Remember me</label>
+                                class="h-3.5 w-3.5 text-gray-900 focus:ring-gray-900 border-gray-300 rounded">
+                            <label for="remember" class="ml-2 text-gray-600">Remember me</label>
                         </div>
-                        <a href="forgot-password.html" class="text-slate-400 hover:text-slate-200">Forgot password?</a>
+                        <a href="forgot-password.html" class="text-gray-600 hover:text-gray-900">Forgot password?</a>
                     </div>
 
                     <!-- Login Button -->
                     <button type="submit"
                         class="w-full py-3 px-4 border border-transparent rounded-md text-base
-                        text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 
-                        focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all shadow-lg">
+                        text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2
+                        focus:ring-offset-2 focus:ring-gray-900 transition-all">
                         <span id="loginBtnText">Sign In</span>
                     </button>
 
                     <!-- Register Link -->
-                    <p class="text-center text-sm text-slate-400 pt-2">
+                    <p class="text-center text-sm text-gray-600 pt-2">
                         Don't have an account?
-                        <a href="register-select.html" class="text-blue-400 font-medium hover:text-blue-300"> Sign up</a>
+                        <a href="register-select.html" class="text-indigo-600 font-medium hover:text-indigo-700"> Sign up</a>
                     </p>
                 </form>
             </div>
@@ -257,8 +246,8 @@
                 // Login successful - hide any error messages
                 hideError();
                 
-                // Show verification banner if email is not verified
-                if (!result.user.isEmailVerified) {
+                // Show verification banner if email is not verified (only if user object exists)
+                if (result.user && !result.user.isEmailVerified) {
                     const banner = document.createElement('div');
                     banner.className = 'fixed top-0 left-0 right-0 bg-yellow-50 border-b border-yellow-200 p-4';
                     banner.innerHTML = `
@@ -352,7 +341,7 @@
                     } else if (user.role === 'technician') {
                         window.location.href = '/pages/technician/technician.html';
                     } else {
-                        window.location.href = '/pages/coordinator/coordinator.html';
+                        window.location.href = '/pages/institution-admin/institution-admin.html';
                     }
                     return;
                 } catch (e) {
@@ -375,3 +364,4 @@
     </script>
 </body>
 </html>
+

@@ -21,12 +21,16 @@ router.get('/service-history', authenticateTechnician, async (req, res) => {
                 sr.started_at,
                 sr.completed_at,
                 sr.resolution_notes,
-                sr.inventory_item_id,
+                sr.completion_photo_url,
+                sr.printer_id,
+                sr.walk_in_customer_name,
+                sr.printer_brand as walk_in_printer_brand,
+                sr.is_walk_in,
                 i.name as institution_name,
                 i.type as institution_type,
-                requester.first_name as requester_first_name,
-                requester.last_name as requester_last_name,
-                requester.role as requester_role,
+                institution_user.first_name as institution_user_first_name,
+                institution_user.last_name as institution_user_last_name,
+                institution_user.role as institution_user_role,
                 ii.name as printer_name,
                 ii.brand as printer_brand,
                 ii.model as printer_model,
@@ -34,10 +38,10 @@ router.get('/service-history', authenticateTechnician, async (req, res) => {
                 CONCAT(ii.name, ' (', ii.brand, ' ', ii.model, ' SN:', ii.serial_number, ')') as printer_full_details
             FROM service_requests sr
             LEFT JOIN institutions i ON sr.institution_id = i.institution_id
-            LEFT JOIN users requester ON sr.requested_by_user_id = requester.id
-            LEFT JOIN inventory_items ii ON sr.inventory_item_id = ii.id
-            WHERE sr.assigned_technician_id = ?
-            ORDER BY sr.created_at DESC
+            LEFT JOIN users institution_user ON sr.requested_by = institution_user.id
+            LEFT JOIN printers ii ON sr.printer_id = ii.id
+            WHERE sr.technician_id = ?
+            ORDER BY sr.completed_at DESC
         `, [technicianId]);
         
         // For each service request, get its history and parts used
@@ -81,8 +85,14 @@ router.get('/service-history', authenticateTechnician, async (req, res) => {
             
             serviceHistory[i].history = history;
             serviceHistory[i].parts_used = partsUsed;
+            
+            // Debug log to check parts data
+            if (partsUsed.length > 0) {
+                console.log(`Service Request #${serviceHistory[i].id} has ${partsUsed.length} parts:`, partsUsed);
+            }
         }
         
+        console.log(`Returning ${serviceHistory.length} service requests for technician ${technicianId}`);
         res.json(serviceHistory);
         
     } catch (error) {
@@ -104,10 +114,10 @@ router.get('/service-history/:requestId', authenticateTechnician, async (req, re
                 i.name as institution_name,
                 i.type as institution_type,
                 i.address as institution_address,
-                requester.first_name as requester_first_name,
-                requester.last_name as requester_last_name,
-                requester.email as requester_email,
-                requester.role as requester_role,
+                institution_user.first_name as institution_user_first_name,
+                institution_user.last_name as institution_user_last_name,
+                institution_user.email as institution_user_email,
+                institution_user.role as institution_user_role,
                 ii.name as printer_name,
                 ii.brand as printer_brand,
                 ii.model as printer_model,
@@ -115,9 +125,9 @@ router.get('/service-history/:requestId', authenticateTechnician, async (req, re
                 CONCAT(ii.name, ' (', ii.brand, ' ', ii.model, ' SN:', ii.serial_number, ')') as printer_full_details
             FROM service_requests sr
             LEFT JOIN institutions i ON sr.institution_id = i.institution_id
-            LEFT JOIN users requester ON sr.requested_by_user_id = requester.id
-            LEFT JOIN inventory_items ii ON sr.inventory_item_id = ii.id
-            WHERE sr.id = ? AND sr.assigned_technician_id = ?
+            LEFT JOIN users institution_user ON sr.requested_by = institution_user.id
+            LEFT JOIN printers ii ON sr.printer_id = ii.id
+            WHERE sr.id = ? AND sr.technician_id = ?
         `, [requestId, technicianId]);
         
         if (serviceRequests.length === 0) {
@@ -168,14 +178,14 @@ router.get('/stats', authenticateTechnician, async (req, res) => {
                 SUM(CASE WHEN status = 'pending_approval' THEN 1 ELSE 0 END) as pending_approval,
                 SUM(CASE WHEN status = 'assigned' THEN 1 ELSE 0 END) as assigned
             FROM service_requests 
-            WHERE assigned_technician_id = ?
+            WHERE technician_id = ?
         `, [technicianId]);
         
         // Get recent activity (last 30 days)
         const [recentActivity] = await db.execute(`
             SELECT COUNT(*) as recent_completed
             FROM service_requests 
-            WHERE assigned_technician_id = ? 
+            WHERE technician_id = ? 
             AND status = 'completed' 
             AND completed_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
         `, [technicianId]);
@@ -192,3 +202,6 @@ router.get('/stats', authenticateTechnician, async (req, res) => {
 });
 
 module.exports = router;
+
+
+

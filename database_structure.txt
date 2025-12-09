@@ -1,0 +1,208 @@
+﻿TABLE_NAME	COLUMN_NAME	DATA_TYPE	IS_NULLABLE	COLUMN_KEY	COLUMN_DEFAULT	EXTRA
+arm_analysis_cache	id	int	NO	PRI	NULL	auto_increment
+arm_analysis_cache	printer_brand	varchar	YES	MUL	NULL	
+arm_analysis_cache	printer_model	varchar	YES		NULL	
+arm_analysis_cache	analysis_data	json	YES		NULL	
+arm_analysis_cache	created_at	timestamp	YES		CURRENT_TIMESTAMP	DEFAULT_GENERATED
+audit_logs	id	int	NO	PRI	NULL	auto_increment
+audit_logs	user_id	int	NO	MUL	NULL	
+audit_logs	user_role	enum	NO	MUL	NULL	
+audit_logs	action	varchar	NO		NULL	
+audit_logs	action_type	enum	NO	MUL	NULL	
+audit_logs	target_type	varchar	YES	MUL	NULL	
+audit_logs	target_id	varchar	YES		NULL	
+audit_logs	details	text	YES		NULL	
+audit_logs	ip_address	varchar	YES		NULL	
+audit_logs	user_agent	text	YES		NULL	
+audit_logs	created_at	timestamp	YES	MUL	CURRENT_TIMESTAMP	DEFAULT_GENERATED
+institution_printer_assignments	id	int	NO	PRI	NULL	auto_increment
+institution_printer_assignments	institution_id	varchar	NO	MUL	NULL	
+institution_printer_assignments	printer_id	int	NO	MUL	NULL	
+institution_printer_assignments	assigned_at	timestamp	YES		CURRENT_TIMESTAMP	DEFAULT_GENERATED
+institution_printer_assignments	status	enum	NO		assigned	
+institution_printer_assignments	unassigned_at	timestamp	YES		NULL	
+institutions	id	int	NO	PRI	NULL	auto_increment
+institutions	institution_id	varchar	NO	UNI	NULL	
+institutions	user_id	int	YES	MUL	NULL	
+institutions	name	varchar	NO		NULL	
+institutions	type	varchar	NO		NULL	
+institutions	address	text	NO		NULL	
+institutions	created_at	timestamp	YES		CURRENT_TIMESTAMP	DEFAULT_GENERATED
+institutions	updated_at	timestamp	YES		CURRENT_TIMESTAMP	DEFAULT_GENERATED on update CURRENT_TIMESTAMP
+institutions	status	enum	YES		active	
+institutions	deactivated_at	timestamp	YES		NULL	
+notifications	id	int	NO	PRI	NULL	auto_increment
+notifications	type	varchar	NO	MUL	NULL	
+notifications	title	varchar	NO		NULL	
+notifications	message	text	NO		NULL	
+notifications	user_id	int	YES		NULL	
+notifications	sender_id	int	YES		NULL	
+notifications	reference_type	varchar	YES		NULL	
+notifications	reference_id	varchar	YES		NULL	
+notifications	related_user_id	int	YES	MUL	NULL	
+notifications	related_data	json	YES		NULL	
+notifications	is_read	tinyint	YES	MUL	0	
+notifications	created_at	timestamp	YES	MUL	CURRENT_TIMESTAMP	DEFAULT_GENERATED
+notifications	updated_at	timestamp	YES		CURRENT_TIMESTAMP	DEFAULT_GENERATED on update CURRENT_TIMESTAMP
+notifications	priority	enum	YES		medium	
+parts_requests	id	int	NO	PRI	NULL	auto_increment
+parts_requests	part_id	int	NO	MUL	NULL	
+parts_requests	technician_id	int	NO	MUL	NULL	
+parts_requests	quantity_requested	int	NO		1	
+parts_requests	reason	text	NO		NULL	
+parts_requests	priority	enum	YES	MUL	medium	
+parts_requests	status	enum	YES	MUL	pending	
+parts_requests	admin_response	text	YES		NULL	
+parts_requests	approved_by	int	YES	MUL	NULL	
+parts_requests	approved_at	timestamp	YES		NULL	
+parts_requests	created_at	timestamp	YES	MUL	CURRENT_TIMESTAMP	DEFAULT_GENERATED
+parts_requests	updated_at	timestamp	YES		CURRENT_TIMESTAMP	DEFAULT_GENERATED on update CURRENT_TIMESTAMP
+password_reset_tokens	id	int	NO	PRI	NULL	auto_increment
+password_reset_tokens	user_id	int	NO	MUL	NULL	
+password_reset_tokens	token	varchar	NO	UNI	NULL	
+password_reset_tokens	expires_at	datetime	NO	MUL	NULL	
+password_reset_tokens	used	tinyint	YES		0	
+password_reset_tokens	created_at	timestamp	YES		CURRENT_TIMESTAMP	DEFAULT_GENERATED
+printer_parts	id	int	NO	PRI	NULL	auto_increment
+printer_parts	name	varchar	NO		NULL	
+printer_parts	brand	varchar	YES		NULL	
+printer_parts	category	enum	NO	MUL	other	
+printer_parts	item_type	enum	YES		printer_part	
+printer_parts	quantity	int	NO		0	
+printer_parts	minimum_stock	int	YES		5	
+printer_parts	status	enum	NO		in_stock	
+printer_parts	created_at	timestamp	YES		CURRENT_TIMESTAMP	DEFAULT_GENERATED
+printer_parts	updated_at	timestamp	YES		CURRENT_TIMESTAMP	DEFAULT_GENERATED on update CURRENT_TIMESTAMP
+printer_parts	is_universal	tinyint	YES	MUL	0	
+printer_parts	unit	varchar	YES		pieces	
+printer_parts_transactions	id	int	NO	PRI	NULL	auto_increment
+printer_parts_transactions	part_id	int	NO	MUL	NULL	
+printer_parts_transactions	transaction_type	enum	NO		NULL	
+printer_parts_transactions	quantity	int	NO		NULL	
+printer_parts_transactions	reference_number	varchar	YES		NULL	
+printer_parts_transactions	notes	text	YES		NULL	
+printer_parts_transactions	created_by	int	YES	MUL	NULL	
+printer_parts_transactions	created_at	timestamp	YES		CURRENT_TIMESTAMP	DEFAULT_GENERATED
+printers	id	int	NO	PRI	NULL	auto_increment
+printers	category	enum	NO		printer	
+printers	name	varchar	NO		NULL	
+printers	brand	varchar	YES		NULL	
+printers	model	varchar	YES		NULL	
+printers	serial_number	varchar	YES	UNI	NULL	
+printers	quantity	int	NO		1	
+printers	location	varchar	YES		NULL	
+printers	status	enum	NO		available	
+printers	created_at	timestamp	YES		CURRENT_TIMESTAMP	DEFAULT_GENERATED
+printers	updated_at	timestamp	YES		CURRENT_TIMESTAMP	DEFAULT_GENERATED on update CURRENT_TIMESTAMP
+service_approvals	id	int	NO	PRI	NULL	auto_increment
+service_approvals	service_request_id	int	NO	MUL	NULL	
+service_approvals	status	enum	NO	MUL	NULL	
+service_approvals	institution_admin_id	int	YES	MUL	NULL	
+service_approvals	technician_notes	text	YES		NULL	
+service_approvals	institution_admin_notes	text	YES		NULL	
+service_approvals	submitted_at	timestamp	YES	MUL	CURRENT_TIMESTAMP	DEFAULT_GENERATED
+service_approvals	reviewed_at	timestamp	YES		NULL	
+service_parts_used	id	int	NO	PRI	NULL	auto_increment
+service_parts_used	service_request_id	int	NO	MUL	NULL	
+service_parts_used	part_id	int	NO	MUL	NULL	
+service_parts_used	quantity_used	int	NO		NULL	
+service_parts_used	notes	varchar	YES		NULL	
+service_parts_used	used_by	int	NO	MUL	NULL	
+service_parts_used	used_at	timestamp	YES		CURRENT_TIMESTAMP	DEFAULT_GENERATED
+service_request_history	id	int	NO	PRI	NULL	auto_increment
+service_request_history	request_id	int	NO	MUL	NULL	
+service_request_history	previous_status	varchar	NO		NULL	
+service_request_history	new_status	varchar	NO		NULL	
+service_request_history	changed_by	int	YES	MUL	NULL	
+service_request_history	notes	text	YES		NULL	
+service_request_history	created_at	timestamp	YES		CURRENT_TIMESTAMP	DEFAULT_GENERATED
+service_requests	id	int	NO	PRI	NULL	auto_increment
+service_requests	request_number	varchar	YES	UNI	NULL	
+service_requests	institution_id	varchar	YES	MUL	NULL	
+service_requests	requested_by_user_id	int	YES	MUL	NULL	
+service_requests	technician_id	int	YES	MUL	NULL	
+service_requests	priority	enum	NO		medium	
+service_requests	status	enum	NO		pending	
+service_requests	location	varchar	YES		NULL	
+service_requests	description	text	NO		NULL	
+service_requests	created_at	timestamp	YES		CURRENT_TIMESTAMP	DEFAULT_GENERATED
+service_requests	printer_id	int	YES	MUL	NULL	
+service_requests	started_at	timestamp	YES		NULL	
+service_requests	completed_at	timestamp	YES		NULL	
+service_requests	resolution_notes	text	YES		NULL	
+service_requests	completion_photo_url	varchar	YES		NULL	
+service_requests	walk_in_customer_name	varchar	YES		NULL	
+service_requests	printer_brand	varchar	YES		NULL	
+service_requests	is_walk_in	tinyint	YES		0	
+sessions	session_id	varchar	NO	PRI	NULL	
+sessions	expires	int	NO	MUL	NULL	
+sessions	data	mediumtext	YES		NULL	
+technician_assignments	id	int	NO	PRI	NULL	auto_increment
+technician_assignments	technician_id	int	NO	MUL	NULL	
+technician_assignments	institution_id	varchar	NO	MUL	NULL	
+technician_assignments	assigned_by	int	NO	MUL	NULL	
+technician_assignments	assigned_at	timestamp	YES		CURRENT_TIMESTAMP	DEFAULT_GENERATED
+technician_assignments	is_active	tinyint	YES	MUL	1	
+technician_assignments	created_at	timestamp	YES		CURRENT_TIMESTAMP	DEFAULT_GENERATED
+technician_assignments	updated_at	timestamp	YES		CURRENT_TIMESTAMP	DEFAULT_GENERATED on update CURRENT_TIMESTAMP
+technician_inventory	id	int	NO	PRI	NULL	auto_increment
+technician_inventory	technician_id	int	NO	MUL	NULL	
+technician_inventory	part_id	int	NO	MUL	NULL	
+technician_inventory	quantity	int	NO		0	
+technician_inventory	assigned_by	int	YES	MUL	NULL	
+technician_inventory	assigned_at	timestamp	YES	MUL	CURRENT_TIMESTAMP	DEFAULT_GENERATED
+technician_inventory	last_updated	timestamp	YES		CURRENT_TIMESTAMP	DEFAULT_GENERATED on update CURRENT_TIMESTAMP
+technician_inventory	notes	text	YES		NULL	
+temp_user_photos	id	int	NO	PRI	NULL	auto_increment
+temp_user_photos	user_id	int	NO	UNI	NULL	
+temp_user_photos	front_id_photo	varchar	YES		NULL	
+temp_user_photos	back_id_photo	varchar	YES		NULL	
+temp_user_photos	selfie_photo	varchar	YES		NULL	
+temp_user_photos	created_at	timestamp	YES		CURRENT_TIMESTAMP	DEFAULT_GENERATED
+temp_user_photos	expires_at	timestamp	YES	MUL	(now() + interval 30 day)	DEFAULT_GENERATED
+user_printer_assignments	id	int	NO	PRI	NULL	auto_increment
+user_printer_assignments	user_id	int	NO	MUL	NULL	
+user_printer_assignments	printer_id	int	NO	MUL	NULL	
+user_printer_assignments	institution_id	varchar	YES		NULL	
+user_printer_assignments	department	varchar	YES		NULL	
+user_printer_assignments	assigned_at	timestamp	YES		CURRENT_TIMESTAMP	DEFAULT_GENERATED
+users	id	int	NO	PRI	NULL	auto_increment
+users	first_name	varchar	NO		NULL	
+users	last_name	varchar	NO		NULL	
+users	email	varchar	NO	UNI	NULL	
+users	password	varchar	NO		NULL	
+users	role	enum	NO		NULL	
+users	is_email_verified	tinyint	YES		0	
+users	status	enum	YES	MUL	active	
+users	created_at	timestamp	YES		CURRENT_TIMESTAMP	DEFAULT_GENERATED
+users	updated_at	timestamp	YES		CURRENT_TIMESTAMP	DEFAULT_GENERATED on update CURRENT_TIMESTAMP
+users	approval_status	enum	YES		pending	
+users	approved_by	int	YES		NULL	
+users	approved_at	datetime	YES		NULL	
+users	token_version	int	YES		0	
+users	must_change_password	tinyint	YES		0	
+verification_tokens	id	int	NO	PRI	NULL	auto_increment
+verification_tokens	user_id	int	YES	MUL	NULL	
+verification_tokens	token	varchar	NO		NULL	
+verification_tokens	code	varchar	YES	MUL	NULL	
+verification_tokens	type	enum	NO		NULL	
+verification_tokens	expires_at	timestamp	NO		NULL	
+verification_tokens	created_at	timestamp	YES		CURRENT_TIMESTAMP	DEFAULT_GENERATED
+voluntary_services	id	int	NO	PRI	NULL	auto_increment
+voluntary_services	technician_id	int	NO	MUL	NULL	
+voluntary_services	printer_id	int	NO	MUL	NULL	
+voluntary_services	institution_id	varchar	NO	MUL	NULL	
+voluntary_services	requester_id	int	YES	MUL	NULL	
+voluntary_services	service_description	text	NO		NULL	
+voluntary_services	parts_used	text	YES		NULL	
+voluntary_services	status	enum	YES	MUL	pending_coordinator	
+voluntary_services	coordinator_approval_status	enum	YES		pending	
+voluntary_services	requester_approval_status	enum	YES		pending	
+voluntary_services	coordinator_notes	text	YES		NULL	
+voluntary_services	requester_notes	text	YES		NULL	
+voluntary_services	created_at	timestamp	YES	MUL	CURRENT_TIMESTAMP	DEFAULT_GENERATED
+voluntary_services	coordinator_reviewed_at	timestamp	YES		NULL	
+voluntary_services	coordinator_reviewed_by	int	YES		NULL	
+voluntary_services	requester_reviewed_at	timestamp	YES		NULL	
+voluntary_services	requester_reviewed_by	int	YES		NULL	
+voluntary_services	completed_at	timestamp	YES		NULL	

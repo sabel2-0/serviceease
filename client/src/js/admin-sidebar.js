@@ -60,22 +60,9 @@ function initializeSidebar() {
         
         toggle.addEventListener('click', (e) => {
             e.preventDefault();
+            e.stopPropagation();
             
-            // Close other dropdowns
-            dropdowns.forEach(otherDropdown => {
-                if (otherDropdown !== dropdown) {
-                    const otherContent = otherDropdown.querySelector('.dropdown-content');
-                    const otherChevron = otherDropdown.querySelector('.fa-chevron-down');
-                    if (otherContent) {
-                        otherContent.classList.add('hidden');
-                    }
-                    if (otherChevron) {
-                        otherChevron.style.transform = 'rotate(0deg)';
-                    }
-                }
-            });
-            
-            // Toggle current dropdown
+            // Toggle current dropdown only - don't close others
             const isHidden = content.classList.contains('hidden');
             content.classList.toggle('hidden');
             
@@ -86,6 +73,11 @@ function initializeSidebar() {
                     chevron.style.transform = 'rotate(0deg)';
                 }
             }
+        });
+        
+        // Prevent dropdown content clicks from closing the dropdown
+        content.addEventListener('click', (e) => {
+            e.stopPropagation();
         });
     });
 
@@ -206,3 +198,7 @@ function updateNotificationBadge(count) {
         }
     }
 }
+
+
+
+

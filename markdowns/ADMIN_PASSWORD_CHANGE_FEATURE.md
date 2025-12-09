@@ -1,7 +1,7 @@
 # Admin Password Change Feature Implementation
 
 ## Overview
-This feature allows administrators to change passwords for both staff accounts (technicians and operations officers) and coordinator accounts directly from the admin panel.
+This feature allows administrators to change passwords for both staff accounts (technicians and operations officers) and institution_admin accounts directly from the admin panel.
 
 ## Implementation Date
 October 17, 2025
@@ -26,7 +26,7 @@ October 17, 2025
 - **Validations**:
   - Password must be at least 6 characters long
   - User must exist in the database
-  - User must have role 'coordinator'
+  - User must have role 'institution_admin'
 - **Security**: Passwords are hashed using bcrypt before storage
 - **Response**: Returns success message with user details
 
@@ -48,11 +48,11 @@ October 17, 2025
 - `client/src/pages/admin/staff-accounts.html`
 - `client/src/js/staff-accounts.js`
 
-#### Coordinator Accounts Page (`/pages/admin/coordinator-accounts.html`)
+#### institution_admin accounts Page (`/pages/admin/coordinator-accounts.html`)
 **Changes Made**:
 1. Added purple password button CSS styling (`.action-password`)
 2. Added Change Password modal with:
-   - Coordinator information display
+   - Institution Admin information display
    - New password input
    - Confirm password input
    - Validation and error messaging
@@ -102,7 +102,7 @@ October 17, 2025
 - User must exist in database
 - User must have appropriate role:
   - For staff endpoint: 'technician' or 'operations_officer'
-  - For coordinator endpoint: 'coordinator'
+  - For coordinator endpoint: 'institution_admin'
 
 ## Error Handling
 
@@ -190,7 +190,7 @@ Content-Type: application/json
    - `client/src/pages/admin/staff-accounts.html`
    - `client/src/js/staff-accounts.js`
 
-2. Coordinator Accounts:
+2. institution_admin accounts:
    - `client/src/pages/admin/coordinator-accounts.html`
    - `client/src/js/coordinator-accounts.js`
 
@@ -213,3 +213,4 @@ Content-Type: application/json
 - The feature follows the same pattern as the existing coordinator password change functionality
 - All password changes are logged in the server console with timestamp and user details
 - Modal can be closed by clicking Cancel, the X button, or pressing ESC key
+

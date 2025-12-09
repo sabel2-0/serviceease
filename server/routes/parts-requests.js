@@ -31,8 +31,14 @@ router.get('/', async (req, res) => {
             SELECT 
                 pr.*,
                 pp.name as part_name,
+                pp.brand as part_brand,
                 pp.category as part_category,
-                pp.quantity as available_stock,
+                pp.color as part_color,
+                pp.page_yield as part_page_yield,
+                pp.ink_volume as part_ink_volume,
+                pp.is_universal as part_is_universal,
+                pp.quantity as current_stock,
+                COALESCE(pr.stock_at_approval, pp.quantity) as available_stock,
                 u.first_name as technician_first_name,
                 u.last_name as technician_last_name,
                 u.email as technician_email,
@@ -99,8 +105,14 @@ router.get('/:id', async (req, res) => {
             SELECT 
                 pr.*,
                 pp.name as part_name,
+                pp.brand as part_brand,
                 pp.category as part_category,
-                pp.quantity as available_stock,
+                pp.color as part_color,
+                pp.page_yield as part_page_yield,
+                pp.ink_volume as part_ink_volume,
+                pp.is_universal as part_is_universal,
+                pp.quantity as current_stock,
+                COALESCE(pr.stock_at_approval, pp.quantity) as available_stock,
                 u.first_name as technician_first_name,
                 u.last_name as technician_last_name,
                 u.email as technician_email,
@@ -170,9 +182,9 @@ router.post('/', async (req, res) => {
             });
         }
         
-        if (reason.trim().length < 10) {
+        if (!reason || reason.trim().length === 0) {
             return res.status(400).json({ 
-                error: 'Reason must be at least 10 characters long' 
+                error: 'Reason is required' 
             });
         }
         
@@ -305,6 +317,18 @@ router.patch('/:id', async (req, res) => {
             
             updateParams.push(id);
             
+            // If approving, first get the current stock to store it
+            let stockAtApproval = null;
+            if (status === 'approved') {
+                const [stockCheck] = await db.query(
+                    'SELECT quantity FROM printer_parts WHERE id = ?',
+                    [currentRequest.part_id]
+                );
+                stockAtApproval = stockCheck.length > 0 ? stockCheck[0].quantity : 0;
+                updateFields.push('stock_at_approval = ?');
+                updateParams.splice(updateParams.length - 1, 0, stockAtApproval);
+            }
+            
             await db.query(
                 `UPDATE parts_requests SET ${updateFields.join(', ')} WHERE id = ?`,
                 updateParams
@@ -317,6 +341,9 @@ router.patch('/:id', async (req, res) => {
                     'SELECT quantity FROM printer_parts WHERE id = ?',
                     [currentRequest.part_id]
                 );
+                
+                // Store the stock at approval time
+                const stockAtApproval = inventoryCheck.length > 0 ? inventoryCheck[0].quantity : 0;
                 
                 if (inventoryCheck.length === 0 || inventoryCheck[0].quantity < currentRequest.quantity_requested) {
                     throw new Error('Insufficient inventory to approve request');
@@ -494,3 +521,5 @@ router.get('/stats/summary', async (req, res) => {
 });
 
 module.exports = router;
+
+

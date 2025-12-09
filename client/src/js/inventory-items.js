@@ -734,3 +734,7 @@ window.goToAssignPrinter = function(brand, model) {
     // Navigate to client-printers page
     window.location.href = '/pages/admin/client-printers.html';
 };
+
+
+
+

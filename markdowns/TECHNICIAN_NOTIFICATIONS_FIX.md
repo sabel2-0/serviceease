@@ -109,7 +109,7 @@ Database connected successfully
 ```
 
 ### Step 4: Create a Test Service Request
-As a coordinator or requester:
+As An institution_admin or Institution User:
 1. Navigate to service request creation page
 2. Submit a new service request
 3. It should be assigned to technician (user_id: 57)
@@ -253,3 +253,5 @@ When working correctly:
 ✅ API endpoint returns notifications
 ❓ Frontend may not be loading/rendering properly
 🔧 Added extensive logging to diagnose frontend issues
+
+

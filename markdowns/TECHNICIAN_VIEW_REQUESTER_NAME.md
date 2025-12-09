@@ -18,9 +18,9 @@ When a technician views a service request in the mobile app, they can now see wh
 
 **Added to Query:**
 ```sql
-requester.first_name as requester_first_name,
-requester.last_name as requester_last_name,
-requester.email as requester_email
+requester.first_name as institution_user_first_name,
+requester.last_name as institution_user_last_name,
+requester.email as institution_user_email
 ```
 
 **Added JOIN:**
@@ -52,7 +52,7 @@ LEFT JOIN users requester ON sr.requested_by_user_id = requester.id
 
 **UI Components:**
 ```html
-<!-- Requester Information Card -->
+<!-- Institution User Information Card -->
 <div class="glass-info-card requester-card">
     <div class="glass-card-icon requester-icon">
         <!-- User icon -->
@@ -82,7 +82,7 @@ The service request detail modal now shows:
 1. **Service Request Header** - Request number, status, date/time
 2. **Issue Description** - Problem description
 3. **Location Request** - Institution, location, priority
-4. **👤 Requested By** - Requester's name and email ← **NEW!**
+4. **👤 Requested By** - Institution User's name and email ← **NEW!**
 5. **Equipment Request** - Printer details (if applicable)
 6. **Action Buttons** - Start, Close, etc.
 
@@ -151,3 +151,4 @@ This complements the earlier fix where:
 
 ## Date Completed
 October 16, 2025
+

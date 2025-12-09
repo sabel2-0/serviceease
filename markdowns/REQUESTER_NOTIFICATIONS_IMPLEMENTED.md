@@ -1,7 +1,7 @@
 # Requester Notifications Implementation
 
 ## Overview
-Implemented comprehensive notification system for requesters (end users) to keep them informed about their service requests and printer assignments.
+Implemented comprehensive notification system for institution_users (end users) to keep them informed about their service requests and printer assignments.
 
 ## Notifications Implemented
 
@@ -36,7 +36,7 @@ Implemented comprehensive notification system for requesters (end users) to keep
 ---
 
 ### 3. **Printer Assignment Notification**
-**Trigger:** When a coordinator assigns a printer to a requester
+**Trigger:** When An institution_admin assigns a printer to An institution_user
 
 **Details:**
 - **Title:** "Printer Assigned"
@@ -44,7 +44,7 @@ Implemented comprehensive notification system for requesters (end users) to keep
 - **Type:** `printer_assigned`
 - **Priority:** Medium
 - **Shows:**
-  - Coordinator name who assigned the printer
+  - Institution Admin name who assigned the printer
   - Complete printer details (Brand, Model, Serial Number)
 
 **Locations:**
@@ -56,7 +56,7 @@ Implemented comprehensive notification system for requesters (end users) to keep
 ## Technical Implementation
 
 ### Database Fields Used
-- **user_id:** The requester who receives the notification
+- **user_id:** The institution_user who receives the notification
 - **sender_id:** The technician/coordinator who triggered the action
 - **reference_type:** Type of related entity (`service_request`, `inventory_item`)
 - **reference_id:** ID of the related entity
@@ -82,7 +82,7 @@ Notifications fetch user details (first_name, last_name) separately to include r
 
 ## User Experience
 
-### For Requesters
+### for institution_users
 1. **Transparency:** Know exactly when work starts and completes
 2. **Technician Visibility:** See who is working on their issues
 3. **Asset Tracking:** Get notified when printers are assigned to them
@@ -151,3 +151,5 @@ Requesters can view these notifications through:
 
 **Date:** October 18, 2025
 **Author:** GitHub Copilot
+
+

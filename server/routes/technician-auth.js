@@ -33,7 +33,7 @@ router.get('/technician-service-requests/:technicianId', async (req, res) => {
         const query = `
             SELECT request_id, description, status, date_created as date
             FROM service_requests 
-            WHERE assigned_technician_id = ?
+            WHERE technician_id = ?
             ORDER BY date_created DESC
         `;
         
@@ -47,3 +47,5 @@ router.get('/technician-service-requests/:technicianId', async (req, res) => {
 });
 
 module.exports = router;
+
+

@@ -351,7 +351,7 @@
                         <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
                         </svg>
-                        <span><strong>Note:</strong> Address suggestions from OpenStreetMap may include extra details or slight variations. Please verify and edit if needed before saving.</span>
+                        <span><strong>Note:</strong> Real-time address suggestions powered by Photon & OpenStreetMap with the latest location data. Results are categorized by type for easy selection. You can edit before saving.</span>
                     </p>
                 </div>
                 <div class="flex justify-between items-center gap-3 pt-4 border-t border-gray-100">
@@ -461,8 +461,8 @@
         </div>
     </div>
 
-    <script src="../../js/auth.js"></script>
-    <script src="../../js/dynamic-sidebar-loader.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/dynamic-sidebar-loader.js"></script>
     <script>
         // Client Management Specific JavaScript
         let currentTab = 'active';
@@ -1872,28 +1872,111 @@
         }
 
         function displaySuggestions(results) {
+            // Get location type icon
+            const getTypeIcon = (type) => {
+                const icons = {
+                    'city': '🏙️',
+                    'municipality': '🏘️',
+                    'town': '🏘️',
+                    'village': '🏡',
+                    'school': '🏫',
+                    'university': '🎓',
+                    'commercial': '🏢',
+                    'building': '🏢',
+                    'office': '🏢',
+                    'hospital': '🏥',
+                    'residential': '🏠',
+                    'street': '🛣️',
+                    'road': '🛣️',
+                    'place': '📍'
+                };
+                return icons[type?.toLowerCase()] || '📍';
+            };
+
+            // Categorize results
+            const categories = {
+                cities: results.filter(r => ['city', 'municipality', 'town'].includes(r.type)),
+                places: results.filter(r => ['school', 'university', 'commercial', 'building', 'office', 'hospital'].includes(r.type)),
+                others: results.filter(r => !['city', 'municipality', 'town', 'school', 'university', 'commercial', 'building', 'office', 'hospital'].includes(r.type))
+            };
+
             const suggestionHeader = `
-                <div class="px-4 py-2 bg-gray-50 border-b border-gray-200 sticky top-0">
-                    <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide flex items-center gap-2">
-                        <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                <div class="px-4 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-200 sticky top-0">
+                    <p class="text-xs font-semibold text-blue-700 uppercase tracking-wide flex items-center gap-2">
+                        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
                         </svg>
-                        Address Suggestions
+                        ${results.length} Location${results.length !== 1 ? 's' : ''} Found
                     </p>
                 </div>
             `;
             
-            const suggestionItems = results.map((result, index) => `
-                <div class="px-4 py-3 hover:bg-blue-50 active:bg-blue-100 cursor-pointer border-b border-gray-100 last:border-b-0 transition-all duration-150 group" onclick="selectAddress('${escapeHtml(result.display_name)}')">
-                    <div class="flex items-start gap-3">
-                        <div class="flex-shrink-0 w-6 h-6 rounded-full bg-gray-100 group-hover:bg-blue-100 flex items-center justify-center text-xs font-semibold text-gray-600 group-hover:text-blue-600 transition-colors">
-                            ${index + 1}
+            let suggestionItems = '';
+
+            // Cities/Municipalities
+            if (categories.cities.length > 0) {
+                suggestionItems += `
+                    <div class="px-3 py-1.5 bg-gray-50 border-b border-gray-200">
+                        <p class="text-xs font-medium text-gray-600">Cities & Municipalities</p>
+                    </div>
+                `;
+                suggestionItems += categories.cities.map((result, index) => `
+                    <div class="px-4 py-3 hover:bg-blue-50 active:bg-blue-100 cursor-pointer border-b border-gray-100 last:border-b-0 transition-all duration-150 group" onclick="selectAddress('${escapeHtml(result.display_name)}')">
+                        <div class="flex items-start gap-3">
+                            <div class="text-2xl">${getTypeIcon(result.type)}</div>
+                            <div class="flex-1 min-w-0">
+                                <div class="text-sm font-semibold text-gray-900">${escapeHtml(result.display_name)}</div>
+                                <div class="text-xs text-blue-600 mt-0.5 capitalize">${escapeHtml(result.type || 'location')}</div>
+                            </div>
+                            <svg class="w-4 h-4 text-gray-400 group-hover:text-blue-600 flex-shrink-0 mt-0.5 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
                         </div>
+                    </div>
+                `).join('');
+            }
+
+            // Places (schools, buildings, etc)
+            if (categories.places.length > 0) {
+                suggestionItems += `
+                    <div class="px-3 py-1.5 bg-gray-50 border-b border-gray-200">
+                        <p class="text-xs font-medium text-gray-600">Institutions & Buildings</p>
+                    </div>
+                `;
+                suggestionItems += categories.places.map((result, index) => `
+                    <div class="px-4 py-3 hover:bg-green-50 active:bg-green-100 cursor-pointer border-b border-gray-100 last:border-b-0 transition-all duration-150 group" onclick="selectAddress('${escapeHtml(result.display_name)}')">
+                        <div class="flex items-start gap-3">
+                            <div class="text-2xl">${getTypeIcon(result.type)}</div>
+                            <div class="flex-1 min-w-0">
+                                <div class="text-sm font-medium text-gray-900">${escapeHtml(result.display_name)}</div>
+                                <div class="text-xs text-green-600 mt-0.5 capitalize">${escapeHtml(result.type || 'place')}</div>
+                            </div>
+                            <svg class="w-4 h-4 text-gray-400 group-hover:text-green-600 flex-shrink-0 mt-0.5 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // Other results
+            if (categories.others.length > 0 && (categories.cities.length > 0 || categories.places.length > 0)) {
+                suggestionItems += `
+                    <div class="px-3 py-1.5 bg-gray-50 border-b border-gray-200">
+                        <p class="text-xs font-medium text-gray-600">Other Locations</p>
+                    </div>
+                `;
+            }
+            suggestionItems += categories.others.map((result, index) => `
+                <div class="px-4 py-3 hover:bg-gray-50 active:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0 transition-all duration-150 group" onclick="selectAddress('${escapeHtml(result.display_name)}')">
+                    <div class="flex items-start gap-3">
+                        <div class="text-2xl">${getTypeIcon(result.type)}</div>
                         <div class="flex-1 min-w-0">
                             <div class="text-sm font-medium text-gray-900">${escapeHtml(result.display_name)}</div>
-                            ${result.type ? `<div class="text-xs text-gray-500 mt-0.5">${escapeHtml(result.type)}</div>` : ''}
+                            ${result.type ? `<div class="text-xs text-gray-500 mt-0.5 capitalize">${escapeHtml(result.type)}</div>` : ''}
                         </div>
-                        <svg class="w-4 h-4 text-gray-400 group-hover:text-blue-600 flex-shrink-0 mt-0.5 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-4 h-4 text-gray-400 group-hover:text-gray-600 flex-shrink-0 mt-0.5 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                         </svg>
                     </div>

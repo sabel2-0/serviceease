@@ -30,22 +30,61 @@ serviceease/
 
 ## Setup
 
-1. Install dependencies:
+### 1. Database Setup
+
+Import the database schema:
 
 ```bash
-npm install        # Install root dependencies
-cd client && npm install  # Install frontend dependencies
-cd ../server && npm install  # Install backend dependencies
+# In MySQL Workbench or MySQL CLI
+mysql -u root -p < serviceease_export.sql
 ```
 
-2. Start the application:
+This will create the `serviceease` database with all required tables.
+
+### 2. Environment Configuration
+
+Copy the example environment file and configure your settings:
 
 ```bash
-# In root directory
+cd server
+cp .env.example .env
+```
+
+Edit `server/.env` with your credentials:
+- `DB_PASSWORD` - Your MySQL password
+- `CLOUDINARY_*` - Your Cloudinary credentials for image uploads
+- `MAILJET_*` - Your Mailjet API keys for email notifications
+- `JWT_SECRET` - A secure random string for token generation
+
+### 3. Install Dependencies
+
+```bash
+npm install                      # Install root dependencies
+cd client && npm install         # Install frontend dependencies
+cd ../server && npm install      # Install backend dependencies
+```
+
+### 4. Start the Application
+
+```bash
+# From root directory
 npm start         # Starts both frontend and backend
+```
+
+Or run separately:
+
+```bash
+# Terminal 1 - Backend
+cd server
+node index.js
+
+# Terminal 2 - Frontend  
+cd client
+npm start
 ```
 
 ## Development
 
 - Frontend runs on http://localhost:3000
+- Backend API runs on http://localhost:3000 (same port, Express serves both)
 - Backend API runs on http://localhost:5000

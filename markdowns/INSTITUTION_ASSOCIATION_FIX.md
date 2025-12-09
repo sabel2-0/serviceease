@@ -6,7 +6,7 @@ Coordinators were showing "No Organization" in the admin dashboard even though t
 ## Root Cause
 The system was using `institutions.user_id` to link users to institutions, which represents **ownership** of an institution (for admins who create them). When coordinators registered:
 1. They selected an existing institution (created by admin)
-2. System tried to update `institutions.user_id` to the coordinator's ID
+2. System tried to update `institutions.user_id` to The institution_admin's ID
 3. This overwrote the admin's ownership
 4. Caused conflicts and data integrity issues
 
@@ -48,7 +48,7 @@ VALUES (?, ?, ?, ?, ?, ?, ...)
 SELECT u.*, GROUP_CONCAT(i.name) as institutions
 FROM users u
 LEFT JOIN institutions i ON i.user_id = u.id  ← WRONG! Looking for owned institutions
-WHERE u.role = 'coordinator'
+WHERE u.role = 'institution_admin'
 ```
 
 **After:**
@@ -56,7 +56,7 @@ WHERE u.role = 'coordinator'
 SELECT u.*, i.name as institution_name
 FROM users u
 LEFT JOIN institutions i ON u.institution_id = i.institution_id  ← CORRECT! User's assigned institution
-WHERE u.role = 'coordinator'
+WHERE u.role = 'institution_admin'
 ```
 
 ### 4. **Migrated Existing Users**
@@ -132,7 +132,7 @@ status ENUM(...)
 4. User is linked to institution without changing ownership
 
 ### Display Flow:
-1. Admin views "Coordinator Accounts"
+1. Admin views "institution_admin accounts"
 2. Query joins `users.institution_id` with `institutions.institution_id`
 3. Gets institution name: "Pajo Elementary School"
 4. Displays in UI ✅
@@ -154,14 +154,14 @@ status ENUM(...)
 ## Next Steps for Testing
 
 1. **View Existing Coordinator**:
-   - Go to Admin → User Management → Coordinator Accounts
+   - Go to Admin → User Management → institution_admin accounts
    - Should see "Pajo Elementary School" instead of "No Organization" ✅
 
 2. **Register New Coordinator**:
    - Go to registration page
    - Select an institution from dropdown
    - Complete registration
-   - After approval, check coordinator accounts page
+   - After approval, check institution_admin accounts page
    - Should show selected institution ✅
 
 3. **Verify Data**:
@@ -169,8 +169,9 @@ status ENUM(...)
    SELECT u.email, u.institution_id, i.name 
    FROM users u 
    LEFT JOIN institutions i ON u.institution_id = i.institution_id 
-   WHERE u.role = 'coordinator';
+   WHERE u.role = 'institution_admin';
    ```
 
 ## Summary
 The "No Organization" issue is now completely fixed! Coordinators are properly linked to their institutions using the new `users.institution_id` column, and the admin dashboard displays the correct institution names. 🎉
+

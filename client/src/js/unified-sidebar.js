@@ -151,8 +151,8 @@ function configureForUserRole() {
     // Get role-specific links
     const walkInServiceLink = document.querySelector('a[data-page="walk-in-service"]');
     const serviceCompletionsLink = document.querySelector('a[data-page="service-completions"]');
-    const coordinatorAccountsLink = document.getElementById('coordinator-accounts-link');
-    const coordinatorApprovalsLink = document.getElementById('coordinator-approvals-link');
+    const institutionAdminAccountsLink = document.getElementById('institution_admin-accounts-link');
+    const institutionAdminApprovalsLink = document.getElementById('institution_admin-approvals-link');
     const clientPrintersLink = document.getElementById('client-printers-link');
     const inventoryItemsLink = document.getElementById('inventory-items-link');
     const inventoryPartsLink = document.getElementById('inventory-parts-link');
@@ -170,20 +170,20 @@ function configureForUserRole() {
             : '../../pages/admin/service-completions.html';
     }
     
-    // Coordinator accounts link
-    if (coordinatorAccountsLink) {
-        coordinatorAccountsLink.href = role === 'admin'
-            ? '../../pages/admin/coordinator-accounts.html'
-            : '../../pages/admin/coordinator-accounts.html';
-        console.log(`Set coordinator accounts link for ${role} to: ${coordinatorAccountsLink.href}`);
+    // institutionAdmin accounts link
+    if (institutionAdminAccountsLink) {
+        institutionAdminAccountsLink.href = role === 'admin'
+            ? '../../pages/admin/institution_admin-accounts.html'
+            : '../../pages/admin/institution_admin-accounts.html';
+        console.log(`Set institutionAdmin accounts link for ${role} to: ${institutionAdminAccountsLink.href}`);
     }
     
-    // Coordinator approvals link
-    if (coordinatorApprovalsLink) {
-        coordinatorApprovalsLink.href = role === 'admin'
-            ? '../../pages/admin/coordinator-approvals.html'
-            : '../../pages/admin/coordinator-approvals.html';
-        console.log(`Set coordinator approvals link for ${role} to: ${coordinatorApprovalsLink.href}`);
+    // institutionAdmin approvals link
+    if (institutionAdminApprovalsLink) {
+        institutionAdminApprovalsLink.href = role === 'admin'
+            ? '../../pages/admin/institution_admin-approvals.html'
+            : '../../pages/admin/institution_admin-approvals.html';
+        console.log(`Set institutionAdmin approvals link for ${role} to: ${institutionAdminApprovalsLink.href}`);
     }
     
     // Client printers link
@@ -385,3 +385,8 @@ function getCurrentUser() {
     }
     return null;
 }
+
+
+
+
+

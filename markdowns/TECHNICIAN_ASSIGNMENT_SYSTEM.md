@@ -79,7 +79,7 @@ graph TD
 2. **Clear Responsibility**: Know exactly which clients they're responsible for
 3. **Status Management**: Update request status with automatic history logging
 
-### **For Coordinators:**
+### **for institution_admins:**
 
 1. **Seamless Experience**: Create requests normally, assignment happens automatically
 2. **Faster Response**: No waiting for manual assignment step
@@ -155,3 +155,4 @@ graph TD
 - **Audit logging** for all assignment changes
 
 This system provides a complete, production-ready solution for technician-client assignment management with automatic service request routing.
+

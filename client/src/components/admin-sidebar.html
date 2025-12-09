@@ -2,16 +2,16 @@
 <!-- This file is designed to be loaded as a component into admin pages -->
 <div class="admin-sidebar-component">
         <!-- Shared Admin Sidebar -->
-    <aside class="bg-white text-gray-900 w-64 min-h-screen border-r border-gray-200 flex flex-col">
+    <aside class="bg-gradient-to-b from-slate-800 to-slate-900 text-slate-100 w-64 min-h-screen border-r border-slate-700 flex flex-col shadow-2xl">
             <!-- Header -->
-            <div class="p-5 border-b border-gray-100">
+            <div class="p-5 border-b border-slate-700/50">
                 <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 bg-gray-900 rounded-lg flex items-center justify-center">
+                    <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg">
                         <i class="fas fa-cogs text-white"></i>
                     </div>
                     <div>
-                        <h1 class="text-xl font-light text-gray-900">ServiceEase</h1>
-                        <p class="text-sm text-gray-500">Admin Portal</p>
+                        <h1 class="text-xl font-semibold text-white">ServiceEase</h1>
+                        <p class="text-sm text-slate-400">Admin Portal</p>
                     </div>
                 </div>
             </div>
@@ -19,109 +19,130 @@
             <!-- Navigation -->
             <nav class="p-4 space-y-1 flex-grow overflow-y-auto">
                 <!-- Dashboard -->
-                <a href="../../pages/admin/admin.html" class="nav-item flex items-center px-4 py-2.5 text-gray-700 hover:bg-gray-50 hover:text-gray-900 rounded-md transition-colors" data-page="admin">
+                <a href="../../pages/admin/admin.html" class="nav-item flex items-center px-4 py-2.5 text-slate-300 hover:bg-slate-700/50 hover:text-white rounded-md transition-all duration-200" data-page="admin">
                     <i class="fas fa-tachometer-alt w-5 mr-3"></i>
                     <span>Dashboard</span>
                 </a>
 
                 <!-- User Management Dropdown -->
                 <div class="dropdown" data-dropdown="user-management">
-                    <button class="dropdown-toggle group flex items-center justify-between w-full px-4 py-2.5 text-gray-700 hover:bg-gray-50 hover:text-gray-900 rounded-md transition-colors">
+                    <button class="dropdown-toggle group flex items-center justify-between w-full px-4 py-2.5 text-slate-300 hover:bg-slate-700/50 hover:text-white rounded-md transition-all duration-200">
                         <div class="flex items-center">
                             <i class="fas fa-users-cog w-5 mr-3"></i>
                             <span>User Management</span>
                         </div>
-                        <i class="fas fa-chevron-down transition-transform text-sm"></i>
+                        <i class="fas fa-chevron-down transition-transform duration-200 text-sm"></i>
                     </button>
                     <div class="dropdown-content hidden pl-6 mt-1 space-y-1 ml-6">
-                        <a href="../../pages/admin/staff-accounts.html" class="nav-item flex items-center px-4 py-2 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-md transition-colors text-sm" data-page="staff-accounts">
+                        <a href="../../pages/admin/staff-accounts.html" class="nav-item flex items-center px-4 py-2 text-slate-400 hover:bg-slate-700/40 hover:text-white rounded-md transition-all duration-200 text-sm" data-page="staff-accounts">
                             <i class="fas fa-users w-4 mr-3"></i>
                             <span>Staff Accounts</span>
                         </a>
-                        <a href="../../pages/admin/coordinator-accounts.html" class="nav-item flex items-center px-4 py-2 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-md transition-colors text-sm" data-page="coordinator-accounts">
+                        <a href="../../pages/admin/institution-admin-accounts.html" class="nav-item flex items-center px-4 py-2 text-slate-400 hover:bg-slate-700/40 hover:text-white rounded-md transition-all duration-200 text-sm" data-page="institution_admin-accounts">
                             <i class="fas fa-user-tie w-4 mr-3"></i>
-                            <span>Coordinator Accounts</span>
+                            <span>Institution Admin Accounts</span>
                         </a>
-                        <a href="../../pages/admin/coordinator-approvals.html" class="nav-item flex items-center px-4 py-2 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-md transition-colors text-sm" data-page="coordinator-approvals">
+                        <a href="../../pages/admin/institution-admin-approvals.html" class="nav-item flex items-center px-4 py-2 text-slate-400 hover:bg-slate-700/40 hover:text-white rounded-md transition-all duration-200 text-sm" data-page="institution_admin-approvals">
                             <i class="fas fa-user-check w-4 mr-3"></i>
-                            <span>Coordinator Approvals</span>
+                            <span>Institution Admin Registrations</span>
                         </a>
                     </div>
                 </div>
 
-                <!-- Client & Inventory Dropdown -->
-                <div class="dropdown" data-dropdown="client-inventory">
-                    <button class="dropdown-toggle group flex items-center justify-between w-full px-4 py-2.5 text-gray-700 hover:bg-gray-50 hover:text-gray-900 rounded-md transition-colors">
+                <!-- Client Management Dropdown -->
+                <div class="dropdown" data-dropdown="client-management">
+                    <button class="dropdown-toggle group flex items-center justify-between w-full px-4 py-2.5 text-slate-300 hover:bg-slate-700/50 hover:text-white rounded-md transition-all duration-200">
                         <div class="flex items-center">
                             <i class="fas fa-building w-5 mr-3"></i>
-                            <span>Clients & Inventory</span>
+                            <span>Client Management</span>
                         </div>
-                        <i class="fas fa-chevron-down transition-transform text-sm"></i>
+                        <i class="fas fa-chevron-down transition-transform duration-200 text-sm"></i>
                     </button>
                     <div class="dropdown-content hidden pl-6 mt-1 space-y-1 ml-6">
-                        <a href="../../pages/admin/client-management.html" class="nav-item flex items-center px-4 py-2 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-md transition-colors text-sm" data-page="client-management">
+                        <a href="../../pages/admin/client-management.html" class="nav-item flex items-center px-4 py-2 text-slate-400 hover:bg-slate-700/40 hover:text-white rounded-md transition-all duration-200 text-sm" data-page="client-management">
                             <i class="fas fa-building w-4 mr-3"></i>
                             <span>Client Management</span>
                         </a>
-                        <a href="../../pages/admin/client-printers.html" class="nav-item flex items-center px-4 py-2 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-md transition-colors text-sm" data-page="client-printers">
+                        <a href="../../pages/admin/client-printers.html" class="nav-item flex items-center px-4 py-2 text-slate-400 hover:bg-slate-700/40 hover:text-white rounded-md transition-all duration-200 text-sm" data-page="client-printers">
                             <i class="fas fa-print w-4 mr-3"></i>
                             <span>Client Printers</span>
                         </a>
-                        <a href="../../pages/admin/inventory-items.html" class="nav-item flex items-center px-4 py-2 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-md transition-colors text-sm" data-page="inventory">
-                            <i class="fas fa-boxes w-4 mr-3"></i>
-                            <span>Inventory Items</span>
+                    </div>
+                </div>
+
+                <!-- Inventory Dropdown -->
+                <div class="dropdown" data-dropdown="inventory">
+                    <button class="dropdown-toggle group flex items-center justify-between w-full px-4 py-2.5 text-slate-300 hover:bg-slate-700/50 hover:text-white rounded-md transition-all duration-200">
+                        <div class="flex items-center">
+                            <i class="fas fa-boxes w-5 mr-3"></i>
+                            <span>Inventory</span>
+                        </div>
+                        <i class="fas fa-chevron-down transition-transform duration-200 text-sm"></i>
+                    </button>
+                    <div class="dropdown-content hidden pl-6 mt-1 space-y-1 ml-6">
+                        <a href="../../pages/admin/inventory-items.html" class="nav-item flex items-center px-4 py-2 text-slate-400 hover:bg-slate-700/40 hover:text-white rounded-md transition-all duration-200 text-sm" data-page="inventory">
+                            <i class="fas fa-print w-4 mr-3"></i>
+                            <span>Printers</span>
                         </a>
-                        <a href="../../pages/admin/inventory-parts.html" class="nav-item flex items-center px-4 py-2 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-md transition-colors text-sm" data-page="inventory-supplies">
+                        <a href="../../pages/admin/inventory-parts.html" class="nav-item flex items-center px-4 py-2 text-slate-400 hover:bg-slate-700/40 hover:text-white rounded-md transition-all duration-200 text-sm" data-page="inventory-supplies">
                             <i class="fas fa-tools w-4 mr-3"></i>
-                            <span>Supplies</span>
+                            <span>Parts</span>
+                        </a>
+                        <a href="../../pages/admin/technician-inventory.html" class="nav-item flex items-center px-4 py-2 text-slate-400 hover:bg-slate-700/40 hover:text-white rounded-md transition-all duration-200 text-sm" data-page="technician-inventory">
+                            <i class="fas fa-user-cog w-4 mr-3"></i>
+                            <span>Technician Inventory</span>
                         </a>
                     </div>
                 </div>
 
                 <!-- Service Management Dropdown -->
                 <div class="dropdown" data-dropdown="service-management">
-                    <button class="dropdown-toggle group flex items-center justify-between w-full px-4 py-2.5 text-gray-700 hover:bg-gray-50 hover:text-gray-900 rounded-md transition-colors">
+                    <button class="dropdown-toggle group flex items-center justify-between w-full px-4 py-2.5 text-slate-300 hover:bg-slate-700/50 hover:text-white rounded-md transition-all duration-200">
                         <div class="flex items-center">
                             <i class="fas fa-clipboard-list w-5 mr-3"></i>
                             <span>Service Management</span>
                         </div>
-                        <i class="fas fa-chevron-down transition-transform text-sm"></i>
+                        <i class="fas fa-chevron-down transition-transform duration-200 text-sm"></i>
                     </button>
                     <div class="dropdown-content hidden pl-6 mt-1 space-y-1 ml-6">
-                        <a href="../../pages/admin/parts-requests.html" class="nav-item flex items-center px-4 py-2 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-md transition-colors text-sm" data-page="parts-requests">
+                        <a href="../../pages/admin/parts-requests.html" class="nav-item flex items-center px-4 py-2 text-slate-400 hover:bg-slate-700/40 hover:text-white rounded-md transition-all duration-200 text-sm" data-page="parts-requests">
                             <i class="fas fa-tools w-4 mr-3"></i>
                             <span>Parts Requests</span>
                         </a>
-                        <a href="../../pages/admin/walk-in-service-requests.html" class="nav-item flex items-center px-4 py-2 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-md transition-colors text-sm" data-page="walk-in-service-requests">
+                        <a href="../../pages/admin/walk-in-service-requests.html" class="nav-item flex items-center px-4 py-2 text-slate-400 hover:bg-slate-700/40 hover:text-white rounded-md transition-all duration-200 text-sm" data-page="walk-in-service-requests">
                             <i class="fas fa-clipboard-list w-4 mr-3"></i>
                             <span>Service Requests (Walk-In)</span>
+                        </a>
+                        <a href="../../pages/admin/technician-progress.html" class="nav-item flex items-center px-4 py-2 text-slate-400 hover:bg-slate-700/40 hover:text-white rounded-md transition-all duration-200 text-sm" data-page="technician-progress">
+                            <i class="fas fa-chart-line w-4 mr-3"></i>
+                            <span>Technician Progress</span>
                         </a>
                     </div>
                 </div>
 
                 <!-- System & Settings Dropdown -->
                 <div class="dropdown" data-dropdown="system-settings">
-                    <button class="dropdown-toggle group flex items-center justify-between w-full px-4 py-2.5 text-gray-700 hover:bg-gray-50 hover:text-gray-900 rounded-md transition-colors">
+                    <button class="dropdown-toggle group flex items-center justify-between w-full px-4 py-2.5 text-slate-300 hover:bg-slate-700/50 hover:text-white rounded-md transition-all duration-200">
                         <div class="flex items-center">
                             <i class="fas fa-cog w-5 mr-3"></i>
                             <span>System & Settings</span>
                         </div>
-                        <i class="fas fa-chevron-down transition-transform text-sm"></i>
+                        <i class="fas fa-chevron-down transition-transform duration-200 text-sm"></i>
                     </button>
                     <div class="dropdown-content hidden pl-6 mt-1 space-y-1 ml-6">
-                        <a href="../../pages/admin/audit-logs.html" class="nav-item flex items-center px-4 py-2 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-md transition-colors text-sm" data-page="audit-logs">
+                        <a href="../../pages/admin/audit-logs.html" class="nav-item flex items-center px-4 py-2 text-slate-400 hover:bg-slate-700/40 hover:text-white rounded-md transition-all duration-200 text-sm" data-page="audit-logs">
                             <i class="fas fa-list-alt w-4 mr-3"></i>
                             <span>Audit Logs</span>
                         </a>
-                        <a href="../../pages/admin/account-management.html" class="nav-item flex items-center px-4 py-2 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-md transition-colors text-sm" data-page="account-management">
+                        <a href="../../pages/admin/account-management.html" class="nav-item flex items-center px-4 py-2 text-slate-400 hover:bg-slate-700/40 hover:text-white rounded-md transition-all duration-200 text-sm" data-page="account-management">
                             <i class="fas fa-user-cog w-4 mr-3"></i>
                             <span>My Account</span>
                         </a>
                         <div class="relative">
-                            <a href="../../pages/admin/notifications.html" class="nav-item flex items-center px-4 py-2 text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-md transition-colors text-sm" data-page="notifications">
+                            <a href="../../pages/admin/notifications.html" class="nav-item flex items-center px-4 py-2 text-slate-400 hover:bg-slate-700/40 hover:text-white rounded-md transition-all duration-200 text-sm" data-page="notifications">
                                 <i class="fas fa-bell w-4 mr-3"></i>
                                 <span>Notifications</span>
-                                <span id="admin-notification-badge" class="ml-auto bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">0</span>
+                                <span id="admin-notification-badge" class="ml-auto bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center shadow-lg">0</span>
                             </a>
                         </div>
                     </div>
@@ -130,8 +151,8 @@
             </nav>
 
             <!-- Logout -->
-            <div class="p-4 border-t border-gray-100 mt-auto">
-                <button id="logout-btn" class="w-full flex items-center px-4 py-2.5 text-gray-700 hover:bg-gray-50 hover:text-gray-900 rounded-md transition-colors">
+            <div class="p-4 border-t border-slate-700/50 mt-auto">
+                <button id="logout-btn" class="w-full flex items-center px-4 py-2.5 text-slate-300 hover:bg-red-600/80 hover:text-white rounded-md transition-all duration-200">
                     <i class="fas fa-sign-out-alt w-5 mr-3"></i>
                     <span>Logout</span>
                 </button>
@@ -150,3 +171,5 @@
         </aside>
     </div>
 <!-- End of Admin Sidebar Component -->
+
+

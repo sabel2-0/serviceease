@@ -263,25 +263,34 @@ function renderRequestCard(request) {
 
 // View request details
 async function viewRequestDetails(requestId) {
-    const request = allRequests.find(r => r.id === requestId);
-    if (!request) return;
-
     const modal = document.getElementById('detailsModal');
     const content = document.getElementById('detailsContent');
 
-    // Fetch parts used from service_parts_used table
+    // Fetch full request details including parts from backend
+    let request = null;
     let partsUsed = [];
+    
     try {
-        const response = await fetch(`${API_BASE_URL}/service-parts-used/${requestId}`, {
+        const response = await fetch(`${API_URL}/api/service-requests/${requestId}`, {
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('token')}`
             }
         });
-        if (response.ok) {
-            partsUsed = await response.json();
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch request details');
         }
+        
+        request = await response.json();
+        partsUsed = request.parts_used || [];
     } catch (error) {
-        console.error('Error fetching parts:', error);
+        console.error('Error fetching request details:', error);
+        // Fall back to cached request if API fails
+        request = allRequests.find(r => r.id === requestId);
+        if (!request) {
+            showToast('Failed to load request details', 'error');
+            return;
+        }
     }
 
     const statusColors = {
@@ -375,10 +384,11 @@ async function viewRequestDetails(requestId) {
                         <div class="bg-white rounded-lg p-3 border border-blue-100">
                             <div class="flex justify-between items-center mb-2">
                                 <span class="text-slate-900 font-medium">${escapeHtml(part.part_name)}</span>
-                                <span class="font-semibold text-blue-700 bg-blue-100 px-3 py-1 rounded-full text-sm">x${part.quantity}</span>
+                                <span class="font-semibold text-blue-700 bg-blue-100 px-3 py-1 rounded-full text-sm">x${part.quantity_used} ${part.unit || 'pcs'}</span>
                             </div>
-                            ${part.part_brand ? `<p class="text-sm text-slate-600"><span class="font-medium">Brand:</span> ${escapeHtml(part.part_brand)}</p>` : ''}
-                            ${part.notes ? `<p class="text-sm text-slate-600 mt-1"><span class="font-medium">Notes:</span> ${escapeHtml(part.notes)}</p>` : ''}
+                            ${part.brand ? `<p class="text-sm text-slate-600"><span class="font-medium">Brand:</span> ${escapeHtml(part.brand)}</p>` : ''}
+                            ${part.category ? `<p class="text-sm text-slate-600"><span class="font-medium">Category:</span> ${escapeHtml(part.category)}</p>` : ''}
+                            ${part.part_notes ? `<p class="text-sm text-slate-600 mt-1"><span class="font-medium">Notes:</span> ${escapeHtml(part.part_notes)}</p>` : ''}
                             ${part.used_by_first_name ? `
                                 <p class="text-xs text-slate-500 mt-2">
                                     <i class="fas fa-user-check mr-1"></i>Used by ${escapeHtml(part.used_by_first_name + ' ' + part.used_by_last_name)}
@@ -398,6 +408,23 @@ async function viewRequestDetails(requestId) {
             </div>
             ` : ''}
 
+            ${request.completion_photo_url ? `
+            <div>
+                <h5 class="font-semibold text-slate-900 mb-2">
+                    <i class="fas fa-camera mr-2 text-blue-600"></i>Completion Photo
+                </h5>
+                <div class="bg-white rounded-lg border-2 border-blue-200 overflow-hidden shadow-sm">
+                    <img src="${request.completion_photo_url}" 
+                         alt="Service completion photo" 
+                         class="w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
+                         onclick="window.open('${request.completion_photo_url}', '_blank')">
+                    <div class="p-2 bg-blue-50 text-xs text-blue-700 text-center">
+                        <i class="fas fa-expand-alt mr-1"></i>Click to view full size
+                    </div>
+                </div>
+            </div>
+            ` : ''}
+
             ${request.approved_by && request.approval_status === 'approved' ? `
             <div class="bg-green-50 border border-green-200 rounded-lg p-4">
                 <h5 class="font-semibold text-green-900 mb-2">
@@ -406,7 +433,7 @@ async function viewRequestDetails(requestId) {
                 <p class="text-sm text-green-800">
                     Approved by ${escapeHtml(request.approved_by_first_name + ' ' + request.approved_by_last_name)} at ${formatDate(request.approved_at)}
                 </p>
-                ${request.coordinator_notes ? `<p class="text-sm text-green-800 mt-2">${escapeHtml(request.coordinator_notes)}</p>` : ''}
+                ${request.institutionAdmin_notes ? `<p class="text-sm text-green-800 mt-2">${escapeHtml(request.institutionAdmin_notes)}</p>` : ''}
             </div>
             ` : ''}
             
@@ -415,7 +442,7 @@ async function viewRequestDetails(requestId) {
                 <h5 class="font-semibold text-orange-900 mb-2">
                     <i class="fas fa-undo mr-2"></i>Revision Requested
                 </h5>
-                ${request.coordinator_notes ? `<p class="text-sm text-orange-800">${escapeHtml(request.coordinator_notes)}</p>` : ''}
+                ${request.institutionAdmin_notes ? `<p class="text-sm text-orange-800">${escapeHtml(request.institutionAdmin_notes)}</p>` : ''}
             </div>
             ` : ''}
 
@@ -676,3 +703,8 @@ function showSuccess(message) {
 function showError(message) {
     alert('Error: ' + message);
 }
+
+
+
+
+

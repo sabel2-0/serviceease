@@ -63,7 +63,7 @@ users
 **createUser() method:**
 - Changed from accepting `institutionType`, `institutionName`, `institutionAddress`
 - Now accepts `institutionId` only
-- Added validation: requires `institutionId` for coordinators and requesters
+- Added validation: requires `institutionId` for institution_admins and requesters
 - INSERT query now uses only `institution_id` column
 - Notification creation fetches institution details via JOIN query
 
@@ -80,8 +80,8 @@ VALUES (..., ?, ?, ?, ...)
 ```javascript
 const { firstName, lastName, email, password, institutionId } = userData;
 
-// Validate institution_id required for coordinators/requesters
-if ((role === 'coordinator' || role === 'requester') && !institutionId) {
+// Validate institution_id required for institution_admins/requesters
+if ((role === 'institution_admin' || role === 'institution_user') && !institutionId) {
     throw new Error('institution_id is required');
 }
 
@@ -248,13 +248,13 @@ When displaying: JOIN with institutions table for institution details
   - [ ] Verify institution details display in admin approval page
 
 - [ ] Test user login
-  - [ ] Login as coordinator
+  - [ ] Login as institution_admin
   - [ ] Verify institution details returned in response
   - [ ] Verify JWT token includes institution_id
 
 - [ ] Test service request creation
-  - [ ] Create service request as requester
-  - [ ] Create service request as coordinator
+  - [ ] Create service request as institution_user
+  - [ ] Create service request as institution_admin
   - [ ] Verify institution details display correctly
   - [ ] Verify service_requests.institution_id populated correctly
 
@@ -348,3 +348,5 @@ WHERE u.institution_id IS NOT NULL;
 **Migration Completed:** October 15, 2025
 **Database:** serviceease (MySQL 8.0.42)
 **Status:** ✅ **PRODUCTION READY** (pending testing)
+
+

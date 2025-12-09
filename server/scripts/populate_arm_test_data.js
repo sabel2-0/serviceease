@@ -84,7 +84,7 @@ async function populateTestData() {
         console.log('🚀 Starting data population for Association Rule Mining...\n');
 
         // Get existing users and institutions
-        const [users] = await db.query('SELECT id FROM users WHERE role = "requester" LIMIT 10');
+        const [users] = await db.query('SELECT id FROM users WHERE role = "institution_user" LIMIT 10');
         const [techs] = await db.query('SELECT id FROM users WHERE role = "technician" LIMIT 5');
         const [institutions] = await db.query('SELECT institution_id FROM institutions LIMIT 5');
 
@@ -93,7 +93,7 @@ async function populateTestData() {
             return;
         }
 
-        console.log(`✅ Found ${users.length} requesters, ${techs.length} technicians, ${institutions.length} institutions\n`);
+        console.log(`✅ Found ${users.length} institution_users, ${techs.length} technicians, ${institutions.length} institutions\n`);
 
         // Step 1: Create printer inventory items if they don't exist
         console.log('📝 Creating printer inventory items...');
@@ -103,7 +103,7 @@ async function populateTestData() {
             for (const model of printerSet.models) {
                 // Check if printer exists
                 const [existing] = await db.query(
-                    'SELECT id FROM inventory_items WHERE brand = ? AND model = ? LIMIT 1',
+                    'SELECT id FROM printers WHERE brand = ? AND model = ? LIMIT 1',
                     [printerSet.brand, model]
                 );
 
@@ -113,7 +113,7 @@ async function populateTestData() {
                 } else {
                     const serialNumber = `${printerSet.brand.substring(0, 3).toUpperCase()}${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
                     const [result] = await db.query(
-                        `INSERT INTO inventory_items (category, name, brand, model, serial_number, quantity, location, status)
+                        `INSERT INTO printers (category, name, brand, model, serial_number, quantity, location, status)
                          VALUES ('printer', ?, ?, ?, ?, 1, ?, 'assigned')`,
                         [`${printerSet.brand} ${model}`, printerSet.brand, model, serialNumber, locations[Math.floor(Math.random() * locations.length)]]
                     );
@@ -183,7 +183,7 @@ async function populateTestData() {
             const issuePattern = issuePartPatterns[Math.floor(Math.random() * issuePartPatterns.length)];
             
             // Random user and tech
-            const requester = users[Math.floor(Math.random() * users.length)];
+            const institution_user = users[Math.floor(Math.random() * users.length)];
             const tech = techs[Math.floor(Math.random() * techs.length)];
             const institution = institutions[Math.floor(Math.random() * institutions.length)];
 
@@ -197,14 +197,14 @@ async function populateTestData() {
             
             const [requestResult] = await db.query(
                 `INSERT INTO service_requests 
-                (request_number, institution_id, requested_by_user_id, assigned_technician_id, 
-                 inventory_item_id, priority, status, location, description, created_at, 
+                (request_number, institution_id, requested_by, technician_id, 
+                 printer_id, priority, status, location, description, created_at, 
                  started_at, completed_at, resolution_notes)
                 VALUES (?, ?, ?, ?, ?, ?, 'completed', ?, ?, ?, ?, ?, ?)`,
                 [
                     requestNumber,
                     institution.institution_id,
-                    requester.id,
+                    institution_user.id,
                     tech.id,
                     printer.id,
                     ['medium', 'high', 'urgent'][Math.floor(Math.random() * 3)],
@@ -258,7 +258,7 @@ async function populateTestData() {
                 COUNT(DISTINCT sr.id) as total_requests,
                 COUNT(DISTINCT spu.id) as total_parts_used,
                 COUNT(DISTINCT spu.part_id) as unique_parts,
-                COUNT(DISTINCT sr.inventory_item_id) as unique_printers
+                COUNT(DISTINCT sr.printer_id) as unique_printers
             FROM service_requests sr
             LEFT JOIN service_parts_used spu ON sr.id = spu.service_request_id
             WHERE sr.status = 'completed'
@@ -280,3 +280,7 @@ async function populateTestData() {
 }
 
 populateTestData();
+
+
+
+

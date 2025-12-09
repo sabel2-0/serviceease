@@ -129,7 +129,7 @@ await cloudinary.uploader.destroy(publicId);
 
 5. **Test Registration**:
    - Go to registration page on Railway URL
-   - Register as coordinator with photos
+   - Register as institution_admin with photos
    - Verify in database that photos are Cloudinary URLs
    - Check coordinator approvals page shows photos
 
@@ -139,7 +139,7 @@ await cloudinary.uploader.destroy(publicId);
 - `users` table: New row with `approval_status='pending'`, `status='active'`
 - `temp_user_photos` table: New row with Cloudinary URLs in photo columns
 - `institutions` table: New row with institution details
-- Coordinator approvals page: Shows pending registration with visible ID photos
+- Institution Admin approvals page: Shows pending registration with visible ID photos
 
 ### Cloudinary URLs Should Look Like:
 ```
@@ -158,3 +158,4 @@ If registration still fails after these steps, check:
 2. Browser console for frontend errors
 3. Network tab for API response details
 4. Cloudinary dashboard for upload attempts
+

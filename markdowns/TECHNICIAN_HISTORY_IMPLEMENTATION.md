@@ -23,7 +23,7 @@ The technician history component has been successfully updated to display real s
 - **Data Includes:**
   - Service request details (ID, description, status, priority)
   - Institution information
-  - Coordinator details
+  - Institution Admin details
   - Complete status change history
   - Timeline of all changes
 
@@ -48,8 +48,8 @@ SELECT
     sr.status, sr.priority, sr.created_at, sr.started_at, 
     sr.completed_at, sr.resolution_notes,
     i.name as institution_name, i.type as institution_type,
-    coord.first_name as coordinator_first_name,
-    coord.last_name as coordinator_last_name
+    coord.first_name as institution_admin_first_name,
+    coord.last_name as institution_admin_last_name
 FROM service_requests sr
 LEFT JOIN institutions i ON sr.institution_id = i.institution_id
 LEFT JOIN users coord ON sr.coordinator_id = coord.id
@@ -84,7 +84,7 @@ ORDER BY srh.created_at ASC
 - Current status with color-coded badges
 - Priority level indicators
 - Institution and location information
-- Coordinator details
+- Institution Admin details
 - Date created and completion date
 - Resolution notes
 - Complete status change history

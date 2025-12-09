@@ -6,7 +6,7 @@ async function runMigration() {
     try {
         console.log('Starting migration...');
         
-        const migrationPath = path.join(__dirname, 'migrations', 'password_reset_and_requester_registration.sql');
+        const migrationPath = path.join(__dirname, 'migrations', 'password_reset_and_institution_user_registration.sql');
         const sql = fs.readFileSync(migrationPath, 'utf8');
         
         // Split by semicolon and execute each statement
@@ -39,3 +39,6 @@ async function runMigration() {
 }
 
 runMigration();
+
+
+

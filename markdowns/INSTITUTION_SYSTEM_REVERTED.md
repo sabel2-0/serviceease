@@ -12,7 +12,7 @@ Successfully reverted the system back to the original institution architecture w
 - ❌ Dropped foreign key: `fk_users_institution`
 
 ### 2. Using `institutions` table:
-- ✅ Column: `user_id` (INT) - Points to the coordinator who owns the institution
+- ✅ Column: `user_id` (INT) - Points to The institution_admin who owns the institution
 - ✅ This is the ORIGINAL design and is now being used
 
 ## How It Works Now
@@ -32,7 +32,7 @@ Successfully reverted the system back to the original institution architecture w
 
 ### Data Relationships:
 ```
-users (id: 64, email: "markivan.night@gmail.com", role: "coordinator")
+users (id: 64, email: "markivan.night@gmail.com", role: "institution_admin")
   ↑
   |
 institutions (institution_id: "INST-017", name: "Pajo Elementary School", user_id: 64)
@@ -55,7 +55,7 @@ const [result] = await db.query(
 );
 
 // Link institution to user
-if (role === 'coordinator' && institutionId) {
+if (role === 'institution_admin' && institutionId) {
     await db.query(
         'UPDATE institutions SET user_id = ? WHERE institution_id = ?',
         [userId, institutionId]
@@ -96,7 +96,7 @@ if (role === 'coordinator' && institutionId) {
 ## Verification
 
 ### Current State (User 64):
-- **users table:** id=64, email="markivan.night@gmail.com", role="coordinator"
+- **users table:** id=64, email="markivan.night@gmail.com", role="institution_admin"
 - **institutions table:** institution_id="INST-017", name="Pajo Elementary School", user_id=64
 
 ### Test Results:
@@ -134,3 +134,4 @@ When a new coordinator registers:
 
 ## Status
 ✅ **COMPLETE** - System successfully reverted to original architecture
+

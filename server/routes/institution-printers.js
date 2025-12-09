@@ -1,22 +1,22 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
-const { authenticateCoordinator } = require('../middleware/auth');
+const { authenticateinstitution_admin } = require('../middleware/auth');
 
 /**
  * @route GET /api/institutions/:institution_id/printers
  * @desc Get printers assigned to a specific institution
- * @access Private (Coordinator only)
+ * @access Private (institution_admin only)
  */
-router.get('/:institution_id/printers', authenticateCoordinator, async (req, res) => {
+router.get('/:institution_id/printers', authenticateinstitution_admin, async (req, res) => {
     try {
         const institutionId = req.params.institution_id;
         console.log('[DEBUG] Fetching printers for institution:', institutionId);
         const [rows] = await db.query(`
-            SELECT cpa.inventory_item_id, ii.name, ii.model, ii.serial_number, ii.location_note
-            FROM client_printer_assignments cpa
-            JOIN inventory_items ii ON cpa.inventory_item_id = ii.id
-            WHERE cpa.institution_id = ?
+            SELECT cpa.printer_id, ii.name, ii.model, ii.serial_number, cpa.assigned_at, cpa.status
+            FROM institution_printer_assignments cpa
+            JOIN printers ii ON cpa.printer_id = ii.id
+            WHERE cpa.institution_id = ? AND cpa.status = 'assigned'
         `, [institutionId]);
         console.log('[DEBUG] Query result:', rows);
         res.json(rows);
@@ -27,3 +27,7 @@ router.get('/:institution_id/printers', authenticateCoordinator, async (req, res
 });
 
 module.exports = router;
+
+
+
+

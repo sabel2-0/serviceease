@@ -1,0 +1,38 @@
+<!-- Unified Institution Admin Header Component -->
+<header class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-20">
+    <!-- Institution and Institution Admin Info Bar -->
+    <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-2">
+        <div class="flex items-center justify-between text-white text-sm">
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center">
+                    <i class="fas fa-building mr-2"></i>
+                    <span id="header-institution-name" class="font-medium">Loading...</span>
+                </div>
+                <div class="hidden md:block text-blue-200">|</div>
+                <div class="hidden md:flex items-center">
+                    <i class="fas fa-user-tie mr-2"></i>
+                    <span id="header-Institution Admin-name" class="font-medium">Loading...</span>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button id="header-notifications-button" class="p-1.5 rounded-full hover:bg-blue-600 relative transition">
+                    <i class="fas fa-bell"></i>
+                    <span id="header-notification-badge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">0</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Navigation Bar -->
+    <div class="px-6 py-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 id="header-page-title" class="text-2xl font-semibold text-gray-900">Dashboard</h1>
+                <p id="header-page-subtitle" class="text-sm text-gray-500 mt-1"></p>
+            </div>
+        </div>
+    </div>
+</header>
+
+
+

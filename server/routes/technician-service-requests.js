@@ -33,32 +33,32 @@ router.get('/service-requests', authenticateTechnician, async (req, res) => {
                 sr.location,
                 sr.description as issue,
                 sr.created_at,
-                sr.updated_at,
-                sr.inventory_item_id,
+                sr.printer_id,
                 ii.name as printer_name,
                 ii.brand as brand,
                 ii.model as model,
                 ii.serial_number as serial_number,
                 CONCAT(ii.name, ' (', ii.brand, ' ', ii.model, ' SN:', ii.serial_number, ')') as printer_full_details,
-                requester.first_name as requester_first_name,
-                requester.last_name as requester_last_name,
-                requester.email as requester_email,
-                requester.role as requester_role,
+                institution_user.first_name as institution_user_first_name,
+                institution_user.last_name as institution_user_last_name,
+                institution_user.email as institution_user_email,
+                institution_user.role as institution_user_role,
                 sr.is_walk_in,
                 sr.walk_in_customer_name,
                 sr.printer_brand
             FROM service_requests sr
             LEFT JOIN institutions i ON sr.institution_id = i.institution_id
             LEFT JOIN technician_assignments ta ON sr.institution_id = ta.institution_id AND ta.technician_id = ? AND ta.is_active = TRUE
-            LEFT JOIN inventory_items ii ON sr.inventory_item_id = ii.id
-            LEFT JOIN users requester ON sr.requested_by_user_id = requester.id
+            LEFT JOIN printers ii ON sr.printer_id = ii.id
+            LEFT JOIN users institution_user ON sr.requested_by = institution_user.id
             WHERE (
+                (sr.technician_id = ?) OR
                 (ta.technician_id IS NOT NULL) OR 
                 (sr.is_walk_in = TRUE)
             )
             ${statusFilter}
             ORDER BY sr.created_at DESC
-        `, [technicianId]);
+        `, [technicianId, technicianId]);
         
         console.log(`[DEBUG] Found ${rows.length} service requests for technician ${technicianId}:`);
         console.log('[DEBUG] Service requests:', JSON.stringify(rows, null, 2));
@@ -127,13 +127,13 @@ router.get('/service-requests/:requestId', authenticateTechnician, async (req, r
                 ii.model as model,
                 ii.serial_number as serial_number,
                 CONCAT(ii.name, ' (', ii.brand, ' ', ii.model, ' SN:', ii.serial_number, ')') as printer_full_details,
-                requester.first_name as requester_first_name,
-                requester.last_name as requester_last_name,
-                requester.email as requester_email
+                institution_user.first_name as institution_user_first_name,
+                institution_user.last_name as institution_user_last_name,
+                institution_user.email as institution_user_email
             FROM service_requests sr
             JOIN institutions i ON sr.institution_id = i.id
-            LEFT JOIN inventory_items ii ON sr.inventory_item_id = ii.id
-            LEFT JOIN users requester ON sr.requested_by_user_id = requester.id
+            LEFT JOIN printers ii ON sr.printer_id = ii.id
+            LEFT JOIN users institution_user ON sr.requested_by = institution_user.id
             WHERE sr.id = ?
         `, [requestId]);
         
@@ -159,6 +159,33 @@ router.get('/service-requests/:requestId', authenticateTechnician, async (req, r
         
         const request = rows[0];
         request.history = history;
+        
+        // Get parts used for this service request
+        const [partsUsed] = await db.query(`
+            SELECT 
+                spu.id,
+                spu.quantity_used,
+                spu.notes as part_notes,
+                spu.used_at,
+                pp.name as part_name,
+                pp.brand,
+                pp.category,
+                pp.color,
+                pp.page_yield,
+                pp.ink_volume,
+                pp.is_universal,
+                pp.unit,
+                CONCAT(u.first_name, ' ', u.last_name) as used_by_name,
+                u.first_name as used_by_first_name,
+                u.last_name as used_by_last_name
+            FROM service_parts_used spu
+            JOIN printer_parts pp ON spu.part_id = pp.id
+            LEFT JOIN users u ON spu.used_by = u.id
+            WHERE spu.service_request_id = ?
+            ORDER BY spu.used_at DESC
+        `, [requestId]);
+        
+        request.parts_used = partsUsed;
         
         // Parse coordinates if they exist (just a placeholder for now)
         request.coordinates = { lat: 14.6091, lng: 121.0223 }; // Manila coordinates as placeholder
@@ -192,10 +219,11 @@ router.put('/service-requests/:requestId/status', authenticateTechnician, async 
             SELECT sr.status, sr.is_walk_in FROM service_requests sr
             LEFT JOIN technician_assignments ta ON sr.institution_id = ta.institution_id
             WHERE sr.id = ? AND (
+                (sr.technician_id = ?) OR
                 (ta.technician_id = ? AND ta.is_active = TRUE) OR
                 (sr.is_walk_in = TRUE)
             )
-        `, [requestId, technicianId]);
+        `, [requestId, technicianId, technicianId]);
         
         if (access.length === 0) {
             console.log('[PUT /status] No access - technician not assigned to this request');
@@ -212,7 +240,7 @@ router.put('/service-requests/:requestId/status', authenticateTechnician, async 
         }
         
         // Prepare update fields
-        let updateFields = 'status = ?, assigned_technician_id = ?, updated_at = NOW()';
+        let updateFields = 'status = ?, technician_id = ?';
         let updateValues = [status, technicianId];
         
         // Add timestamp tracking
@@ -245,7 +273,7 @@ router.put('/service-requests/:requestId/status', authenticateTechnician, async 
             // Continue without failing - history is optional
         }
         
-        // Send notification to coordinator about status change
+        // Send notification to institution_admin about status change
         if (status === 'in_progress' && currentStatus !== 'in_progress') {
             try {
                 const [techDetails] = await db.query(
@@ -253,7 +281,7 @@ router.put('/service-requests/:requestId/status', authenticateTechnician, async 
                     [technicianId]
                 );
                 const [requestDetails] = await db.query(
-                    'SELECT sr.request_number, sr.requested_by_user_id, sr.institution_id, sr.is_walk_in, sr.walk_in_customer_name, i.user_id as coordinator_id, i.name as institution_name FROM service_requests sr LEFT JOIN institutions i ON sr.institution_id = i.institution_id WHERE sr.id = ?',
+                    'SELECT sr.request_number, sr.requested_by, sr.institution_id, sr.is_walk_in, sr.walk_in_customer_name, i.user_id as institution_admin_id, i.name as institution_name FROM service_requests sr LEFT JOIN institutions i ON sr.institution_id = i.institution_id WHERE sr.id = ?',
                     [requestId]
                 );
                 
@@ -261,7 +289,7 @@ router.put('/service-requests/:requestId/status', authenticateTechnician, async 
                     const techName = `${techDetails[0].first_name} ${techDetails[0].last_name}`;
                     const requestNumber = requestDetails[0].request_number;
                     
-                    // If it's a walk-in request, notify admins/operations officers instead of coordinator
+                    // If it's a walk-in request, notify admins/operations officers instead of institution_admin
                     if (requestDetails[0].is_walk_in) {
                         const [admins] = await db.query(
                             `SELECT id FROM users WHERE role IN ('admin', 'operations_officer') AND status = 'active'`
@@ -287,29 +315,29 @@ router.put('/service-requests/:requestId/status', authenticateTechnician, async 
                         }
                         console.log('✅ Notifications sent to admins/operations officers about walk-in service progress');
                     } else {
-                        // For regular requests, notify coordinator
-                        if (requestDetails[0].coordinator_id) {
+                        // For regular requests, notify institution_admin
+                        if (requestDetails[0].institution_admin_id) {
                             await createNotification({
                                 title: 'Service Request In Progress',
                                 message: `Technician ${techName} has started working on service request ${requestNumber} at ${requestDetails[0].institution_name}.`,
                                 type: 'service_request',
-                                user_id: requestDetails[0].coordinator_id,
+                                user_id: requestDetails[0].institution_admin_id,
                                 sender_id: technicianId,
                                 reference_type: 'service_request',
                                 reference_id: requestId,
                                 priority: 'medium'
                             });
-                            console.log('✅ Notification sent to coordinator about service progress');
+                            console.log('✅ Notification sent to institution_admin about service progress');
                         }
                     }
                     
-                    // Notify requester (for non-walk-in requests)
-                    if (requestDetails[0].requested_by_user_id && !requestDetails[0].is_walk_in) {
+                    // Notify institution_user (for non-walk-in requests)
+                    if (requestDetails[0].requested_by && !requestDetails[0].is_walk_in) {
                         await createNotification({
                             title: 'Service Request In Progress',
                             message: `Technician ${techName} has started working on your service request ${requestNumber}.`,
                             type: 'service_request',
-                            user_id: requestDetails[0].requested_by_user_id,
+                            user_id: requestDetails[0].requested_by,
                             sender_id: technicianId,
                             reference_type: 'service_request',
                             reference_id: requestId,
@@ -325,7 +353,7 @@ router.put('/service-requests/:requestId/status', authenticateTechnician, async 
         // Get the updated request data to return
         console.log('[PUT /status] Fetching updated request data...');
         const [updatedRequest] = await db.query(
-            `SELECT id, status, started_at, updated_at FROM service_requests WHERE id = ?`,
+            `SELECT id, status, started_at FROM service_requests WHERE id = ?`,
             [requestId]
         );
         
@@ -347,12 +375,12 @@ router.put('/service-requests/:requestId/status', authenticateTechnician, async 
     }
 });
 
-// Complete a service request with enhanced job order functionality and coordinator approval workflow
+// Complete a service request with enhanced job order functionality and institution_admin approval workflow
 router.post('/service-requests/:requestId/complete', authenticateTechnician, async (req, res) => {
     try {
         const technicianId = req.user.id;
         const { requestId } = req.params;
-        const { actions, parts, notes } = req.body;
+        const { actions, parts, notes, completion_photo } = req.body;
         
         if (!actions) {
             return res.status(400).json({ error: 'Actions description is required' });
@@ -410,20 +438,35 @@ router.post('/service-requests/:requestId/complete', authenticateTechnician, asy
             }
         }
         
+        // Upload completion photo to Cloudinary if provided
+        let photoUrl = null;
+        if (completion_photo) {
+            try {
+                const cloudinary = require('cloudinary').v2;
+                const uploadResult = await cloudinary.uploader.upload(completion_photo, {
+                    folder: 'serviceease/completion_photos',
+                    resource_type: 'auto'
+                });
+                photoUrl = uploadResult.secure_url;
+                console.log('[COMPLETE] Photo uploaded to Cloudinary:', photoUrl);
+            } catch (uploadError) {
+                console.error('[COMPLETE] Error uploading completion photo:', uploadError);
+                return res.status(500).json({ error: 'Failed to upload completion photo' });
+            }
+        }
+
         // Start a transaction
         await db.query('START TRANSACTION');
         
         try {
-            // Update the service request to pending approval status
+            // Update the service request to pending approval status with photo
             await db.query(
                 `UPDATE service_requests 
                  SET status = 'pending_approval', 
                      resolution_notes = ?,
-                     resolved_by = ?,
-                     resolved_at = NOW(),
-                     updated_at = NOW()
+                     completion_photo_url = ?
                  WHERE id = ?`,
-                [actions, technicianId, requestId]
+                [actions, photoUrl, requestId]
             );
             
             // Add history record
@@ -440,29 +483,54 @@ router.post('/service-requests/:requestId/complete', authenticateTechnician, asy
                 [requestId]
             );
             
+            console.log('[COMPLETE] Parts received:', JSON.stringify(parts, null, 2));
+            
             // Record parts used in service_parts_used table (but don't deduct from inventory yet)
             if (parts && Array.isArray(parts) && parts.length > 0) {
+                console.log('[COMPLETE] Processing', parts.length, 'parts');
                 for (const part of parts) {
+                    console.log('[COMPLETE] Processing part:', part);
                     if (part.name && part.qty > 0) {
-                        // Get part_id from printer_parts table, matching by name and optionally brand
-                        let query = `SELECT id FROM printer_parts WHERE name = ?`;
-                        const queryParams = [part.name];
+                        // Get part_id from printer_parts table, prioritizing parts in technician's inventory
+                        let query = `
+                            SELECT pp.id, 
+                                   CASE WHEN ti.id IS NOT NULL THEN 1 ELSE 0 END as in_inventory
+                            FROM printer_parts pp
+                            LEFT JOIN technician_inventory ti ON pp.id = ti.part_id 
+                                AND ti.technician_id = ? 
+                                AND ti.quantity > 0
+                            WHERE pp.name = ?`;
+                        const queryParams = [technicianId, part.name];
                         
                         if (part.brand) {
-                            query += ` AND brand = ?`;
+                            query += ` AND pp.brand = ?`;
                             queryParams.push(part.brand);
                         }
                         
+                        query += ` ORDER BY in_inventory DESC, pp.is_universal DESC, pp.id ASC LIMIT 1`;
+                        
                         const [partInfo] = await db.query(query, queryParams);
+                        
+                        console.log('[COMPLETE] Part lookup result:', partInfo);
                         
                         if (partInfo.length > 0) {
                             const brandInfo = part.brand ? ` (Brand: ${part.brand})` : '';
+                            console.log('[COMPLETE] Inserting part usage:', {
+                                service_request_id: requestId,
+                                part_id: partInfo[0].id,
+                                quantity_used: part.qty,
+                                notes: `Used ${part.qty} ${part.unit || 'pieces'}${brandInfo}`,
+                                used_by: technicianId
+                            });
                             await db.query(
                                 `INSERT INTO service_parts_used 
                                  (service_request_id, part_id, quantity_used, notes, used_by)
                                  VALUES (?, ?, ?, ?, ?)`,
                                 [requestId, partInfo[0].id, part.qty, `Used ${part.qty} ${part.unit || 'pieces'}${brandInfo}`, technicianId]
                             );
+                            console.log('[COMPLETE] Part usage inserted successfully');
+                        } else {
+                            console.log('[COMPLETE] Part not found in database:', part.name, part.brand);
                         }
                     }
                 }
@@ -488,23 +556,23 @@ router.post('/service-requests/:requestId/complete', authenticateTechnician, asy
                      SET status = 'pending_approval',
                          technician_notes = ?,
                          submitted_at = NOW(),
-                         coordinator_id = NULL,
-                         coordinator_notes = NULL,
+                         institution_admin_id = NULL,
+                         institution_admin_notes = NULL,
                          reviewed_at = NULL
                      WHERE service_request_id = ?`,
                     [actions, requestId]
                 );
             }
             
-            // Get coordinator for notification and send notification ONLY to coordinator
-            // Requester will be notified after coordinator approves the service
+            // Get institution_admin for notification and send notification ONLY to institution_admin
+            // institution_user will be notified after institution_admin approves the service
             try {
                 const [techDetails] = await db.query(
                     'SELECT first_name, last_name FROM users WHERE id = ?',
                     [technicianId]
                 );
                 const [requestDetails] = await db.query(
-                    'SELECT sr.request_number, sr.requested_by_user_id, sr.description, sr.institution_id, sr.is_walk_in, sr.walk_in_customer_name, i.user_id as coordinator_id, i.name as institution_name FROM service_requests sr LEFT JOIN institutions i ON sr.institution_id = i.institution_id WHERE sr.id = ?',
+                    'SELECT sr.request_number, sr.requested_by, sr.description, sr.institution_id, sr.is_walk_in, sr.walk_in_customer_name, i.user_id as institution_admin_id, i.name as institution_name FROM service_requests sr LEFT JOIN institutions i ON sr.institution_id = i.institution_id WHERE sr.id = ?',
                     [requestId]
                 );
                 
@@ -534,20 +602,20 @@ router.post('/service-requests/:requestId/complete', authenticateTechnician, asy
                         }
                         console.log('✅ Notification sent to admins/operations officers for walk-in approval');
                     } else {
-                        // Send notification ONLY to coordinator for approval
-                        // Requester will be notified after coordinator approves
-                        if (requestDetails[0].coordinator_id) {
+                        // Send notification ONLY to institution_admin for approval
+                        // institution_user will be notified after institution_admin approves
+                        if (requestDetails[0].institution_admin_id) {
                             await createNotification({
                                 title: 'Service Request Pending Your Approval',
                                 message: `Technician ${techName} has completed service request ${requestNumber} at ${requestDetails[0].institution_name}. Please review and approve.`,
                                 type: 'service_request',
-                                user_id: requestDetails[0].coordinator_id,
+                                user_id: requestDetails[0].institution_admin_id,
                                 sender_id: technicianId,
                                 reference_type: 'service_request',
                                 reference_id: requestId,
                                 priority: 'high'
                             });
-                            console.log('✅ Notification sent to coordinator for approval');
+                            console.log('✅ Notification sent to institution_admin for approval');
                         }
                     }
                 }
@@ -686,67 +754,12 @@ router.post('/service-requests/:requestId/reassign', authenticateTechnician, asy
     }
 });
 
-// Get available printer parts from technician's inventory
-router.get('/parts', authenticateTechnician, async (req, res) => {
-    try {
-        const technicianId = req.user.id;
-        // Fetch global parts (central inventory)
-        const [globalParts] = await db.query(`
-            SELECT pp.id as part_id, pp.id, pp.name, pp.brand, pp.category, pp.quantity as stock, pp.unit, pp.is_universal
-            FROM printer_parts pp
-            WHERE pp.quantity > 0
-            ORDER BY pp.brand, pp.category, pp.name
-        `);
-
-        // Fetch parts assigned to this technician (their personal inventory)
-        const [techParts] = await db.query(`
-            SELECT ti.id as tech_inventory_id, ti.part_id, ti.quantity as technician_stock
-            FROM technician_inventory ti
-            WHERE ti.technician_id = ? AND ti.quantity > 0
-        `, [technicianId]);
-
-        // Merge: prefer global stock as `stock`, but include technician_stock and flag
-        const partsMap = new Map();
-
-        for (const p of globalParts) {
-            partsMap.set(p.part_id, Object.assign({}, p, { technician_stock: 0, in_technician_inventory: false }));
-        }
-
-        for (const t of techParts) {
-            const existing = partsMap.get(t.part_id);
-            if (existing) {
-                existing.technician_stock = t.technician_stock;
-                existing.in_technician_inventory = true;
-                existing.tech_inventory_id = t.tech_inventory_id;
-            } else {
-                // Part exists only in technician inventory (not in central inventory)
-                partsMap.set(t.part_id, {
-                    part_id: t.part_id,
-                    id: t.part_id,
-                    name: null,
-                    brand: null,
-                    category: null,
-                    stock: 0,
-                    unit: 'pieces',
-                    is_universal: 0,
-                    technician_stock: t.technician_stock,
-                    in_technician_inventory: true,
-                    tech_inventory_id: t.tech_inventory_id
-                });
-            }
-        }
-
-        const merged = Array.from(partsMap.values()).sort((a,b) => {
-            const aKey = `${a.brand || ''}:${a.category || ''}:${a.name || ''}`.toLowerCase();
-            const bKey = `${b.brand || ''}:${b.category || ''}:${b.name || ''}`.toLowerCase();
-            return aKey < bKey ? -1 : (aKey > bKey ? 1 : 0);
-        });
-
-        res.json(merged);
-    } catch (error) {
-        console.error('Error fetching technician inventory parts:', error);
-        res.status(500).json({ error: 'Failed to fetch inventory parts' });
-    }
-});
+// NOTE: The GET /parts endpoint has been removed from this file to avoid duplication.
+// Technicians' parts inventory is now handled exclusively by technician-inventory.js
+// which returns ONLY the parts from the technician's personal inventory (not admin's central inventory)
 
 module.exports = router;
+
+
+
+

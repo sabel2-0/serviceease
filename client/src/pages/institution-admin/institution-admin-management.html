@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Institution Admin Management | ServiceEase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="../js/auth.js"></script>
+</head>
+<body class="bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
+    <div class="flex h-screen">
+        <!-- Include Shared Sidebar -->
+        <div id="sidebar"></div>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-auto bg-gradient-to-br from-slate-50 to-white">
+            <!-- Header Section -->
+            <div class="bg-white shadow-sm border-b border-slate-200 px-8 py-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">Institution Admin Management</h1>
+                        <p class="text-gray-600">Manage Institution Admin accounts and permissions</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content Area -->
+            <div class="p-8">
+                <!-- Filters and Search -->
+                <div class="mb-6 flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <div class="relative">
+                            <input type="text" id="searchInput" placeholder="Search Institution Admins..." 
+                                class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Institution Admins Table -->
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Institution</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200" id="Institution AdminTableBody">
+                            <!-- Table rows will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add/Edit Institution Admin Modal -->
+    <div id="Institution AdminModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg w-full max-w-md p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold text-gray-900" id="modalTitle">Add Institution Admin</h3>
+                <button onclick="closeInstitution AdminModal()" class="text-gray-400 hover:text-gray-500">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="Institution AdminForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">First Name</label>
+                    <input type="text" name="firstName" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Last Name</label>
+                    <input type="text" name="lastName" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Email</label>
+                    <input type="email" name="email" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Institution</label>
+                    <input type="text" name="institution" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="closeInstitution AdminModal()" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                        Save Institution Admin
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="../js/sidebar.js"></script>
+    <script>
+        // Load Institution Admins on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadInstitution Admins();
+        });
+
+        async function loadInstitution Admins() {
+            try {
+                const response = await fetch('/api/Institution Admins');
+                const Institution Admins = await response.json();
+                const tableBody = document.getElementById('Institution AdminTableBody');
+                tableBody.innerHTML = '';
+
+                Institution Admins.forEach(Institution Admin => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="text-sm font-medium text-gray-900">
+                                    ${Institution Admin.first_name} ${Institution Admin.last_name}
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">${Institution Admin.email}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">${Institution Admin.institution || 'Not Specified'}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                Active
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button onclick="editInstitution Admin(${Institution Admin.id})" class="text-blue-600 hover:text-blue-900">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error loading Institution Admins:', error);
+            }
+        }
+
+        function openAddInstitution AdminModal() {
+            document.getElementById('modalTitle').textContent = 'Add Institution Admin';
+            document.getElementById('Institution AdminForm').reset();
+            document.getElementById('Institution AdminModal').classList.remove('hidden');
+        }
+
+        function closeInstitution AdminModal() {
+            document.getElementById('Institution AdminModal').classList.add('hidden');
+        }
+
+        async function editInstitution Admin(id) {
+            try {
+                const response = await fetch(`/api/Institution Admins/${id}`);
+                const Institution Admin = await response.json();
+                
+                document.getElementById('modalTitle').textContent = 'Edit Institution Admin';
+                const form = document.getElementById('Institution AdminForm');
+                form.firstName.value = Institution Admin.first_name;
+                form.lastName.value = Institution Admin.last_name;
+                form.email.value = Institution Admin.email;
+                form.institution.value = Institution Admin.institution;
+                
+                document.getElementById('Institution AdminModal').classList.remove('hidden');
+            } catch (error) {
+                console.error('Error loading Institution Admin details:', error);
+            }
+        }
+
+        async function toggleInstitution AdminStatus(id) {
+            if (!confirm('Are you sure you want to change this Institution Admin\'s status?')) return;
+
+            try {
+                const response = await fetch(`/api/Institution Admins/${id}/toggle-status`, {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    loadInstitution Admins(); // Refresh the list
+                } else {
+                    throw new Error('Failed to update Institution Admin status');
+                }
+            } catch (error) {
+                console.error('Error updating Institution Admin status:', error);
+                alert('Failed to update Institution Admin status');
+            }
+        }
+
+        // Search and filter functionality
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const rows = document.querySelectorAll('#Institution AdminTableBody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        });
+
+
+    </script>
+</body>
+</html>
+
+

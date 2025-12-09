@@ -10,7 +10,7 @@ async function addMoreCanonData() {
 
         // Get Canon Laser Pro 213 printer
         const [printers] = await db.query(
-            'SELECT id, brand, model FROM inventory_items WHERE brand = "Canon" AND model = "Laser Pro 213" LIMIT 1'
+            'SELECT id, brand, model FROM printers WHERE brand = "Canon" AND model = "Laser Pro 213" LIMIT 1'
         );
 
         if (printers.length === 0) {
@@ -29,7 +29,7 @@ async function addMoreCanonData() {
         console.log(`✅ Found ${parts.length} Canon parts\n`);
 
         // Get users
-        const [users] = await db.query('SELECT id FROM users WHERE role = "requester" LIMIT 5');
+        const [users] = await db.query('SELECT id FROM users WHERE role = "institution_user" LIMIT 5');
         const [techs] = await db.query('SELECT id FROM users WHERE role = "technician" LIMIT 3');
         const [institutions] = await db.query('SELECT institution_id FROM institutions LIMIT 1');
 
@@ -62,7 +62,7 @@ async function addMoreCanonData() {
         // Add 15 more service requests
         for (let i = 0; i < 15; i++) {
             const pattern = issuePatterns[i % issuePatterns.length];
-            const requester = users[i % users.length];
+            const institution_user = users[i % users.length];
             const tech = techs[i % techs.length];
             
             // Random date within last 90 days
@@ -75,14 +75,14 @@ async function addMoreCanonData() {
             
             const [requestResult] = await db.query(
                 `INSERT INTO service_requests 
-                (request_number, institution_id, requested_by_user_id, assigned_technician_id, 
-                 inventory_item_id, priority, status, location, description, created_at, 
+                (request_number, institution_id, requested_by, technician_id, 
+                 printer_id, priority, status, location, description, created_at, 
                  started_at, completed_at, resolution_notes)
                 VALUES (?, ?, ?, ?, ?, ?, 'completed', ?, ?, ?, ?, ?, ?)`,
                 [
                     requestNumber,
                     institutions[0].institution_id,
-                    requester.id,
+                    institution_user.id,
                     tech.id,
                     printer.id,
                     ['medium', 'high'][Math.floor(Math.random() * 2)],
@@ -128,7 +128,7 @@ async function addMoreCanonData() {
                 COUNT(DISTINCT spu.id) as total_parts_used
             FROM service_requests sr
             LEFT JOIN service_parts_used spu ON sr.id = spu.service_request_id
-            WHERE sr.inventory_item_id = ? AND sr.status = 'completed'
+            WHERE sr.printer_id = ? AND sr.status = 'completed'
         `, [printer.id]);
 
         console.log('\n📊 Updated Statistics for Canon Laser Pro 213:');
@@ -144,3 +144,7 @@ async function addMoreCanonData() {
 }
 
 addMoreCanonData();
+
+
+
+

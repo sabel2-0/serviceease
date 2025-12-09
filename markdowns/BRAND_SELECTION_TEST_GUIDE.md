@@ -97,7 +97,7 @@
 - Success message appears
 - Parts are recorded with brand information
 - Status changes to "Pending Approval"
-- Coordinator receives notification
+- Institution Admin receives notification
 
 ### 3. Verify in Database
 
@@ -264,3 +264,4 @@ Issues:
 _________________________________________________
 _________________________________________________
 _________________________________________________
+

@@ -86,8 +86,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
                 
-                // Special exception: Allow access to admin coordinator-approvals page
-                if (href.includes('/pages/admin/coordinator-approvals.html')) {
+                // Special exception: Allow access to admin institution_admin-approvals page
+                if (href.includes('/pages/admin/institution_admin-approvals.html')) {
                     return; // Allow this specific admin page
                 }
                 
@@ -115,8 +115,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // List of allowed pages for operations officer
         const allowedPages = [
             'operations-officer',
-            'coordinator-accounts', 
-            'coordinator-approvals',  // Allow access to coordinator approvals
+            'institution_admin-accounts', 
+            'institution_admin-approvals',  // Allow access to institutionAdmin approvals
             'client-management',
             'client-printers',
             'inventory-items',
@@ -128,8 +128,8 @@ document.addEventListener('DOMContentLoaded', function() {
             'notifications'
         ];
         
-        // Special case: Allow access to admin coordinator-approvals page
-        if (href.includes('/pages/admin/coordinator-approvals.html')) {
+        // Special case: Allow access to admin institution_admin-approvals page
+        if (href.includes('/pages/admin/institution_admin-approvals.html')) {
             return true;
         }
         
@@ -295,3 +295,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize restricted permission message
     showRestrictedPermissionMessage();
 });
+
+
+
+
+

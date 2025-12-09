@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management | Institution Admin Portal | ServiceEase</title>
+    <!-- Tailwind CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        /* Dropdown Menu Styles */
+        .dropdown-toggle .fa-chevron-down {
+            transition: transform 0.3s ease;
+        }
+        
+        .dropdown-menu {
+            overflow: hidden;
+            max-height: 0;
+            transition: max-height 0.3s ease-out, opacity 0.2s ease-out;
+            opacity: 0;
+        }
+        
+        .dropdown-menu:not(.hidden) {
+            max-height: 500px;
+            opacity: 1;
+            transition: max-height 0.5s ease-in, opacity 0.3s ease-in;
+        }
+        
+        .sidenav-item.active {
+            background-color: rgba(31, 41, 55, var(--tw-bg-opacity));
+            color: white;
+            border-left: 3px solid #3b82f6;
+            padding-left: calc(1rem - 3px);
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar Container -->
+        <div id="sidebar-container" class="flex-shrink-0 w-64 bg-gray-900 text-white">
+            <!-- The dynamic sidebar will be loaded here via institution-admin-sidenav.js -->
+        </div>
+        
+        <!-- Main Content -->
+        <div class="flex-1 overflow-auto">
+            <!-- Unified Header -->
+            <div id="institution-admin-header-container"></div>
+
+            <!-- Main Content Area -->
+            <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                <!-- User Management Content -->
+                <div class="bg-white rounded-lg shadow">
+                    <div class="px-6 py-4 border-b flex justify-between items-center">
+                        <h2 class="text-lg font-semibold text-gray-800">User Management</h2>
+                        <button id="add-user-btn" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-user-plus mr-2"></i>Add User
+                        </button>
+                    </div>
+                    <div class="p-6">
+                        <!-- User Search -->
+                        <div class="mb-6 flex flex-wrap gap-4">
+                            <div class="w-full md:w-64">
+                                <input type="text" id="userSearchInput" placeholder="Search users..." class="w-full px-4 py-2 border rounded-md">
+                            </div>
+                            <div class="w-full md:w-48">
+                                <select id="userRoleFilter" class="w-full px-4 py-2 border rounded-md">
+                                    <option value="">All Roles</option>
+                                    <option value="staff">Staff</option>
+                                    <option value="manager">Manager</option>
+                                </select>
+                            </div>
+                            <div class="flex-grow text-right">
+                                <div class="inline-flex rounded-md shadow-sm" role="tablist" aria-label="User status tabs">
+                                    <button type="button" id="tab-active" class="px-4 py-2 bg-white border rounded-l-md" role="tab" aria-selected="true">Active</button>
+                                    <button type="button" id="tab-inactive" class="px-4 py-2 bg-white border rounded-r-md" role="tab" aria-selected="false">Deactivated</button>
+                                </div>
+                                <button type="button" id="refreshUsersBtn" class="ml-3 bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-md">
+                                    <i class="fas fa-sync-alt mr-2"></i>Refresh
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Users Table -->
+                        <div class="overflow-x-auto">
+                            <div class="inline-block min-w-full align-middle">
+                                <div class="border border-gray-200 rounded-lg overflow-hidden">
+                                    <table class="min-w-full divide-y divide-gray-200">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User Info</th>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Department</th>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Assigned Printer</th>
+                                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="usersTbody" class="bg-white divide-y divide-gray-200">
+                                            <!-- User rows will be loaded here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div id="usersEmptyState" class="py-8 text-center text-gray-500 hidden">
+                                    No users found
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Add User Modal -->
+    <div id="addUserModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="absolute inset-0 bg-black/40"></div>
+        <div class="relative bg-white rounded-lg shadow-lg w-full max-w-md">
+            <div class="px-6 py-4 border-b">
+                <h3 class="text-lg font-semibold text-gray-800">Add New User</h3>
+            </div>
+            <div class="p-6">
+                <form id="addUserForm">
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+                            <input type="text" id="firstName" class="w-full px-4 py-2 border rounded-md" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+                            <input type="text" id="lastName" class="w-full px-4 py-2 border rounded-md" required>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                        <input type="email" id="userEmail" class="w-full px-4 py-2 border rounded-md" required>
+                    </div>
+                    <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                        <div class="flex items-start">
+                            <i class="fas fa-info-circle text-blue-500 mt-1 mr-2"></i>
+                            <p class="text-sm text-blue-800">
+                                A temporary password will be automatically generated and sent to the user's email. 
+                                They will be required to change it upon first login.
+                            </p>
+                        </div>
+                    </div>
+                    <!-- institution-admin-created users are assigned the 'institution_user' role by the server -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Department</label>
+                        <input type="text" id="department" class="w-full px-4 py-2 border rounded-md">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Assign Printers (optional)</label>
+                        <div class="border rounded-md p-3 max-h-48 overflow-y-auto bg-gray-50" id="printerCheckboxContainer">
+                            <p class="text-sm text-gray-500">Loading printers...</p>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Select one or more printers to assign to this user</p>
+                    </div>
+                </form>
+            </div>
+            <div class="px-6 py-4 border-t bg-gray-50 flex justify-end gap-3">
+                <button id="submitAddUser" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                    Add User
+                </button>
+                <button id="cancelAddUser" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Center -->
+    <div id="notification-center" class="fixed inset-y-0 right-0 max-w-sm w-full bg-white shadow-lg z-40 transform translate-x-full transition-transform duration-300">
+        <div class="p-6 border-b flex justify-between items-center">
+            <h3 class="text-lg font-semibold text-gray-800">Notifications</h3>
+            <button id="close-notifications" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div id="notification-list" class="p-4 overflow-y-auto h-[calc(100%-4rem)]">
+            <!-- Notifications will be loaded here -->
+            <div class="text-center py-8 text-gray-500">
+                <i class="fas fa-bell-slash text-4xl mb-3"></i>
+                <p>No new notifications</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit User Modal (moved to top-level) -->
+    <div id="editUserModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="absolute inset-0 bg-black/40"></div>
+        <div class="relative bg-white rounded-lg shadow-lg w-full max-w-md">
+            <div class="px-6 py-4 border-b">
+                <h3 class="text-lg font-semibold text-gray-800">Edit User</h3>
+            </div>
+            <div class="p-6">
+                <form id="editUserForm">
+                    <input type="hidden" id="editUserId">
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+                            <input type="text" id="editFirstName" class="w-full px-4 py-2 border rounded-md" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+                            <input type="text" id="editLastName" class="w-full px-4 py-2 border rounded-md" required>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                        <input type="email" id="editEmail" class="w-full px-4 py-2 border rounded-md" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Department</label>
+                        <input type="text" id="editDepartment" class="w-full px-4 py-2 border rounded-md">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Assign Printers (optional)</label>
+                        <div class="border rounded-md p-3 max-h-48 overflow-y-auto bg-gray-50" id="editPrinterCheckboxContainer">
+                            <p class="text-sm text-gray-500">Loading printers...</p>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Select one or more printers to assign to this user</p>
+                    </div>
+                </form>
+            </div>
+            <div class="px-6 py-4 border-t bg-gray-50 flex justify-end gap-3">
+                <button type="button" id="submitEditUser" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">Save</button>
+                <button type="button" id="cancelEditUser" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div id="changePasswordModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="absolute inset-0 bg-black/40"></div>
+        <div class="relative bg-white rounded-lg shadow-lg w-full max-w-md">
+            <div class="px-6 py-4 border-b">
+                <h3 class="text-lg font-semibold text-gray-800">Change User Password</h3>
+            </div>
+            <div class="p-6">
+                <form id="changePasswordForm">
+                    <input type="hidden" id="passwordChangeUserId">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">User</label>
+                        <p id="passwordChangeUserName" class="text-gray-900 font-medium">-</p>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+                        <div class="relative">
+                            <input type="password" id="newPasswordInput" class="w-full px-4 py-2 border rounded-md" placeholder="Enter new password (min 8 characters)" required minlength="8">
+                            <button type="button" id="toggleNewPasswordVisibility" aria-label="Toggle new password visibility" class="absolute inset-y-0 right-2 px-2 text-gray-500 hover:text-gray-700 focus:outline-none">
+                                <i class="fas fa-eye" id="toggleNewPasswordIcon"></i>
+                            </button>
+                        </div>
+                        <div class="mt-2 flex items-center gap-3">
+                            <div class="w-full bg-gray-200 rounded overflow-hidden h-2">
+                                <div id="newPasswordStrengthBar" class="h-2 bg-red-400 w-0 transition-all"></div>
+                            </div>
+                            <div id="newPasswordStrengthText" class="text-sm text-gray-600 w-40 text-right" aria-live="polite">&nbsp;</div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Must include letters, numbers, and symbols</p>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
+                        <div class="relative">
+                            <input type="password" id="confirmPasswordInput" class="w-full px-4 py-2 border rounded-md" placeholder="Confirm new password" required minlength="8">
+                            <button type="button" id="toggleConfirmPasswordVisibility" aria-label="Toggle confirm password visibility" class="absolute inset-y-0 right-2 px-2 text-gray-500 hover:text-gray-700 focus:outline-none">
+                                <i class="fas fa-eye" id="toggleConfirmPasswordIcon"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="passwordChangeError" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                        <p class="text-sm text-red-600"></p>
+                    </div>
+                </form>
+            </div>
+            <div class="px-6 py-4 border-t bg-gray-50 flex justify-end gap-3">
+                <button type="button" id="submitPasswordChange" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">Change Password</button>
+                <button type="button" id="cancelPasswordChange" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div id="confirmModal" class="fixed inset-0 z-60 flex items-center justify-center hidden">
+        <div class="absolute inset-0 bg-black/40"></div>
+        <div class="relative bg-white rounded-lg shadow-lg w-full max-w-md">
+            <div class="px-6 py-4 border-b">
+                <h3 id="confirmTitle" class="text-lg font-semibold text-gray-800">Confirm</h3>
+            </div>
+            <div class="p-6" id="confirmBody">
+                Are you sure?
+            </div>
+            <div class="px-6 py-4 border-t bg-gray-50 flex justify-end gap-3">
+                <button type="button" id="confirmCancel" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-md">Cancel</button>
+                <button type="button" id="confirmOk" class="bg-red-600 text-white px-4 py-2 rounded-md">Confirm</button>
+            </div>
+        </div>
+    </div>
+    <!-- JavaScript -->
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/institution-admin-sidenav.js"></script>
+    <script src="../../js/institution-admin-header-loader.js"></script>
+    
+    <script>
+        // Load header with page-specific content
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.loadInstitutionAdminHeader) {
+                window.loadInstitutionAdminHeader({
+                    title: 'User Management',
+                    subtitle: 'Manage users and their printer assignments'
+                });
+            }
+        });
+    </script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set the active sidebar item
+            window.location.hash = '#user-management';
+            
+            // Global password strength functions
+            function calculatePasswordStrength(pw) {
+                let score = 0;
+                if (!pw) return score;
+                // length >= 8
+                if (pw.length >= 8) score++;
+                // has both lower and upper
+                if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) score++;
+                // has digit
+                if (/[0-9]/.test(pw)) score++;
+                // has special char
+                if (/[^A-Za-z0-9]/.test(pw)) score++;
+                return score; // 0..4
+            }
+
+            function updatePasswordStrengthUI(pw) {
+                const score = calculatePasswordStrength(pw);
+                let percent = (score / 4) * 100;
+                let label = '';
+                let colorClass = 'bg-red-400';
+                if (score === 0) { label = '' ; percent = 0; }
+                else if (score === 1) { label = 'Very weak'; colorClass = 'bg-red-400'; }
+                else if (score === 2) { label = 'Weak'; colorClass = 'bg-yellow-400'; }
+                else if (score === 3) { label = 'Good'; colorClass = 'bg-blue-400'; }
+                else if (score === 4) { label = 'Strong'; colorClass = 'bg-green-500'; }
+
+                const strengthBar = document.getElementById('newPasswordStrengthBar');
+                const strengthText = document.getElementById('newPasswordStrengthText');
+                
+                if (strengthBar) {
+                    strengthBar.style.width = percent + '%';
+                    strengthBar.className = 'h-2 ' + colorClass + ' w-0 transition-all';
+                }
+                if (strengthText) {
+                    strengthText.textContent = label ? `${label}` : '\u00A0';
+                }
+            }
+
+            function passwordMeetsPolicy(pw) {
+                // Policy: at least 8 chars, has letter, digit and symbol
+                if (!pw) return false;
+                if (pw.length < 8) return false;
+                if (!/[A-Za-z]/.test(pw)) return false;
+                if (!/[0-9]/.test(pw)) return false;
+                if (!/[^A-Za-z0-9]/.test(pw)) return false;
+                return true;
+            }
+            
+            // Close notification center handler
+            document.getElementById('close-notifications')?.addEventListener('click', () => {
+                document.getElementById('notification-center').classList.add('translate-x-full');
+                document.getElementById('notification-center').classList.remove('translate-x-0');
+            });
+            
+            // Modal Controls
+            document.getElementById('add-user-btn')?.addEventListener('click', () => {
+                document.getElementById('addUserModal').classList.remove('hidden');
+            });
+            
+            // Close all modals when clicking outside
+            document.querySelectorAll('.fixed.inset-0').forEach(modal => {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.classList.add('hidden');
+                    }
+                });
+            });
+            
+            // Cancel button for modal
+            document.getElementById('cancelAddUser')?.addEventListener('click', () => {
+                document.getElementById('addUserModal').classList.add('hidden');
+            });
+            
+            // Password visibility toggle and strength helpers for add user modal
+            const pwdInput = document.getElementById('userPassword');
+            const togglePwdBtn = document.getElementById('togglePasswordVisibility');
+            const togglePwdIcon = document.getElementById('togglePasswordIcon');
+            const strengthBar = document.getElementById('passwordStrengthBar');
+            const strengthText = document.getElementById('passwordStrengthText');
+
+            // Toggle password visibility for add user modal
+            togglePwdBtn?.addEventListener('click', () => {
+                if (!pwdInput) return;
+                if (pwdInput.type === 'password') {
+                    pwdInput.type = 'text';
+                    togglePwdIcon.classList.remove('fa-eye');
+                    togglePwdIcon.classList.add('fa-eye-slash');
+                } else {
+                    pwdInput.type = 'password';
+                    togglePwdIcon.classList.remove('fa-eye-slash');
+                    togglePwdIcon.classList.add('fa-eye');
+                }
+                pwdInput.focus();
+            });
+
+            // Update strength on input for add user modal
+            pwdInput?.addEventListener('input', (e) => {
+                const score = calculatePasswordStrength(e.target.value);
+                let percent = (score / 4) * 100;
+                let label = '';
+                let colorClass = 'bg-red-400';
+                if (score === 0) { label = '' ; percent = 0; }
+                else if (score === 1) { label = 'Very weak'; colorClass = 'bg-red-400'; }
+                else if (score === 2) { label = 'Weak'; colorClass = 'bg-yellow-400'; }
+                else if (score === 3) { label = 'Good'; colorClass = 'bg-blue-400'; }
+                else if (score === 4) { label = 'Strong'; colorClass = 'bg-green-500'; }
+
+                if (strengthBar) {
+                    strengthBar.style.width = percent + '%';
+                    strengthBar.className = 'h-2 ' + colorClass + ' w-0 transition-all';
+                }
+                if (strengthText) {
+                    strengthText.textContent = label ? `${label}` : '\u00A0';
+                }
+            });
+
+            // Form submission
+            document.getElementById('submitAddUser')?.addEventListener('click', async () => {
+                // Collect form values
+                const firstName = document.getElementById('firstName').value.trim();
+                const lastName = document.getElementById('lastName').value.trim();
+                const email = document.getElementById('userEmail').value.trim();
+                
+                // Collect all selected printer IDs
+                const selectedPrinters = Array.from(document.querySelectorAll('.printer-checkbox:checked'))
+                    .map(cb => Number(cb.value))
+                    .filter(id => id);
+                
+                const department = document.getElementById('department').value.trim() || null;
+
+                if (!firstName || !lastName || !email) {
+                    showNotification('Error', 'First name, last name, and email are required', 'error');
+                    return;
+                }
+
+            // Determine Institution Admin id from localStorage user
+            const user = JSON.parse(localStorage.getItem('user')) || {};
+            const institutionAdminId = user.id;
+            if (!institutionAdminId) {
+                showNotification('Error', 'Institution Admin information not available. Please login again.', 'error');
+                return;
+            }                try {
+                    const payload = { firstName, lastName, email, department };
+                    // Send array of printer IDs
+                    if (selectedPrinters.length > 0) {
+                        payload.printer_ids = selectedPrinters;
+                    }
+
+                    const token = localStorage.getItem('token');
+                    console.log('Create user payload:', payload);
+                    const res = await fetch(`/api/institution_admins/${institutionAdminId}/users`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!res.ok) {
+                        const err = await res.json();
+                        throw new Error(err.error || err.message || 'Failed to create user');
+                    }
+
+                    const resultJson = await res.json();
+                    console.log('Create user response:', resultJson);
+                    document.getElementById('addUserModal').classList.add('hidden');
+                    showNotification('Success', `New user added successfully${selectedPrinters.length > 0 ? ' with ' + selectedPrinters.length + ' printer(s)' : ''}`, 'success');
+                    // Refresh user list so the new user becomes visible
+                    loadUsers();
+                    
+                    // Reset form and checkboxes
+                    document.getElementById('addUserForm').reset();
+                    document.querySelectorAll('.printer-checkbox').forEach(cb => cb.checked = false);
+                } catch (err) {
+                    console.error('Create user error:', err);
+                    showNotification('Error', err.message || 'Failed to create user', 'error');
+                }
+            });
+
+            // Load available printers for this Institution Admin's institution into checkboxes
+            async function loadAvailablePrinters() {
+                const user = JSON.parse(localStorage.getItem('user')) || {};
+                console.log('🔍 Loading printers for institution:', user.institution_id);
+                
+                if (!user.institution_id) {
+                    console.error('❌ No institution_id found in user data');
+                    return;
+                }
+                
+                const container = document.getElementById('printerCheckboxContainer');
+                
+                try {
+                    const res = await fetch(`/api/institutions/${user.institution_id}/printers`);
+                    console.log('📡 Printer API response status:', res.status);
+                    
+                    if (!res.ok) {
+                        const errorData = await res.json().catch(() => ({}));
+                        console.error('❌ API error:', errorData);
+                        container.innerHTML = `<p class="text-sm text-red-500">Failed to load printers: ${errorData.error || res.statusText}</p>`;
+                        return;
+                    }
+                    
+                    const printers = await res.json();
+                    console.log('✅ Loaded printers:', printers);
+                    
+                    container.innerHTML = '';
+                    
+                    if (!printers || printers.length === 0) {
+                        container.innerHTML = '<p class="text-sm text-gray-500">No printers available</p>';
+                        return;
+                    }
+                    
+                    printers.forEach(p => {
+                        const div = document.createElement('div');
+                        div.className = 'flex items-center mb-2';
+                        
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.id = `printer_${p.printer_id}`;
+                        checkbox.value = p.printer_id;
+                        checkbox.className = 'mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded printer-checkbox';
+                        
+                        const label = document.createElement('label');
+                        label.htmlFor = `printer_${p.printer_id}`;
+                        label.className = 'text-sm text-gray-700';
+                        const parts = [p.name];
+                        if (p.model) parts.push('(' + p.model + ')');
+                        if (p.serial_number) parts.push('- SN:' + p.serial_number);
+                        label.textContent = parts.join(' ');
+                        
+                        div.appendChild(checkbox);
+                        div.appendChild(label);
+                        container.appendChild(div);
+                    });
+                } catch (e) {
+                    console.error('❌ Failed to load printers:', e);
+                    container.innerHTML = `<p class="text-sm text-red-500">Error: ${e.message}</p>`;
+                }
+            }
+
+            // Define and call helper loaders
+            // Load available printers after Institution Admin profile is loaded
+            window.addEventListener('Institution AdminProfileLoaded', function(event) {
+                console.log('🎉 Institution Admin profile loaded event received:', event.detail);
+                loadAvailablePrinters();
+            });
+            
+            // Also try loading immediately in case profile was already loaded
+            setTimeout(() => {
+                const user = JSON.parse(localStorage.getItem('user') || '{}');
+                if (user.institution_id) {
+                    console.log('✅ Profile already available, loading printers immediately');
+                    loadAvailablePrinters();
+                } else {
+                    console.log('⏳ Waiting for Institution AdminProfileLoaded event...');
+                }
+            }, 100);
+
+            // Fetch and render users for the Institution Admin
+            async function loadUsers() {
+                const currentUser = JSON.parse(localStorage.getItem('user')) || {};
+                const institutionAdminId = currentUser.id;
+                const token = localStorage.getItem('token');
+                const tbody = document.getElementById('usersTbody');
+                const emptyState = document.getElementById('usersEmptyState');
+
+                // Clear table
+                tbody.innerHTML = '';
+
+                if (!institutionAdminId) return;
+                try {
+                    console.log('Fetching Institution Admin users for institutionAdminId=', institutionAdminId);
+                    const res = await fetch(`/api/institution_admins/${institutionAdminId}/users`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    console.log('Users API response status:', res.status);
+                    if (!res.ok) {
+                        const errBody = await res.text();
+                        console.warn('Failed to load users. Status:', res.status, 'Body:', errBody);
+                        emptyState.classList.remove('hidden');
+                        return;
+                    }
+                    const users = await res.json();
+                    console.log('loadUsers fetched', users);
+                    if (!users || users.length === 0) {
+                        emptyState.classList.remove('hidden');
+                        return;
+                    }
+
+                    // Filter by status tab
+                    const filtered = users.filter(row => {
+                        const s = (row.status || '').toLowerCase();
+                        return currentStatusFilter ? s === currentStatusFilter : true;
+                    });
+
+                    if (!filtered || filtered.length === 0) {
+                        emptyState.classList.remove('hidden');
+                        return;
+                    }
+                    emptyState.classList.add('hidden');
+
+                    filtered.forEach(u => {
+                        const tr = document.createElement('tr');
+                        tr.className = 'hover:bg-gray-50';
+
+                        const userInfoTd = document.createElement('td');
+                        userInfoTd.className = 'px-6 py-4 whitespace-nowrap';
+                        userInfoTd.innerHTML = `
+                            <div class="text-sm font-medium text-gray-900">${(u.first_name || '') + ' ' + (u.last_name || '')}</div>
+                            <div class="text-sm text-gray-500">${u.email || ''}</div>
+                        `;
+
+                        const roleTd = document.createElement('td');
+                        roleTd.className = 'px-6 py-4 whitespace-nowrap';
+                        roleTd.innerHTML = `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">${u.role || ''}</span>`;
+
+                        const statusTd = document.createElement('td');
+                        statusTd.className = 'px-6 py-4 whitespace-nowrap';
+                        const statusLabel = (u.status || '').toLowerCase();
+                        const statusColor = statusLabel === 'active' ? 'bg-green-100 text-green-800' : statusLabel === 'inactive' ? 'bg-gray-100 text-gray-800' : 'bg-yellow-100 text-yellow-800';
+                        statusTd.innerHTML = `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${statusColor}">${u.status || ''}</span>`;
+
+                        const deptTd = document.createElement('td');
+                        deptTd.className = 'px-6 py-4 whitespace-nowrap text-sm text-gray-600';
+                        deptTd.textContent = u.printers?.[0]?.department || '';
+
+                        const printerTd = document.createElement('td');
+                        printerTd.className = 'px-6 py-4 text-sm text-gray-600';
+                        // Show multiple printers
+                        if (u.printers && u.printers.length > 0) {
+                            const printerList = u.printers.map(p => p.name || 'Unnamed').join(', ');
+                            printerTd.innerHTML = `<div class="max-w-xs truncate" title="${printerList}">${printerList}</div>`;
+                            if (u.printers.length > 1) {
+                                const badge = document.createElement('span');
+                                badge.className = 'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 ml-2';
+                                badge.textContent = `${u.printers.length} printers`;
+                                printerTd.appendChild(badge);
+                            }
+                        } else {
+                            printerTd.textContent = 'None';
+                        }
+
+                        const actionsTd = document.createElement('td');
+                        actionsTd.className = 'px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex gap-2 justify-end';
+                        // Edit button
+                        const editBtn = document.createElement('button');
+                        editBtn.type = 'button';
+                        editBtn.className = 'text-blue-600 hover:text-blue-800 text-sm mr-3';
+                        editBtn.textContent = 'Edit';
+                        editBtn.addEventListener('click', () => openEditModal(u));
+                        actionsTd.appendChild(editBtn);
+
+                        // Change Password button
+                        const passwordBtn = document.createElement('button');
+                        passwordBtn.type = 'button';
+                        passwordBtn.className = 'text-purple-600 hover:text-purple-800 text-sm mr-3';
+                        passwordBtn.textContent = 'Change Password';
+                        passwordBtn.addEventListener('click', () => openChangePasswordModal(u));
+                        actionsTd.appendChild(passwordBtn);
+
+                        // Deactivate/Activate button
+                        const toggleBtn = document.createElement('button');
+                        toggleBtn.type = 'button';
+                        toggleBtn.className = statusLabel === 'active' ? 'text-red-600 hover:text-red-800 text-sm' : 'text-green-600 hover:text-green-800 text-sm';
+                        toggleBtn.textContent = statusLabel === 'active' ? 'Deactivate' : 'Activate';
+                        toggleBtn.addEventListener('click', () => {
+                            const displayName = (u.first_name || '') + ' ' + (u.last_name || '');
+                            const action = statusLabel === 'active' ? 'Deactivate' : 'Activate';
+                            showConfirm(`${action} user`, `Are you sure you want to ${action.toLowerCase()} ${displayName.trim()}?`, async () => {
+                                await toggleUserStatus(u.id || u.user_id, statusLabel);
+                            });
+                        });
+                        actionsTd.appendChild(toggleBtn);
+
+                        tr.appendChild(userInfoTd);
+                        tr.appendChild(roleTd);
+                        tr.appendChild(statusTd);
+                        tr.appendChild(deptTd);
+                        tr.appendChild(printerTd);
+                        tr.appendChild(actionsTd);
+
+                        tbody.appendChild(tr);
+                    });
+                } catch (e) {
+                    console.error('Error loading users:', e);
+                    emptyState.classList.remove('hidden');
+                }
+            }
+
+            // State for current filter (active/inactive)
+            let currentStatusFilter = 'active';
+
+            // Tab handling
+            document.getElementById('tab-active').addEventListener('click', () => {
+                currentStatusFilter = 'active';
+                document.getElementById('tab-active').classList.add('ring-2','ring-blue-500');
+                document.getElementById('tab-inactive').classList.remove('ring-2','ring-blue-500');
+                loadUsers();
+            });
+            document.getElementById('tab-inactive').addEventListener('click', () => {
+                currentStatusFilter = 'inactive';
+                document.getElementById('tab-inactive').classList.add('ring-2','ring-blue-500');
+                document.getElementById('tab-active').classList.remove('ring-2','ring-blue-500');
+                loadUsers();
+            });
+
+            // Refresh button
+            document.getElementById('refreshUsersBtn').addEventListener('click', () => loadUsers());
+
+            // Edit modal controls
+            document.getElementById('cancelEditUser').addEventListener('click', () => {
+                document.getElementById('editUserModal').classList.add('hidden');
+            });
+
+            // Populate edit printers select (reuse loadAvailablePrinters but target edit select)
+            async function loadAvailablePrintersForEdit() {
+                const user = JSON.parse(localStorage.getItem('user')) || {};
+                console.log('🔍 Loading printers for edit modal, institution:', user.institution_id);
+                
+                if (!user.institution_id) {
+                    console.error('❌ No institution_id found in user data');
+                    return;
+                }
+                
+                const container = document.getElementById('editPrinterCheckboxContainer');
+                
+                try {
+                    const res = await fetch(`/api/institutions/${user.institution_id}/printers`);
+                    console.log('📡 Edit modal printer API response status:', res.status);
+                    
+                    if (!res.ok) {
+                        const errorData = await res.json().catch(() => ({}));
+                        console.error('❌ Edit modal API error:', errorData);
+                        container.innerHTML = `<p class="text-sm text-red-500">Failed to load printers: ${errorData.error || res.statusText}</p>`;
+                        return;
+                    }
+                    
+                    const printers = await res.json();
+                    console.log('✅ Loaded printers for edit:', printers);
+                    
+                    container.innerHTML = '';
+                    
+                    if (!printers || printers.length === 0) {
+                        container.innerHTML = '<p class="text-sm text-gray-500">No printers available</p>';
+                        return;
+                    }
+                    
+                    printers.forEach(p => {
+                        const div = document.createElement('div');
+                        div.className = 'flex items-center mb-2';
+                        
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.id = `edit_printer_${p.printer_id}`;
+                        checkbox.value = p.printer_id;
+                        // Include data attributes for serial and name to allow matching
+                        // against user.printers when printer_id is not present.
+                        if (p.serial_number) checkbox.setAttribute('data-serial', String(p.serial_number));
+                        if (p.name) checkbox.setAttribute('data-name', String(p.name));
+                        checkbox.className = 'mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded edit-printer-checkbox';
+                        
+                        const label = document.createElement('label');
+                        label.htmlFor = `edit_printer_${p.printer_id}`;
+                        label.className = 'text-sm text-gray-700';
+                        const parts = [p.name];
+                        if (p.model) parts.push('(' + p.model + ')');
+                        if (p.serial_number) parts.push('- SN:' + p.serial_number);
+                        label.textContent = parts.join(' ');
+                        
+                        div.appendChild(checkbox);
+                        div.appendChild(label);
+                        container.appendChild(div);
+                    });
+                } catch (e) {
+                    console.error('❌ Failed to load printers for edit:', e);
+                    container.innerHTML = `<p class="text-sm text-red-500">Error: ${e.message}</p>`;
+                }
+            }
+
+            // Handler to open edit modal for a given user
+            function openEditModal(user) {
+                console.log('Opening edit modal for user', user);
+                document.getElementById('editUserId').value = user.id || user.user_id;
+                document.getElementById('editFirstName').value = user.first_name || '';
+                document.getElementById('editLastName').value = user.last_name || '';
+                document.getElementById('editEmail').value = user.email || '';
+                // Prefill department. Some API responses include department at the
+                // user level, others include it on the assigned printer object.
+                document.getElementById('editDepartment').value = user.department ?? (user.printers && user.printers[0] && user.printers[0].department) ?? '';
+                document.getElementById('editUserModal').classList.remove('hidden');
+
+                // Load printers and preselect those assigned to the user
+                loadAvailablePrintersForEdit().then(() => {
+                    try {
+                        // Debug: print user.printers and available checkboxes to help
+                        // diagnose why checkboxes are not being preselected.
+                        console.debug('DEBUG openEditModal - user.printers:', user.printers);
+                        console.debug('DEBUG openEditModal - checkbox values before preselect:', Array.from(document.querySelectorAll('.edit-printer-checkbox')).map(cb => cb.value));
+                        // Uncheck all first
+                        document.querySelectorAll('.edit-printer-checkbox').forEach(cb => cb.checked = false);
+
+                        // Check the ones assigned to this user. Be tolerant of different
+                        // shapes returned by the API (some rows use `printer_id`,
+                        // some use `id`). Compare as strings to avoid number/string mismatches.
+                        if (user.printers && user.printers.length > 0) {
+                            user.printers.forEach(printer => {
+                                const printerId = String(printer.printer_id ?? printer.id ?? '');
+                                let checkbox = printerId ? Array.from(document.querySelectorAll('.edit-printer-checkbox'))
+                                    .find(cb => String(cb.value) === printerId) : null;
+
+                                // If no direct id match, try matching by serial_number or name
+                                if (!checkbox) {
+                                    const serial = printer.serial_number ?? printer.serial ?? null;
+                                    const name = printer.name ?? null;
+                                    if (serial) {
+                                        checkbox = Array.from(document.querySelectorAll('.edit-printer-checkbox'))
+                                            .find(cb => cb.getAttribute('data-serial') === String(serial));
+                                    }
+                                    if (!checkbox && name) {
+                                        checkbox = Array.from(document.querySelectorAll('.edit-printer-checkbox'))
+                                            .find(cb => cb.getAttribute('data-name') === String(name));
+                                    }
+                                }
+
+                                console.debug('DEBUG openEditModal - matching printer id', printerId, 'serial', printer.serial_number, 'name', printer.name, '-> checkbox found?', !!checkbox);
+                                if (checkbox) checkbox.checked = true;
+                            });
+                        }
+                        console.debug('DEBUG openEditModal - checkbox states after preselect:', Array.from(document.querySelectorAll('.edit-printer-checkbox')).map(cb => ({ value: cb.value, checked: cb.checked })));
+                    } catch (e) {
+                        console.warn('Could not preselect printers in edit modal:', e.message);
+                    }
+                }).catch(e => console.warn('Failed to load printers for edit:', e));
+            }
+
+            // Submit edit
+            document.getElementById('submitEditUser').addEventListener('click', async () => {
+                const userId = document.getElementById('editUserId').value;
+                const firstName = document.getElementById('editFirstName').value.trim();
+                const lastName = document.getElementById('editLastName').value.trim();
+                const email = document.getElementById('editEmail').value.trim();
+                const department = document.getElementById('editDepartment').value.trim() || null;
+                
+                // Collect all selected printer IDs
+                const selectedPrinters = Array.from(document.querySelectorAll('.edit-printer-checkbox:checked'))
+                    .map(cb => Number(cb.value))
+                    .filter(id => id);
+
+                if (!firstName || !lastName || !email) {
+                    showNotification('Error', 'First, last name and email are required', 'error');
+                    return;
+                }
+
+                try {
+                    const token = localStorage.getItem('token');
+                    const payload = { firstName, lastName, email, department };
+                    // Send array of printer IDs only when Institution Admin selected printers.
+                    // If no printer field is present in the payload, the backend will
+                    // leave assignments unchanged (avoid accidental removals).
+                    if (selectedPrinters.length > 0) {
+                        payload.printer_ids = selectedPrinters;
+                    }
+
+                    const currentUser = JSON.parse(localStorage.getItem('user')) || {};
+                    const institutionAdminId = currentUser.id;
+
+                    const res = await fetch(`/api/institution_admins/${institutionAdminId}/users/${userId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!res.ok) {
+                        const err = await res.json();
+                        throw new Error(err.error || err.message || 'Failed to update user');
+                    }
+
+                    const result = await res.json();
+                    console.log('Edit user result:', result);
+                    document.getElementById('editUserModal').classList.add('hidden');
+                    const changeMsg = result.changes ? ` (${result.changes.added} added, ${result.changes.removed} removed)` : '';
+                    showNotification('Success', `User updated${changeMsg}`, 'success');
+                    loadUsers();
+                } catch (e) {
+                    console.error('Edit user error:', e);
+                    showNotification('Error', e.message || 'Failed to update user', 'error');
+                }
+            });
+
+            // Deactivate/reactivate user handler (called from action button)
+            async function toggleUserStatus(userId, currentStatus) {
+                try {
+                    const token = localStorage.getItem('token');
+                    const desired = currentStatus === 'active' ? 'inactive' : 'active';
+                    const currentUser = JSON.parse(localStorage.getItem('user')) || {};
+                    const institutionAdminId = currentUser.id;
+                    const res = await fetch(`/api/institution_admins/${institutionAdminId}/users/${userId}/status`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify({ status: desired })
+                    });
+                    if (!res.ok) {
+                        const text = await res.text();
+                        console.warn('toggleUserStatus non-ok response:', res.status, text);
+                        let errMsg = 'Failed to change status';
+                        try {
+                            const err = JSON.parse(text);
+                            errMsg = err.error || err.message || errMsg;
+                        } catch (_) {
+                            // not JSON
+                            errMsg = text;
+                        }
+                        throw new Error(errMsg);
+                    }
+                    showNotification('Success', `User ${desired}`, 'success');
+                    loadUsers();
+                } catch (e) {
+                    console.error('Toggle status error:', e);
+                    showNotification('Error', e.message || 'Failed to change status', 'error');
+                }
+            }
+
+            // Confirm modal helper
+            function showConfirm(title, body, onConfirm) {
+                const modal = document.getElementById('confirmModal');
+                document.getElementById('confirmTitle').textContent = title;
+                document.getElementById('confirmBody').textContent = body;
+                modal.classList.remove('hidden');
+
+                const ok = document.getElementById('confirmOk');
+                const cancel = document.getElementById('confirmCancel');
+
+                function cleanup() {
+                    ok.removeEventListener('click', onOk);
+                    cancel.removeEventListener('click', onCancel);
+                    modal.classList.add('hidden');
+                }
+
+                async function onOk() {
+                    try { await onConfirm(); } catch (e) { console.error(e); showNotification('Error', e.message || 'Action failed', 'error'); }
+                    cleanup();
+                }
+
+                function onCancel() {
+                    cleanup();
+                }
+
+                ok.addEventListener('click', onOk);
+                cancel.addEventListener('click', onCancel);
+            }
+
+            // Password change modal handlers
+            let currentPasswordChangeUser = null;
+
+            function openChangePasswordModal(user) {
+                console.log('Opening password change modal for user:', user);
+                console.log('User user_id:', user.user_id);
+                console.log('User has user_id property:', user.hasOwnProperty('user_id'));
+                console.log('User keys:', Object.keys(user));
+                
+                if (!user || (!user.id && !user.user_id) || isNaN(user.id || user.user_id)) {
+                    console.error('Invalid user object passed to openChangePasswordModal:', user);
+                    showNotification('Error', 'Unable to open password change modal - invalid user data', 'error');
+                    return;
+                }
+                
+                currentPasswordChangeUser = user;
+                document.getElementById('passwordChangeUserId').value = user.id || user.user_id;
+                document.getElementById('passwordChangeUserName').textContent = `${user.first_name} ${user.last_name} (${user.email})`;
+                document.getElementById('newPasswordInput').value = '';
+                document.getElementById('confirmPasswordInput').value = '';
+                document.getElementById('passwordChangeError').classList.add('hidden');
+                // Reset strength UI
+                updatePasswordStrengthUI('');
+                document.getElementById('changePasswordModal').classList.remove('hidden');
+            }
+
+            document.getElementById('cancelPasswordChange').addEventListener('click', () => {
+                document.getElementById('changePasswordModal').classList.add('hidden');
+                currentPasswordChangeUser = null;
+            });
+
+            // Password visibility toggles for change password modal
+            document.getElementById('toggleNewPasswordVisibility').addEventListener('click', () => {
+                const input = document.getElementById('newPasswordInput');
+                const icon = document.getElementById('toggleNewPasswordIcon');
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                } else {
+                    input.type = 'password';
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                }
+                input.focus();
+            });
+
+            document.getElementById('toggleConfirmPasswordVisibility').addEventListener('click', () => {
+                const input = document.getElementById('confirmPasswordInput');
+                const icon = document.getElementById('toggleConfirmPasswordIcon');
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                } else {
+                    input.type = 'password';
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                }
+                input.focus();
+            });
+
+            // Update strength on new password input
+            document.getElementById('newPasswordInput').addEventListener('input', (e) => {
+                updatePasswordStrengthUI(e.target.value);
+            });
+
+            document.getElementById('submitPasswordChange').addEventListener('click', async () => {
+                const newPassword = document.getElementById('newPasswordInput').value;
+                const confirmPassword = document.getElementById('confirmPasswordInput').value;
+                const errorDiv = document.getElementById('passwordChangeError');
+                const errorText = errorDiv.querySelector('p');
+
+                // Validation
+                if (!passwordMeetsPolicy(newPassword)) {
+                    errorText.textContent = 'Password must be at least 8 characters and include letters, numbers, and symbols';
+                    errorDiv.classList.remove('hidden');
+                    return;
+                }
+
+                if (newPassword !== confirmPassword) {
+                    errorText.textContent = 'Passwords do not match';
+                    errorDiv.classList.remove('hidden');
+                    return;
+                }
+
+                if (!currentPasswordChangeUser) {
+                    errorText.textContent = 'User information is missing';
+                    errorDiv.classList.remove('hidden');
+                    return;
+                }
+
+                try {
+                    const currentUser = JSON.parse(localStorage.getItem('user')) || {};
+                    const institutionAdminId = currentUser.id;
+                    const token = localStorage.getItem('token');
+                    const userId = currentPasswordChangeUser.id || currentPasswordChangeUser.user_id;
+                    
+                    console.log('Submitting password change:');
+                    console.log('currentPasswordChangeUser:', currentPasswordChangeUser);
+                    console.log('userId:', userId);
+                    console.log('institutionAdminId:', institutionAdminId);
+
+                    if (!userId || isNaN(userId)) {
+                        console.error('userId is invalid!');
+                        errorText.textContent = 'User ID is invalid. Please try again.';
+                        errorDiv.classList.remove('hidden');
+                        return;
+                    }
+
+                    const res = await fetch(`/api/institution_admins/${institutionAdminId}/users/${userId}/password`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ newPassword })
+                    });
+
+                    if (!res.ok) {
+                        const err = await res.json();
+                        throw new Error(err.error || err.message || 'Failed to change password');
+                    }
+
+                    document.getElementById('changePasswordModal').classList.add('hidden');
+                    currentPasswordChangeUser = null;
+                    showNotification('Success', 'Password changed successfully', 'success');
+                } catch (e) {
+                    console.error('Password change error:', e);
+                    errorText.textContent = e.message || 'Failed to change password';
+                    errorDiv.classList.remove('hidden');
+                }
+            });
+
+            // Initial load of users
+            // pre-select active tab style
+            document.getElementById('tab-active').classList.add('ring-2','ring-blue-500');
+            loadUsers();
+
+            // Helper function to show notifications
+            function showNotification(title, message, type = 'info') {
+                const toast = document.createElement('div');
+                const bgColor = type === 'success' ? 'bg-green-100 border-green-500' : 
+                               type === 'error' ? 'bg-red-100 border-red-500' : 
+                               'bg-blue-100 border-blue-500';
+                const textColor = type === 'success' ? 'text-green-700' : 
+                                 type === 'error' ? 'text-red-700' : 
+                                 'text-blue-700';
+                const icon = type === 'success' ? 'fa-check-circle' : 
+                           type === 'error' ? 'fa-exclamation-circle' : 
+                           'fa-info-circle';
+                
+                toast.className = `fixed bottom-4 right-4 ${bgColor} border-l-4 p-4 rounded shadow-lg max-w-md z-50`;
+                toast.innerHTML = `
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas ${icon} ${textColor}"></i>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium ${textColor}">${title}</p>
+                            <p class="text-sm ${textColor} opacity-90">${message}</p>
+                        </div>
+                        <button onclick="this.parentElement.parentElement.remove()" class="ml-4 ${textColor}">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `;
+                document.body.appendChild(toast);
+                setTimeout(() => {
+                    if (document.body.contains(toast)) {
+                        document.body.removeChild(toast);
+                    }
+                }, 5000);
+            }
+        });
+    </script>
+</body>
+</html>
+
+

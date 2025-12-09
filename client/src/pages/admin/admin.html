@@ -102,12 +102,12 @@
                         </div>
                     </div>
 
-                    <!-- Pending Coordinators -->
+                    <!-- Pending Institution Admins -->
                     <div class="bg-white rounded-xl shadow-lg p-6 transform hover:scale-105 transition-all duration-300 border-l-4 border-yellow-500">
                         <div class="flex items-center justify-between">
                             <div>
                                 <p class="text-sm font-medium text-slate-600 uppercase tracking-wide">Pending Approvals</p>
-                                <h3 class="text-3xl font-bold text-slate-900 mt-2" id="pendingCoordinators">
+                                <h3 class="text-3xl font-bold text-slate-900 mt-2" id="pendingInstitutionAdmins">
                                     <i class="fas fa-spinner fa-spin text-slate-400"></i>
                                 </h3>
                             </div>
@@ -456,10 +456,10 @@
                 }
             }
 
-            function updateDashboardStats(stats) {
-                document.getElementById('totalUsers').textContent = stats.totalUsers || 0;
-                document.getElementById('pendingCoordinators').textContent = stats.pendingCoordinators || 0;
-                document.getElementById('totalInstitutions').textContent = stats.totalInstitutions || 0;
+        function updateDashboardStats(stats) {
+            document.getElementById('totalUsers').textContent = stats.totalUsers || 0;
+            document.getElementById('pendingInstitutionAdmins').textContent = stats.pendingInstitutionAdmins || 0;
+            document.getElementById('totalInstitutions').textContent = stats.totalInstitutions || 0;
                 document.getElementById('activeServiceRequests').textContent = stats.activeServiceRequests || 0;
                 document.getElementById('totalPrinters').textContent = stats.totalPrinters || 0;
                 document.getElementById('availablePrinters').textContent = stats.availablePrinters || 0;
@@ -470,7 +470,7 @@
 
             function showErrorStats() {
                 const statElements = [
-                    'totalUsers', 'pendingCoordinators', 'totalInstitutions', 
+                    'totalUsers', 'pendingInstitutionAdmins', 'totalInstitutions', 
                     'activeServiceRequests', 'totalPrinters', 'partsRequests',
                     'totalParts', 'totalTechnicians'
                 ];
@@ -484,3 +484,4 @@
     </script>
 </body>
 </html>
+

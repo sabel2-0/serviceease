@@ -38,7 +38,7 @@ class User {
                 email, 
                 password, 
                 institutionId,
-                role = 'coordinator' 
+                role = 'institution_admin' 
             } = userData;
             
             // Debug: Log all received fields
@@ -60,9 +60,9 @@ class User {
                 throw new Error('Password is required and cannot be empty');
             }
 
-            // Validate institution_id for coordinators and requesters
-            if ((role === 'coordinator' || role === 'requester') && !institutionId) {
-                throw new Error('institution_id is required for coordinators and requesters');
+            // Validate institution_id for institution_admins and institution_users
+            if ((role === 'institution_admin' || role === 'institution_user') && !institutionId) {
+                throw new Error('institution_id is required for institution_admins and institution_users');
             }
             
             // Check if user exists
@@ -84,12 +84,12 @@ class User {
             const userId = result.insertId;
             console.log(`Created user ${userId}`);
 
-            // NOTE: We no longer link the coordinator to the institution at registration time.
-            // The institution.user_id will be set only when the coordinator is approved by an admin.
+            // NOTE: We no longer link the institution_admin to the institution at registration time.
+            // The institution.user_id will be set only when the institution_admin is approved by an admin.
             // This preserves the integrity of institution ownership until approval.
 
-            // Create notification for admins about new coordinator registration
-            if (role === 'coordinator' && institutionId) {
+            // Create notification for admins about new institution_admin registration
+            if (role === 'institution_admin' && institutionId) {
                 // Fetch institution details for notification
                 const [institutions] = await db.query(
                     'SELECT name, type, address FROM institutions WHERE institution_id = ? LIMIT 1',
@@ -102,8 +102,8 @@ class User {
                     `INSERT INTO notifications (type, title, message, related_user_id, related_data) 
                      VALUES (?, ?, ?, ?, ?)`,
                     [
-                        'coordinator_registration',
-                        'New Coordinator Registration',
+                        'institution_admin_registration',
+                        'New institution_admin Registration',
                         `${firstName} ${lastName} from ${institution.name || 'Unknown Institution'} has registered and is awaiting approval.`,
                         userId,
                         JSON.stringify({
@@ -115,7 +115,7 @@ class User {
                         })
                     ]
                 );
-                console.log(`Created notification for new coordinator registration: ${email}`);
+                console.log(`Created notification for new institution_admin registration: ${email}`);
             }
 
             return {
@@ -160,12 +160,12 @@ class User {
                        n.related_data
                 FROM users u
                 LEFT JOIN temp_user_photos tp ON u.id = tp.user_id
-                LEFT JOIN notifications n ON n.related_user_id = u.id AND n.type = 'coordinator_registration'
+                LEFT JOIN notifications n ON n.related_user_id = u.id AND n.type = 'institution_admin_registration'
                 WHERE u.approval_status = 'pending'
                 ORDER BY u.created_at DESC
             `);
             
-            // Parse related_data to extract institution information for coordinators
+            // Parse related_data to extract institution information for institution_admins
             const formattedRows = rows.map(row => {
                 let institutionInfo = {
                     institution_id: null,
@@ -174,8 +174,8 @@ class User {
                     institution_address: null
                 };
                 
-                // Only parse for coordinators
-                if (row.role === 'coordinator' && row.related_data) {
+                // Only parse for institution_admins
+                if (row.role === 'institution_admin' && row.related_data) {
                     try {
                         const data = typeof row.related_data === 'string' 
                             ? JSON.parse(row.related_data) 
@@ -221,11 +221,11 @@ class User {
                 ['approved', true, userId]
             );
 
-            // Try to associate the approved coordinator with the institution they selected during registration.
+            // Try to associate the approved institution_admin with the institution they selected during registration.
             // The registration flow stores the selected institution_id inside a notification's related_data JSON.
             try {
                 const [notifRows] = await db.query(
-                    `SELECT related_data FROM notifications WHERE related_user_id = ? AND type = 'coordinator_registration' ORDER BY created_at DESC LIMIT 1`,
+                    `SELECT related_data FROM notifications WHERE related_user_id = ? AND type = 'institution_admin_registration' ORDER BY created_at DESC LIMIT 1`,
                     [userId]
                 );
 
@@ -243,12 +243,12 @@ class User {
                     const institutionId = related && (related.institution_id || related.institutionId || related.institution_id);
                     if (institutionId) {
                         await db.query('UPDATE institutions SET user_id = ? WHERE institution_id = ?', [userId, institutionId]);
-                        console.log(`Linked approved coordinator ${userId} as owner of institution ${institutionId}`);
+                        console.log(`Linked approved institution_admin ${userId} as owner of institution ${institutionId}`);
                     } else {
                         console.log(`No institution_id found in notification related_data for user ${userId}`);
                     }
                 } else {
-                    console.log(`No coordinator_registration notification found for user ${userId} to determine institution`);
+                    console.log(`No institution_admin_registration notification found for user ${userId} to determine institution`);
                 }
             } catch (linkErr) {
                 console.error(`Error linking institution for approved user ${userId}:`, linkErr);
@@ -338,3 +338,6 @@ class User {
 }
 
 module.exports = User;
+
+
+

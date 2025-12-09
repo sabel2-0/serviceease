@@ -36,7 +36,7 @@ function updateUserInfo(user) {
     // Add the user's name to the dashboard greeting if available
     const welcomeMessage = document.querySelector('main p.text-gray-600');
     if (welcomeMessage && user.firstName) {
-        welcomeMessage.textContent = `Welcome, ${user.firstName}! Manage service operations and coordinator approvals here.`;
+        welcomeMessage.textContent = `Welcome, ${user.firstName}! Manage service operations and institutionAdmin approvals here.`;
     }
 }
 
@@ -93,3 +93,7 @@ function setupEventHandlers() {
         });
     });
 }
+
+
+
+

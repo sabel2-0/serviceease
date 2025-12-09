@@ -47,7 +47,7 @@ promisePool.executeMultiStatementSql = async function(sql) {
     }
 };
 
-// Test the connection
+// Test the connection on startup
 pool.getConnection((err, connection) => {
     if (err) {
         console.error('Database connection failed:', err);
@@ -57,16 +57,9 @@ pool.getConnection((err, connection) => {
             database: process.env.DB_NAME || 'serviceease'
         });
     } else {
-        console.log('Database connected successfully');
-        connection.query('SELECT VERSION()', (error, results) => {
-            if (error) {
-                console.error('Query error:', error);
-            } else {
-                console.log('MySQL Version:', results[0]['VERSION()']);
-            }
-        });
         connection.release();
     }
 });
 
 module.exports = promisePool;
+

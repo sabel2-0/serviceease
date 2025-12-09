@@ -80,10 +80,10 @@ function extractTarget(req) {
         targetType = 'parts';
         targetId = req.params.id || req.body.id;
     } 
-    // Coordinators
-    else if (path.includes('/coordinator')) {
-        targetType = 'coordinator';
-        targetId = req.params.id || req.body.id || req.body.coordinator_id;
+    // institution_admins
+    else if (path.includes('/institution_admin')) {
+        targetType = 'institution_admin';
+        targetId = req.params.id || req.body.id || req.body.institution_admin_id;
     } 
     // Institutions/Clients
     else if (path.includes('/institutions') || path.includes('/clients')) {
@@ -161,21 +161,21 @@ const auth = async (req, res, next) => {
                     });
                 }
                 
-                // Check institution status for coordinators and requesters
+                // Check institution status for institution_admins and institution_users
                 const userRole = userRows[0].role;
-                if (userRole === 'coordinator' || userRole === 'requester') {
+                if (userRole === 'institution_admin' || userRole === 'institution_user') {
                     let institutionStatus = null;
                     
                     try {
-                        if (userRole === 'coordinator') {
-                            // Coordinator owns the institution (institutions.user_id)
+                        if (userRole === 'institution_admin') {
+                            // institution_admin owns the institution (institutions.user_id)
                             const [instRows] = await db.query(
                                 'SELECT status FROM institutions WHERE user_id = ? LIMIT 1',
                                 [decoded.id]
                             );
                             institutionStatus = instRows && instRows.length > 0 ? instRows[0].status : null;
-                        } else if (userRole === 'requester') {
-                            // Requester is linked via user_printer_assignments.institution_id
+                        } else if (userRole === 'institution_user') {
+                            // institution_user is linked via user_printer_assignments.institution_id
                             const [instRows] = await db.query(
                                 `SELECT i.status FROM institutions i
                                  JOIN user_printer_assignments upa ON upa.institution_id = i.institution_id
@@ -334,16 +334,16 @@ const authenticateTechnician = async (req, res, next) => {
 };
 
 /**
- * Middleware to authenticate coordinator users
- * Only allows coordinators to access protected routes
+ * Middleware to authenticate institution_admin users
+ * Only allows institution_admins to access protected routes
  */
-const authenticateCoordinator = (req, res, next) => {
+const authenticateinstitution_admin = (req, res, next) => {
     auth(req, res, () => {
-        // After general auth, verify user is a coordinator
-        if (req.user && req.user.role === 'coordinator') {
+        // After general auth, verify user is a institution_admin
+        if (req.user && req.user.role === 'institution_admin') {
             next();
         } else {
-            return res.status(403).json({ message: 'Access denied. Coordinators only.' });
+            return res.status(403).json({ message: 'Access denied. institution_admins only.' });
         }
     });
 };
@@ -366,6 +366,9 @@ const authenticateAdmin = (req, res, next) => {
 module.exports = {
     auth,
     authenticateTechnician,
-    authenticateCoordinator,
+    authenticateinstitution_admin,
     authenticateAdmin
 };
+
+
+

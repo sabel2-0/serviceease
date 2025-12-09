@@ -33,8 +33,8 @@ institutions.user_id → users.id
 
 **Migration Results:**
 - ✅ 2 institutions migrated successfully
-- ✅ "University of Cebu Main" → assigned to Popoy Doe (coordinator)
-- ✅ "Pajo Elementary School" → assigned to Navi Kram (coordinator)
+- ✅ "University of Cebu Main" → assigned to Popoy Doe (institution_admin)
+- ✅ "Pajo Elementary School" → assigned to Navi Kram (institution_admin)
 - ✅ Both columns removed from users table
 - ✅ Foreign key constraints updated
 
@@ -50,7 +50,7 @@ users
 ├── last_name (VARCHAR(50))
 ├── email (VARCHAR(100), UNIQUE)
 ├── password (VARCHAR(255))
-├── role (ENUM: 'admin','coordinator','operations_officer','technician','requester')
+├── role (ENUM: 'admin','institution_admin','operations_officer','technician','institution_user')
 ├── is_email_verified (TINYINT(1))
 ├── status (ENUM: 'active','inactive')
 ├── created_at (TIMESTAMP)
@@ -144,14 +144,14 @@ SELECT institution_id FROM institutions WHERE user_id = ? LIMIT 1
 
 **Key Logic Change:**
 ```javascript
-// For requesters/technicians: Get institution they own
+// for institution_users/technicians: Get institution they own
 const [instRows] = await db.query(
     'SELECT institution_id FROM institutions WHERE user_id = ? LIMIT 1', 
     [actorId]
 );
 
-// For coordinators: Get their owned institution or use provided one
-if (actorRole === 'coordinator') {
+// for institution_admins: Get their owned institution or use provided one
+if (actorRole === 'institution_admin') {
     const [instRows] = await db.query(
         'SELECT institution_id FROM institutions WHERE user_id = ? LIMIT 1', 
         [actorId]
@@ -252,7 +252,7 @@ Service request associated with user's owned institution
 1. **Clearer Ownership Model:**
    - Institutions explicitly belong to users
    - Easy to query: "What institutions does this user own?"
-   - Natural for coordinator role (they manage/own their institution)
+   - Natural for institution_admin role (they manage/own their institution)
 
 2. **Simpler User Table:**
    - No redundant institution_id
@@ -322,13 +322,13 @@ Service request associated with user's owned institution
   - [ ] No verification token created
   
 - [ ] Test user login
-  - [ ] Login as coordinator
+  - [ ] Login as institution_admin
   - [ ] Verify institution details returned
   - [ ] JWT includes correct institution_id
 
 - [ ] Test service request creation
-  - [ ] Create request as requester
-  - [ ] Create request as coordinator
+  - [ ] Create request as institution_user
+  - [ ] Create request as institution_admin
   - [ ] Verify institution_id populated correctly
   - [ ] Verify institution ownership logic works
 
@@ -450,7 +450,7 @@ SELECT * FROM institutions WHERE user_id = ? LIMIT 1
 SELECT u.*, i.name as institution_name
 FROM users u
 JOIN institutions i ON i.user_id = u.id
-WHERE u.role IN ('coordinator', 'requester')
+WHERE u.role IN ('institution_admin', 'institution_user')
 
 // Get all institutions (with optional owner info)
 SELECT i.*, u.first_name, u.last_name, u.email
@@ -465,3 +465,5 @@ INSERT INTO service_requests (..., institution_id) VALUES (..., inst[0].institut
 ---
 
 🎉 **Migration successfully completed!** The system now has a cleaner, more logical relationship between users and institutions.
+
+

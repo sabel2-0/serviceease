@@ -18,7 +18,10 @@ router.get('/', async (req, res) => {
                 created_at,
                 updated_at,
                 is_universal,
-                unit
+                unit,
+                page_yield,
+                ink_volume,
+                color
             FROM printer_parts
             ORDER BY created_at DESC
         `);
@@ -40,7 +43,7 @@ router.get('/', async (req, res) => {
 
                 // Retry select
                 const [rows2] = await db.query(`
-                    SELECT id, name, brand, category, quantity, minimum_stock, status, created_at, updated_at, is_universal, unit
+                    SELECT id, name, brand, category, quantity, minimum_stock, status, created_at, updated_at, is_universal, unit, page_yield, ink_volume, color
                     FROM printer_parts
                     ORDER BY created_at DESC
                 `);
@@ -65,7 +68,10 @@ router.post('/', async (req, res) => {
             brand,
             category,
             quantity,
-            is_universal
+            is_universal,
+            page_yield,
+            ink_volume,
+            color
         } = req.body;
 
         if (!name) {
@@ -81,14 +87,20 @@ router.post('/', async (req, res) => {
                 brand,
                 category,
                 quantity,
-                is_universal
-            ) VALUES (?, ?, ?, ?, ?)`,
+                is_universal,
+                page_yield,
+                ink_volume,
+                color
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 name,
                 brand || null,
                 category,
                 parseInt(quantity) || 0,
-                is_universal ? 1 : 0
+                is_universal ? 1 : 0,
+                page_yield ? parseInt(page_yield) : null,
+                ink_volume ? parseFloat(ink_volume) : null,
+                color || null
             ]
         );
 
@@ -114,10 +126,13 @@ router.put('/:id', async (req, res) => {
             unit,
             minimum_stock,
             status,
-            is_universal
+            is_universal,
+            page_yield,
+            ink_volume,
+            color
         } = req.body;
 
-        if (!name && !brand && !category && quantity === undefined && unit === undefined && minimum_stock === undefined && status === undefined && is_universal === undefined) {
+        if (!name && !brand && !category && quantity === undefined && unit === undefined && minimum_stock === undefined && status === undefined && is_universal === undefined && page_yield === undefined && ink_volume === undefined && color === undefined) {
             return res.status(400).json({ error: 'At least one field to update is required' });
         }
 
@@ -132,6 +147,9 @@ router.put('/:id', async (req, res) => {
         if (minimum_stock !== undefined) { updateFields.push('minimum_stock = ?'); values.push(minimum_stock); }
         if (status !== undefined) { updateFields.push('status = ?'); values.push(status); }
         if (is_universal !== undefined) { updateFields.push('is_universal = ?'); values.push(is_universal); }
+        if (page_yield !== undefined) { updateFields.push('page_yield = ?'); values.push(page_yield ? parseInt(page_yield) : null); }
+        if (ink_volume !== undefined) { updateFields.push('ink_volume = ?'); values.push(ink_volume ? parseFloat(ink_volume) : null); }
+        if (color !== undefined) { updateFields.push('color = ?'); values.push(color); }
 
         values.push(id);
 
@@ -189,3 +207,6 @@ router.get('/debug', async (req, res) => {
 });
 
 module.exports = router;
+
+
+

@@ -108,8 +108,8 @@
                             <button class="filter-tab py-4 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap" data-filter="unread">
                                 Unread
                             </button>
-                            <button class="filter-tab py-4 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap" data-filter="coordinator_registration">
-                                Coordinator Registrations
+                            <button class="filter-tab py-4 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap" data-filter="Institution Admin_registration">
+                                Institution Admin Registrations
                             </button>
                             <button class="filter-tab py-4 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap" data-filter="parts_request">
                                 Parts Requests
@@ -221,8 +221,8 @@
                 // Apply filter
                 if (currentFilter === 'unread') {
                     filteredNotifications = notifications.filter(n => !n.is_read);
-                } else if (currentFilter === 'coordinator_registration') {
-                    filteredNotifications = notifications.filter(n => n.type === 'coordinator_registration');
+                } else if (currentFilter === 'Institution Admin_registration') {
+                    filteredNotifications = notifications.filter(n => n.type === 'Institution Admin_registration');
                 } else if (currentFilter === 'parts_request') {
                     filteredNotifications = notifications.filter(n => n.type === 'parts_request' || n.type === 'parts_approved' || n.type === 'parts_denied');
                 }
@@ -280,7 +280,7 @@
 
             function getNotificationIcon(type) {
                 switch (type) {
-                    case 'coordinator_registration':
+                    case 'Institution Admin_registration':
                         return 'fas fa-user-plus';
                     case 'service_request':
                         return 'fas fa-wrench';
@@ -299,7 +299,7 @@
 
             function getNotificationIconBg(type) {
                 switch (type) {
-                    case 'coordinator_registration':
+                    case 'Institution Admin_registration':
                         return 'bg-blue-500';
                     case 'service_request':
                         return 'bg-green-500';
@@ -408,3 +408,4 @@
     </script>
 </body>
 </html>
+

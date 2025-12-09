@@ -1,3 +1,71 @@
+// Global fetch interceptor to handle token expiration and forbidden access
+(function() {
+    const originalFetch = window.fetch;
+    let isLoggingOut = false; // Prevent multiple logout attempts
+    
+    function performLogout(message) {
+        // Prevent multiple simultaneous logouts
+        if (isLoggingOut) return;
+        isLoggingOut = true;
+        
+        // Clear local storage
+        localStorage.removeItem('user');
+        localStorage.removeItem('isLoggedIn');
+        localStorage.removeItem('token');
+        
+        // Show message
+        alert(message);
+        
+        // Redirect to login
+        window.location.href = '/pages/login.html';
+    }
+    
+    window.fetch = async function(...args) {
+        try {
+            const response = await originalFetch.apply(this, args);
+            
+            // Skip if already logging out
+            if (isLoggingOut) return response;
+            
+            // Check if response is 401 Unauthorized or 403 Forbidden
+            if (response.status === 401 || response.status === 403) {
+                // Clone the response to read it
+                const clonedResponse = response.clone();
+                
+                try {
+                    const data = await clonedResponse.json();
+                    
+                    if (response.status === 401) {
+                        // Check if it's a token expiration or session invalidation
+                        if (data.code === 'TOKEN_INVALIDATED' || 
+                            data.code === 'ACCOUNT_INACTIVE' || 
+                            data.code === 'INSTITUTION_DEACTIVATED' ||
+                            data.message?.includes('token') || 
+                            data.message?.includes('Session expired')) {
+                            
+                            performLogout(data.message || 'Your session has expired. Please log in again.');
+                        }
+                    } else if (response.status === 403) {
+                        // Handle 403 Forbidden - auto logout
+                        performLogout(data.error || data.message || 'Access denied. You do not have permission. Logging out...');
+                    }
+                } catch (jsonError) {
+                    // If we can't parse the response, still logout on 401/403
+                    const message = response.status === 403 
+                        ? 'Access denied. Logging out...' 
+                        : 'Session expired. Please log in again.';
+                    performLogout(message);
+                }
+            }
+            
+            return response;
+        } catch (error) {
+            // Handle network errors
+            throw error;
+        }
+    };
+})();
+
 // Function to verify user role and redirect if unauthorized
 function verifyRole(allowedRoles) {
     const user = getCurrentUser();
@@ -23,11 +91,11 @@ function verifyRole(allowedRoles) {
             case 'technician':
                 targetPath = '/pages/technician/technician.html';
                 break;
-            case 'requester':
-                targetPath = '/pages/requester/requester.html';
+            case 'institution_user':
+                targetPath = '/pages/institution_user/institution_user.html';
                 break;
-            case 'coordinator':
-                targetPath = '/pages/coordinator/coordinator.html';
+            case 'institution_admin':
+                targetPath = '/pages/institution-admin/institution-admin.html';
                 break;
             default:
                 targetPath = '/pages/login.html'; // fallback to login for unknown roles
@@ -76,8 +144,8 @@ function verifySectionAccess() {
         'client-printers.html',
         'inventory-items.html',
         'inventory-parts.html',
-        'coordinator-accounts.html',
-        'coordinator-approvals.html'
+        'institution_admin-accounts.html',
+        'institution_admin-approvals.html'
     ];
 
     // Allow operations officers to access certain admin pages
@@ -92,8 +160,8 @@ function verifySectionAccess() {
             case 'admin': return 'admin';
             case 'operations_officer': return 'operations-officer';
             case 'technician': return 'technician';
-            case 'requester': return 'requester';
-            case 'coordinator': return 'coordinator';
+            case 'institution_user': return 'institution_user';
+            case 'institutionAdmin': return 'institutionAdmin';
             default: return null; // fallback for unknown roles
         }
     })();
@@ -196,6 +264,18 @@ async function loginUser({ email, password }) {
             throw new Error(data.error || 'Login failed');
         }
 
+        // Check if user must change password (temporary password)
+        if (data.mustChangePassword) {
+            // Store temporary user info for password change page
+            localStorage.setItem('tempUserId', data.userId);
+            localStorage.setItem('tempUserEmail', data.email);
+            localStorage.setItem('tempUserRole', data.role);
+            
+            // Redirect to password change page
+            window.location.href = '/client/src/pages/change-password.html';
+            return data;
+        }
+
         // Clear redirect flag - successful login
         sessionStorage.removeItem('redirecting_to_login');
 
@@ -213,35 +293,20 @@ async function loginUser({ email, password }) {
             localStorage.setItem('showApprovalAlert', 'true');
         }
 
-        // Get the base path dynamically
-        const currentPath = window.location.pathname;
-        let basePath = '';
-        
-        // If we're in the pages directory
-        if (currentPath.includes('/pages/')) {
-            // We're in a pages subdirectory
-            if (currentPath.split('/').filter(Boolean).length > 2) {
-                basePath = '../'; // Go up one level (e.g., from /pages/subdir/ to /pages/)
-            }
-            // Otherwise we're directly in /pages/, so no need for a base path
-        } else {
-            // We're somewhere else, default to going to pages/
-            basePath = 'pages/';
-        }
-        
-        // Redirect based on role
+        // Redirect based on role using absolute paths
         if (data.user.role === 'admin') {
-            window.location.href = `${basePath}admin/admin.html`;
+            window.location.href = '/client/src/pages/admin/admin.html';
         } else if (data.user.role === 'operations_officer') {
-            window.location.href = `${basePath}operations-officer/operations-officer.html`;
+            window.location.href = '/client/src/pages/operations-officer/operations-officer.html';
         } else if (data.user.role === 'technician') {
-            window.location.href = `${basePath}technician/technician.html`;
-        } else if (data.user.role === 'requester') {
-            // Requester users have a dedicated mobile/compact UI
-            window.location.href = `${basePath}requester/requester.html`;
+            window.location.href = '/client/src/pages/technician/technician.html';
+        } else if (data.user.role === 'institution_user') {
+            window.location.href = '/client/src/pages/institution_user/institution-user.html';
+        } else if (data.user.role === 'institution_admin') {
+            window.location.href = '/client/src/pages/institution-admin/institution-admin.html';
         } else {
-            // All other users (including coordinators) go to coordinator.html
-            window.location.href = `${basePath}coordinator/coordinator.html`;
+            // Fallback for unknown roles
+            window.location.href = '/pages/login.html';
         }
 
         return data;
@@ -272,7 +337,7 @@ async function registerUser(formData) {
         registrationData.append('lastName', formData.lastName);
         registrationData.append('email', formData.email);
         registrationData.append('password', formData.password);
-        registrationData.append('role', 'coordinator'); // Default role for registration
+        registrationData.append('role', formData.role || 'institution_admin'); // Use provided role or default to institution_admin
         
         // Add institutionId if provided (from the institution selection dropdown)
         if (formData.institutionId) {
@@ -318,3 +383,9 @@ function logout() {
     localStorage.removeItem('token'); // Also remove token
     window.location.href = '/pages/login.html'; // Corrected path
 }
+
+
+
+
+
+

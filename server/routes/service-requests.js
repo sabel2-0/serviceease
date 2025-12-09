@@ -2,11 +2,11 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
-const { authenticateCoordinator, auth } = require('../middleware/auth');
+const { authenticateinstitution_admin, auth } = require('../middleware/auth');
 const { createNotification } = require('./notifications');
 
 // Get service requests for a specific institution
-router.get('/institution/:institution_id', authenticateCoordinator, async (req, res) => {
+router.get('/institution/:institution_id', authenticateinstitution_admin, async (req, res) => {
     try {
         console.log('Displaying service requests for institution:', req.params.institution_id);
         const institution_id = req.params.institution_id;
@@ -17,7 +17,7 @@ router.get('/institution/:institution_id', authenticateCoordinator, async (req, 
             `SELECT sr.*, i.name AS institution_name, ii.name AS printer_name
              FROM service_requests sr
              LEFT JOIN institutions i ON sr.institution_id = i.id
-             LEFT JOIN inventory_items ii ON sr.inventory_item_id = ii.id
+             LEFT JOIN printers ii ON sr.printer_id = ii.id
              WHERE sr.institution_id = ?
              ORDER BY sr.created_at DESC`,
             [institution_id]
@@ -29,15 +29,15 @@ router.get('/institution/:institution_id', authenticateCoordinator, async (req, 
     }
 });
 
-// Get all service requests (for coordinators)
-router.get('/', authenticateCoordinator, async (req, res) => {
+// Get all service requests (for institution_admins)
+router.get('/', authenticateinstitution_admin, async (req, res) => {
     try {
-        // You can filter by coordinator_id if needed, e.g., req.user.id
+        // You can filter by institution_admin_id if needed, e.g., req.user.id
         const [serviceRequests] = await db.query(
             `SELECT sr.*, i.name AS institution_name, ii.name AS printer_name
              FROM service_requests sr
              LEFT JOIN institutions i ON sr.institution_id = i.id
-             LEFT JOIN inventory_items ii ON sr.inventory_item_id = ii.id
+             LEFT JOIN printers ii ON sr.printer_id = ii.id
              ORDER BY sr.created_at DESC`
         );
         res.json(serviceRequests);
@@ -48,8 +48,8 @@ router.get('/', authenticateCoordinator, async (req, res) => {
 });
 
 // Create a new service request
-// Allow authenticated users (requesters) to create service requests. The server will
-// derive institution_id from the requester, validate the selected printer is assigned
+// Allow authenticated users (institution_users) to create service requests. The server will
+// derive institution_id from the institution_user, validate the selected printer is assigned
 // to that user, and determine the assigned technician for the institution.
 router.post('/', auth, async (req, res) => {
     // SERVICE REQUEST ROUTE HIT (canonical service-requests handler)
@@ -60,8 +60,8 @@ router.post('/', auth, async (req, res) => {
     }
     try {
         const {
-            inventory_item_id,
-            // institution_id may be provided by coordinators/admins, but for requesters
+            printer_id,
+            // institution_id may be provided by institution_admins/admins, but for institution_users
             // we will derive it server-side to avoid FK mismatches.
             institution_id: institutionIdFromBody,
             priority,
@@ -70,22 +70,22 @@ router.post('/', auth, async (req, res) => {
             status
         } = req.body;
 
-        // requester info from auth
+        // institution_user info from auth
         const actor = req.user || {};
         const actorId = actor.id;
         const actorRole = actor.role;
         
-        // The user who submitted this request (requester or coordinator)
-        const requested_by_user_id = actorId;
+        // The user who submitted this request (institution_user or institution_admin)
+        const requested_by = actorId;
 
         // Determine institution_id to use:
-        // - For requesters: Get institution from their printer assignment
-        // - For coordinators: Get institution they own (institutions.user_id)
+        // - For institution_users: Get institution from their printer assignment
+        // - For institution_admins: Get institution they own (institutions.user_id)
         // - For admins: Can use provided institution_id
         let institution_id = null;
         
-        if (actorRole === 'requester') {
-            // Requesters don't own institutions - get from their printer assignment
+        if (actorRole === 'institution_user') {
+            // institution_users don't own institutions - get from their printer assignment
             const [assignRows] = await db.query(
                 'SELECT institution_id FROM user_printer_assignments WHERE user_id = ? LIMIT 1',
                 [actorId]
@@ -93,7 +93,7 @@ router.post('/', auth, async (req, res) => {
             if (assignRows && assignRows.length > 0 && assignRows[0].institution_id) {
                 institution_id = assignRows[0].institution_id;
             }
-        } else if (actorRole === 'coordinator' || actorRole === 'technician' || actorRole === 'operations_officer') {
+        } else if (actorRole === 'institution_admin' || actorRole === 'technician' || actorRole === 'operations_officer') {
             // Get institution owned by this user
             const [instRows] = await db.query(
                 'SELECT institution_id FROM institutions WHERE user_id = ? LIMIT 1',
@@ -129,15 +129,15 @@ router.post('/', auth, async (req, res) => {
         let assignedTechnicianId = assignedTechnicianIds.length > 0 ? assignedTechnicianIds[0] : null; // keep first for response
 
         // Validate required fields
-        if (!inventory_item_id || !description) {
-            return res.status(400).json({ error: 'Missing required fields: inventory_item_id and description are required' });
+        if (!printer_id || !description) {
+            return res.status(400).json({ error: 'Missing required fields: printer_id and description are required' });
         }
 
-        // If actor is a requester, ensure the selected inventory_item_id is assigned to that user
-        if (actorRole === 'requester') {
+        // If actor is a institution_user, ensure the selected printer_id is assigned to that user
+        if (actorRole === 'institution_user') {
             const [assignRows] = await db.query(
-                'SELECT id FROM user_printer_assignments WHERE user_id = ? AND inventory_item_id = ? LIMIT 1',
-                [actorId, inventory_item_id]
+                'SELECT id FROM user_printer_assignments WHERE user_id = ? AND printer_id = ? LIMIT 1',
+                [actorId, printer_id]
             );
             if (!assignRows || assignRows.length === 0) {
                 return res.status(400).json({ error: 'Selected printer is not assigned to you' });
@@ -149,10 +149,10 @@ router.post('/', auth, async (req, res) => {
         // Validate inventory item exists and belongs to institution
         const [inventoryItem] = await db.query(
             `SELECT ii.id 
-             FROM inventory_items ii
-             JOIN client_printer_assignments cpa ON ii.id = cpa.inventory_item_id
+             FROM printers ii
+             JOIN institution_printer_assignments cpa ON ii.id = cpa.printer_id
              WHERE ii.id = ? AND cpa.institution_id = ? AND ii.category = 'printer'`,
-            [inventory_item_id, institution_id]
+            [printer_id, institution_id]
         );
 
         if (!inventoryItem.length) {
@@ -163,11 +163,11 @@ router.post('/', auth, async (req, res) => {
         const [activeRequests] = await db.query(
             `SELECT sr.id, sr.request_number, sr.status, ii.name as printer_name
              FROM service_requests sr
-             LEFT JOIN inventory_items ii ON sr.inventory_item_id = ii.id
-             WHERE sr.inventory_item_id = ? 
+             LEFT JOIN printers ii ON sr.printer_id = ii.id
+             WHERE sr.printer_id = ? 
              AND sr.status IN ('pending', 'assigned', 'in_progress', 'pending_approval')
              LIMIT 1`,
-            [inventory_item_id]
+            [printer_id]
         );
 
         if (activeRequests.length > 0) {
@@ -185,7 +185,7 @@ router.post('/', auth, async (req, res) => {
 
         // If no assigned technician found, return clear message per requirements
         if (assignedTechnicianIds.length === 0) {
-            return res.status(400).json({ error: 'No active technician is linked to your institution. Please contact your coordinator.' });
+            return res.status(400).json({ error: 'No active technician is linked to your institution. Please contact your institution_admin.' });
         }
 
         // Normalize status and priority to match database enum values
@@ -228,10 +228,9 @@ router.post('/', auth, async (req, res) => {
         console.log('Generated request_number:', requestNumber);
         console.log('Inserting service request with data:', {
             request_number: requestNumber,
-            inventory_item_id,
+            printer_id,
             institution_id,
-            requested_by_user_id,
-            assigned_technician_id: assignedTechnicianId,
+            requested_by,
             priority,
             status: status || 'new',
             location: location || 'Unknown',
@@ -244,24 +243,23 @@ router.post('/', auth, async (req, res) => {
             await conn.beginTransaction();
             const [result] = await conn.query(
                 `INSERT INTO service_requests (
-                    request_number, institution_id, requested_by_user_id, assigned_technician_id, priority, status, location, description, created_at, updated_at, inventory_item_id
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?)`,
+                    request_number, institution_id, requested_by, priority, status, location, description, created_at, printer_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?)`,
                 [
                     requestNumber,
                     institution_id,
-                    requested_by_user_id,
-                    assignedTechnicianId,
+                    requested_by,
                     normalizedPriority,
                     normalizedStatus,
                     location || 'Unknown',
                     description,
-                    inventory_item_id
+                    printer_id
                 ]
             );
             await conn.commit();
             // result available
             // Create notifications outside transaction or after commit
-            // Note: Admin notifications are ONLY for coordinator registrations and technician parts requests
+            // Note: Admin notifications are ONLY for institution_admin registrations and technician parts requests
             try {
                 const notifTitle = 'New Service Request Assigned';
 
@@ -273,7 +271,7 @@ router.post('/', auth, async (req, res) => {
                             message: notifMessage,
                             type: 'service_request',
                             user_id: techId,
-                            sender_id: requested_by_user_id || actorId || null,
+                            sender_id: requested_by || actorId || null,
                             reference_type: 'service_request',
                             reference_id: result.insertId,
                             priority: priority || 'medium'
@@ -293,13 +291,13 @@ router.post('/', auth, async (req, res) => {
                 request_id: result.insertId,
                 request_number: requestNumber,
                 institution_id,
-                requested_by_user_id,
-                assigned_technician_id: assignedTechnicianId,
+                requested_by,
+                technician_id: assignedTechnicianId,
                 priority: normalizedPriority,
                 status: normalizedStatus,
                 location: location || 'Unknown',
                 description,
-                inventory_item_id,
+                printer_id,
                 created_at: now,
                 updated_at: now
             });
@@ -312,7 +310,7 @@ router.post('/', auth, async (req, res) => {
         }
 
         // Create in-app notifications for assigned technicians only
-        // Note: Admin notifications are ONLY for coordinator registrations and technician parts requests
+        // Note: Admin notifications are ONLY for institution_admin registrations and technician parts requests
         try {
             const notifTitle = 'New Service Request Assigned';
 
@@ -325,7 +323,7 @@ router.post('/', auth, async (req, res) => {
                         message: notifMessage,
                         type: 'service_request',
                         user_id: techId,
-                        sender_id: requested_by_user_id || null,
+                        sender_id: requested_by || null,
                         reference_type: 'service_request',
                         reference_id: result.insertId,
                         priority: priority || 'medium'
@@ -347,13 +345,13 @@ router.post('/', auth, async (req, res) => {
             request_id: result.insertId,
             request_number: requestNumber,
             institution_id,
-            requested_by_user_id,
-            assigned_technician_id: assignedTechnicianId,
+            requested_by,
+            technician_id: assignedTechnicianId,
             priority,
             status: status || 'new',
             location: location || 'Unknown',
             description,
-            inventory_item_id,
+            printer_id,
             created_at: now,
             updated_at: now
         });
@@ -372,4 +370,98 @@ router.post('/', auth, async (req, res) => {
     }
 });
 
+// Get single service request by ID (for admins/institution_admins)
+router.get('/:id', auth, async (req, res) => {
+    try {
+        console.log('[DEBUG] GET /api/service-requests/:id hit', { id: req.params.id, user: req.user });
+        const { id } = req.params;
+        const userId = req.user.id;
+        const userRole = req.user.role;
+        
+        // Build query based on user role
+        let whereClause = 'sr.id = ?';
+        let params = [id];
+        
+        // institution_admins can only see their own institution's requests
+        if (userRole === 'institution_admin') {
+            whereClause += ' AND i.user_id = ?';
+            params.push(userId);
+        }
+        // institution_users can only see requests they created
+        else if (userRole === 'institution_user') {
+            whereClause += ' AND sr.requested_by_user_id = ?';
+            params.push(userId);
+        }
+        // admins and operations_officers can see all
+        
+        const [rows] = await db.query(`
+            SELECT 
+                sr.*, 
+                CONCAT('SR-', YEAR(sr.created_at), '-', LPAD(sr.id, 4, '0')) as request_number,
+                i.name as institution_name,
+                p.name as printer_name,
+                p.brand,
+                p.model,
+                p.serial_number,
+                CONCAT(t.first_name, ' ', t.last_name) as technician_name,
+                t.first_name as technician_first_name,
+                t.last_name as technician_last_name,
+                CONCAT(u.first_name, ' ', u.last_name) as requested_by_name,
+                u.first_name as institution_user_first_name,
+                u.last_name as institution_user_last_name,
+                u.email as institution_user_email,
+                u.role as institution_user_role
+            FROM service_requests sr
+            LEFT JOIN institutions i ON sr.institution_id = i.institution_id
+            LEFT JOIN printers p ON sr.printer_id = p.id
+            LEFT JOIN users t ON sr.technician_id = t.id
+            LEFT JOIN users u ON sr.requested_by_user_id = u.id
+            WHERE ${whereClause}
+        `, params);
+        
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'Service request not found' });
+        }
+        
+        const request = rows[0];
+        
+        // Get parts used
+        const [partsUsed] = await db.query(`
+            SELECT 
+                spu.id,
+                spu.quantity_used,
+                spu.notes as part_notes,
+                spu.used_at,
+                pp.name as part_name,
+                pp.brand,
+                pp.category,
+                pp.color,
+                pp.page_yield,
+                pp.ink_volume,
+                pp.is_universal,
+                pp.unit,
+                CONCAT(u.first_name, ' ', u.last_name) as used_by_name,
+                u.first_name as used_by_first_name,
+                u.last_name as used_by_last_name
+            FROM service_parts_used spu
+            JOIN printer_parts pp ON spu.part_id = pp.id
+            LEFT JOIN users u ON spu.used_by = u.id
+            WHERE spu.service_request_id = ?
+            ORDER BY spu.used_at DESC
+        `, [id]);
+        
+        request.parts_used = partsUsed;
+        
+        res.json(request);
+    } catch (error) {
+        console.error('Error fetching service request details:', error);
+        res.status(500).json({ error: 'Failed to fetch service request details' });
+    }
+});
+
 module.exports = router;
+
+
+
+
+

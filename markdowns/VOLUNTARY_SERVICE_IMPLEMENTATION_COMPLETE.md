@@ -154,7 +154,7 @@ Submit Voluntary Service
 ────────────────────────────
 Printer: #101 - HP LaserJet Pro
 Location: Room 304, Building A
-Requester: John Doe
+Institution User: John Doe
 
 Service Description: *
 [Text area - what was done]
@@ -260,7 +260,7 @@ fetch(`/api/voluntary-services/school-printers/${institutionId}`, {
 .then(printers => {
     // printers array with:
     // - printer details (id, number, brand, model, location)
-    // - requester info
+    // - Institution User info
     // - service history (last_service_date, service_count, pending_services)
     console.log(printers);
 });
@@ -391,7 +391,7 @@ POST /api/voluntary-services
 GET /api/voluntary-services/my-submissions
 ```
 
-### 2. As Coordinator:
+### 2. as institution_admin:
 ```bash
 # See pending services
 GET /api/voluntary-services/coordinator/pending
@@ -403,7 +403,7 @@ PATCH /api/voluntary-services/coordinator/1/approve
 }
 ```
 
-### 3. As Requester:
+### 3. as institution_user:
 ```bash
 # See services needing confirmation
 GET /api/voluntary-services/requester/pending
@@ -448,3 +448,5 @@ All the backend API is ready and working! The server is running with all endpoin
 - **Database Migration:** `server/migrations/voluntary_services.sql`
 - **Documentation:** `VOLUNTARY_SERVICE_SYSTEM.md`
 - **This Guide:** `VOLUNTARY_SERVICE_IMPLEMENTATION_COMPLETE.md`
+
+

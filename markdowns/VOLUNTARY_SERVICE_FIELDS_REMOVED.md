@@ -97,19 +97,19 @@ voluntary_services table now contains:
 - technician_id
 - printer_id
 - institution_id
-- requester_id
+- Institution User_id
 - service_description
 - parts_used (JSON)
 - status
-- coordinator_approval_status
-- requester_approval_status
-- coordinator_notes
-- requester_notes
+- Institution Admin_approval_status
+- Institution User_approval_status
+- Institution Admin_notes
+- Institution User_notes
 - created_at
-- coordinator_reviewed_at
-- coordinator_reviewed_by
-- requester_reviewed_at
-- requester_reviewed_by
+- Institution Admin_reviewed_at
+- Institution Admin_reviewed_by
+- Institution User_reviewed_at
+- Institution User_reviewed_by
 - completed_at
 ```
 
@@ -215,7 +215,7 @@ voluntary_services table now contains:
 - Parts are still fully supported with the carousel interface
 - Service description remains the primary documentation field
 - No file upload functionality needed now
-- Simpler approval workflow for coordinators and requesters
+- Simpler approval workflow for institution_admins and requesters
 - Database schema is cleaner and more focused
 
 ---
@@ -223,3 +223,5 @@ voluntary_services table now contains:
 **Status**: ✅ **COMPLETE**
 
 Time spent, before photos, and after photos have been successfully removed from the voluntary service system!
+
+

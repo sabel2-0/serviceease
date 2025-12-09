@@ -1,0 +1,19 @@
+<!-- institution_user Notifications Component -->
+<div id="Institution User-notifications-container">
+  <div id="notifications-loading" class="p-8 text-center">
+    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-3"></div>
+    <p class="text-gray-500 text-sm">Loading notifications...</p>
+  </div>
+  
+  <div id="notifications-content" class="hidden"></div>
+  
+  <div id="notifications-error" class="hidden p-8 text-center">
+    <svg class="w-12 h-12 text-red-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+    </svg>
+    <p class="text-gray-500 text-sm">Failed to load notifications</p>
+    <button id="retry-notifications" class="mt-3 text-blue-600 text-sm hover:underline">Try again</button>
+  </div>
+</div>
+
+

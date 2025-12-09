@@ -1,15 +1,15 @@
 /**
- * Technician Assignment Interface for Coordinators
+ * Technician Assignment Interface for institutionAdmins
  * 
- * This file implements the coordinator's interface to view and interact with assigned technicians.
- * Coordinators can view which technicians are assigned to their institution's printers,
+ * This file implements the institutionAdmin's interface to view and interact with assigned technicians.
+ * institutionAdmins can view which technicians are assigned to their institution's printers,
  * but cannot change assignments (only admins can assign technicians).
  */
 
 // Initialize the technician assignment functionality
 document.addEventListener('DOMContentLoaded', () => {
-    // Check if we're on the coordinator page
-    if (window.location.pathname.includes('coordinator')) {
+    // Check if we're on the institutionAdmin page
+    if (window.location.pathname.includes('institutionAdmin')) {
         initTechnicianAssignmentInterface();
     }
 });
@@ -437,3 +437,8 @@ function formatDate(dateString) {
     const options = { year: 'numeric', month: 'short', day: 'numeric' };
     return date.toLocaleDateString('en-US', options);
 }
+
+
+
+
+

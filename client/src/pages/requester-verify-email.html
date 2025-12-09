@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Requester Email Verification | ServiceEase</title>
+    <title>institution_user Email Verification | ServiceEase</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -55,7 +55,7 @@
                             <div class="bg-blue-50 border border-blue-200 rounded-md p-4 mb-4">
                                 <p class="text-sm text-blue-800">
                                     <i class="fas fa-info-circle mr-2"></i>
-                                    Your registration is now pending review by your institution's coordinator. You will receive an email notification once your account has been approved.
+                                    Your registration is now pending review by your institution's Institution Admin. You will receive an email notification once your account has been approved.
                                 </p>
                             </div>
                         </div>
@@ -107,7 +107,7 @@
             }
 
             try {
-                const response = await fetch(`/api/requester-registration/verify-email/${token}`);
+                const response = await fetch(`/api/Institution User-registration/verify-email/${token}`);
                 const data = await response.json();
 
                 if (response.ok) {
@@ -137,3 +137,6 @@
     </script>
 </body>
 </html>
+
+
+

@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS voluntary_services (
 - If rejected → service marked as rejected
 
 ### 3. Requester Review (Second Approval)
-- Requester sees approved services in their dashboard
+- Institution User sees approved services in their dashboard
 - Verifies service was actually performed
 - Can approve or reject
 - If approved → service marked as completed
@@ -98,6 +98,8 @@ Shows:
 
 ### Requester UI - New Section "Service Confirmations"
 Shows:
-- Coordinator-approved services waiting for confirmation
+- Institution Admin-approved services waiting for confirmation
 - Service details
 - Confirm/Reject actions
+
+

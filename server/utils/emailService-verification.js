@@ -5,7 +5,7 @@ const mailjet = Mailjet.apiConnect(
 );
 
 /**
- * Send verification code to requester email
+ * Send verification code to institution_user email
  */
 async function sendVerificationCode(email, code) {
     try {
@@ -50,3 +50,6 @@ async function sendVerificationCode(email, code) {
 }
 
 module.exports = { sendVerificationCode };
+
+
+

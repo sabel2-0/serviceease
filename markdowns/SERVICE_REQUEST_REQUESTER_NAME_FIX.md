@@ -5,9 +5,9 @@
 ## Issues Fixed
 
 ### 1. ✅ Service Requests Showing Wrong Name
-**Problem:** Requester's service request history was showing the technician's name ("Razor Axe") instead of the requester's name.
+**Problem:** Institution User's service request history was showing the technician's name ("Razor Axe") instead of The institution_user's name.
 
-**Root Cause:** Frontend was displaying `technician_first_name` and `technician_last_name` instead of the requester's name.
+**Root Cause:** Frontend was displaying `technician_first_name` and `technician_last_name` instead of The institution_user's name.
 
 **Files Changed:**
 - `client/src/js/requester-app.js` - Line 342-344
@@ -33,7 +33,7 @@ const requesterName = req.requester_first_name && req.requester_last_name
 ---
 
 ### 2. ✅ Requester Seeing Other Users' Service Requests
-**Problem:** Requester was seeing service requests made by coordinator (Request #137 made by user 65 was showing for user 66).
+**Problem:** Institution User was seeing service requests made by coordinator (Request #137 made by user 65 was showing for user 66).
 
 **Root Cause:** Backend query was filtering by `inventory_item_id` (all requests for that printer) instead of filtering by `requested_by_user_id` (only requests made by that specific user).
 
@@ -57,15 +57,15 @@ Now only shows requests created by the logged-in user.
 ---
 
 ### 3. ✅ Backend Returns Requester Name
-**Problem:** Backend wasn't selecting and returning the requester's name in the response.
+**Problem:** Backend wasn't selecting and returning The institution_user's name in the response.
 
 **Files Changed:**
 - `server/index.js` - GET `/api/users/me/service-requests` endpoint
 
 **Added to Query:**
 ```javascript
-requester.first_name as requester_first_name, 
-requester.last_name as requester_last_name,
+requester.first_name as institution_user_first_name, 
+requester.last_name as institution_user_last_name,
 tech.first_name as technician_first_name, 
 tech.last_name as technician_last_name
 ```
@@ -116,7 +116,7 @@ service_requests (
 ### 5. ✅ Top Navigation Already Shows User Name
 **Status:** Already working correctly!
 
-The requester topnav component already displays the logged-in user's name:
+The institution_user topnav component already displays the logged-in user's name:
 - **Component:** `client/src/components/requester-topnav.html`
 - **JavaScript:** `client/src/js/requester-app.js` - `loadTopnav()` function
 - **Displays:** Full name from `localStorage.getItem('user')`
@@ -131,7 +131,7 @@ The requester topnav component already displays the logged-in user's name:
 
 ### Test Scenario 2: Coordinator Creates Service Request
 ✅ **Expected:** Request shows coordinator's name (e.g., "Razor Axe")
-✅ **Expected:** Coordinator's requests don't appear in requester's history
+✅ **Expected:** Institution Admin's requests don't appear in requester's history
 
 ### Test Scenario 3: Multiple Users Same Printer
 ✅ **Expected:** Each user only sees their own requests
@@ -192,10 +192,12 @@ status: completed
 
 ## Status
 ✅ **COMPLETE** - All issues resolved
-- Requester sees only their own service requests
+- Institution User sees only their own service requests
 - Correct requester name is displayed
 - Redundant coordinator_id column removed
 - Top navigation shows logged-in user's name
 
 ## Date Completed
 October 16, 2025
+
+

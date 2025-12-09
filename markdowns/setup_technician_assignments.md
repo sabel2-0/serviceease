@@ -46,7 +46,7 @@ Or manually execute the SQL file `technician_assignments_schema.sql` in your MyS
 
 ### 4. **Auto-Assignment Logic**
 
-When a coordinator from an institution creates a service request:
+When An institution_admin from an institution creates a service request:
 
 1. System checks if the institution has an assigned technician
 2. If yes, automatically assigns the request to that technician
@@ -63,7 +63,7 @@ When a coordinator from an institution creates a service request:
 4. Select from active technicians in the dropdown
 5. Change or remove assignments as needed
 
-### For Coordinators:
+### for institution_admins:
 
 1. Create service requests as usual
 2. Requests are automatically assigned to designated technician
@@ -89,3 +89,4 @@ When a coordinator from an institution creates a service request:
 2. Restart the server to load new API endpoints
 3. Test the assignment functionality in Client Management
 4. Create some test service requests to verify auto-assignment
+

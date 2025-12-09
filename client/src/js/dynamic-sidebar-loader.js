@@ -4,6 +4,12 @@
  * This ensures role-based access control while allowing shared pages
  */
 
+// Prevent multiple initializations
+if (window.sidebarInitialized) {
+    console.log('Sidebar already initialized, skipping duplicate load');
+} else {
+    window.sidebarInitialized = true;
+
 // Global fetch interceptor to handle token invalidation
 (function setupGlobalFetchInterceptor() {
     // Check if we're already in redirect mode
@@ -115,9 +121,9 @@ function loadDynamicSidebar(containerId = 'dynamic-sidebar') {
             sidebarPath = componentBasePath + 'technician-sidebar.html';
             sidebarScriptPath = scriptBasePath + 'technician-sidebar.js';
             break;
-        case 'coordinator':
-            sidebarPath = componentBasePath + 'coordinator-sidebar.html';
-            sidebarScriptPath = scriptBasePath + 'coordinator-sidebar.js';
+        case 'institutionAdmin':
+            sidebarPath = componentBasePath + 'institution_admin-sidebar.html';
+            sidebarScriptPath = scriptBasePath + 'institution_admin-sidebar.js';
             break;
         default:
             console.error('Unknown user role:', user.role);
@@ -176,31 +182,43 @@ function initializeSidebarFunctionality(userRole) {
         }, 500);
     }
     
-    // Initialize dropdown toggles
-    const dropdownToggles = document.querySelectorAll('.dropdown-toggle');
+    // Initialize dropdown toggles - mark them to prevent duplicate listeners
+    const dropdownToggles = document.querySelectorAll('.dropdown-toggle:not([data-listener-added])');
     dropdownToggles.forEach(toggle => {
+        toggle.setAttribute('data-listener-added', 'true');
         toggle.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            const content = this.nextElementSibling;
+            
+            const dropdown = this.closest('.dropdown');
+            const content = dropdown ? dropdown.querySelector('.dropdown-content') : null;
             const icon = this.querySelector('.fa-chevron-down');
             
             if (content) {
+                // Toggle current dropdown
+                const isHidden = content.classList.contains('hidden');
                 content.classList.toggle('hidden');
-            }
-            if (icon) {
-                icon.classList.toggle('rotate-180');
+                
+                if (icon) {
+                    if (isHidden) {
+                        icon.style.transform = 'rotate(180deg)';
+                    } else {
+                        icon.style.transform = 'rotate(0deg)';
+                    }
+                }
             }
             
             console.log('Dropdown toggled');
         });
     });
 
-    // Prevent dropdown content clicks from bubbling up
-    const dropdownContents = document.querySelectorAll('.dropdown-content');
+    // Prevent dropdown content clicks from bubbling up and prevent closing on item selection
+    const dropdownContents = document.querySelectorAll('.dropdown-content:not([data-listener-added])');
     dropdownContents.forEach(content => {
+        content.setAttribute('data-listener-added', 'true');
         content.addEventListener('click', function(e) {
-            e.stopPropagation(); // Stop click from reaching the document
+            // Allow navigation but prevent the dropdown from closing
+            e.stopPropagation();
         });
     });
     
@@ -267,15 +285,18 @@ function initializeOperationsOfficerSidebar() {
             
             // Allow access to specific admin pages that operations officers can access
             const allowedAdminPages = [
-                'coordinator-accounts.html',
-                'coordinator-approvals.html',
+                'institution-admin-accounts.html',
+                'institution-admin-approvals.html',
                 'client-management.html',
                 'client-printers.html',
                 'inventory-items.html',
                 'inventory-parts.html',
                 'parts-requests.html',
                 'walk-in-service-requests.html',
-                'service-history.html'
+                'service-history.html',
+                'technician-progress.html',
+                'technician-inventory.html',
+                'notifications.html'
             ];
             
             // Check if the link is to an allowed admin page
@@ -445,3 +466,10 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
 });
+
+} // End of sidebarInitialized check
+
+
+
+
+

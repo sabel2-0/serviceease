@@ -1,4 +1,4 @@
-﻿// Account Management Page Logic
+// Account Management Page Logic
 
 // Load current user profile and fill form - DEFINE FIRST
 async function loadProfile() {
@@ -154,7 +154,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('Server response status:', res.status);
                 
                 if (res.ok) {
-                    console.log('✓ Password updated successfully');
+                    console.log('? Password updated successfully');
                     
                     // Set redirect flag FIRST
                     sessionStorage.setItem('redirecting_to_login', 'true');
@@ -181,3 +181,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+
+
+

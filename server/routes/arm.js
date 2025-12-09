@@ -177,7 +177,7 @@ router.get('/recommendations/:inventoryItemId', async (req, res) => {
 
         // Get printer details
         const [printers] = await db.query(
-            'SELECT brand, model FROM inventory_items WHERE id = ?',
+            'SELECT brand, model FROM printers WHERE id = ?',
             [inventoryItemId]
         );
 
@@ -283,7 +283,7 @@ router.get('/statistics', async (req, res) => {
                 COUNT(DISTINCT sr.id) as total_completed_requests,
                 COUNT(DISTINCT spu.id) as total_parts_used,
                 COUNT(DISTINCT spu.part_id) as unique_parts_used,
-                COUNT(DISTINCT sr.inventory_item_id) as unique_printers
+                COUNT(DISTINCT sr.printer_id) as unique_printers
             FROM service_requests sr
             LEFT JOIN service_parts_used spu ON sr.id = spu.service_request_id
             WHERE sr.status = 'completed'
@@ -297,7 +297,7 @@ router.get('/statistics', async (req, res) => {
                 GROUP_CONCAT(DISTINCT pp.name ORDER BY pp.name SEPARATOR ', ') as parts,
                 COUNT(*) as frequency
             FROM service_requests sr
-            INNER JOIN inventory_items ii ON sr.inventory_item_id = ii.id
+            INNER JOIN printers ii ON sr.printer_id = ii.id
             INNER JOIN service_parts_used spu ON sr.id = spu.service_request_id
             INNER JOIN printer_parts pp ON spu.part_id = pp.id
             WHERE sr.status = 'completed'
@@ -330,3 +330,6 @@ router.get('/statistics', async (req, res) => {
 });
 
 module.exports = router;
+
+
+
