@@ -134,17 +134,18 @@ router.post('/validate-printers', async (req, res) => {
             
             const [matches] = await db.query(
                 `SELECT 
-                    ii.id,
-                    ii.name,
-                    ii.brand,
-                    ii.model,
-                    ii.serial_number
-                FROM client_printer_assignments cpa
-                INNER JOIN printers ii ON cpa.printer_id = ii.id
-                WHERE cpa.institution_id COLLATE utf8mb4_unicode_ci = ? COLLATE utf8mb4_unicode_ci
-                AND LOWER(TRIM(ii.serial_number)) = LOWER(TRIM(?))
-                AND LOWER(TRIM(ii.brand)) LIKE LOWER(TRIM(?))
-                AND ii.category = 'printer'`,
+                    p.id,
+                    p.name,
+                    p.brand,
+                    p.model,
+                    p.serial_number
+                FROM institution_printer_assignments ipa
+                INNER JOIN printers p ON ipa.printer_id = p.id
+                WHERE ipa.institution_id COLLATE utf8mb4_unicode_ci = ? COLLATE utf8mb4_unicode_ci
+                AND ipa.status = 'assigned'
+                AND LOWER(TRIM(p.serial_number)) = LOWER(TRIM(?))
+                AND LOWER(TRIM(p.brand)) LIKE LOWER(TRIM(?))
+                AND p.category = 'printer'`,
                 [institution_id, serial_number, `%${brand}%`]
             );
             
