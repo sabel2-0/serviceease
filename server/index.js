@@ -6,7 +6,7 @@ const nodemailer = require('nodemailer');
 const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
-const mailjet = require('node-mailjet');
+const brevo = require('@getbrevo/brevo');
 const cloudinary = require('cloudinary').v2;
 const User = require('./models/User');
 const technicianInstitutionsRoute = require('./routes/technician-institutions');
@@ -31,11 +31,10 @@ console.log('Cloudinary Configuration:', {
     api_secret: process.env.CLOUDINARY_API_SECRET ? 'SET' : 'MISSING'
 });
 
-// Initialize Mailjet
-const mailjetClient = mailjet.apiConnect(
-    process.env.MAILJET_API_KEY,
-    process.env.MAILJET_SECRET_KEY
-);
+// Initialize Brevo (Sendinblue)
+const brevoApiInstance = new brevo.TransactionalEmailsApi();
+const brevoApiKey = brevoApiInstance.authentications['apiKey'];
+brevoApiKey.apiKey = process.env.BREVO_API_KEY;
 
 
 const app = express();
@@ -970,18 +969,26 @@ app.post('/api/reject-user/:userId', authenticateAdmin, async (req, res) => {
                     ]
                 };
                 
-                console.log('📧 Sending rejection email via Mailjet...');
-                console.log('Template ID:', emailPayload.Messages[0].TemplateID);
+                console.log('📧 Sending rejection email via Brevo...');
                 console.log('To:', user.email);
-                console.log('Variables:', emailPayload.Messages[0].Variables);
                 
-                const request = mailjetClient
-                    .post('send', { version: 'v3.1' })
-                    .request(emailPayload);
+                const sendSmtpEmail = new brevo.SendSmtpEmail();
+                sendSmtpEmail.sender = { email: 'serviceeaseph@gmail.com', name: 'ServiceEase' };
+                sendSmtpEmail.to = [{ email: user.email, name: `${user.first_name} ${user.last_name}` }];
+                sendSmtpEmail.subject = 'ServiceEase Account Application - Update';
+                sendSmtpEmail.htmlContent = `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                        <h2 style="color: #ef4444;">Application Status Update</h2>
+                        <p>Hello ${user.first_name} ${user.last_name},</p>
+                        <p>We regret to inform you that your application has been reviewed and we are unable to approve it at this time.</p>
+                        ${rejectionNotes ? `<p><strong>Reason:</strong> ${rejectionNotes}</p>` : ''}
+                        <p>If you have any questions, please contact our support team.</p>
+                        <p style="margin-top: 20px;">Best regards,<br><strong>ServiceEase Team</strong></p>
+                    </div>
+                `;
                 
-                const result = await request;
-                console.log('✅ Rejection email sent successfully via Mailjet to:', user.email);
-                console.log('Mailjet Response:', JSON.stringify(result.body, null, 2));
+                await brevoApiInstance.sendTransacEmail(sendSmtpEmail);
+                console.log('✅ Rejection email sent successfully via Brevo to:', user.email);
             } catch (emailError) {
                 console.error('❌ Failed to send rejection email:', emailError);
                 console.error('Error details:', emailError.response?.body || emailError.message);
@@ -1526,61 +1533,47 @@ app.post('/api/institution_admins/:id/users', authenticateinstitution_admin, asy
        console.log('User insert result:', userResult);
        const newUserId = userResult.insertId;
 
-        // Send temporary password email using Mailjet
+        // Send temporary password email using Brevo
         try {
             const institutionName = institutionRows[0]?.name || 'Your Institution';
             
-            const request = await mailjetClient
-                .post('send', { version: 'v3.1' })
-                .request({
-                    Messages: [
-                        {
-                            From: {
-                                Email: 'serviceeaseph@gmail.com',
-                                Name: 'ServiceEase'
-                            },
-                            To: [
-                                {
-                                    Email: email,
-                                    Name: `${firstName} ${lastName}`
-                                }
-                            ],
-                            Subject: 'Welcome to ServiceEase - Your Account Has Been Created',
-                            HTMLPart: `
-                                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                                    <h2 style="color: #10b981;">Welcome to ServiceEase!</h2>
-                                    <p>Hello ${firstName} ${lastName},</p>
-                                    <p>Your Institution User account has been created by your institution administrator at <strong>${institutionName}</strong>.</p>
-                                    
-                                    <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                                        <h3 style="margin-top: 0; color: #1f2937;">Login Credentials</h3>
-                                        <p style="margin: 10px 0;"><strong>Email:</strong> ${email}</p>
-                                        <p style="margin: 10px 0;"><strong>Temporary Password:</strong> <code style="background-color: #fff; padding: 5px 10px; border-radius: 4px; font-size: 16px; color: #10b981;">${temporaryPassword}</code></p>
-                                    </div>
-                                    
-                                    <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0;">
-                                        <p style="margin: 0; color: #92400e;"><strong>⚠️ Important:</strong> You will be required to change this temporary password when you first log in to the system for security purposes.</p>
-                                    </div>
-                                    
-                                    <p>To access your account:</p>
-                                    <ol>
-                                        <li>Go to the ServiceEase login page</li>
-                                        <li>Enter your email and temporary password</li>
-                                        <li>Create a new secure password when prompted</li>
-                                    </ol>
-                                    
-                                    <p style="margin-top: 30px; color: #6b7280; font-size: 14px;">
-                                        If you did not expect this email or have any questions, please contact your institution administrator.
-                                    </p>
-                                    
-                                    <p style="margin-top: 20px;">Best regards,<br><strong>ServiceEase Team</strong></p>
-                                </div>
-                            `
-                        }
-                    ]
-                });
+            const sendSmtpEmail = new brevo.SendSmtpEmail();
+            sendSmtpEmail.sender = { email: 'serviceeaseph@gmail.com', name: 'ServiceEase' };
+            sendSmtpEmail.to = [{ email: email, name: `${firstName} ${lastName}` }];
+            sendSmtpEmail.subject = 'Welcome to ServiceEase - Your Account Has Been Created';
+            sendSmtpEmail.htmlContent = `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #10b981;">Welcome to ServiceEase!</h2>
+                    <p>Hello ${firstName} ${lastName},</p>
+                    <p>Your Institution User account has been created by your institution administrator at <strong>${institutionName}</strong>.</p>
+                    
+                    <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                        <h3 style="margin-top: 0; color: #1f2937;">Login Credentials</h3>
+                        <p style="margin: 10px 0;"><strong>Email:</strong> ${email}</p>
+                        <p style="margin: 10px 0;"><strong>Temporary Password:</strong> <code style="background-color: #fff; padding: 5px 10px; border-radius: 4px; font-size: 16px; color: #10b981;">${temporaryPassword}</code></p>
+                    </div>
+                    
+                    <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0;">
+                        <p style="margin: 0; color: #92400e;"><strong>⚠️ Important:</strong> You will be required to change this temporary password when you first log in to the system for security purposes.</p>
+                    </div>
+                    
+                    <p>To access your account:</p>
+                    <ol>
+                        <li>Go to the ServiceEase login page</li>
+                        <li>Enter your email and temporary password</li>
+                        <li>Create a new secure password when prompted</li>
+                    </ol>
+                    
+                    <p style="margin-top: 30px; color: #6b7280; font-size: 14px;">
+                        If you did not expect this email or have any questions, please contact your institution administrator.
+                    </p>
+                    
+                    <p style="margin-top: 20px;">Best regards,<br><strong>ServiceEase Team</strong></p>
+                </div>
+            `;
             
-            console.log(`✅ Temporary password email sent successfully to: ${email}`);
+            await brevoApiInstance.sendTransacEmail(sendSmtpEmail);
+            console.log(`✅ Temporary password email sent successfully via Brevo to: ${email}`);
             console.log(`   Password: ${temporaryPassword}`);
         } catch (emailError) {
             console.error('❌ Failed to send temporary password email:', emailError);
@@ -2965,57 +2958,43 @@ app.post('/api/staff', authenticateAdmin, async (req, res) => {
         try {
             const roleDisplay = role === 'operations_officer' ? 'Operations Officer' : 'Technician';
             
-            const request = await mailjetClient
-                .post('send', { version: 'v3.1' })
-                .request({
-                    Messages: [
-                        {
-                            From: {
-                                Email: 'serviceeaseph@gmail.com',
-                                Name: 'ServiceEase'
-                            },
-                            To: [
-                                {
-                                    Email: email,
-                                    Name: `${firstName} ${lastName}`
-                                }
-                            ],
-                            Subject: 'Welcome to ServiceEase - Your Account Has Been Created',
-                            HTMLPart: `
-                                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                                    <h2 style="color: #10b981;">Welcome to ServiceEase!</h2>
-                                    <p>Hello ${firstName} ${lastName},</p>
-                                    <p>Your ${roleDisplay} account has been created by the administrator.</p>
-                                    
-                                    <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                                        <h3 style="margin-top: 0; color: #1f2937;">Login Credentials</h3>
-                                        <p style="margin: 10px 0;"><strong>Email:</strong> ${email}</p>
-                                        <p style="margin: 10px 0;"><strong>Temporary Password:</strong> <code style="background-color: #fff; padding: 5px 10px; border-radius: 4px; font-size: 16px; color: #10b981;">${temporaryPassword}</code></p>
-                                    </div>
-                                    
-                                    <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0;">
-                                        <p style="margin: 0; color: #92400e;"><strong>⚠️ Important:</strong> You will be required to change this temporary password when you first log in to the system for security purposes.</p>
-                                    </div>
-                                    
-                                    <p>To access your account:</p>
-                                    <ol>
-                                        <li>Go to the ServiceEase login page</li>
-                                        <li>Enter your email and temporary password</li>
-                                        <li>Create a new secure password when prompted</li>
-                                    </ol>
-                                    
-                                    <p style="margin-top: 30px; color: #6b7280; font-size: 14px;">
-                                        If you did not expect this email or have any questions, please contact the administrator.
-                                    </p>
-                                    
-                                    <p style="margin-top: 20px;">Best regards,<br><strong>ServiceEase Team</strong></p>
-                                </div>
-                            `
-                        }
-                    ]
-                });
+            const sendSmtpEmail = new brevo.SendSmtpEmail();
+            sendSmtpEmail.sender = { email: 'serviceeaseph@gmail.com', name: 'ServiceEase' };
+            sendSmtpEmail.to = [{ email: email, name: `${firstName} ${lastName}` }];
+            sendSmtpEmail.subject = 'Welcome to ServiceEase - Your Account Has Been Created';
+            sendSmtpEmail.htmlContent = `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #10b981;">Welcome to ServiceEase!</h2>
+                    <p>Hello ${firstName} ${lastName},</p>
+                    <p>Your ${roleDisplay} account has been created by the administrator.</p>
+                    
+                    <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                        <h3 style="margin-top: 0; color: #1f2937;">Login Credentials</h3>
+                        <p style="margin: 10px 0;"><strong>Email:</strong> ${email}</p>
+                        <p style="margin: 10px 0;"><strong>Temporary Password:</strong> <code style="background-color: #fff; padding: 5px 10px; border-radius: 4px; font-size: 16px; color: #10b981;">${temporaryPassword}</code></p>
+                    </div>
+                    
+                    <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0;">
+                        <p style="margin: 0; color: #92400e;"><strong>⚠️ Important:</strong> You will be required to change this temporary password when you first log in to the system for security purposes.</p>
+                    </div>
+                    
+                    <p>To access your account:</p>
+                    <ol>
+                        <li>Go to the ServiceEase login page</li>
+                        <li>Enter your email and temporary password</li>
+                        <li>Create a new secure password when prompted</li>
+                    </ol>
+                    
+                    <p style="margin-top: 30px; color: #6b7280; font-size: 14px;">
+                        If you did not expect this email or have any questions, please contact the administrator.
+                    </p>
+                    
+                    <p style="margin-top: 20px;">Best regards,<br><strong>ServiceEase Team</strong></p>
+                </div>
+            `;
             
-            console.log('Temporary password email sent successfully to:', email);
+            await brevoApiInstance.sendTransacEmail(sendSmtpEmail);
+            console.log('✅ Temporary password email sent successfully via Brevo to:', email);
         } catch (emailError) {
             console.error('Error sending temporary password email:', emailError);
             // Don't fail the whole operation if email fails

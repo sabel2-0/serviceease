@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs');
 const axios = require('axios');
 const { authenticateAdmin } = require('../middleware/auth');
 const db = require('../config/database');
-const mailjet = require('node-mailjet');
+const brevo = require('@getbrevo/brevo');
 const { randomUUID } = require('crypto');
 
 // Image grid captcha store: { id -> { correctIndices, expiresAt, timeout } }
@@ -84,11 +84,10 @@ function verifyCaptcha(id, selectedIndices) {
     return ok;
 }
 
-// Initialize Mailjet
-const mailjetClient = mailjet.apiConnect(
-    process.env.MAILJET_API_KEY,
-    process.env.MAILJET_SECRET_KEY
-);
+// Initialize Brevo
+const brevoApiInstance = new brevo.TransactionalEmailsApi();
+const brevoApiKey = brevoApiInstance.authentications['apiKey'];
+brevoApiKey.apiKey = process.env.BREVO_API_KEY;
 
 // Get admin profile
 router.get('/profile', authenticateAdmin, async (req, res) => {
@@ -177,41 +176,27 @@ router.post('/request-password-change', authenticateAdmin, async (req, res) => {
         
         // Send verification code via email
         try {
-            await mailjetClient
-                .post('send', { version: 'v3.1' })
-                .request({
-                    Messages: [
-                        {
-                            From: {
-                                Email: process.env.EMAIL_USER || 'serviceeaseph@gmail.com',
-                                Name: 'ServiceEase'
-                            },
-                            To: [
-                                {
-                                    Email: user.email,
-                                    Name: `${user.first_name} ${user.last_name}`
-                                }
-                            ],
-                            Subject: 'Password Change Verification Code',
-                            TextPart: `Hello ${user.first_name},\n\nYour verification code for password change is: ${verificationCode}\n\nThis code will expire in 10 minutes.\n\nIf you did not request this, please ignore this email.\n\nBest regards,\nServiceEase Team`,
-                            HTMLPart: `
-                                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                                    <h2 style="color: #1f2937;">Password Change Verification</h2>
-                                    <p>Hello ${user.first_name},</p>
-                                    <p>Your verification code for password change is:</p>
-                                    <div style="background-color: #f3f4f6; padding: 20px; text-align: center; margin: 20px 0;">
-                                        <h1 style="color: #1f2937; margin: 0; letter-spacing: 5px;">${verificationCode}</h1>
-                                    </div>
-                                    <p style="color: #dc2626;">This code will expire in 10 minutes.</p>
-                                    <p style="color: #6b7280;">If you did not request this, please ignore this email.</p>
-                                    <hr style="margin: 20px 0; border: none; border-top: 1px solid #e5e7eb;">
-                                    <p style="color: #6b7280; font-size: 12px;">Best regards,<br>ServiceEase Team</p>
-                                </div>
-                            `
-                        }
-                    ]
-                });
-            console.log(`Verification code sent to ${user.email}`);
+            const sendSmtpEmail = new brevo.SendSmtpEmail();
+            sendSmtpEmail.sender = { email: process.env.EMAIL_USER || 'serviceeaseph@gmail.com', name: 'ServiceEase' };
+            sendSmtpEmail.to = [{ email: user.email, name: `${user.first_name} ${user.last_name}` }];
+            sendSmtpEmail.subject = 'Password Change Verification Code';
+            sendSmtpEmail.htmlContent = `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #1f2937;">Password Change Verification</h2>
+                    <p>Hello ${user.first_name},</p>
+                    <p>Your verification code for password change is:</p>
+                    <div style="background-color: #f3f4f6; padding: 20px; text-align: center; margin: 20px 0;">
+                        <h1 style="color: #1f2937; margin: 0; letter-spacing: 5px;">${verificationCode}</h1>
+                    </div>
+                    <p style="color: #dc2626;">This code will expire in 10 minutes.</p>
+                    <p style="color: #6b7280;">If you did not request this, please ignore this email.</p>
+                    <hr style="margin: 20px 0; border: none; border-top: 1px solid #e5e7eb;">
+                    <p style="color: #6b7280; font-size: 12px;">Best regards,<br>ServiceEase Team</p>
+                </div>
+            `;
+            
+            await brevoApiInstance.sendTransacEmail(sendSmtpEmail);
+            console.log(`✅ Verification code sent to ${user.email} via Brevo`);
         } catch (emailError) {
             console.error('Error sending verification email:', emailError);
             return res.status(500).json({ error: 'Failed to send verification code' });
@@ -377,39 +362,25 @@ router.put('/password', authenticateAdmin, async (req, res) => {
         await db.query('DELETE FROM verification_tokens WHERE id = ?', [tokenData.id]);
         console.log('✓ Verification code deleted from database');
         
-        // Send confirmation email via Mailjet
+        // Send confirmation email via Brevo
         try {
-            await mailjetClient
-                .post('send', { version: 'v3.1' })
-                .request({
-                    Messages: [
-                        {
-                            From: {
-                                Email: process.env.EMAIL_USER || 'serviceeaseph@gmail.com',
-                                Name: 'ServiceEase'
-                            },
-                            To: [
-                                {
-                                    Email: user.email,
-                                    Name: `${user.first_name} ${user.last_name}`
-                                }
-                            ],
-                            Subject: 'Password Changed Successfully',
-                            TextPart: `Hello ${user.first_name},\n\nYour password has been changed successfully.\n\nIf you did not make this change, please contact support immediately.\n\nBest regards,\nServiceEase Team`,
-                            HTMLPart: `
-                                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                                    <h2 style="color: #1f2937;">Password Changed Successfully</h2>
-                                    <p>Hello ${user.first_name},</p>
-                                    <p>Your password has been changed successfully on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}.</p>
-                                    <p style="color: #dc2626; font-weight: bold;">If you did not make this change, please contact support immediately.</p>
-                                    <hr style="margin: 20px 0; border: none; border-top: 1px solid #e5e7eb;">
-                                    <p style="color: #6b7280; font-size: 12px;">Best regards,<br>ServiceEase Team</p>
-                                </div>
-                            `
-                        }
-                    ]
-                });
-            console.log(`Password change confirmation email sent to ${user.email}`);
+            const sendSmtpEmail = new brevo.SendSmtpEmail();
+            sendSmtpEmail.sender = { email: process.env.EMAIL_USER || 'serviceeaseph@gmail.com', name: 'ServiceEase' };
+            sendSmtpEmail.to = [{ email: user.email, name: `${user.first_name} ${user.last_name}` }];
+            sendSmtpEmail.subject = 'Password Changed Successfully';
+            sendSmtpEmail.htmlContent = `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #1f2937;">Password Changed Successfully</h2>
+                    <p>Hello ${user.first_name},</p>
+                    <p>Your password has been changed successfully on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}.</p>
+                    <p style="color: #dc2626; font-weight: bold;">If you did not make this change, please contact support immediately.</p>
+                    <hr style="margin: 20px 0; border: none; border-top: 1px solid #e5e7eb;">
+                    <p style="color: #6b7280; font-size: 12px;">Best regards,<br>ServiceEase Team</p>
+                </div>
+            `;
+            
+            await brevoApiInstance.sendTransacEmail(sendSmtpEmail);
+            console.log(`✅ Password change confirmation email sent to ${user.email} via Brevo`);
         } catch (emailError) {
             console.error('Error sending password change email:', emailError);
             // Don't fail the request if email fails, password is already changed
