@@ -5494,9 +5494,10 @@ async function migratePrinterPartsTable() {
     }
 }
 
-// Run migrations before starting server
+// Run migrations before starting server - DISABLED
+// Migrations should be run manually, not on server start
 (async () => {
-    await migratePrinterPartsTable();
+    // await migratePrinterPartsTable(); // COMMENTED OUT - Run migrations manually
     
     // Start server
     const PORT = process.env.PORT || 3000;
