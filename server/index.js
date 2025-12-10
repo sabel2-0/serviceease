@@ -1518,8 +1518,6 @@ app.post('/api/institution_admins/:id/users', authenticateinstitution_admin, asy
        const crypto = require('crypto');
        const temporaryPassword = crypto.randomBytes(4).toString('hex').toUpperCase();
        
-       console.log(`📧 Generated temporary password for ${email}: ${temporaryPassword}`);
-       
        // Hash temporary password
        const bcrypt = require('bcrypt');
        const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
@@ -1578,10 +1576,9 @@ app.post('/api/institution_admins/:id/users', authenticateinstitution_admin, asy
             
             await brevoApiInstance.sendTransacEmail(sendSmtpEmail);
             console.log(`✅ Temporary password email sent successfully via Brevo to: ${email}`);
-            console.log(`   Password: ${temporaryPassword}`);
         } catch (emailError) {
-            console.error('❌ Failed to send temporary password email:', emailError);
-            console.error('   Email details:', { to: email, password: temporaryPassword });
+            console.error('❌ Failed to send temporary password email to:', email);
+            console.error('   Error:', emailError.message);
             // Don't fail the user creation if email fails
         }
 

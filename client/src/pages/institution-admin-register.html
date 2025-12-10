@@ -657,8 +657,7 @@
                     verificationCode = generateVerificationCode();
                     
                     // Send email using EmailJS
-                    console.log("Sending email to:", email);
-                    // Log the parameters for debugging
+                    // Sending verification email
                     const templateParams = {
                         email: email,  // This matches the {{email}} in template
                         passcode: verificationCode,
@@ -666,7 +665,6 @@
                         from_name: "ServiceEase",
                         from_email: "serviceeaseph@gmail.com"
                     };
-                    console.log("Template params:", templateParams);
 
                     const response = await emailjs.send(
                         "service_upjalyd",
@@ -1497,11 +1495,7 @@
                         const backIdInput = document.getElementById('back-id-upload');
                         const selfieInput = document.getElementById('selfie-upload');
                         
-                        console.log('File inputs check:', {
-                            frontId: frontIdInput && frontIdInput.files[0] ? frontIdInput.files[0].name : 'NO FILE',
-                            backId: backIdInput && backIdInput.files[0] ? backIdInput.files[0].name : 'NO FILE',
-                            selfie: selfieInput && selfieInput.files[0] ? selfieInput.files[0].name : 'NO FILE'
-                        });
+                        // Validate file uploads before submission
 
                         // Call the registration function from auth.js
                         const result = await registerUser(formData);
