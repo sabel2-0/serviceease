@@ -4663,7 +4663,7 @@ app.post('/api/service-requests/:id/complete', auth, async (req, res) => {
 
 // Admin/Operations Officer approves completed service request
 // Get approval details with parts used - for institution admin approval modal
-app.get('/api/institution_admin/service-approvals/:id/details', authenticateAdmin, async (req, res) => {
+app.get('/api/institution_admin/service-approvals/:id/details', authenticateinstitution_admin, async (req, res) => {
     try {
         const approvalId = req.params.id;
         
