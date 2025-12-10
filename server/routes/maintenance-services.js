@@ -290,14 +290,11 @@ router.post('/', auth, async (req, res) => {
                 technician_id,
                 printer_id,
                 institution_id,
-                requester_id,
                 service_description,
                 parts_used,
                 completion_photo,
-                status,
-                institution_admin_approval_status,
-                requester_approval_status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending_institution_admin', 'pending', 'pending')
+                status
+            ) VALUES (?, ?, ?, ?, ?, ?, 'pending')
         `;
         
         console.log('ðŸ’¾ Inserting maintenance service...');
@@ -305,7 +302,6 @@ router.post('/', auth, async (req, res) => {
             technicianId,
             printer_id,
             institution_id,
-            requester_id,
             service_description,
             enrichedPartsUsed ? JSON.stringify(enrichedPartsUsed) : null,
             completion_photo || null
