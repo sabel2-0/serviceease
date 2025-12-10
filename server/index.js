@@ -4662,53 +4662,6 @@ app.post('/api/service-requests/:id/complete', auth, async (req, res) => {
 });
 
 // Admin/Operations Officer approves completed service request
-// Get approval details with parts used - for institution admin approval modal
-app.get('/api/institution_admin/service-approvals/:id/details', authenticateinstitution_admin, async (req, res) => {
-    try {
-        const approvalId = req.params.id;
-        
-        // Get approval details
-        const [approvals] = await db.query(
-            `SELECT sa.*, sr.request_number, sr.status, sr.problem_description, 
-                    sr.resolution_notes, sr.completed_at,
-                    u.first_name as technician_first_name, u.last_name as technician_last_name,
-                    iu.first_name as institution_user_first_name, iu.last_name as institution_user_last_name,
-                    p.name as printer_name, p.brand as printer_brand, p.model as printer_model
-             FROM service_approvals sa
-             JOIN service_requests sr ON sa.service_request_id = sr.id
-             LEFT JOIN users u ON sr.technician_id = u.id
-             LEFT JOIN institution_users iu ON sr.institution_user_id = iu.id
-             LEFT JOIN printers p ON sr.printer_id = p.id
-             WHERE sa.id = ?`,
-            [approvalId]
-        );
-        
-        if (approvals.length === 0) {
-            return res.status(404).json({ error: 'Approval not found' });
-        }
-        
-        const approval = approvals[0];
-        
-        // Get parts used for this service request
-        const [partsUsed] = await db.query(
-            `SELECT spu.*, pp.name as part_name, pp.brand, pp.unit, pp.category
-             FROM service_parts_used spu
-             JOIN printer_parts pp ON spu.part_id = pp.id
-             WHERE spu.service_request_id = ?
-             ORDER BY spu.id`,
-            [approval.service_request_id]
-        );
-        
-        res.json({
-            approval,
-            parts_used: partsUsed
-        });
-    } catch (error) {
-        console.error('[ERROR] Failed to fetch approval details:', error);
-        res.status(500).json({ error: 'Failed to fetch approval details' });
-    }
-});
-
 app.post('/api/service-requests/:id/approve-completion', authenticateAdmin, async (req, res) => {
     try {
         const { id } = req.params;
