@@ -33,8 +33,12 @@ console.log('Cloudinary Configuration:', {
 
 // Initialize Brevo (Sendinblue)
 const brevoApiInstance = new brevo.TransactionalEmailsApi();
-const brevoApiKey = brevoApiInstance.authentications['apiKey'];
-brevoApiKey.apiKey = process.env.BREVO_API_KEY;
+brevoApiInstance.setApiKey(brevo.TransactionalEmailsApiApiKeys.apiKey, process.env.BREVO_API_KEY);
+
+// Verify Brevo configuration on startup
+console.log('Brevo Configuration:', {
+    api_key: process.env.BREVO_API_KEY ? 'SET' : 'MISSING'
+});
 
 
 const app = express();
