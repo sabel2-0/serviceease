@@ -315,7 +315,7 @@ function setupNewRequestForm() {
 
                     // Create service request object (server derives requested_by from auth token)
                     const serviceRequest = {
-                        printer_id: parseInt(printerId, 10), // This is printer_id
+                        printerId: parseInt(printerId, 10), // Server expects printerId (camelCase)
                         institution_id: institutionAdminData.institution_id,
                         priority: priority,
                         description: safeDescription,
