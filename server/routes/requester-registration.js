@@ -261,25 +261,23 @@ router.post('/submit', (req, res) => {
                     return res.status(400).json({ error: 'No matching printers found in institution inventory' });
                 }
         
-                console.log('✅ Validated printers:', validated);
-        
-                // Hash password
-                const password_hash = await bcrypt.hash(password, 10);
-                console.log('🔒 Password hashed successfully');
-        
-                // Insert user directly into users table (pending institution_admin approval)
-                const [result] = await db.query(
-                    `INSERT INTO users (
-                        first_name, last_name, email, password, role,
-                        email_verified_at, approval_status, is_email_verified
-                    ) VALUES (?, ?, ?, ?, 'institution_user', NOW(), 'pending', TRUE)`,
-                    [first_name, last_name, email, password_hash]
-                );
-        
-                const newUserId = result.insertId;
-                console.log('✅ User inserted into database:', { newUserId });
-        
-                // Upload ID photos to Cloudinary and save to temp_user_photos
+        console.log('✅ Validated printers:', validated);
+
+        // Hash password
+        const password_hash = await bcrypt.hash(password, 10);
+        console.log('🔒 Password hashed successfully');
+
+        // Insert user directly into users table (pending institution_admin approval)
+        const [result] = await db.query(
+            `INSERT INTO users (
+                first_name, last_name, email, password, role,
+                approval_status, is_email_verified
+            ) VALUES (?, ?, ?, ?, 'institution_user', 'pending', TRUE)`,
+            [first_name, last_name, email, password_hash]
+        );
+
+        const newUserId = result.insertId;
+        console.log('✅ User inserted into database:', { newUserId });                // Upload ID photos to Cloudinary and save to temp_user_photos
                 let front_id_photo = null;
                 let back_id_photo = null;
                 let selfie_photo = null;

@@ -919,14 +919,23 @@
                 return;
             }
             
-            let allValid = true;
+            // Safety check: ensure printer inputs exist
             const groups = Array.from(document.querySelectorAll('.printer-input-group'));
+            if (groups.length === 0) {
+                showError('Please add at least one printer first.');
+                return;
+            }
+            
+            let allValid = true;
             
             for (let i = 0; i < groups.length; i++) {
                 const serialInput = document.getElementById(`serialNumber-${i}`);
                 const brandInput = document.getElementById(`brand-${i}`);
                 
-                if (!serialInput || !brandInput) continue;
+                if (!serialInput || !brandInput) {
+                    console.warn(`Printer input ${i} not found, skipping`);
+                    continue;
+                }
                 
                 const serial = serialInput.value.trim();
                 const brand = brandInput.value.trim();
@@ -1065,11 +1074,15 @@
             e.preventDefault();
             hideError();
             
+            console.log('Submit button clicked');
+            
             // Ensure email is verified
             if (!emailVerified) {
                 showError('Please verify your email before submitting');
                 return;
             }
+            
+            console.log('Email verified');
             
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
@@ -1079,6 +1092,16 @@
                 showError('Passwords do not match');
                 return;
             }
+            
+            console.log('Passwords match');
+            
+            // Validate all printers before submitting
+            if (!areAllPrintersValid()) {
+                showError('Please validate all printers before submitting. Go back to Step 3 and click "Validate All Printers".');
+                return;
+            }
+            
+            console.log('All printers validated');
             
             // Check for duplicate printer entries before submitting
             for (let i = 0; i < printerCount; i++) {
@@ -1093,6 +1116,8 @@
                     return;
                 }
             }
+            
+            console.log('No duplicate printers');
 
             // Collect printer data
             const printers = [];
