@@ -377,16 +377,12 @@ router.get('/my-submissions', auth, async (req, res) => {
                 inv.location,
                 i.name as institution_name,
                 i.type as institution_type,
-                CONCAT(u_req.first_name, ' ', u_req.last_name) as institution_user_name,
-                u_req.first_name as institution_user_first_name,
-                u_req.last_name as institution_user_last_name,
                 CONCAT(u_coord.first_name, ' ', u_coord.last_name) as institution_admin_name,
                 u_coord.first_name as institution_admin_first_name,
                 u_coord.last_name as institution_admin_last_name
             FROM maintenance_services vs
             INNER JOIN printers inv ON vs.printer_id = inv.id
             INNER JOIN institutions i ON vs.institution_id = i.institution_id
-            LEFT JOIN users u_req ON u_req.id = vs.requester_id
             LEFT JOIN users u_coord ON u_coord.id = i.user_id
             WHERE vs.technician_id = ?
             ${status ? 'AND vs.status = ?' : ''}
@@ -451,14 +447,12 @@ router.get('/institution_admin/pending', auth, async (req, res) => {
                 i.name as institution_name,
                 CONCAT(u_coord.first_name, ' ', u_coord.last_name) as institution_admin_name,
                 CONCAT(u_tech.first_name, ' ', u_tech.last_name) as technician_name,
-                u_tech.email as technician_email,
-                CONCAT(u_req.first_name, ' ', u_req.last_name) as institution_user_name
+                u_tech.email as technician_email
             FROM maintenance_services vs
             INNER JOIN printers inv ON vs.printer_id = inv.id
             INNER JOIN institutions i ON vs.institution_id COLLATE utf8mb4_unicode_ci = i.institution_id
             LEFT JOIN users u_coord ON i.user_id = u_coord.id
             INNER JOIN users u_tech ON vs.technician_id = u_tech.id
-            LEFT JOIN users u_req ON u_req.id = vs.requester_id
             WHERE vs.institution_id IN (?)
             AND vs.status NOT IN ('completed', 'rejected')
             ORDER BY vs.created_at DESC
@@ -518,14 +512,12 @@ router.get('/institution_admin/history', auth, async (req, res) => {
                 i.name as institution_name,
                 CONCAT(u_coord.first_name, ' ', u_coord.last_name) as institution_admin_name,
                 CONCAT(u_tech.first_name, ' ', u_tech.last_name) as technician_name,
-                u_tech.email as technician_email,
-                CONCAT(u_req.first_name, ' ', u_req.last_name) as institution_user_name
+                u_tech.email as technician_email
             FROM maintenance_services vs
             INNER JOIN printers inv ON vs.printer_id = inv.id
             INNER JOIN institutions i ON vs.institution_id COLLATE utf8mb4_unicode_ci = i.institution_id
             LEFT JOIN users u_coord ON i.user_id = u_coord.id
             INNER JOIN users u_tech ON vs.technician_id = u_tech.id
-            LEFT JOIN users u_req ON u_req.id = vs.requester_id
             WHERE vs.institution_id IN (?)
             AND vs.status IN ('completed', 'rejected')
             ORDER BY vs.created_at DESC
