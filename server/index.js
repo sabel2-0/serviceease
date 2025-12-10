@@ -3249,20 +3249,36 @@ app.post('/api/service-requests', auth, async (req, res) => {
         }
 
         // Get printer details and verify user has access
-        const [printerRows] = await db.query(
-            `SELECT p.*, upa.institution_id 
-             FROM printers p
-             JOIN user_printer_assignments upa ON p.id = upa.printer_id
-             WHERE p.id = ? AND upa.user_id = ?`,
-            [printerId, userId]
-        );
+        let printerRows;
+        let institutionId;
+        
+        if (req.user.role === 'institution_admin') {
+            // institution_admin owns the institution (institutions.user_id)
+            // They have access to all printers in their institution
+            [printerRows] = await db.query(
+                `SELECT p.*, i.institution_id 
+                 FROM printers p
+                 JOIN institutions i ON p.institution_id = i.institution_id
+                 WHERE p.id = ? AND i.user_id = ?`,
+                [printerId, userId]
+            );
+        } else {
+            // institution_user has specific printer assignments
+            [printerRows] = await db.query(
+                `SELECT p.*, upa.institution_id 
+                 FROM printers p
+                 JOIN user_printer_assignments upa ON p.id = upa.printer_id
+                 WHERE p.id = ? AND upa.user_id = ?`,
+                [printerId, userId]
+            );
+        }
 
         if (printerRows.length === 0) {
             return res.status(403).json({ error: 'You do not have access to this printer' });
         }
 
         const printer = printerRows[0];
-        const institutionId = printer.institution_id;
+        institutionId = printer.institution_id;
 
         // Check if there's already an active request for this printer
         const [activeRequests] = await db.query(
