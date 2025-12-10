@@ -290,7 +290,7 @@
         }
 
         function updatePendingCount() {
-            const pendingCount = allServices.filter(s => s.institution_admin_approval_status === 'pending').length;
+            const pendingCount = allServices.filter(s => s.status === 'pending').length;
             document.getElementById('pending-count').textContent = pendingCount;
         }
 
@@ -302,13 +302,13 @@
             let filteredServices = allServices.filter(service => {
                 // Status filter
                 if (currentFilter === 'pending_Institution Admin') {
-                    if (service.institution_admin_approval_status !== 'pending') return false;
+                    if (service.status !== 'pending') return false;
                 } else if (currentFilter === 'pending_institution_user') {
-                    if (service.institution_user_approval_status !== 'pending') return false;
+                    if (service.status !== 'pending') return false;
                 } else if (currentFilter === 'completed') {
                     if (service.status !== 'completed') return false;
                 } else if (currentFilter === 'rejected') {
-                    if (service.institution_admin_approval_status !== 'rejected' && service.institution_user_approval_status !== 'rejected') return false;
+                    if (service.status !== 'rejected') return false;
                 }
 
                 // Search filter

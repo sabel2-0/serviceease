@@ -1109,7 +1109,7 @@ function displayMaintenanceServices() {
   const container = document.getElementById('pending-Maintenance-list');
   if (!container) return;
   
-  const pending = maintenanceServices.filter(s => s.requester_approval_status === 'pending');
+  const pending = maintenanceServices.filter(s => s.status === 'pending');
   
   if (pending.length === 0) {
     container.innerHTML = `
@@ -1193,17 +1193,16 @@ function displayMaintenanceHistory() {
 function getMaintenanceStatusColor(service) {
   if (service.status === 'completed') return 'bg-green-100 text-green-800';
   if (service.status === 'rejected') return 'bg-red-100 text-red-800';
-  if (service.requester_approval_status === 'pending') return 'bg-yellow-100 text-yellow-800';
-  if (service.coordinator_approval_status === 'approved') return 'bg-blue-100 text-blue-800';
+  if (service.status === 'pending') return 'bg-yellow-100 text-yellow-800';
+  if (service.status === 'approved') return 'bg-blue-100 text-blue-800';
   return 'bg-gray-100 text-gray-800';
 }
 
 function getMaintenanceStatusText(service) {
   if (service.status === 'completed') return 'Completed';
   if (service.status === 'rejected') return 'Rejected';
-  if (service.requester_approval_status === 'pending') return 'Your Approval Needed';
-  if (service.requester_approval_status === 'approved' && service.institution_admin_approval_status === 'pending') return 'Awaiting Admin Approval';
-  if (service.institution_admin_approval_status === 'approved') return 'Approved';
+  if (service.status === 'approved') return 'Approved';
+  if (service.status === 'pending') return 'Pending Approval';
   return 'Pending';
 }
 
@@ -1313,9 +1312,7 @@ function viewMaintenanceDetails(serviceId) {
         Submitted: ${new Date(service.created_at).toLocaleString()}
       </div>
       
-      ${service.status !== 'completed' && service.status !== 'rejected' && 
-        service.requester_approval_status === 'pending' && 
-        service.institution_admin_approval_status === 'pending' ? `
+      ${service.status === 'pending' ? `
       <div class="flex space-x-3 pt-4 border-t">
         <button onclick="rejectMaintenanceService(${service.id})" class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition">
           Reject
@@ -1324,9 +1321,9 @@ function viewMaintenanceDetails(serviceId) {
           Approve
         </button>
       </div>
-      ` : service.institution_admin_approval_status === 'approved' ? `
+      ` : service.status === 'approved' ? `
       <div class="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-800">
-        ✓ Already approved by institution admin
+        ✓ Already approved
       </div>
       ` : service.status === 'completed' ? `
       <div class="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-800">
