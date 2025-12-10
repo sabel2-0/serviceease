@@ -81,7 +81,7 @@ async function submitServiceRequest(data) {
 // Load Service Requests
 async function loadServiceRequests() {
     try {
-        const response = await fetch('/api/institutionAdmin/service-requests', {
+        const response = await fetch('/api/institution_admin/service-approvals/pending', {
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('token')}`
             }
@@ -94,20 +94,22 @@ async function loadServiceRequests() {
 }
 
 // Approve Service Request Completion
-async function approveServiceCompletion(requestId) {
+async function approveServiceCompletion(approvalId) {
     try {
-        const response = await fetch(`/api/service-requests/${requestId}/approve`, {
+        const response = await fetch(`/api/institution_admin/service-approvals/${approvalId}/approve`, {
             method: 'POST',
             headers: {
+                'Content-Type': 'application/json',
                 'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
+            },
+            body: JSON.stringify({ notes: '' })
         });
         const result = await response.json();
         if (response.ok) {
             showSuccessMessage('Service completion approved');
             loadServiceRequests();
         } else {
-            showErrorMessage(result.message);
+            showErrorMessage(result.error || result.message);
         }
     } catch (error) {
         console.error('Error approving service completion:', error);
@@ -158,18 +160,20 @@ function displayServiceRequests(requests) {
         <div class="request-item bg-white p-4 rounded-lg shadow mb-4">
             <div class="flex justify-between items-start">
                 <div>
-                    <h4 class="font-semibold">#${request.id} - ${request.title}</h4>
-                    <p class="text-sm text-gray-600">${request.description}</p>
-                    <p class="text-sm text-gray-600">Status: ${request.status}</p>
+                    <h4 class="font-semibold">#${request.service_request_id} - ${request.request_description}</h4>
+                    <p class="text-sm text-gray-600">Institution: ${request.institution_name}</p>
+                    <p class="text-sm text-gray-600">Technician: ${request.technician_first_name} ${request.technician_last_name}</p>
+                    <p class="text-sm text-gray-600">Status: ${request.approval_status}</p>
+                    ${request.parts_used ? `<p class="text-sm text-gray-600">Parts used: ${request.parts_used}</p>` : ''}
                 </div>
                 <div class="flex space-x-2">
-                    ${request.status === 'completed' ? 
-                        `<button onclick="approveServiceCompletion('${request.id}')"
+                    ${request.approval_status === 'pending_approval' ? 
+                        `<button onclick="approveServiceCompletion('${request.approval_id}')"
                                 class="bg-green-500 text-white px-3 py-1 rounded">
                             Approve
                         </button>` : ''
                     }
-                    <button onclick="viewRequestDetails('${request.id}')"
+                    <button onclick="viewRequestDetails('${request.service_request_id}')"
                             class="bg-blue-500 text-white px-3 py-1 rounded">
                         Details
                     </button>
