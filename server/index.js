@@ -3254,12 +3254,13 @@ app.post('/api/service-requests', auth, async (req, res) => {
         
         if (req.user.role === 'institution_admin') {
             // institution_admin owns the institution (institutions.user_id)
-            // They have access to all printers in their institution
+            // They have access to all printers in their institution via institution_printer_assignments
             [printerRows] = await db.query(
-                `SELECT p.*, i.institution_id 
+                `SELECT p.*, ipa.institution_id 
                  FROM printers p
-                 JOIN institutions i ON p.institution_id = i.institution_id
-                 WHERE p.id = ? AND i.user_id = ?`,
+                 JOIN institution_printer_assignments ipa ON p.id = ipa.printer_id
+                 JOIN institutions i ON ipa.institution_id = i.institution_id
+                 WHERE p.id = ? AND i.user_id = ? AND ipa.status = 'assigned'`,
                 [printerId, userId]
             );
         } else {
