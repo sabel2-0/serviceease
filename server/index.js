@@ -985,7 +985,7 @@ app.post('/api/reject-user/:userId', authenticateAdmin, async (req, res) => {
                         <h2 style="color: #ef4444;">Application Status Update</h2>
                         <p>Hello ${user.first_name} ${user.last_name},</p>
                         <p>We regret to inform you that your application has been reviewed and we are unable to approve it at this time.</p>
-                        ${rejectionNotes ? `<p><strong>Reason:</strong> ${rejectionNotes}</p>` : ''}
+                        ${reason ? `<p><strong>Reason:</strong> ${reason}</p>` : ''}
                         <p>If you have any questions, please contact our support team.</p>
                         <p style="margin-top: 20px;">Best regards,<br><strong>ServiceEase Team</strong></p>
                     </div>
