@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monthly Billing - ServiceEase</title>
+    <link rel="icon" type="image/png" href="../../images/serviceease.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .calendar-day {
+            min-height: 100px;
+            border: 1px solid #e5e7eb;
+            transition: all 0.2s;
+        }
+        .calendar-day:hover {
+            background-color: #f9fafb;
+        }
+        .calendar-day.has-services {
+            background-color: #dbeafe;
+            border-color: #3b82f6;
+        }
+        .calendar-day.has-services:hover {
+            background-color: #bfdbfe;
+        }
+        .service-badge {
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-blue-600 text-white shadow-lg">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4">
+                    <img src="../../images/serviceease.png" alt="ServiceEase Logo" class="h-10 w-10">
+                    <h1 class="text-2xl font-bold">Monthly Billing Calendar</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span id="userGreeting" class="text-sm"></span>
+                    <button onclick="logout()" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg transition">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto px-4 py-8">
+        <!-- Back Button -->
+        <button onclick="window.location.href='institution-admin-dashboard.html'" 
+                class="mb-6 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition">
+            <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
+        </button>
+
+        <!-- Month Selector -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div class="flex flex-wrap items-center gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Select Month</label>
+                    <div class="flex gap-2">
+                        <select id="monthSelect" class="border border-gray-300 rounded-lg px-4 py-2">
+                            <option value="1">January</option>
+                            <option value="2">February</option>
+                            <option value="3">March</option>
+                            <option value="4">April</option>
+                            <option value="5">May</option>
+                            <option value="6">June</option>
+                            <option value="7">July</option>
+                            <option value="8">August</option>
+                            <option value="9">September</option>
+                            <option value="10">October</option>
+                            <option value="11">November</option>
+                            <option value="12">December</option>
+                        </select>
+                        <select id="yearSelect" class="border border-gray-300 rounded-lg px-4 py-2">
+                            <!-- Populated by JS -->
+                        </select>
+                        <button onclick="loadMonthlyData()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition">
+                            <i class="fas fa-search mr-2"></i>Load
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="flex-1"></div>
+                
+                <button onclick="exportToCSV()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition">
+                    <i class="fas fa-file-excel mr-2"></i>Export to CSV
+                </button>
+            </div>
+        </div>
+
+        <!-- Billing Summary -->
+        <div id="billingSummary" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <!-- Summary cards will be inserted here -->
+        </div>
+
+        <!-- Institution Breakdown -->
+        <div id="institutionBreakdown" class="bg-white rounded-lg shadow-md p-6 mb-6 hidden">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">
+                <i class="fas fa-building mr-2 text-blue-600"></i>Breakdown by Institution
+            </h2>
+            <div id="institutionList" class="space-y-2">
+                <!-- Institution stats will be inserted here -->
+            </div>
+        </div>
+
+        <!-- View Toggle -->
+        <div class="bg-white rounded-lg shadow-md p-4 mb-6">
+            <div class="flex gap-4">
+                <button id="calendarViewBtn" onclick="showCalendarView()" 
+                        class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg transition">
+                    <i class="fas fa-calendar-alt mr-2"></i>Calendar View
+                </button>
+                <button id="listViewBtn" onclick="showListView()" 
+                        class="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition hover:bg-gray-300">
+                    <i class="fas fa-list mr-2"></i>List View
+                </button>
+            </div>
+        </div>
+
+        <!-- Calendar View -->
+        <div id="calendarView" class="bg-white rounded-lg shadow-md p-6">
+            <div id="calendar" class="grid grid-cols-7 gap-2">
+                <!-- Calendar will be generated here -->
+            </div>
+        </div>
+
+        <!-- List View -->
+        <div id="listView" class="bg-white rounded-lg shadow-md p-6 hidden">
+            <div id="servicesList">
+                <!-- Services list will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Service Details Modal -->
+    <div id="serviceModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-gray-800">
+                        <i class="fas fa-calendar-day mr-2 text-blue-600"></i>Services on <span id="modalDate"></span>
+                    </h3>
+                    <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+                <div id="modalContent">
+                    <!-- Service details will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentData = null;
+        let allServices = [];
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', async () => {
+            await checkAuth();
+            initializeDateSelectors();
+            await loadMonthlyData();
+        });
+
+        async function checkAuth() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/src/pages/login.html';
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:5000/api/auth/me', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Auth failed');
+                }
+
+                const data = await response.json();
+                if (data.role !== 'institution_admin') {
+                    alert('Access denied');
+                    window.location.href = '/src/pages/login.html';
+                    return;
+                }
+
+                document.getElementById('userGreeting').textContent = 
+                    `${data.first_name} ${data.last_name} (Institution Admin)`;
+            } catch (error) {
+                console.error('Auth error:', error);
+                localStorage.removeItem('token');
+                window.location.href = '/src/pages/login.html';
+            }
+        }
+
+        function initializeDateSelectors() {
+            const now = new Date();
+            const yearSelect = document.getElementById('yearSelect');
+            const monthSelect = document.getElementById('monthSelect');
+            
+            // Populate years (current year and 2 years back)
+            for (let i = 0; i < 3; i++) {
+                const year = now.getFullYear() - i;
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                yearSelect.appendChild(option);
+            }
+            
+            // Set current month and year
+            monthSelect.value = now.getMonth() + 1;
+            yearSelect.value = now.getFullYear();
+        }
+
+        async function loadMonthlyData() {
+            const year = document.getElementById('yearSelect').value;
+            const month = document.getElementById('monthSelect').value;
+            const token = localStorage.getItem('token');
+
+            try {
+                const response = await fetch(
+                    `http://localhost:5000/api/maintenance-services/institution_admin/monthly-billing?year=${year}&month=${month}`,
+                    { headers: { 'Authorization': `Bearer ${token}` } }
+                );
+
+                if (!response.ok) throw new Error('Failed to fetch data');
+
+                currentData = await response.json();
+                allServices = currentData.services || [];
+                
+                displaySummary();
+                displayInstitutionBreakdown();
+                generateCalendar();
+            } catch (error) {
+                console.error('Error loading data:', error);
+                alert('Failed to load billing data');
+            }
+        }
+
+        function displaySummary() {
+            const summary = currentData.summary;
+            const summaryHTML = `
+                <div class="bg-blue-50 rounded-lg p-6 border-l-4 border-blue-600">
+                    <div class="text-sm text-gray-600 mb-1">Total Services</div>
+                    <div class="text-3xl font-bold text-blue-600">${summary.totalServices}</div>
+                </div>
+                <div class="bg-green-50 rounded-lg p-6 border-l-4 border-green-600">
+                    <div class="text-sm text-gray-600 mb-1">Unique Printers</div>
+                    <div class="text-3xl font-bold text-green-600">${summary.uniquePrinters}</div>
+                </div>
+                <div class="bg-purple-50 rounded-lg p-6 border-l-4 border-purple-600">
+                    <div class="text-sm text-gray-600 mb-1">Institutions</div>
+                    <div class="text-3xl font-bold text-purple-600">${summary.institutions.length}</div>
+                </div>
+                <div class="bg-orange-50 rounded-lg p-6 border-l-4 border-orange-600">
+                    <div class="text-sm text-gray-600 mb-1">Avg per Printer</div>
+                    <div class="text-3xl font-bold text-orange-600">
+                        ${summary.uniquePrinters > 0 ? (summary.totalServices / summary.uniquePrinters).toFixed(1) : '0'}
+                    </div>
+                </div>
+            `;
+            document.getElementById('billingSummary').innerHTML = summaryHTML;
+        }
+
+        function displayInstitutionBreakdown() {
+            const institutions = currentData.summary.institutions;
+            const breakdownDiv = document.getElementById('institutionBreakdown');
+            const listDiv = document.getElementById('institutionList');
+            
+            if (institutions.length === 0) {
+                breakdownDiv.classList.add('hidden');
+                return;
+            }
+            
+            breakdownDiv.classList.remove('hidden');
+            
+            const html = institutions.map(inst => `
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                    <div>
+                        <div class="font-semibold text-gray-800">${inst.institution_name}</div>
+                        <div class="text-sm text-gray-600">${inst.institution_id}</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-2xl font-bold text-blue-600">${inst.totalServices}</div>
+                        <div class="text-xs text-gray-600">${inst.uniquePrinters} printers</div>
+                    </div>
+                </div>
+            `).join('');
+            
+            listDiv.innerHTML = html;
+        }
+
+        function generateCalendar() {
+            const year = parseInt(document.getElementById('yearSelect').value);
+            const month = parseInt(document.getElementById('monthSelect').value);
+            const calendar = document.getElementById('calendar');
+            
+            // Get first day of month and number of days
+            const firstDay = new Date(year, month - 1, 1);
+            const lastDay = new Date(year, month, 0);
+            const daysInMonth = lastDay.getDate();
+            const startingDayOfWeek = firstDay.getDay();
+            
+            // Clear calendar
+            calendar.innerHTML = '';
+            
+            // Day headers
+            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            dayNames.forEach(day => {
+                const header = document.createElement('div');
+                header.className = 'text-center font-semibold text-gray-700 py-2';
+                header.textContent = day;
+                calendar.appendChild(header);
+            });
+            
+            // Empty cells before first day
+            for (let i = 0; i < startingDayOfWeek; i++) {
+                const empty = document.createElement('div');
+                empty.className = 'calendar-day bg-gray-100';
+                calendar.appendChild(empty);
+            }
+            
+            // Days with services
+            const dailyServicesMap = {};
+            currentData.dailyServices.forEach(day => {
+                const date = new Date(day.date);
+                const dayNum = date.getDate();
+                dailyServicesMap[dayNum] = day;
+            });
+            
+            // Create day cells
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayCell = document.createElement('div');
+                dayCell.className = 'calendar-day p-2 cursor-pointer';
+                
+                const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const dayData = dailyServicesMap[day];
+                
+                if (dayData) {
+                    dayCell.classList.add('has-services');
+                    dayCell.onclick = () => showDayDetails(dateStr, dayData);
+                    
+                    dayCell.innerHTML = `
+                        <div class="font-bold text-lg mb-1">${day}</div>
+                        <div class="service-badge bg-blue-600 text-white mb-1">
+                            ${dayData.serviceCount} service${dayData.serviceCount !== 1 ? 's' : ''}
+                        </div>
+                        <div class="service-badge bg-green-600 text-white">
+                            ${dayData.uniquePrinterCount} printer${dayData.uniquePrinterCount !== 1 ? 's' : ''}
+                        </div>
+                    `;
+                } else {
+                    dayCell.innerHTML = `<div class="font-bold text-lg text-gray-400">${day}</div>`;
+                }
+                
+                calendar.appendChild(dayCell);
+            }
+        }
+
+        function showDayDetails(date, dayData) {
+            document.getElementById('modalDate').textContent = new Date(date).toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            
+            // Get full service details for this date
+            const dayServices = allServices.filter(s => {
+                const serviceDate = new Date(s.completed_at).toISOString().split('T')[0];
+                return serviceDate === date;
+            });
+            
+            const content = dayServices.map(service => `
+                <div class="border rounded-lg p-4 mb-4 hover:bg-gray-50">
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="flex-1">
+                            <div class="font-semibold text-lg text-gray-800">
+                                <i class="fas fa-print text-blue-600 mr-2"></i>${service.printer_name}
+                            </div>
+                            <div class="text-sm text-gray-600">${service.brand || ''} ${service.model || ''}</div>
+                            ${service.serial_number ? `<div class="text-xs text-gray-500">SN: ${service.serial_number}</div>` : ''}
+                        </div>
+                        <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Completed</span>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 mt-3 text-sm">
+                        <div>
+                            <span class="text-gray-600">Technician:</span>
+                            <span class="font-medium ml-1">${service.technician_name}</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-600">Institution:</span>
+                            <span class="font-medium ml-1">${service.institution_name}</span>
+                        </div>
+                        <div class="col-span-2">
+                            <span class="text-gray-600">Completed:</span>
+                            <span class="font-medium ml-1">${new Date(service.completed_at).toLocaleString()}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3 p-2 bg-blue-50 rounded text-sm">
+                        <div class="font-medium text-gray-700 mb-1">Service Description:</div>
+                        <div class="text-gray-600">${service.service_description || 'N/A'}</div>
+                    </div>
+                    
+                    ${service.parts_used && service.parts_used.length > 0 ? `
+                        <div class="mt-2 p-2 bg-yellow-50 rounded text-sm">
+                            <div class="font-medium text-gray-700 mb-1">Parts Used:</div>
+                            <ul class="list-disc list-inside text-gray-600">
+                                ${service.parts_used.map(part => `
+                                    <li>${part.name || part.part_name} - ${part.qty} ${part.unit}</li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+            
+            document.getElementById('modalContent').innerHTML = content;
+            document.getElementById('serviceModal').classList.remove('hidden');
+            document.getElementById('serviceModal').classList.add('flex');
+        }
+
+        function closeModal() {
+            document.getElementById('serviceModal').classList.add('hidden');
+            document.getElementById('serviceModal').classList.remove('flex');
+        }
+
+        function showCalendarView() {
+            document.getElementById('calendarView').classList.remove('hidden');
+            document.getElementById('listView').classList.add('hidden');
+            document.getElementById('calendarViewBtn').classList.remove('bg-gray-200', 'text-gray-700');
+            document.getElementById('calendarViewBtn').classList.add('bg-blue-600', 'text-white');
+            document.getElementById('listViewBtn').classList.add('bg-gray-200', 'text-gray-700');
+            document.getElementById('listViewBtn').classList.remove('bg-blue-600', 'text-white');
+        }
+
+        function showListView() {
+            document.getElementById('calendarView').classList.add('hidden');
+            document.getElementById('listView').classList.remove('hidden');
+            document.getElementById('listViewBtn').classList.remove('bg-gray-200', 'text-gray-700');
+            document.getElementById('listViewBtn').classList.add('bg-blue-600', 'text-white');
+            document.getElementById('calendarViewBtn').classList.add('bg-gray-200', 'text-gray-700');
+            document.getElementById('calendarViewBtn').classList.remove('bg-blue-600', 'text-white');
+            
+            displayServicesList();
+        }
+
+        function displayServicesList() {
+            const listDiv = document.getElementById('servicesList');
+            
+            if (allServices.length === 0) {
+                listDiv.innerHTML = `
+                    <div class="text-center py-12 text-gray-500">
+                        <i class="fas fa-calendar-times text-6xl mb-4"></i>
+                        <p class="text-xl">No services found for this month</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const html = allServices.map(service => `
+                <div class="border-b border-gray-200 py-4 hover:bg-gray-50 px-2">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <div class="font-semibold text-gray-800">
+                                <i class="fas fa-print text-blue-600 mr-2"></i>${service.printer_name}
+                            </div>
+                            <div class="text-sm text-gray-600 mt-1">
+                                ${service.brand || ''} ${service.model || ''} 
+                                ${service.serial_number ? `• SN: ${service.serial_number}` : ''}
+                            </div>
+                            <div class="text-sm text-gray-600 mt-1">
+                                <i class="fas fa-user text-gray-400 mr-1"></i>
+                                ${service.technician_name}
+                            </div>
+                            <div class="text-sm text-gray-600">
+                                <i class="fas fa-building text-gray-400 mr-1"></i>
+                                ${service.institution_name}
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm font-medium text-gray-700">
+                                ${new Date(service.completed_at).toLocaleDateString()}
+                            </div>
+                            <div class="text-xs text-gray-500">
+                                ${new Date(service.completed_at).toLocaleTimeString()}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            listDiv.innerHTML = html;
+        }
+
+        function exportToCSV() {
+            if (!allServices || allServices.length === 0) {
+                alert('No data to export');
+                return;
+            }
+            
+            const year = document.getElementById('yearSelect').value;
+            const month = document.getElementById('monthSelect').value;
+            const monthName = new Date(year, month - 1, 1).toLocaleString('en-US', { month: 'long' });
+            
+            // CSV headers
+            let csv = 'Date,Time,Printer,Brand,Model,Serial Number,Location,Technician,Institution,Service Description,Parts Used\n';
+            
+            // CSV rows
+            allServices.forEach(service => {
+                const date = new Date(service.completed_at);
+                const partsUsed = service.parts_used ? 
+                    service.parts_used.map(p => `${p.name || p.part_name} (${p.qty} ${p.unit})`).join('; ') : 
+                    '';
+                
+                csv += `"${date.toLocaleDateString()}","${date.toLocaleTimeString()}",`;
+                csv += `"${service.printer_name}","${service.brand || ''}","${service.model || ''}",`;
+                csv += `"${service.serial_number || ''}","${service.location || ''}",`;
+                csv += `"${service.technician_name}","${service.institution_name}",`;
+                csv += `"${(service.service_description || '').replace(/"/g, '""')}",`;
+                csv += `"${partsUsed.replace(/"/g, '""')}"\n`;
+            });
+            
+            // Download CSV
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Billing_Report_${monthName}_${year}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = '/src/pages/login.html';
+        }
+    </script>
+</body>
+</html>

@@ -1097,6 +1097,154 @@ router.patch('/institution_user/:id/reject', auth, async (req, res) => {
     }
 });
 
+/**
+ * Get Monthly Maintenance Services for Billing (Institution Admin)
+ * GET /api/maintenance-services/institution_admin/monthly-billing
+ * Query params: year, month (defaults to current month)
+ */
+router.get('/institution_admin/monthly-billing', auth, async (req, res) => {
+    try {
+        const institution_adminId = req.user.id;
+        const currentDate = new Date();
+        const year = req.query.year ? parseInt(req.query.year) : currentDate.getFullYear();
+        const month = req.query.month ? parseInt(req.query.month) : currentDate.getMonth() + 1;
+        
+        console.log(`📅 Fetching monthly billing for institution_admin ${institution_adminId}: ${year}-${month}`);
+        
+        // Get institution_admin's institutions
+        const [institutions] = await db.query(
+            'SELECT institution_id, name FROM institutions WHERE user_id = ?',
+            [institution_adminId]
+        );
+        
+        if (institutions.length === 0) {
+            return res.json({ 
+                summary: { 
+                    totalPrinters: 0, 
+                    totalServices: 0, 
+                    uniquePrinters: 0,
+                    institutions: []
+                },
+                dailyServices: [],
+                services: []
+            });
+        }
+        
+        const institutionIds = institutions.map(i => i.institution_id);
+        
+        // Get services for the month (completed only for billing)
+        const query = `
+            SELECT 
+                ms.*,
+                p.name as printer_name,
+                p.brand,
+                p.model,
+                p.serial_number,
+                p.location,
+                i.name as institution_name,
+                CONCAT(u_tech.first_name, ' ', u_tech.last_name) as technician_name,
+                u_tech.email as technician_email,
+                DATE(ms.completed_at) as service_date
+            FROM maintenance_services ms
+            INNER JOIN printers p ON ms.printer_id = p.id
+            INNER JOIN institutions i ON ms.institution_id COLLATE utf8mb4_unicode_ci = i.institution_id
+            INNER JOIN users u_tech ON ms.technician_id = u_tech.id
+            WHERE ms.institution_id IN (?)
+                AND ms.status = 'completed'
+                AND YEAR(ms.completed_at) = ?
+                AND MONTH(ms.completed_at) = ?
+            ORDER BY ms.completed_at DESC
+        `;
+        
+        const [services] = await db.query(query, [institutionIds, year, month]);
+        
+        // Parse parts_used JSON
+        services.forEach(service => {
+            if (service.parts_used) {
+                try {
+                    service.parts_used = JSON.parse(service.parts_used);
+                } catch (e) {
+                    service.parts_used = [];
+                }
+            }
+        });
+        
+        // Calculate summary statistics
+        const uniquePrinters = new Set(services.map(s => s.printer_id)).size;
+        const totalServices = services.length;
+        
+        // Group services by date for calendar view
+        const dailyServicesMap = {};
+        services.forEach(service => {
+            const date = service.service_date;
+            if (!dailyServicesMap[date]) {
+                dailyServicesMap[date] = {
+                    date,
+                    count: 0,
+                    printers: new Set(),
+                    services: []
+                };
+            }
+            dailyServicesMap[date].count++;
+            dailyServicesMap[date].printers.add(service.printer_id);
+            dailyServicesMap[date].services.push({
+                id: service.id,
+                printer_name: service.printer_name,
+                technician_name: service.technician_name
+            });
+        });
+        
+        // Convert to array and format
+        const dailyServices = Object.values(dailyServicesMap).map(day => ({
+            date: day.date,
+            serviceCount: day.count,
+            uniquePrinterCount: day.printers.size,
+            services: day.services
+        }));
+        
+        // Group by institution
+        const institutionStats = {};
+        institutions.forEach(inst => {
+            institutionStats[inst.institution_id] = {
+                institution_id: inst.institution_id,
+                institution_name: inst.name,
+                totalServices: 0,
+                uniquePrinters: new Set()
+            };
+        });
+        
+        services.forEach(service => {
+            if (institutionStats[service.institution_id]) {
+                institutionStats[service.institution_id].totalServices++;
+                institutionStats[service.institution_id].uniquePrinters.add(service.printer_id);
+            }
+        });
+        
+        const institutionSummary = Object.values(institutionStats).map(stat => ({
+            institution_id: stat.institution_id,
+            institution_name: stat.institution_name,
+            totalServices: stat.totalServices,
+            uniquePrinters: stat.uniquePrinters.size
+        }));
+        
+        res.json({
+            summary: {
+                year,
+                month,
+                totalServices,
+                uniquePrinters,
+                institutions: institutionSummary
+            },
+            dailyServices: dailyServices.sort((a, b) => new Date(b.date) - new Date(a.date)),
+            services
+        });
+        
+    } catch (error) {
+        console.error('❌ Error fetching monthly billing:', error);
+        res.status(500).json({ error: 'Failed to fetch monthly billing data' });
+    }
+});
+
 module.exports = router;
 
 
