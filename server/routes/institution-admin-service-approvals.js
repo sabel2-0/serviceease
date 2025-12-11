@@ -203,10 +203,9 @@ router.post('/:approvalId/approve', authenticateinstitution_admin, async (req, r
                 UPDATE service_requests 
                 SET status = 'completed', 
                     completed_at = NOW(),
-                    approved_by = ?,
                     resolution_notes = ?
                 WHERE id = ?`,
-                [institution_adminId, resolutionNotes, serviceRequestId]
+                [resolutionNotes, serviceRequestId]
             );
             
             // Deduct parts from technician inventory
