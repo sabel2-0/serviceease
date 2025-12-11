@@ -3246,13 +3246,14 @@ app.post('/api/service-requests', auth, async (req, res) => {
         const userId = req.user && req.user.id;
         if (!userId) return res.status(401).json({ error: 'Not authenticated' });
 
-        const { printerId, priority, description } = req.body;
+        const { printerId, printer_id, priority, description } = req.body;
+        const actualPrinterId = printer_id || printerId; // Accept both formats
         
-        console.log('Service request received:', { printerId, priority, description, userId });
+        console.log('Service request received:', { printer_id: actualPrinterId, priority, description, userId });
 
         // Validation
-        if (!printerId || !description) {
-            console.log('Validation failed:', { printerId: !!printerId, description: !!description });
+        if (!actualPrinterId || !description) {
+            console.log('Validation failed:', { printer_id: !!actualPrinterId, description: !!description });
             return res.status(400).json({ error: 'Printer and issue description are required' });
         }
 
@@ -3269,7 +3270,7 @@ app.post('/api/service-requests', auth, async (req, res) => {
                  JOIN institution_printer_assignments ipa ON p.id = ipa.printer_id
                  JOIN institutions i ON ipa.institution_id = i.institution_id
                  WHERE p.id = ? AND i.user_id = ? AND ipa.status = 'assigned'`,
-                [printerId, userId]
+                [actualPrinterId, userId]
             );
         } else {
             // institution_user has specific printer assignments
@@ -3278,7 +3279,7 @@ app.post('/api/service-requests', auth, async (req, res) => {
                  FROM printers p
                  JOIN user_printer_assignments upa ON p.id = upa.printer_id
                  WHERE p.id = ? AND upa.user_id = ?`,
-                [printerId, userId]
+                [actualPrinterId, userId]
             );
         }
 
@@ -3298,7 +3299,7 @@ app.post('/api/service-requests', auth, async (req, res) => {
              WHERE sr.printer_id = ? 
              AND sr.status IN ('pending', 'assigned', 'in_progress', 'pending_approval')
              LIMIT 1`,
-            [printerId]
+            [actualPrinterId]
         );
 
         if (activeRequests.length > 0) {
@@ -3328,7 +3329,7 @@ app.post('/api/service-requests', auth, async (req, res) => {
             ) VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, FALSE, NOW())`,
             [
                 requestNumber,
-                printerId,
+                actualPrinterId,
                 institutionId,
                 priority || 'medium',
                 description,
