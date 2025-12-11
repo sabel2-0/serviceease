@@ -117,7 +117,7 @@
 
                         <!-- Quick Calendar View -->
                         <div id="monthly-services-list" class="space-y-2 max-h-64 overflow-y-auto">
-                            <!-- Services will be populated here -->
+                            <p class="text-gray-500 text-center py-4">Loading service data...</p>
                         </div>
                     </div>
                 </div>
@@ -176,18 +176,29 @@
             const monthSelect = document.getElementById('monthlyServiceMonth');
             const [year, month] = monthSelect.value.split('-');
             
+            console.log('Fetching monthly services for:', year, month);
+            
             try {
                 const response = await fetch(
                     `http://localhost:3000/api/maintenance-services/institution_admin/monthly-billing?year=${year}&month=${month}`,
                     { headers: { 'Authorization': `Bearer ${token}` } }
                 );
 
-                if (!response.ok) throw new Error('Failed to fetch');
+                console.log('Response status:', response.status);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Error response:', errorText);
+                    throw new Error('Failed to fetch');
+                }
                 
                 const data = await response.json();
+                console.log('Monthly services data:', data);
                 displayMonthlyServices(data);
             } catch (error) {
                 console.error('Error loading monthly services:', error);
+                document.getElementById('monthly-services-list').innerHTML = 
+                    '<p class="text-red-500 text-center py-4">Failed to load service data. Please try again.</p>';
             }
         }
 
