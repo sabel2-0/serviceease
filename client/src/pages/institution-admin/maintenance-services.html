@@ -493,9 +493,19 @@
         }
 
         function viewDetails(serviceId) {
-            const service = allServices.find(s => s.id === serviceId);
-            if (!service) return;
-
+            // Switch to history tab and show the service
+            switchTab('history');
+            
+            // Wait a bit for the tab to load, then find and show the service
+            setTimeout(() => {
+                const service = allServices.find(s => s.id === serviceId);
+                if (!service) return;
+                
+                showServiceDetailsModal(service);
+            }, 300);
+        }
+        
+        function showServiceDetailsModal(service) {
             const partsUsed = service.parts_used || [];
             
             const modalContent = `

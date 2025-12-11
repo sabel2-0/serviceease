@@ -357,6 +357,13 @@ function viewPrinterDetails(printerId) {
                 year: 'numeric'
             }) : 'No service history';
         
+        // Load printer location
+        const locationInput = document.getElementById('printerLocationInput');
+        if (locationInput) {
+            locationInput.value = printer.location || '';
+            locationInput.dataset.printerId = printerId; // Store printerId for update function
+        }
+        
         // Show the modal
         document.getElementById('printerDetailsModal').classList.remove('hidden');
         if (loadingState) loadingState.classList.add('hidden');
@@ -555,6 +562,75 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize the page
     initPrintersPage();
 });
+
+/**
+ * Update printer location
+ */
+function updatePrinterLocation() {
+    const locationInput = document.getElementById('printerLocationInput');
+    const statusElement = document.getElementById('locationUpdateStatus');
+    const updateBtn = document.getElementById('updateLocationBtn');
+    
+    if (!locationInput || !locationInput.dataset.printerId) {
+        showToast('Error: Printer ID not found', 'error');
+        return;
+    }
+    
+    const printerId = locationInput.dataset.printerId;
+    const newLocation = locationInput.value.trim();
+    
+    if (!newLocation) {
+        statusElement.textContent = 'Please enter a location';
+        statusElement.className = 'text-xs mt-2 text-red-600';
+        statusElement.classList.remove('hidden');
+        return;
+    }
+    
+    // Disable button during update
+    updateBtn.disabled = true;
+    updateBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Updating...';
+    statusElement.classList.add('hidden');
+    
+    fetch(`/api/institutions/${institutionAdminData.institution_id}/printers/${printerId}/location`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${getAuthToken() || ''}`
+        },
+        body: JSON.stringify({ location: newLocation })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        statusElement.textContent = '✓ Location updated successfully!';
+        statusElement.className = 'text-xs mt-2 text-green-600';
+        statusElement.classList.remove('hidden');
+        
+        showToast('Printer location updated successfully', 'success');
+        
+        // Refresh the printers list to show updated location
+        setTimeout(() => {
+            fetchAssignedPrinters();
+        }, 1000);
+    })
+    .catch(error => {
+        console.error('Error updating printer location:', error);
+        statusElement.textContent = '✗ Failed to update location';
+        statusElement.className = 'text-xs mt-2 text-red-600';
+        statusElement.classList.remove('hidden');
+        
+        showToast('Failed to update printer location', 'error');
+    })
+    .finally(() => {
+        // Re-enable button
+        updateBtn.disabled = false;
+        updateBtn.innerHTML = '<i class="fas fa-save mr-1"></i>Update Location';
+    });
+}
 
 
 

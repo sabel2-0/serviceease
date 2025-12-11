@@ -2792,6 +2792,7 @@ app.get('/api/institutions/:institutionId/printer/:printerId', auth, async (req,
                 ii.brand,
                 ii.model,
                 ii.serial_number,
+                ii.location,
                 ii.status,
                 cpa.assigned_at as installation_date,
                 cpa.status as assignment_status,
@@ -2812,6 +2813,62 @@ app.get('/api/institutions/:institutionId/printer/:printerId', auth, async (req,
     } catch (error) {
         console.error('Error fetching printer details:', error);
         res.status(500).json({ error: 'Failed to fetch printer details' });
+    }
+});
+
+// Update printer location (Institution Admin only)
+app.put('/api/institutions/:institutionId/printers/:printerId/location', auth, async (req, res) => {
+    try {
+        const { institutionId, printerId } = req.params;
+        const { location } = req.body;
+        
+        // Verify user is institution_admin for this institution
+        if (req.user.role !== 'institution_admin' && req.user.role !== 'admin') {
+            return res.status(403).json({ error: 'Only institution admins can update printer location' });
+        }
+        
+        // For institution_admin, verify they own this institution
+        if (req.user.role === 'institution_admin' && req.user.institution_id !== institutionId) {
+            return res.status(403).json({ error: 'You can only update printers for your own institution' });
+        }
+        
+        // Verify printer is assigned to this institution
+        const [assignments] = await db.query(
+            `SELECT id FROM institution_printer_assignments 
+             WHERE institution_id = ? AND printer_id = ?`,
+            [institutionId, printerId]
+        );
+        
+        if (assignments.length === 0) {
+            return res.status(404).json({ error: 'Printer not found for this institution' });
+        }
+        
+        // Update printer location in printers table
+        await db.query(
+            'UPDATE printers SET location = ?, updated_at = NOW() WHERE id = ?',
+            [location, printerId]
+        );
+        
+        // Log the update
+        await logAuditAction(
+            req.user.id,
+            req.user.role,
+            `Updated location for printer ID ${printerId} to: ${location}`,
+            'update',
+            'printers',
+            printerId,
+            JSON.stringify({ institutionId, oldLocation: null, newLocation: location }),
+            req
+        );
+        
+        res.json({ 
+            success: true, 
+            message: 'Printer location updated successfully',
+            location 
+        });
+    } catch (error) {
+        console.error('Error updating printer location:', error);
+        res.status(500).json({ error: 'Failed to update printer location' });
     }
 });
 
@@ -4246,7 +4303,7 @@ app.get('/api/institutions/:institutionId/service-requests', async (req, res) =>
                 sr.printer_id,
                 sr.priority,
                 sr.status,
-                sr.location,
+                COALESCE(ii.location, sr.location) as location,
                 sr.description,
                 sr.created_at,
                 sr.started_at,
@@ -5734,7 +5791,7 @@ app.get('/api/admin/technician-progress/:technicianId', authenticateAdmin, async
                 sr.institution_id,
                 sr.priority,
                 sr.description,
-                sr.location,
+                COALESCE(ii.location, sr.location) as location,
                 sr.status,
                 sr.created_at,
                 sr.completed_at,
