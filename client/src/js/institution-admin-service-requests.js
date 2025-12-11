@@ -45,7 +45,27 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load assigned printers first, then service requests
     loadAssignedPrinters().then(() => {
         console.log('[DEBUG] Assigned printers loaded, now loading service requests');
-        loadServiceRequests();
+        loadServiceRequests().then(() => {
+            // Check if there's an ID in the URL to open specific request
+            const urlParams = new URLSearchParams(window.location.search);
+            const requestId = urlParams.get('id');
+            if (requestId) {
+                console.log('[DEBUG] Opening request from URL:', requestId);
+                // Wait a bit for the page to fully render
+                setTimeout(() => {
+                    const request = serviceRequests.find(r => r.id == requestId);
+                    if (request) {
+                        if (request.status === 'pending_approval') {
+                            viewApprovalDetails(requestId);
+                        } else {
+                            viewRequestDetails(requestId);
+                        }
+                        // Remove the ID from URL without reloading
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                    }
+                }, 500);
+            }
+        });
     });
 });
 console.log('[DEBUG] institution_admin-service-requests.js loaded');
