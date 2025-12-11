@@ -275,22 +275,28 @@ function loadAssignedPrinters() {
             option.value = printer.printer_id || printer.id;
             option.textContent = `${printer.name} - ${printer.model} (${printer.serial_number})`;
             option.dataset.location = printer.location || ''; // Store location in dataset
+            option.dataset.department = printer.department || ''; // Store department in dataset
             servicePrinterSelect.appendChild(option);
         });
 
         servicePrinterSelect.classList.add('w-full', 'px-4', 'py-2', 'border', 'rounded-md', 'bg-white', 'text-gray-900');
         
-        // Add event listener to auto-fill location when printer is selected
+        // Add event listener to auto-fill location and department when printer is selected
         servicePrinterSelect.addEventListener('change', function() {
             const selectedOption = this.options[this.selectedIndex];
             const locationInput = document.getElementById('printerLocation');
             const locationRequired = document.getElementById('locationRequired');
             const locationHint = document.getElementById('locationHint');
+            const departmentInput = document.getElementById('printerDepartment');
+            const departmentRequired = document.getElementById('departmentRequired');
+            const departmentHint = document.getElementById('departmentHint');
             
             if (selectedOption && locationInput) {
                 const printerLocation = selectedOption.dataset.location || '';
-                locationInput.value = printerLocation;
+                const printerDepartment = selectedOption.dataset.department || '';
                 
+                // Handle location
+                locationInput.value = printerLocation;
                 if (printerLocation) {
                     console.log('[DEBUG] Auto-filled location:', printerLocation);
                     locationInput.placeholder = printerLocation;
@@ -299,10 +305,28 @@ function loadAssignedPrinters() {
                     if (locationHint) locationHint.textContent = 'Current printer location (you can update it)';
                 } else {
                     console.log('[DEBUG] No location set for this printer - admin must enter it');
-                    locationInput.placeholder = 'e.g., Building A, 2nd Floor, Room 201, IT Department';
+                    locationInput.placeholder = 'e.g., Building A, 2nd Floor, Room 201';
                     locationInput.required = true;
                     if (locationRequired) locationRequired.classList.remove('hidden');
                     if (locationHint) locationHint.textContent = 'Required - This will become the printer\'s permanent location';
+                }
+                
+                // Handle department
+                if (departmentInput) {
+                    departmentInput.value = printerDepartment;
+                    if (printerDepartment) {
+                        console.log('[DEBUG] Auto-filled department:', printerDepartment);
+                        departmentInput.placeholder = printerDepartment;
+                        departmentInput.required = false;
+                        if (departmentRequired) departmentRequired.classList.add('hidden');
+                        if (departmentHint) departmentHint.textContent = 'Current printer department (you can update it)';
+                    } else {
+                        console.log('[DEBUG] No department set for this printer - admin must enter it');
+                        departmentInput.placeholder = 'e.g., IT Department, HR Office, Principal\'s Office';
+                        departmentInput.required = true;
+                        if (departmentRequired) departmentRequired.classList.remove('hidden');
+                        if (departmentHint) departmentHint.textContent = 'Required - This will become the printer\'s permanent department';
+                    }
                 }
             }
         });
@@ -347,6 +371,15 @@ function setupNewRequestForm() {
                 return;
             }
             
+            // Check if department is required
+            const department = document.getElementById('printerDepartment').value;
+            const departmentInput = document.getElementById('printerDepartment');
+            if (departmentInput && departmentInput.required && (!department || department.trim().length === 0)) {
+                showToast('Error: Please enter the printer department. This will be saved for future requests.', 'error');
+                departmentInput.focus();
+                return;
+            }
+            
             // if (!issueDescription || issueDescription.trim().length < 10) {
             //     showToast('Error: Please provide a detailed issue description (at least 10 characters).', 'error');
             //     return;
@@ -377,6 +410,7 @@ function setupNewRequestForm() {
                         priority: priority,
                         description: safeDescription,
                         location: (location && location.trim()) ? location.trim() : null,
+                        department: (department && department.trim()) ? department.trim() : null,
                         status: 'pending'
                     };
 

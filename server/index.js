@@ -2574,6 +2574,7 @@ app.get('/api/institutions/:institutionId/printers', async (req, res) => {
                 ii.model,
                 ii.serial_number,
                 ii.location,
+                ii.department,
                 cpa.assigned_at,
                 cpa.status
             FROM institution_printer_assignments cpa
@@ -3348,21 +3349,38 @@ app.post('/api/service-requests', auth, async (req, res) => {
         const printer = printerRows[0];
         institutionId = printer.institution_id;
 
-        // Get location from request body
-        const { location } = req.body;
+        // Get location and department from request body
+        const { location, department } = req.body;
         
-        // If institution admin provides a location, update the printer's location
-        if (req.user.role === 'institution_admin' && location && location.trim()) {
-            const newLocation = location.trim();
-            // Only update if location is different from current printer location
-            if (newLocation !== printer.location) {
+        // If institution admin provides location or department, update the printer
+        if (req.user.role === 'institution_admin') {
+            const updates = [];
+            const values = [];
+            
+            // Update location if provided and different
+            if (location && location.trim() && location.trim() !== printer.location) {
+                updates.push('location = ?');
+                values.push(location.trim());
+                printer.location = location.trim();
+                console.log(`[LOCATION UPDATE] Printer ${actualPrinterId} location updated to: ${location.trim()}`);
+            }
+            
+            // Update department if provided and different
+            if (department && department.trim() && department.trim() !== printer.department) {
+                updates.push('department = ?');
+                values.push(department.trim());
+                printer.department = department.trim();
+                console.log(`[DEPARTMENT UPDATE] Printer ${actualPrinterId} department updated to: ${department.trim()}`);
+            }
+            
+            // Execute update if there are changes
+            if (updates.length > 0) {
+                updates.push('updated_at = NOW()');
+                values.push(actualPrinterId);
                 await db.query(
-                    'UPDATE printers SET location = ?, updated_at = NOW() WHERE id = ?',
-                    [newLocation, actualPrinterId]
+                    `UPDATE printers SET ${updates.join(', ')} WHERE id = ?`,
+                    values
                 );
-                console.log(`[LOCATION UPDATE] Printer ${actualPrinterId} location updated to: ${newLocation}`);
-                // Update the printer object for use in service request creation
-                printer.location = newLocation;
             }
         }
 
