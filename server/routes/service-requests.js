@@ -66,9 +66,12 @@ router.post('/', auth, async (req, res) => {
             institution_id: institutionIdFromBody,
             priority,
             description,
-            location,
+            location: rawLocation,
             status
         } = req.body;
+        
+        // Normalize location: convert empty string to null
+        const location = rawLocation && rawLocation.trim() ? rawLocation.trim() : null;
 
         // institution_user info from auth
         const actor = req.user || {};
@@ -233,7 +236,7 @@ router.post('/', auth, async (req, res) => {
             requested_by,
             priority,
             status: status || 'new',
-            location: location || 'Unknown',
+            location: location,
             description
         });
 
@@ -251,7 +254,7 @@ router.post('/', auth, async (req, res) => {
                     requested_by,
                     normalizedPriority,
                     normalizedStatus,
-                    location || 'Unknown',
+                    location,
                     description,
                     printer_id
                 ]
@@ -295,7 +298,7 @@ router.post('/', auth, async (req, res) => {
                 technician_id: assignedTechnicianId,
                 priority: normalizedPriority,
                 status: normalizedStatus,
-                location: location || 'Unknown',
+                location: location,
                 description,
                 printer_id,
                 created_at: now,
@@ -349,7 +352,7 @@ router.post('/', auth, async (req, res) => {
             technician_id: assignedTechnicianId,
             priority,
             status: status || 'new',
-            location: location || 'Unknown',
+            location: location,
             description,
             printer_id,
             created_at: now,

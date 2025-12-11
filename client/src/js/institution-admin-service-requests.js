@@ -315,11 +315,11 @@ function setupNewRequestForm() {
 
                     // Create service request object (server derives requested_by from auth token)
                     const serviceRequest = {
-                        printerId: parseInt(printerId, 10), // Server expects printerId (camelCase)
+                        printer_id: parseInt(printerId, 10), // Server expects printer_id (snake_case)
                         institution_id: institutionAdminData.institution_id,
                         priority: priority,
                         description: safeDescription,
-                        location: location || selectedPrinter.location_note || '',
+                        location: (location && location.trim()) ? location.trim() : null,
                         status: 'pending'
                     };
 
