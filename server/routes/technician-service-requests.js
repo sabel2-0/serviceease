@@ -556,7 +556,7 @@ router.post('/service-requests/:requestId/complete', authenticateTechnician, asy
                      SET status = 'pending_approval',
                          technician_notes = ?,
                          submitted_at = NOW(),
-                         institution_admin_id = NULL,
+                         approved_by = NULL,
                          institution_admin_notes = NULL,
                          reviewed_at = NULL
                      WHERE service_request_id = ?`,

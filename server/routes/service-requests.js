@@ -400,7 +400,7 @@ router.get('/:id', auth, async (req, res) => {
         }
         // institution_users can only see requests they created
         else if (userRole === 'institution_user') {
-            whereClause += ' AND sr.requested_by_user_id = ?';
+            whereClause += ' AND sr.requested_by = ?';
             params.push(userId);
         }
         // admins and operations_officers can see all
@@ -426,7 +426,7 @@ router.get('/:id', auth, async (req, res) => {
             LEFT JOIN institutions i ON sr.institution_id = i.institution_id
             LEFT JOIN printers p ON sr.printer_id = p.id
             LEFT JOIN users t ON sr.technician_id = t.id
-            LEFT JOIN users u ON sr.requested_by_user_id = u.id
+            LEFT JOIN users u ON sr.requested_by = u.id
             WHERE ${whereClause}
         `, params);
         

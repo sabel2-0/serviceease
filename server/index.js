@@ -4463,7 +4463,7 @@ app.get('/api/walk-in-service-requests', authenticateAdmin, async (req, res) => 
                 tech.first_name as technician_first_name,
                 tech.last_name as technician_last_name,
                 sa.status as approval_status,
-                sa.institution_admin_id as approved_by,
+                sa.approved_by,
                 sa.reviewed_at as approved_at,
                 sa.technician_notes,
                 sa.institution_admin_notes,
@@ -4473,7 +4473,7 @@ app.get('/api/walk-in-service-requests', authenticateAdmin, async (req, res) => 
             LEFT JOIN users creator ON sr.requested_by = creator.id
             LEFT JOIN users tech ON sr.technician_id = tech.id
             LEFT JOIN service_approvals sa ON sr.id = sa.service_request_id
-            LEFT JOIN users approver ON sa.institution_admin_id = approver.id
+            LEFT JOIN users approver ON sa.approved_by = approver.id
             WHERE sr.is_walk_in = TRUE
         `;
         
@@ -4635,7 +4635,7 @@ app.post('/api/service-requests/:id/complete', auth, async (req, res) => {
                  SET status = 'pending_approval', 
                      technician_notes = ?,
                      submitted_at = NOW(),
-                     institution_admin_id = NULL,
+                     approved_by = NULL,
                      institution_admin_notes = NULL,
                      reviewed_at = NULL
                  WHERE service_request_id = ?`,
