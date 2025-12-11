@@ -181,8 +181,8 @@ router.post('/:approvalId/approve', authenticateinstitution_admin, async (req, r
             ? `${institution_adminInfo[0].first_name} ${institution_adminInfo[0].last_name}`
             : 'Institution Admin';
         const institution_adminRole = institution_adminInfo.length > 0 
-            ? institution_adminInfo[0].role 
-            : 'institution_admin';
+            ? institution_adminInfo[0].role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
+            : 'Institution Admin';
         
         // Start transaction
         await db.query('START TRANSACTION');

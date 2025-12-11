@@ -1348,6 +1348,28 @@ async function viewRequestDetails(requestId) {
                 </div>
                 ` : ''}
 
+                <!-- Approver Information (if approved) -->
+                ${(request.status === 'completed' && request.approver_first_name) ? `
+                <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-3 border border-green-200">
+                    <div class="flex items-center mb-2">
+                        <div class="bg-green-600 rounded-lg p-1.5 mr-2">
+                            <i class="fas fa-check-circle text-white text-xs"></i>
+                        </div>
+                        <h4 class="text-sm font-bold text-green-900">Approval Information</h4>
+                    </div>
+                    <div class="bg-white/60 rounded-lg p-2 text-xs space-y-1">
+                        <div class="flex justify-between">
+                            <span class="text-green-700 font-medium">Approved By:</span>
+                            <span class="text-green-900 font-semibold">${request.approver_first_name} ${request.approver_last_name}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-green-700 font-medium">Role:</span>
+                            <span class="text-green-900 capitalize">${request.approver_role ? request.approver_role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Staff'}</span>
+                        </div>
+                    </div>
+                </div>
+                ` : ''}
+
                 <!-- Timeline -->
                 <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
                     <div class="flex items-center mb-2">
@@ -1385,6 +1407,9 @@ async function viewRequestDetails(requestId) {
                                     <span class="text-sm font-medium text-gray-900">Service Completed</span>
                                     <span class="text-sm text-gray-500">${new Date(request.completed_at).toLocaleString()}</span>
                                 </div>
+                                ${request.approver_first_name ? `
+                                <p class="text-xs text-gray-600 mt-1">Approved by ${request.approver_role ? request.approver_role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Staff'} - ${request.approver_first_name} ${request.approver_last_name}</p>
+                                ` : ''}
                             </div>
                         </div>
                         ` : ''}

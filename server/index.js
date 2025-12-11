@@ -3415,7 +3415,7 @@ app.patch('/api/users/me/service-requests/:id/approve', auth, async (req, res) =
         const approverName = approverInfo.length > 0 
             ? `${approverInfo[0].first_name} ${approverInfo[0].last_name}`
             : 'Institution User';
-        const approverRole = approverInfo.length > 0 ? approverInfo[0].role : 'institution_user';
+        const approverRole = approverInfo.length > 0 ? approverInfo[0].role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Institution User';
         
         const newStatus = approved ? 'completed' : 'in_progress';
         const resolutionNotes = feedback || (approved 
@@ -4735,7 +4735,9 @@ app.post('/api/service-requests/:id/approve-completion', authenticateAdmin, asyn
         const approverName = approverInfo.length > 0 
             ? `${approverInfo[0].first_name} ${approverInfo[0].last_name}`
             : 'Unknown Approver';
-        const approverRole = approverInfo.length > 0 ? approverInfo[0].role : 'unknown';
+        const approverRole = approverInfo.length > 0 
+            ? approverInfo[0].role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
+            : 'Staff';
         
         // Update service_approvals table
         const approvalStatus = approved ? 'approved' : 'revision_requested';
