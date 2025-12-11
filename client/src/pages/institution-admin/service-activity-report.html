@@ -370,7 +370,8 @@
             });
             
             const content = dayServices.map(service => `
-                <div class="border rounded-lg p-4 mb-4 hover:bg-gray-50">
+                <div class="border rounded-lg p-4 mb-4 hover:bg-blue-50 cursor-pointer transition-all hover:shadow-md" 
+                     onclick="navigateToServiceDetails('${service.service_type}', ${service.id})">
                     <div class="flex justify-between items-start mb-2">
                         <div class="flex-1">
                             <div class="font-semibold text-lg text-gray-800">
@@ -379,7 +380,10 @@
                             <div class="text-sm text-gray-600">${service.brand || ''} ${service.model || ''}</div>
                             ${service.serial_number ? `<div class="text-xs text-gray-500">SN: ${service.serial_number}</div>` : ''}
                         </div>
-                        <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Completed</span>
+                        <div class="text-right">
+                            <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded block mb-1">Completed</span>
+                            <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded block">${service.service_type === 'service_request' ? 'Service Request' : 'Maintenance'}</span>
+                        </div>
                     </div>
                     
                     <div class="grid grid-cols-2 gap-4 mt-3 text-sm">
@@ -399,7 +403,7 @@
                     
                     <div class="mt-3 p-2 bg-blue-50 rounded text-sm">
                         <div class="font-medium text-gray-700 mb-1">Service Description:</div>
-                        <div class="text-gray-600">${service.service_description || 'N/A'}</div>
+                        <div class="text-gray-600">${service.description || service.service_description || 'N/A'}</div>
                     </div>
                     
                     ${service.parts_used && service.parts_used.length > 0 ? `
@@ -407,11 +411,17 @@
                             <div class="font-medium text-gray-700 mb-1">Parts Used:</div>
                             <ul class="list-disc list-inside text-gray-600">
                                 ${service.parts_used.map(part => `
-                                    <li>${part.name || part.part_name} - ${part.qty} ${part.unit}</li>
+                                    <li>${part.name || part.part_name} - ${part.qty || part.quantity_used} ${part.unit}</li>
                                 `).join('')}
                             </ul>
                         </div>
-                    ` : ''}
+                    ` : '<div class="mt-2 p-2 bg-gray-50 rounded text-sm text-gray-500">No parts used</div>'}
+                    
+                    <div class="mt-3 text-center">
+                        <span class="text-xs text-blue-600 font-medium">
+                            <i class="fas fa-arrow-right mr-1"></i>Click to view full details
+                        </span>
+                    </div>
                 </div>
             `).join('');
             
@@ -423,6 +433,20 @@
         function closeModal() {
             document.getElementById('serviceModal').classList.add('hidden');
             document.getElementById('serviceModal').classList.remove('flex');
+        }
+
+        function navigateToServiceDetails(serviceType, serviceId) {
+            // Close the modal first
+            closeModal();
+            
+            // Navigate based on service type
+            if (serviceType === 'service_request') {
+                // Redirect to service requests page - it will auto-open the details
+                window.location.href = `/client/src/pages/institution-admin/service-requests.html?id=${serviceId}`;
+            } else if (serviceType === 'maintenance_service') {
+                // Redirect to maintenance services history page
+                window.location.href = `/client/src/pages/institution-admin/maintenance-services.html?id=${serviceId}`;
+            }
         }
 
         function showCalendarView() {
@@ -459,11 +483,13 @@
             }
             
             const html = allServices.map(service => `
-                <div class="border-b border-gray-200 py-4 hover:bg-gray-50 px-2">
+                <div class="border-b border-gray-200 py-4 hover:bg-blue-50 px-2 cursor-pointer transition-colors" 
+                     onclick="navigateToServiceDetails('${service.service_type}', ${service.id})">
                     <div class="flex justify-between items-start">
                         <div class="flex-1">
                             <div class="font-semibold text-gray-800">
                                 <i class="fas fa-print text-blue-600 mr-2"></i>${service.printer_name}
+                                <span class="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">${service.service_type === 'service_request' ? 'Service Request' : 'Maintenance'}</span>
                             </div>
                             <div class="text-sm text-gray-600 mt-1">
                                 ${service.brand || ''} ${service.model || ''} 
@@ -484,6 +510,9 @@
                             </div>
                             <div class="text-xs text-gray-500">
                                 ${new Date(service.completed_at).toLocaleTimeString()}
+                            </div>
+                            <div class="text-xs text-blue-600 font-medium mt-2">
+                                <i class="fas fa-arrow-right mr-1"></i>View Details
                             </div>
                         </div>
                     </div>
