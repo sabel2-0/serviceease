@@ -406,17 +406,6 @@
                         <div class="text-gray-600">${service.description || service.service_description || 'N/A'}</div>
                     </div>
                     
-                    ${service.parts_used && service.parts_used.length > 0 ? `
-                        <div class="mt-2 p-2 bg-yellow-50 rounded text-sm">
-                            <div class="font-medium text-gray-700 mb-1">Parts Used:</div>
-                            <ul class="list-disc list-inside text-gray-600">
-                                ${service.parts_used.map(part => `
-                                    <li>${part.name || part.part_name} - ${part.qty || part.quantity_used} ${part.unit}</li>
-                                `).join('')}
-                            </ul>
-                        </div>
-                    ` : '<div class="mt-2 p-2 bg-gray-50 rounded text-sm text-gray-500">No parts used</div>'}
-                    
                     <div class="mt-3 text-center">
                         <span class="text-xs text-blue-600 font-medium">
                             <i class="fas fa-arrow-right mr-1"></i>Click to view full details
