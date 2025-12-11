@@ -179,8 +179,9 @@
             console.log('Fetching monthly services for:', year, month);
             
             try {
+                const apiBaseUrl = window.location.hostname === 'localhost' ? 'http://localhost:3000' : '';
                 const response = await fetch(
-                    `http://localhost:3000/api/maintenance-services/institution_admin/monthly-billing?year=${year}&month=${month}`,
+                    `${apiBaseUrl}/api/maintenance-services/institution_admin/monthly-billing?year=${year}&month=${month}`,
                     { headers: { 'Authorization': `Bearer ${token}` } }
                 );
 

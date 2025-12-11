@@ -23,8 +23,9 @@ async function loadDashboardStats() {
         let activeUsers = 0;
         
         // Try to get maintenance services - this endpoint exists
+        const apiBaseUrl = window.location.hostname === 'localhost' ? 'http://localhost:3000' : '';
         try {
-            const maintenanceResponse = await fetch('http://localhost:3000/api/maintenance-services/institution_admin/pending', {
+            const maintenanceResponse = await fetch(`${apiBaseUrl}/api/maintenance-services/institution_admin/pending`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             
@@ -38,7 +39,7 @@ async function loadDashboardStats() {
         
         // Try to get service requests
         try {
-            const serviceRequestsResponse = await fetch('http://localhost:3000/api/service-requests', {
+            const serviceRequestsResponse = await fetch(`${apiBaseUrl}/api/service-requests`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             
@@ -52,7 +53,7 @@ async function loadDashboardStats() {
         
         // Get auth info to get institution details
         try {
-            const authResponse = await fetch('http://localhost:3000/api/auth/me', {
+            const authResponse = await fetch(`${apiBaseUrl}/api/auth/me`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             
@@ -60,7 +61,7 @@ async function loadDashboardStats() {
                 const userData = await authResponse.json();
                 
                 // Get institutions for this admin
-                const institutionsResponse = await fetch('http://localhost:3000/api/institutions/search', {
+                const institutionsResponse = await fetch(`${apiBaseUrl}/api/institutions/search`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 
@@ -69,7 +70,7 @@ async function loadDashboardStats() {
                     // Count printers across all institutions
                     for (const inst of institutions) {
                         try {
-                            const printerResponse = await fetch(`http://localhost:3000/api/institutions/${inst.institution_id}/printers`, {
+                            const printerResponse = await fetch(`${apiBaseUrl}/api/institutions/${inst.institution_id}/printers`, {
                                 headers: { 'Authorization': `Bearer ${token}` }
                             });
                             if (printerResponse.ok) {
@@ -107,8 +108,9 @@ async function loadRecentActivity() {
         const token = localStorage.getItem('token');
         const activityContainer = document.getElementById('recent-activity');
         
+        const apiBaseUrl = window.location.hostname === 'localhost' ? 'http://localhost:3000' : '';
         // Get recent maintenance services
-        const maintenanceResponse = await fetch('http://localhost:3000/api/maintenance-services/institution_admin/history', {
+        const maintenanceResponse = await fetch(`${apiBaseUrl}/api/maintenance-services/institution_admin/history`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         
