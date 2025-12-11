@@ -1194,8 +1194,23 @@ async function viewRequestDetails(requestId) {
             status: request.status,
             approver_first_name: request.approver_first_name,
             approver_last_name: request.approver_last_name,
-            approver_role: request.approver_role
+            approver_role: request.approver_role,
+            resolution_notes: request.resolution_notes
         });
+        
+        // Extract approver from resolution_notes if approver fields are undefined
+        let approverName = null;
+        let approverRole = null;
+        if (request.status === 'completed' && request.resolution_notes && !request.approver_first_name) {
+            const match = request.resolution_notes.match(/Approved by ([^-]+) - (.+?)(?:\.|$)/);
+            if (match) {
+                approverRole = match[1].trim();
+                approverName = match[2].trim();
+            }
+        } else if (request.approver_first_name) {
+            approverName = `${request.approver_first_name} ${request.approver_last_name}`;
+            approverRole = request.approver_role ? request.approver_role.replace(/_/g, ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : null;
+        }
         
         // Find printer details
         let printerInfo = assignedPrinters.find(p => String(p.printer_id) === String(request.printer_id));
@@ -1250,7 +1265,9 @@ async function viewRequestDetails(requestId) {
         
         const requestModalContent = document.getElementById('requestModalContent');
         requestModalContent.innerHTML = `
-            <div class="space-y-3">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 max-h-[80vh] overflow-y-auto">
+                <!-- Left Column -->
+                <div class="space-y-3">
                 <!-- Status Banner -->
                 <div class="bg-gradient-to-r ${getStatusGradientBanner(request.status)} rounded-lg p-3 text-white">
                     <div class="flex items-center justify-between">
@@ -1351,7 +1368,10 @@ async function viewRequestDetails(requestId) {
                         ${request.description}
                     </div>
                 </div>
+                </div>
 
+                <!-- Right Column -->
+                <div class="space-y-3">
                 <!-- Parts Used (if any) -->
                 ${request.parts_used && request.parts_used.length > 0 ? `
                 <div class="bg-gradient-to-br from-teal-50 to-teal-100 rounded-lg p-3 border border-teal-200">
@@ -1393,7 +1413,7 @@ async function viewRequestDetails(requestId) {
                 ` : ''}
 
                 <!-- Approver Information (if approved) -->
-                ${(request.status === 'completed' && (request.approver_first_name || request.resolution_notes)) ? `
+                ${(request.status === 'completed' && (approverName || request.approver_first_name)) ? `
                 <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border-2 border-green-300">
                     <div class="flex items-center mb-3">
                         <div class="bg-green-600 rounded-lg p-2 mr-2">
@@ -1402,14 +1422,14 @@ async function viewRequestDetails(requestId) {
                         <h4 class="text-base font-bold text-green-900">✅ Approval Information</h4>
                     </div>
                     <div class="bg-white/80 rounded-lg p-3 text-sm space-y-2">
-                        ${request.approver_first_name ? `
+                        ${approverName ? `
                         <div class="flex justify-between items-center">
                             <span class="text-green-700 font-semibold">Approved By:</span>
-                            <span class="text-green-900 font-bold">${request.approver_first_name} ${request.approver_last_name}</span>
+                            <span class="text-green-900 font-bold">${approverName}</span>
                         </div>
                         <div class="flex justify-between items-center">
                             <span class="text-green-700 font-semibold">Role:</span>
-                            <span class="text-green-900 font-bold capitalize">${request.approver_role ? request.approver_role.replace(/_/g, ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : 'Staff'}</span>
+                            <span class="text-green-900 font-bold">${approverRole || 'Staff'}</span>
                         </div>
                         ` : `
                         <div class="text-yellow-800 font-medium text-sm">
@@ -1457,13 +1477,14 @@ async function viewRequestDetails(requestId) {
                                     <span class="text-sm font-medium text-gray-900">Service Completed</span>
                                     <span class="text-sm text-gray-500">${new Date(request.completed_at).toLocaleString()}</span>
                                 </div>
-                                ${request.approver_first_name ? `
-                                <p class="text-xs text-gray-600 mt-1">Approved by ${request.approver_role ? request.approver_role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Staff'} - ${request.approver_first_name} ${request.approver_last_name}</p>
+                                ${approverName ? `
+                                <p class="text-xs text-gray-600 mt-1">Approved by ${approverRole} - ${approverName}</p>
                                 ` : ''}
                             </div>
                         </div>
                         ` : ''}
                     </div>
+                </div>
                 </div>
             </div>
         `;
