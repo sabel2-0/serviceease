@@ -170,6 +170,20 @@ router.post('/:approvalId/approve', authenticateinstitution_admin, async (req, r
         const serviceRequestId = approvalCheck[0].service_request_id;
         const technicianId = approvalCheck[0].technician_id;
         
+        // Get institution_admin information first
+        const [institution_adminInfo] = await db.query(`
+            SELECT u.first_name, u.last_name, u.role
+            FROM users u
+            WHERE u.id = ?
+        `, [institution_adminId]);
+        
+        const institution_adminName = institution_adminInfo.length > 0 
+            ? `${institution_adminInfo[0].first_name} ${institution_adminInfo[0].last_name}`
+            : 'Institution Admin';
+        const institution_adminRole = institution_adminInfo.length > 0 
+            ? institution_adminInfo[0].role 
+            : 'institution_admin';
+        
         // Start transaction
         await db.query('START TRANSACTION');
         
@@ -182,12 +196,16 @@ router.post('/:approvalId/approve', authenticateinstitution_admin, async (req, r
                 WHERE id = ?
             `, [approvalId]);
             
-            // Update service request status to completed
+            // Update service request status to completed with approver information
+            const resolutionNotes = `Approved by ${institution_adminRole} - ${institution_adminName}${notes ? '. ' + notes : ''}`;
             await db.query(`
                 UPDATE service_requests 
-                SET status = 'completed', completed_at = NOW()
+                SET status = 'completed', 
+                    completed_at = NOW(),
+                    approved_by = ?,
+                    resolution_notes = ?
                 WHERE id = ?`,
-                [serviceRequestId]
+                [institution_adminId, resolutionNotes, serviceRequestId]
             );
             
             // Deduct parts from technician inventory
@@ -205,20 +223,6 @@ router.post('/:approvalId/approve', authenticateinstitution_admin, async (req, r
                 `, [part.quantity_used, technicianId, part.part_id]);
             }
             
-            // Add history record
-            await db.query(`
-                INSERT INTO service_request_history 
-                (request_id, previous_status, new_status, changed_by, notes)
-                VALUES (?, ?, ?, ?, ?)
-            `, [serviceRequestId, 'pending_approval', 'completed', institution_adminId, `Service completion approved by institution_admin. ${notes || ''}`]);
-            
-            // Get institution_admin and institution information for notification
-            const [institution_adminInfo] = await db.query(`
-                SELECT u.first_name, u.last_name
-                FROM users u
-                WHERE u.id = ?
-            `, [institution_adminId]);
-            
             const [institutionInfo] = await db.query(`
                 SELECT i.name as institution_name
                 FROM service_requests sr
@@ -226,9 +230,12 @@ router.post('/:approvalId/approve', authenticateinstitution_admin, async (req, r
                 WHERE sr.id = ?
             `, [serviceRequestId]);
             
-            const institution_adminName = institution_adminInfo.length > 0 
-                ? `${institution_adminInfo[0].first_name} ${institution_adminInfo[0].last_name}`
-                : 'institution_admin';
+            // Add history record with approver name
+            await db.query(`
+                INSERT INTO service_request_history 
+                (request_id, previous_status, new_status, changed_by, notes)
+                VALUES (?, ?, ?, ?, ?)
+            `, [serviceRequestId, 'pending_approval', 'completed', institution_adminId, `Service completion approved by ${institution_adminRole} - ${institution_adminName}. ${notes || ''}`]);
             const institutionName = institutionInfo.length > 0 
                 ? institutionInfo[0].institution_name
                 : 'your institution';

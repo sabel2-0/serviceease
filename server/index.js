@@ -3406,17 +3406,32 @@ app.patch('/api/users/me/service-requests/:id/approve', auth, async (req, res) =
             return res.status(400).json({ error: 'Service request is not pending approval' });
         }
         
+        // Get approver information
+        const [approverInfo] = await db.query(
+            'SELECT first_name, last_name, role FROM users WHERE id = ?',
+            [userId]
+        );
+        
+        const approverName = approverInfo.length > 0 
+            ? `${approverInfo[0].first_name} ${approverInfo[0].last_name}`
+            : 'Institution User';
+        const approverRole = approverInfo.length > 0 ? approverInfo[0].role : 'institution_user';
+        
         const newStatus = approved ? 'completed' : 'in_progress';
-        const resolutionNotes = feedback || (approved ? 'Approved by institution_user' : 'Rejected by institution_user - needs revision');
+        const resolutionNotes = feedback || (approved 
+            ? `Approved by ${approverRole} - ${approverName}` 
+            : `Rejected by ${approverRole} - ${approverName} - needs revision`);
         
         // Update the service request
         await db.query(
             `UPDATE service_requests 
              SET status = ?, 
-                 ${approved ? 'completed_at = NOW(),' : ''}
+                 ${approved ? 'completed_at = NOW(), approved_by = ?,' : ''}
                  resolution_notes = ?
              WHERE id = ?`,
-            [newStatus, resolutionNotes, requestId]
+            approved 
+                ? [newStatus, userId, resolutionNotes, requestId]
+                : [newStatus, resolutionNotes, requestId]
         );
         
         // Create history entry for the status change
@@ -4703,6 +4718,17 @@ app.post('/api/service-requests/:id/approve-completion', authenticateAdmin, asyn
             return res.status(400).json({ error: 'Service request must be in pending_approval status' });
         }
         
+        // Get approver information
+        const [approverInfo] = await db.query(
+            'SELECT first_name, last_name, role FROM users WHERE id = ?',
+            [approver_id]
+        );
+        
+        const approverName = approverInfo.length > 0 
+            ? `${approverInfo[0].first_name} ${approverInfo[0].last_name}`
+            : 'Unknown Approver';
+        const approverRole = approverInfo.length > 0 ? approverInfo[0].role : 'unknown';
+        
         // Update service_approvals table
         const approvalStatus = approved ? 'approved' : 'revision_requested';
         
@@ -4729,13 +4755,21 @@ app.post('/api/service-requests/:id/approve-completion', authenticateAdmin, asyn
             );
         }
         
-        // Update service request status
+        // Update service request status with approver information
         const newStatus = approved ? 'completed' : 'in_progress';
+        const resolutionNotes = approved 
+            ? `Approved by ${approverRole} - ${approverName}${notes ? '. ' + notes : ''}`
+            : `Rejected by ${approverRole} - ${approverName}${notes ? '. Reason: ' + notes : ''}`;
+        
         await db.query(
             `UPDATE service_requests 
-             SET status = ?
+             SET status = ?,
+                 ${approved ? 'approved_by = ?, completed_at = NOW(),' : ''}
+                 resolution_notes = ?
              WHERE id = ?`,
-            [newStatus, id]
+            approved 
+                ? [newStatus, approver_id, resolutionNotes, id]
+                : [newStatus, resolutionNotes, id]
         );
         
         // If approved, deduct parts from technician inventory
