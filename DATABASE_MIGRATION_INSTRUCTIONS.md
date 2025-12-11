@@ -1,16 +1,15 @@
 # Database Migration Instructions
 
-## Add `approved_by` Column to Service Requests Table
+## BETTER APPROACH: Rename Column in Existing `service_approvals` Table
+
+Instead of adding a new column, we'll use the existing `service_approvals` table and rename `institution_admin_id` to `approved_by` to make it more generic.
 
 Run this SQL in your Railway database console:
 
 ```sql
--- Add approved_by column to track who approved the service request
-ALTER TABLE service_requests 
-ADD COLUMN approved_by INT NULL AFTER completed_at;
-
--- Add index for performance
-CREATE INDEX idx_service_requests_approved_by ON service_requests(approved_by);
+-- Rename institution_admin_id to approved_by (more generic for all roles)
+ALTER TABLE service_approvals 
+CHANGE COLUMN institution_admin_id approved_by INT NULL;
 ```
 
 ## Verification
@@ -18,26 +17,29 @@ CREATE INDEX idx_service_requests_approved_by ON service_requests(approved_by);
 After running the migration, verify it worked:
 
 ```sql
--- Check if column was added
-DESCRIBE service_requests;
+-- Check if column was renamed
+DESCRIBE service_approvals;
 
--- Check if index was created
-SHOW INDEX FROM service_requests WHERE Key_name = 'idx_service_requests_approved_by';
+-- You should see 'approved_by' instead of 'institution_admin_id'
 ```
 
 ## What This Does
 
-- Adds a new `approved_by` column to store the user ID of whoever approved the service request
-- Works for all approver types: institution_user, institution_admin, operations_officer, admin
-- The `resolution_notes` field will now contain: "Approved by {role} - {FirstName LastName}"
+- Renames `service_approvals.institution_admin_id` → `approved_by`
+- Now works for ALL approver types: institution_user, institution_admin, operations_officer, admin
+- The `resolution_notes` field will contain: "Approved by {role} - {FirstName LastName}"
+- Keeps data properly normalized (approval data in dedicated table)
 
 ## Expected Result
 
 From now on, when a service request is approved:
-1. The `approved_by` column will store the approver's user ID
-2. The `resolution_notes` will show: "Approved by Institution Admin - Maria Santos" (example)
-3. The UI can display both the role and actual name of who approved
+1. The `service_approvals.approved_by` column stores the approver's user ID (any role)
+2. The `resolution_notes` shows: "Approved by Institution Admin - Maria Santos" (example)
+3. APIs JOIN with users table to return approver name and role
 
-## Note
+## Why This Is Better
 
-We're NOT adding a foreign key constraint because if the approver is deleted from the system, we still want to keep the historical record of the approval.
+✅ Uses existing table structure  
+✅ No data duplication  
+✅ Proper database normalization  
+✅ Already has indexes and relationships

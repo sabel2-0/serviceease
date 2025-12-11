@@ -3426,13 +3426,21 @@ app.patch('/api/users/me/service-requests/:id/approve', auth, async (req, res) =
         await db.query(
             `UPDATE service_requests 
              SET status = ?, 
-                 ${approved ? 'completed_at = NOW(), approved_by = ?,' : ''}
+                 ${approved ? 'completed_at = NOW(),' : ''}
                  resolution_notes = ?
              WHERE id = ?`,
-            approved 
-                ? [newStatus, userId, resolutionNotes, requestId]
-                : [newStatus, resolutionNotes, requestId]
+            [newStatus, resolutionNotes, requestId]
         );
+        
+        // Update service_approvals table with approver information
+        if (approved) {
+            await db.query(
+                `UPDATE service_approvals 
+                 SET approved_by = ?, reviewed_at = NOW(), status = 'approved'
+                 WHERE service_request_id = ?`,
+                [userId, requestId]
+            );
+        }
         
         // Create history entry for the status change
         await db.query(
@@ -4733,11 +4741,11 @@ app.post('/api/service-requests/:id/approve-completion', authenticateAdmin, asyn
         const approvalStatus = approved ? 'approved' : 'revision_requested';
         
         if (approved) {
-            // Only set institution_admin_id on actual approval
+            // Set approved_by (works for any approver role)
             await db.query(
                 `UPDATE service_approvals 
                  SET status = ?,
-                     institution_admin_id = ?,
+                     approved_by = ?,
                      institution_admin_notes = ?,
                      reviewed_at = NOW()
                  WHERE service_request_id = ? AND status = 'pending_approval'`,
@@ -4764,12 +4772,10 @@ app.post('/api/service-requests/:id/approve-completion', authenticateAdmin, asyn
         await db.query(
             `UPDATE service_requests 
              SET status = ?,
-                 ${approved ? 'approved_by = ?, completed_at = NOW(),' : ''}
+                 ${approved ? 'completed_at = NOW(),' : ''}
                  resolution_notes = ?
              WHERE id = ?`,
-            approved 
-                ? [newStatus, approver_id, resolutionNotes, id]
-                : [newStatus, resolutionNotes, id]
+            [newStatus, resolutionNotes, id]
         );
         
         // If approved, deduct parts from technician inventory

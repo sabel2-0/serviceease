@@ -26,7 +26,7 @@ router.get('/service-history', authenticateTechnician, async (req, res) => {
                 sr.walk_in_customer_name,
                 sr.printer_brand as walk_in_printer_brand,
                 sr.is_walk_in,
-                sr.approved_by,
+                sa.approved_by,
                 i.name as institution_name,
                 i.type as institution_type,
                 institution_user.first_name as institution_user_first_name,
@@ -44,7 +44,8 @@ router.get('/service-history', authenticateTechnician, async (req, res) => {
             LEFT JOIN institutions i ON sr.institution_id = i.institution_id
             LEFT JOIN users institution_user ON sr.requested_by = institution_user.id
             LEFT JOIN printers ii ON sr.printer_id = ii.id
-            LEFT JOIN users approver ON sr.approved_by = approver.id
+            LEFT JOIN service_approvals sa ON sr.id = sa.service_request_id
+            LEFT JOIN users approver ON sa.approved_by = approver.id
             WHERE sr.technician_id = ?
             ORDER BY sr.completed_at DESC
         `, [technicianId]);

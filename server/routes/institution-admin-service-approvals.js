@@ -188,14 +188,15 @@ router.post('/:approvalId/approve', authenticateinstitution_admin, async (req, r
         await db.query('START TRANSACTION');
         
         try {
-            // Update service approval status
+            // Update service approval status with approver
             await db.query(`
                 UPDATE service_approvals 
-                SET status = 'approved', 
+                SET status = 'approved',
+                    approved_by = ?,
                     reviewed_at = NOW()
-                WHERE id = ?
-            `, [approvalId]);
-            
+                WHERE id = ?`,
+                [institution_adminId, approvalId]
+            );
             // Update service request status to completed with approver information
             const resolutionNotes = `Approved by ${institution_adminRole} - ${institution_adminName}${notes ? '. ' + notes : ''}`;
             await db.query(`
