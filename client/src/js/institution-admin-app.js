@@ -51,32 +51,8 @@ async function loadDashboardStats() {
             console.log('Could not load service requests:', e);
         }
         
-        // Get institution details and printers
-        try {
-            const institutionsResponse = await fetch(`${apiBaseUrl}/api/institutions/search`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            
-            if (institutionsResponse.ok) {
-                const institutions = await institutionsResponse.json();
-                // Count printers across all institutions
-                for (const inst of institutions) {
-                    try {
-                        const printerResponse = await fetch(`${apiBaseUrl}/api/institutions/${inst.institution_id}/printers`, {
-                            headers: { 'Authorization': `Bearer ${token}` }
-                        });
-                        if (printerResponse.ok) {
-                            const printers = await printerResponse.json();
-                            totalPrinters += printers.length || 0;
-                        }
-                    } catch (e) {
-                        console.log('Could not load printers for institution:', e);
-                    }
-                }
-            }
-        } catch (e) {
-            console.log('Could not load institution data:', e);
-        }
+        // Note: We can't easily get total printers and users count without proper endpoints
+        // The monthly services widget will show the actual printer counts when viewing services
         
         // Update stats displays with whatever data we got
         document.getElementById('active-requests-count').textContent = activeRequests;
