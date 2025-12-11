@@ -457,7 +457,7 @@ function fetchPrinterServiceHistory(printerId) {
 /**
  * Close the printer details modal
  */
-function closeDetailsModal() {
+window.closeDetailsModal = function() {
     const modal = document.getElementById('printerDetailsModal');
     if (modal) {
         modal.classList.add('hidden');
@@ -565,8 +565,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 /**
  * Update printer location
+ * Make it globally accessible for onclick handlers
  */
-function updatePrinterLocation() {
+window.updatePrinterLocation = function() {
     const locationInput = document.getElementById('printerLocationInput');
     const statusElement = document.getElementById('locationUpdateStatus');
     const updateBtn = document.getElementById('updateLocationBtn');
