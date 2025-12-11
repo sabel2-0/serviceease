@@ -51,40 +51,31 @@ async function loadDashboardStats() {
             console.log('Could not load service requests:', e);
         }
         
-        // Get auth info to get institution details
+        // Get institution details and printers
         try {
-            const authResponse = await fetch(`${apiBaseUrl}/api/auth/me`, {
+            const institutionsResponse = await fetch(`${apiBaseUrl}/api/institutions/search`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             
-            if (authResponse.ok) {
-                const userData = await authResponse.json();
-                
-                // Get institutions for this admin
-                const institutionsResponse = await fetch(`${apiBaseUrl}/api/institutions/search`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                
-                if (institutionsResponse.ok) {
-                    const institutions = await institutionsResponse.json();
-                    // Count printers across all institutions
-                    for (const inst of institutions) {
-                        try {
-                            const printerResponse = await fetch(`${apiBaseUrl}/api/institutions/${inst.institution_id}/printers`, {
-                                headers: { 'Authorization': `Bearer ${token}` }
-                            });
-                            if (printerResponse.ok) {
-                                const printers = await printerResponse.json();
-                                totalPrinters += printers.length || 0;
-                            }
-                        } catch (e) {
-                            console.log('Could not load printers for institution:', e);
+            if (institutionsResponse.ok) {
+                const institutions = await institutionsResponse.json();
+                // Count printers across all institutions
+                for (const inst of institutions) {
+                    try {
+                        const printerResponse = await fetch(`${apiBaseUrl}/api/institutions/${inst.institution_id}/printers`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (printerResponse.ok) {
+                            const printers = await printerResponse.json();
+                            totalPrinters += printers.length || 0;
                         }
+                    } catch (e) {
+                        console.log('Could not load printers for institution:', e);
                     }
                 }
             }
         } catch (e) {
-            console.log('Could not load auth/institution data:', e);
+            console.log('Could not load institution data:', e);
         }
         
         // Update stats displays with whatever data we got
