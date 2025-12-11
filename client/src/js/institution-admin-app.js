@@ -17,52 +17,76 @@ async function loadDashboardStats() {
     try {
         const token = localStorage.getItem('token');
         
-        // Get service requests count
-        const serviceRequestsResponse = await fetch('http://localhost:3000/api/service-requests/institution_admin/pending', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        // Get maintenance services count
-        const maintenanceResponse = await fetch('http://localhost:3000/api/maintenance-services/institution_admin/pending', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        // Get printers
-        const printersResponse = await fetch('http://localhost:3000/api/institutions/my-printers', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        // Get users
-        const usersResponse = await fetch('http://localhost:3000/api/institutions/my-users', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
         let activeRequests = 0;
         let pendingApprovals = 0;
         let totalPrinters = 0;
         let activeUsers = 0;
         
-        if (serviceRequestsResponse.ok) {
-            const serviceData = await serviceRequestsResponse.json();
-            activeRequests = serviceData.requests?.length || 0;
+        // Try to get maintenance services - this endpoint exists
+        try {
+            const maintenanceResponse = await fetch('http://localhost:3000/api/maintenance-services/institution_admin/pending', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (maintenanceResponse.ok) {
+                const maintenanceData = await maintenanceResponse.json();
+                pendingApprovals = maintenanceData.services?.length || 0;
+            }
+        } catch (e) {
+            console.log('Could not load maintenance services:', e);
         }
         
-        if (maintenanceResponse.ok) {
-            const maintenanceData = await maintenanceResponse.json();
-            pendingApprovals = maintenanceData.services?.length || 0;
+        // Try to get service requests
+        try {
+            const serviceRequestsResponse = await fetch('http://localhost:3000/api/service-requests', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (serviceRequestsResponse.ok) {
+                const serviceData = await serviceRequestsResponse.json();
+                activeRequests = serviceData.length || 0;
+            }
+        } catch (e) {
+            console.log('Could not load service requests:', e);
         }
         
-        if (printersResponse.ok) {
-            const printerData = await printersResponse.json();
-            totalPrinters = printerData.printers?.length || 0;
+        // Get auth info to get institution details
+        try {
+            const authResponse = await fetch('http://localhost:3000/api/auth/me', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (authResponse.ok) {
+                const userData = await authResponse.json();
+                
+                // Get institutions for this admin
+                const institutionsResponse = await fetch('http://localhost:3000/api/institutions/search', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (institutionsResponse.ok) {
+                    const institutions = await institutionsResponse.json();
+                    // Count printers across all institutions
+                    for (const inst of institutions) {
+                        try {
+                            const printerResponse = await fetch(`http://localhost:3000/api/institutions/${inst.institution_id}/printers`, {
+                                headers: { 'Authorization': `Bearer ${token}` }
+                            });
+                            if (printerResponse.ok) {
+                                const printers = await printerResponse.json();
+                                totalPrinters += printers.length || 0;
+                            }
+                        } catch (e) {
+                            console.log('Could not load printers for institution:', e);
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            console.log('Could not load auth/institution data:', e);
         }
         
-        if (usersResponse.ok) {
-            const userData = await usersResponse.json();
-            activeUsers = userData.users?.length || 0;
-        }
-        
-        // Update stats displays
+        // Update stats displays with whatever data we got
         document.getElementById('active-requests-count').textContent = activeRequests;
         document.getElementById('pending-approvals-count').textContent = pendingApprovals;
         document.getElementById('total-printers-count').textContent = totalPrinters;
@@ -70,7 +94,11 @@ async function loadDashboardStats() {
 
     } catch (error) {
         console.error('Error loading dashboard stats:', error);
-        // Don't show error notification, just log it
+        // Set defaults
+        document.getElementById('active-requests-count').textContent = '0';
+        document.getElementById('pending-approvals-count').textContent = '0';
+        document.getElementById('total-printers-count').textContent = '0';
+        document.getElementById('active-users-count').textContent = '0';
     }
 }
 
