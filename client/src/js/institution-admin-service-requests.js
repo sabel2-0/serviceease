@@ -1397,21 +1397,6 @@ async function viewRequestDetails(requestId) {
                 </div>
                 ` : ''}
 
-                <!-- Resolution Notes (if completed) -->
-                ${request.status === 'completed' && request.resolution_notes ? `
-                <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-3 border border-blue-200">
-                    <div class="flex items-center mb-2">
-                        <div class="bg-blue-600 rounded-lg p-1.5 mr-2">
-                            <i class="fas fa-clipboard-check text-white text-xs"></i>
-                        </div>
-                        <h4 class="text-sm font-bold text-blue-900">Resolution Notes</h4>
-                    </div>
-                    <div class="bg-white/60 rounded-lg p-2 text-xs text-gray-700">
-                        ${request.resolution_notes}
-                    </div>
-                </div>
-                ` : ''}
-
                 <!-- Approver Information (if approved) -->
                 ${(request.status === 'completed' && (approverName || request.approver_first_name)) ? `
                 <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border-2 border-green-300">
