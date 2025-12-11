@@ -14,10 +14,16 @@ router.get('/institution/:institution_id', authenticateinstitution_admin, async 
             return res.status(400).json({ error: 'Institution ID is required.' });
         }
         const [serviceRequests] = await db.query(
-            `SELECT sr.*, i.name AS institution_name, ii.name AS printer_name
+            `SELECT sr.*, 
+                    i.name AS institution_name, 
+                    ii.name AS printer_name,
+                    approver.first_name AS approver_first_name,
+                    approver.last_name AS approver_last_name,
+                    approver.role AS approver_role
              FROM service_requests sr
              LEFT JOIN institutions i ON sr.institution_id = i.id
              LEFT JOIN printers ii ON sr.printer_id = ii.id
+             LEFT JOIN users approver ON sr.approved_by = approver.id
              WHERE sr.institution_id = ?
              ORDER BY sr.created_at DESC`,
             [institution_id]
