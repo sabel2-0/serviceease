@@ -1,16 +1,11 @@
 // institutionAdmin Application Logic
 
 document.addEventListener('DOMContentLoaded', async function() {
-    const user = getCurrentUser();
-    if (!user || user.role !== 'institutionAdmin') {
-        window.location.href = '/pages/login.html';
+    // Check auth first
+    const token = localStorage.getItem('token');
+    if (!token) {
+        window.location.href = '/src/pages/login.html';
         return;
-    }
-
-    // Update welcome message
-    const welcomeName = document.getElementById('welcome-name');
-    if (welcomeName) {
-        welcomeName.textContent = `${user.first_name}`;
     }
 
     // Load dashboard data
@@ -20,44 +15,87 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 async function loadDashboardStats() {
     try {
-        const response = await fetch('/api/institutionAdmin/dashboard-stats', {
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
+        const token = localStorage.getItem('token');
+        
+        // Get service requests count
+        const serviceRequestsResponse = await fetch('http://localhost:3000/api/service-requests/institution_admin/pending', {
+            headers: { 'Authorization': `Bearer ${token}` }
         });
         
-        if (!response.ok) {
-            throw new Error('Failed to load dashboard statistics');
+        // Get maintenance services count
+        const maintenanceResponse = await fetch('http://localhost:3000/api/maintenance-services/institution_admin/pending', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        // Get printers
+        const printersResponse = await fetch('http://localhost:3000/api/institutions/my-printers', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        // Get users
+        const usersResponse = await fetch('http://localhost:3000/api/institutions/my-users', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        let activeRequests = 0;
+        let pendingApprovals = 0;
+        let totalPrinters = 0;
+        let activeUsers = 0;
+        
+        if (serviceRequestsResponse.ok) {
+            const serviceData = await serviceRequestsResponse.json();
+            activeRequests = serviceData.requests?.length || 0;
         }
-
-        const stats = await response.json();
+        
+        if (maintenanceResponse.ok) {
+            const maintenanceData = await maintenanceResponse.json();
+            pendingApprovals = maintenanceData.services?.length || 0;
+        }
+        
+        if (printersResponse.ok) {
+            const printerData = await printersResponse.json();
+            totalPrinters = printerData.printers?.length || 0;
+        }
+        
+        if (usersResponse.ok) {
+            const userData = await usersResponse.json();
+            activeUsers = userData.users?.length || 0;
+        }
         
         // Update stats displays
-        document.getElementById('active-requests-count').textContent = stats.activeRequests;
-        document.getElementById('pending-approvals-count').textContent = stats.pendingApprovals;
-        document.getElementById('total-printers-count').textContent = stats.totalPrinters;
-        document.getElementById('active-users-count').textContent = stats.activeUsers;
+        document.getElementById('active-requests-count').textContent = activeRequests;
+        document.getElementById('pending-approvals-count').textContent = pendingApprovals;
+        document.getElementById('total-printers-count').textContent = totalPrinters;
+        document.getElementById('active-users-count').textContent = activeUsers;
 
     } catch (error) {
         console.error('Error loading dashboard stats:', error);
-        showErrorNotification('Failed to load dashboard statistics');
+        // Don't show error notification, just log it
     }
 }
 
 async function loadRecentActivity() {
     try {
-        const response = await fetch('/api/institutionAdmin/recent-activity', {
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
+        const token = localStorage.getItem('token');
+        const activityContainer = document.getElementById('recent-activity');
+        
+        // Get recent maintenance services
+        const maintenanceResponse = await fetch('http://localhost:3000/api/maintenance-services/institution_admin/history', {
+            headers: { 'Authorization': `Bearer ${token}` }
         });
-
-        if (!response.ok) {
-            throw new Error('Failed to load recent activity');
+        
+        if (!maintenanceResponse.ok) {
+            activityContainer.innerHTML = `
+                <div class="text-center py-8 text-gray-500">
+                    <i class="fas fa-inbox text-4xl mb-2"></i>
+                    <p>No recent activity</p>
+                </div>
+            `;
+            return;
         }
 
-        const activities = await response.json();
-        const activityContainer = document.getElementById('recent-activity');
+        const data = await maintenanceResponse.json();
+        const activities = data.services?.slice(0, 5) || [];
         
         if (activities.length === 0) {
             activityContainer.innerHTML = `
@@ -69,26 +107,34 @@ async function loadRecentActivity() {
             return;
         }
 
-        activityContainer.innerHTML = activities.map(activity => `
+        activityContainer.innerHTML = activities.map(service => `
             <div class="flex items-start p-4 bg-gray-50 rounded-lg">
-                <div class="flex-shrink-0 w-10 h-10 rounded-full bg-${getActivityColor(activity.type)}-100 flex items-center justify-center">
-                    <i class="fas ${getActivityIcon(activity.type)} text-${getActivityColor(activity.type)}-600"></i>
+                <div class="flex-shrink-0 w-10 h-10 rounded-full bg-${service.status === 'completed' ? 'green' : 'red'}-100 flex items-center justify-center">
+                    <i class="fas ${service.status === 'completed' ? 'fa-check-circle' : 'fa-times-circle'} text-${service.status === 'completed' ? 'green' : 'red'}-600"></i>
                 </div>
                 <div class="ml-4 flex-1">
-                    <p class="text-sm font-medium text-gray-900">${activity.message}</p>
-                    <p class="text-xs text-gray-500 mt-1">${formatDate(activity.timestamp)}</p>
+                    <p class="text-sm font-medium text-gray-900">
+                        Maintenance service ${service.status} for ${service.printer_name}
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1">
+                        ${service.technician_name} • ${new Date(service.created_at).toLocaleDateString()}
+                    </p>
                 </div>
-                ${activity.actionable ? `
-                    <a href="${activity.actionLink}" class="ml-4 text-sm font-medium text-blue-600 hover:text-blue-800">
-                        View Details
-                    </a>
-                ` : ''}
+                <a href="/pages/institution-admin/maintenance-services.html" class="ml-4 text-sm font-medium text-blue-600 hover:text-blue-800">
+                    View
+                </a>
             </div>
         `).join('');
 
     } catch (error) {
         console.error('Error loading recent activity:', error);
-        showErrorNotification('Failed to load recent activity');
+        const activityContainer = document.getElementById('recent-activity');
+        activityContainer.innerHTML = `
+            <div class="text-center py-8 text-gray-500">
+                <i class="fas fa-inbox text-4xl mb-2"></i>
+                <p>No recent activity</p>
+            </div>
+        `;
     }
 }
 
