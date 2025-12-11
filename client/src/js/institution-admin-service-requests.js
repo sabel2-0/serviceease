@@ -274,10 +274,38 @@ function loadAssignedPrinters() {
             const option = document.createElement('option');
             option.value = printer.printer_id || printer.id;
             option.textContent = `${printer.name} - ${printer.model} (${printer.serial_number})`;
+            option.dataset.location = printer.location || ''; // Store location in dataset
             servicePrinterSelect.appendChild(option);
         });
 
         servicePrinterSelect.classList.add('w-full', 'px-4', 'py-2', 'border', 'rounded-md', 'bg-white', 'text-gray-900');
+        
+        // Add event listener to auto-fill location when printer is selected
+        servicePrinterSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const locationInput = document.getElementById('printerLocation');
+            const locationRequired = document.getElementById('locationRequired');
+            const locationHint = document.getElementById('locationHint');
+            
+            if (selectedOption && locationInput) {
+                const printerLocation = selectedOption.dataset.location || '';
+                locationInput.value = printerLocation;
+                
+                if (printerLocation) {
+                    console.log('[DEBUG] Auto-filled location:', printerLocation);
+                    locationInput.placeholder = printerLocation;
+                    locationInput.required = false;
+                    if (locationRequired) locationRequired.classList.add('hidden');
+                    if (locationHint) locationHint.textContent = 'Current printer location (you can update it)';
+                } else {
+                    console.log('[DEBUG] No location set for this printer - admin must enter it');
+                    locationInput.placeholder = 'e.g., Building A, 2nd Floor, Room 201, IT Department';
+                    locationInput.required = true;
+                    if (locationRequired) locationRequired.classList.remove('hidden');
+                    if (locationHint) locationHint.textContent = 'Required - This will become the printer\'s permanent location';
+                }
+            }
+        });
     })
     .catch(error => {
         console.error('[DEBUG] Error loading assigned printers:', error);
@@ -310,6 +338,15 @@ function setupNewRequestForm() {
                 showToast('Error: Please select a priority.', 'error');
                 return;
             }
+            
+            // Check if location is required (when printer doesn't have a saved location)
+            const locationInput = document.getElementById('printerLocation');
+            if (locationInput && locationInput.required && (!location || location.trim().length === 0)) {
+                showToast('Error: Please enter the printer location. This will be saved for future requests.', 'error');
+                locationInput.focus();
+                return;
+            }
+            
             // if (!issueDescription || issueDescription.trim().length < 10) {
             //     showToast('Error: Please provide a detailed issue description (at least 10 characters).', 'error');
             //     return;

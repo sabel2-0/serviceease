@@ -2573,6 +2573,7 @@ app.get('/api/institutions/:institutionId/printers', async (req, res) => {
                 ii.name,
                 ii.model,
                 ii.serial_number,
+                ii.location,
                 cpa.assigned_at,
                 cpa.status
             FROM institution_printer_assignments cpa
@@ -3346,6 +3347,24 @@ app.post('/api/service-requests', auth, async (req, res) => {
 
         const printer = printerRows[0];
         institutionId = printer.institution_id;
+
+        // Get location from request body
+        const { location } = req.body;
+        
+        // If institution admin provides a location, update the printer's location
+        if (req.user.role === 'institution_admin' && location && location.trim()) {
+            const newLocation = location.trim();
+            // Only update if location is different from current printer location
+            if (newLocation !== printer.location) {
+                await db.query(
+                    'UPDATE printers SET location = ?, updated_at = NOW() WHERE id = ?',
+                    [newLocation, actualPrinterId]
+                );
+                console.log(`[LOCATION UPDATE] Printer ${actualPrinterId} location updated to: ${newLocation}`);
+                // Update the printer object for use in service request creation
+                printer.location = newLocation;
+            }
+        }
 
         // Check if there's already an active request for this printer
         const [activeRequests] = await db.query(
