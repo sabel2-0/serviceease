@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Service Activity Report - ServiceEase</title>
-    <link rel="icon" type="image/png" href="../../images/serviceease.png">
+    <link rel="icon" type="image/png" href="/images/serviceease.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -30,31 +30,18 @@
         }
     </style>
 </head>
-<body class="bg-gray-50">
-    <!-- Navigation -->
-    <nav class="bg-blue-600 text-white shadow-lg">
-        <div class="container mx-auto px-4">
-            <div class="flex justify-between items-center py-4">
-                <div class="flex items-center space-x-4">
-                    <img src="/images/serviceease.png" alt="ServiceEase Logo" class="h-10 w-10">
-                    <h1 class="text-2xl font-bold">Service Activity Report</h1>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <span id="userGreeting" class="text-sm"></span>
-                    <button onclick="logout()" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg transition">
-                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
-                    </button>
-                </div>
-            </div>
-        </div>
-    </nav>
+<body class="bg-gray-100">
+    <div class="flex h-screen">
+        <!-- Sidebar Container -->
+        <div id="sidebar-container" class="flex-shrink-0 w-64 bg-gray-900 text-white"></div>
 
-    <div class="container mx-auto px-4 py-8">
-        <!-- Back Button -->
-        <button onclick="window.location.href='institution-admin-dashboard.html'" 
-                class="mb-6 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition">
-            <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
-        </button>
+        <!-- Main Content Area -->
+        <main class="flex-1 overflow-y-auto">
+            <!-- Unified Header -->
+            <div id="institution-admin-header-container"></div>
+            
+            <div class="p-8">
+
 
         <!-- Month Selector -->
         <div class="bg-white rounded-lg shadow-md p-6 mb-6">
@@ -153,15 +140,26 @@
                     <!-- Service details will be inserted here -->
                 </div>
             </div>
-        </div>
+        </main>
     </div>
 
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/institution-admin-sidenav.js"></script>
+    <script src="../../js/institution-admin-header-loader.js"></script>
     <script>
         let currentData = null;
         let allServices = [];
 
         // Initialize page
         document.addEventListener('DOMContentLoaded', async () => {
+            // Load header
+            if (window.loadInstitutionAdminHeader) {
+                window.loadInstitutionAdminHeader({
+                    title: 'Service Activity Report',
+                    subtitle: 'View detailed monthly service records and statistics'
+                });
+            }
+            
             await checkAuth();
             initializeDateSelectors();
             await loadMonthlyData();
@@ -183,9 +181,6 @@
                     window.location.href = '/pages/login.html';
                     return;
                 }
-
-                document.getElementById('userGreeting').textContent = 
-                    `${user.first_name} ${user.last_name} (Institution Admin)`;
             } catch (error) {
                 console.error('Auth error:', error);
                 localStorage.removeItem('token');
@@ -199,18 +194,19 @@
             const yearSelect = document.getElementById('yearSelect');
             const monthSelect = document.getElementById('monthSelect');
             
-            // Populate years (current year and 2 years back)
-            for (let i = 0; i < 3; i++) {
-                const year = now.getFullYear() - i;
+            // Populate years: 2 years ago to 2 years in the future
+            const currentYear = now.getFullYear();
+            for (let i = -2; i <= 2; i++) {
+                const year = currentYear + i;
                 const option = document.createElement('option');
                 option.value = year;
                 option.textContent = year;
+                if (i === 0) option.selected = true;
                 yearSelect.appendChild(option);
             }
             
-            // Set current month and year
+            // Set current month
             monthSelect.value = now.getMonth() + 1;
-            yearSelect.value = now.getFullYear();
         }
 
         async function loadMonthlyData() {
@@ -535,11 +531,6 @@
             a.click();
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
-        }
-
-        function logout() {
-            localStorage.removeItem('token');
-            window.location.href = '/src/pages/login.html';
         }
     </script>
 </body>
