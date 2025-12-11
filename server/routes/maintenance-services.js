@@ -1132,8 +1132,8 @@ router.get('/institution_admin/monthly-billing', auth, async (req, res) => {
         
         const institutionIds = institutions.map(i => i.institution_id);
         
-        // Get services for the month (completed only for billing)
-        const query = `
+        // Get maintenance services for the month (completed only for billing)
+        const maintenanceQuery = `
             SELECT 
                 ms.*,
                 p.name as printer_name,
@@ -1144,7 +1144,8 @@ router.get('/institution_admin/monthly-billing', auth, async (req, res) => {
                 i.name as institution_name,
                 CONCAT(u_tech.first_name, ' ', u_tech.last_name) as technician_name,
                 u_tech.email as technician_email,
-                DATE(ms.completed_at) as service_date
+                DATE(ms.completed_at) as service_date,
+                'maintenance_service' as service_type
             FROM maintenance_services ms
             INNER JOIN printers p ON ms.printer_id = p.id
             INNER JOIN institutions i ON ms.institution_id COLLATE utf8mb4_unicode_ci = i.institution_id
@@ -1156,7 +1157,48 @@ router.get('/institution_admin/monthly-billing', auth, async (req, res) => {
             ORDER BY ms.completed_at DESC
         `;
         
-        const [services] = await db.query(query, [institutionIds, year, month]);
+        // Get completed service requests for the month
+        const serviceRequestsQuery = `
+            SELECT 
+                sr.id,
+                sr.request_number,
+                sr.description,
+                sr.priority,
+                sr.status,
+                sr.created_at,
+                sr.started_at,
+                sr.completed_at,
+                sr.printer_id,
+                sr.institution_id,
+                sr.technician_id,
+                p.name as printer_name,
+                p.brand,
+                p.model,
+                p.serial_number,
+                sr.location,
+                i.name as institution_name,
+                CONCAT(u_tech.first_name, ' ', u_tech.last_name) as technician_name,
+                u_tech.email as technician_email,
+                DATE(sr.completed_at) as service_date,
+                'service_request' as service_type
+            FROM service_requests sr
+            INNER JOIN printers p ON sr.printer_id = p.id
+            INNER JOIN institutions i ON sr.institution_id = i.institution_id
+            INNER JOIN users u_tech ON sr.technician_id = u_tech.id
+            WHERE sr.institution_id IN (?)
+                AND sr.status = 'completed'
+                AND YEAR(sr.completed_at) = ?
+                AND MONTH(sr.completed_at) = ?
+            ORDER BY sr.completed_at DESC
+        `;
+        
+        const [maintenanceServices] = await db.query(maintenanceQuery, [institutionIds, year, month]);
+        const [serviceRequests] = await db.query(serviceRequestsQuery, [institutionIds, year, month]);
+        
+        // Combine both types of services
+        const services = [...maintenanceServices, ...serviceRequests].sort((a, b) => 
+            new Date(b.completed_at) - new Date(a.completed_at)
+        );
         
         // Parse parts_used JSON
         services.forEach(service => {
