@@ -22,7 +22,7 @@ router.get('/institution/:institution_id', authenticateinstitution_admin, async 
                     approver.last_name AS approver_last_name,
                     approver.role AS approver_role
              FROM service_requests sr
-             LEFT JOIN institutions i ON sr.institution_id = i.id
+             LEFT JOIN institutions i ON sr.institution_id = i.institution_id
              LEFT JOIN printers ii ON sr.printer_id = ii.id
              LEFT JOIN service_approvals sa ON sr.id = sa.service_request_id
              LEFT JOIN users approver ON sa.approved_by = approver.id

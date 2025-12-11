@@ -1188,6 +1188,15 @@ async function viewRequestDetails(requestId) {
             throw new Error('Service request not found');
         }
         
+        // Debug log approver info
+        console.log('[DEBUG] Request approver info:', {
+            id: request.id,
+            status: request.status,
+            approver_first_name: request.approver_first_name,
+            approver_last_name: request.approver_last_name,
+            approver_role: request.approver_role
+        });
+        
         // Find printer details
         let printerInfo = assignedPrinters.find(p => String(p.printer_id) === String(request.printer_id));
         if (!printerInfo) {
@@ -1368,24 +1377,45 @@ async function viewRequestDetails(requestId) {
                 </div>
                 ` : ''}
 
-                <!-- Approver Information (if approved) -->
-                ${(request.status === 'completed' && request.approver_first_name) ? `
-                <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-3 border border-green-200">
+                <!-- Resolution Notes (if completed) -->
+                ${request.status === 'completed' && request.resolution_notes ? `
+                <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-3 border border-blue-200">
                     <div class="flex items-center mb-2">
-                        <div class="bg-green-600 rounded-lg p-1.5 mr-2">
-                            <i class="fas fa-check-circle text-white text-xs"></i>
+                        <div class="bg-blue-600 rounded-lg p-1.5 mr-2">
+                            <i class="fas fa-clipboard-check text-white text-xs"></i>
                         </div>
-                        <h4 class="text-sm font-bold text-green-900">Approval Information</h4>
+                        <h4 class="text-sm font-bold text-blue-900">Resolution Notes</h4>
                     </div>
-                    <div class="bg-white/60 rounded-lg p-2 text-xs space-y-1">
-                        <div class="flex justify-between">
-                            <span class="text-green-700 font-medium">Approved By:</span>
-                            <span class="text-green-900 font-semibold">${request.approver_first_name} ${request.approver_last_name}</span>
+                    <div class="bg-white/60 rounded-lg p-2 text-xs text-gray-700">
+                        ${request.resolution_notes}
+                    </div>
+                </div>
+                ` : ''}
+
+                <!-- Approver Information (if approved) -->
+                ${(request.status === 'completed' && (request.approver_first_name || request.resolution_notes)) ? `
+                <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border-2 border-green-300">
+                    <div class="flex items-center mb-3">
+                        <div class="bg-green-600 rounded-lg p-2 mr-2">
+                            <i class="fas fa-user-check text-white text-base"></i>
                         </div>
-                        <div class="flex justify-between">
-                            <span class="text-green-700 font-medium">Role:</span>
-                            <span class="text-green-900 capitalize">${request.approver_role ? request.approver_role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Staff'}</span>
+                        <h4 class="text-base font-bold text-green-900">✅ Approval Information</h4>
+                    </div>
+                    <div class="bg-white/80 rounded-lg p-3 text-sm space-y-2">
+                        ${request.approver_first_name ? `
+                        <div class="flex justify-between items-center">
+                            <span class="text-green-700 font-semibold">Approved By:</span>
+                            <span class="text-green-900 font-bold">${request.approver_first_name} ${request.approver_last_name}</span>
                         </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-green-700 font-semibold">Role:</span>
+                            <span class="text-green-900 font-bold capitalize">${request.approver_role ? request.approver_role.replace(/_/g, ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : 'Staff'}</span>
+                        </div>
+                        ` : `
+                        <div class="text-yellow-800 font-medium text-sm">
+                            <i class="fas fa-info-circle mr-1"></i>Approver information not available
+                        </div>
+                        `}
                     </div>
                 </div>
                 ` : ''}
