@@ -275,10 +275,17 @@ function renderRequestsList(requests, filter = 'all') {
                             ${req.user_role ? `<p class="text-xs text-slate-500 capitalize">${req.user_role.replace('_', ' ')}</p>` : ''}
                         </div>
                         `}
-                        ${req.resolution_notes ? `
+                        ${req.resolution_notes || (req.approved_by_first_name && req.approved_by_last_name) ? `
                         <div class="col-span-2 md:col-span-4">
                             <p class="text-slate-500">Resolution Notes</p>
+                            ${req.approved_by_first_name && req.approved_by_last_name ? `
+                            <p class="font-semibold text-green-700 mb-1">
+                                Approved by: <span class="capitalize">${req.approver_role || 'Staff'}</span> - ${escapeHtml(req.approved_by_first_name + ' ' + req.approved_by_last_name)}
+                            </p>
+                            ` : ''}
+                            ${req.resolution_notes ? `
                             <p class="font-medium text-slate-800">${escapeHtml(req.resolution_notes)}</p>
+                            ` : ''}
                         </div>
                         ` : ''}
                         ${req.parts_used && req.parts_used.length > 0 ? `

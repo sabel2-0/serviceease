@@ -997,9 +997,24 @@ window.viewCompletedRequestDetails = async function(requestId) {
               </div>
             ` : ''}
             
+            <!-- Approval Information -->
+            ${(req.approver_first_name && req.approver_last_name) || req.resolution_notes ? `
+              <div class="bg-green-50 rounded-lg p-3 border-2 border-green-200">
+                <h4 class="font-semibold text-sm text-gray-800 mb-2">✅ Approval Information</h4>
+                ${req.approver_first_name && req.approver_last_name ? `
+                  <div class="text-sm text-green-800 font-semibold mb-1">
+                    Approved by: <span class="capitalize">${req.approver_role ? req.approver_role.replace('_', ' ') : 'Staff'}</span> - ${req.approver_first_name} ${req.approver_last_name}
+                  </div>
+                ` : ''}
+                ${req.resolution_notes ? `
+                  <div class="text-xs text-gray-700 mt-2 bg-white rounded p-2">${req.resolution_notes}</div>
+                ` : ''}
+              </div>
+            ` : ''}
+            
             <!-- Completed Date -->
             ${req.completed_at ? `
-              <div class="bg-green-50 rounded-lg p-3">
+              <div class="bg-gray-50 rounded-lg p-3">
                 <h4 class="font-semibold text-sm text-gray-800 mb-1">Completed</h4>
                 <div class="text-sm text-gray-700">${new Date(req.completed_at).toLocaleString()}</div>
               </div>

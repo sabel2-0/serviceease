@@ -1575,10 +1575,17 @@ async function viewApprovalDetails(requestId) {
                         <p><span class="font-medium">Technician:</span> ${approval.technician_first_name} ${approval.technician_last_name}</p>
                         <p><span class="font-medium">Submitted:</span> ${submittedTime.toLocaleDateString()} at ${submittedTime.toLocaleTimeString()}</p>
                     </div>
-                    ${(approvalDetails.resolution_notes || approval.actions_performed) ? `
+                    ${(approvalDetails.approver_first_name && approvalDetails.approver_last_name) || (approvalDetails.resolution_notes || approval.actions_performed) ? `
                     <div class="bg-white p-2 rounded border border-green-200 text-xs text-gray-700">
+                        ${approvalDetails.approver_first_name && approvalDetails.approver_last_name ? `
+                        <p class="font-semibold text-green-800 mb-1">
+                            ✅ Approved by: <span class="capitalize">${approvalDetails.approver_role || 'Staff'}</span> - ${approvalDetails.approver_first_name} ${approvalDetails.approver_last_name}
+                        </p>
+                        ` : ''}
+                        ${approvalDetails.resolution_notes || approval.actions_performed ? `
                         <p class="font-medium text-green-800 mb-1">Resolution:</p>
-                        ${approvalDetails.resolution_notes || approval.actions_performed || 'No notes provided'}
+                        <p>${approvalDetails.resolution_notes || approval.actions_performed || 'No notes provided'}</p>
+                        ` : ''}
                     </div>
                     ` : ''}
                 </div>
