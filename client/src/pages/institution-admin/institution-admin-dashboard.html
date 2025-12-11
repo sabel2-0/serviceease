@@ -81,6 +81,47 @@
                     </div>
                 </div>
 
+                <!-- Monthly Services Overview -->
+                <div class="bg-white rounded-lg shadow-sm mb-8">
+                    <div class="p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xl font-semibold text-gray-900">
+                                <i class="fas fa-calendar-check text-blue-600 mr-2"></i>This Month's Service Activity
+                            </h3>
+                            <div class="flex items-center gap-2">
+                                <select id="monthlyServiceMonth" class="text-sm border border-gray-300 rounded px-3 py-1">
+                                    <!-- Populated by JS -->
+                                </select>
+                                <button onclick="viewFullServiceReport()" class="text-sm text-blue-600 hover:text-blue-800 underline">
+                                    View Full Report
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Monthly Stats -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                            <div class="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-600">
+                                <div class="text-sm text-gray-600 mb-1">Services Completed</div>
+                                <div class="text-3xl font-bold text-blue-600" id="monthly-services-count">0</div>
+                            </div>
+                            <div class="bg-green-50 p-4 rounded-lg border-l-4 border-green-600">
+                                <div class="text-sm text-gray-600 mb-1">Printers Serviced</div>
+                                <div class="text-3xl font-bold text-green-600" id="monthly-printers-count">0</div>
+                            </div>
+                            <div class="bg-purple-50 p-4 rounded-lg border-l-4 border-purple-600">
+                                <div class="text-sm text-gray-600 mb-1">Service Rate</div>
+                                <div class="text-3xl font-bold text-purple-600" id="monthly-service-rate">0%</div>
+                                <div class="text-xs text-gray-500" id="monthly-service-rate-text"></div>
+                            </div>
+                        </div>
+
+                        <!-- Quick Calendar View -->
+                        <div id="monthly-services-list" class="space-y-2 max-h-64 overflow-y-auto">
+                            <!-- Services will be populated here -->
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Recent Activity -->
                 <div class="bg-white rounded-lg shadow-sm">
                     <div class="p-6">
@@ -107,7 +148,104 @@
                     subtitle: "Here's what's happening with your service requests"
                 });
             }
+            
+            // Load monthly services widget
+            loadMonthlyServicesWidget();
         });
+
+        // Monthly Services Widget
+        async function loadMonthlyServicesWidget() {
+            const now = new Date();
+            const monthSelect = document.getElementById('monthlyServiceMonth');
+            
+            // Populate month selector with last 3 months
+            for (let i = 0; i < 3; i++) {
+                const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                const option = document.createElement('option');
+                option.value = `${date.getFullYear()}-${date.getMonth() + 1}`;
+                option.textContent = date.toLocaleString('default', { month: 'long', year: 'numeric' });
+                monthSelect.appendChild(option);
+            }
+            
+            monthSelect.addEventListener('change', fetchMonthlyServices);
+            await fetchMonthlyServices();
+        }
+
+        async function fetchMonthlyServices() {
+            const token = localStorage.getItem('token');
+            const monthSelect = document.getElementById('monthlyServiceMonth');
+            const [year, month] = monthSelect.value.split('-');
+            
+            try {
+                const response = await fetch(
+                    `http://localhost:3000/api/maintenance-services/institution_admin/monthly-billing?year=${year}&month=${month}`,
+                    { headers: { 'Authorization': `Bearer ${token}` } }
+                );
+
+                if (!response.ok) throw new Error('Failed to fetch');
+                
+                const data = await response.json();
+                displayMonthlyServices(data);
+            } catch (error) {
+                console.error('Error loading monthly services:', error);
+            }
+        }
+
+        function displayMonthlyServices(data) {
+            const summary = data.summary;
+            
+            // Update stats
+            document.getElementById('monthly-services-count').textContent = summary.totalServices;
+            document.getElementById('monthly-printers-count').textContent = summary.uniquePrinters;
+            
+            // Calculate service rate (printers serviced / total printers)
+            const totalPrinters = parseInt(document.getElementById('total-printers-count').textContent) || 1;
+            const serviceRate = totalPrinters > 0 ? ((summary.uniquePrinters / totalPrinters) * 100).toFixed(0) : 0;
+            document.getElementById('monthly-service-rate').textContent = serviceRate + '%';
+            document.getElementById('monthly-service-rate-text').textContent = 
+                `${summary.uniquePrinters} of ${totalPrinters} printers serviced`;
+            
+            // Display recent services
+            const servicesList = document.getElementById('monthly-services-list');
+            
+            if (data.services.length === 0) {
+                servicesList.innerHTML = '<p class="text-gray-500 text-center py-4">No services completed this month</p>';
+                return;
+            }
+            
+            // Show latest 5 services
+            const recentServices = data.services.slice(0, 5);
+            servicesList.innerHTML = recentServices.map(service => `
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded hover:bg-gray-100 transition">
+                    <div class="flex-1">
+                        <div class="font-medium text-gray-800">
+                            <i class="fas fa-print text-blue-600 mr-2"></i>${service.printer_name}
+                        </div>
+                        <div class="text-xs text-gray-600 mt-1">
+                            ${service.institution_name} • ${service.technician_name}
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-sm text-gray-700">${new Date(service.completed_at).toLocaleDateString()}</div>
+                        <div class="text-xs text-green-600">
+                            <i class="fas fa-check-circle mr-1"></i>Completed
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            if (data.services.length > 5) {
+                servicesList.innerHTML += `
+                    <button onclick="viewFullServiceReport()" class="w-full text-center text-sm text-blue-600 hover:text-blue-800 py-2">
+                        View all ${data.services.length} services →
+                    </button>
+                `;
+            }
+        }
+
+        function viewFullServiceReport() {
+            window.location.href = 'service-activity-report.html';
+        }
     </script>
 </body>
 </html>
