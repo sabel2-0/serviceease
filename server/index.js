@@ -3189,16 +3189,20 @@ app.get('/api/users/me/service-requests', auth, async (req, res) => {
             // Get all service requests for these printers
             query = `
                 SELECT sr.id, sr.request_number, sr.printer_id, sr.institution_id, sr.priority, sr.description,
-                       sr.location, sr.status, sr.created_at, sr.completed_at, sr.requested_by,
+                       sr.location, sr.status, sr.created_at, sr.completed_at, sr.requested_by, sr.resolution_notes,
                        ii.name as printer_name, ii.brand as printer_brand, ii.model as printer_model,
                        i.name as institution_name,
                        institution_user.first_name as institution_user_first_name, institution_user.last_name as institution_user_last_name,
-                       tech.first_name as technician_first_name, tech.last_name as technician_last_name
+                       tech.first_name as technician_first_name, tech.last_name as technician_last_name,
+                       approver.first_name as approver_first_name, approver.last_name as approver_last_name,
+                       approver.role as approver_role
                 FROM service_requests sr
                 LEFT JOIN printers ii ON sr.printer_id = ii.id
                 LEFT JOIN institutions i ON sr.institution_id = i.institution_id
                 LEFT JOIN users institution_user ON sr.requested_by = institution_user.id
                 LEFT JOIN users tech ON sr.technician_id = tech.id
+                LEFT JOIN service_approvals sa ON sr.id = sa.service_request_id
+                LEFT JOIN users approver ON sa.approved_by = approver.id
                 WHERE sr.printer_id IN (${printerIds.map(() => '?').join(',')})
                 ORDER BY sr.created_at DESC
             `;
@@ -3207,16 +3211,20 @@ app.get('/api/users/me/service-requests', auth, async (req, res) => {
             // For institution_admins/admins: show all requests for their institution
             query = `
                 SELECT sr.id, sr.request_number, sr.printer_id, sr.institution_id, sr.priority, sr.description,
-                       sr.location, sr.status, sr.created_at, sr.completed_at, sr.requested_by,
+                       sr.location, sr.status, sr.created_at, sr.completed_at, sr.requested_by, sr.resolution_notes,
                        ii.name as printer_name, ii.brand as printer_brand, ii.model as printer_model,
                        i.name as institution_name,
                        institution_user.first_name as institution_user_first_name, institution_user.last_name as institution_user_last_name,
-                       tech.first_name as technician_first_name, tech.last_name as technician_last_name
+                       tech.first_name as technician_first_name, tech.last_name as technician_last_name,
+                       approver.first_name as approver_first_name, approver.last_name as approver_last_name,
+                       approver.role as approver_role
                 FROM service_requests sr
                 LEFT JOIN printers ii ON sr.printer_id = ii.id
                 LEFT JOIN institutions i ON sr.institution_id = i.institution_id
                 LEFT JOIN users institution_user ON sr.requested_by = institution_user.id
                 LEFT JOIN users tech ON sr.technician_id = tech.id
+                LEFT JOIN service_approvals sa ON sr.id = sa.service_request_id
+                LEFT JOIN users approver ON sa.approved_by = approver.id
                 WHERE sr.institution_id = ?
                 ORDER BY sr.created_at DESC
             `;
