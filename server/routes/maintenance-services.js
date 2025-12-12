@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 const { auth, authenticateAdmin } = require('../middleware/auth');
@@ -101,7 +101,7 @@ router.get('/assigned-schools', auth, async (req, res) => {
                         -- Get latest Maintenance Service status
                         SELECT 
                             printer_id,
-                            CAST(status AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as latest_status,
+                            CAST(status AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_0900_ai_ci as latest_status,
                             created_at as latest_date,
                             'Maintenance' as service_type
                         FROM maintenance_services 
@@ -112,7 +112,7 @@ router.get('/assigned-schools', auth, async (req, res) => {
                         -- Get latest regular service request status
                         SELECT 
                             printer_id as printer_id,
-                            CAST(status AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as latest_status,
+                            CAST(status AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_0900_ai_ci as latest_status,
                             created_at as latest_date,
                             'regular' as service_type
                         FROM service_requests
@@ -198,7 +198,7 @@ router.get('/school-printers/:institutionId', auth, async (req, res) => {
                     -- Get latest Maintenance Service
                     SELECT 
                         printer_id,
-                        CAST(status AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as latest_status,
+                        CAST(status AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_0900_ai_ci as latest_status,
                         created_at as latest_date,
                         'Maintenance' as service_type
                     FROM maintenance_services 
@@ -209,7 +209,7 @@ router.get('/school-printers/:institutionId', auth, async (req, res) => {
                     -- Get latest regular service request
                     SELECT 
                         printer_id as printer_id,
-                        CAST(status AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci as latest_status,
+                        CAST(status AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_0900_ai_ci as latest_status,
                         created_at as latest_date,
                         'regular' as service_type
                     FROM service_requests
@@ -269,7 +269,7 @@ router.post('/', auth, async (req, res) => {
             completion_photo
         } = req.body;
         
-        console.log('ðŸ“ Maintenance service submission:', {
+        console.log('📝 Maintenance service submission:', {
             technicianId,
             printer_id,
             institution_id,
@@ -279,7 +279,7 @@ router.post('/', auth, async (req, res) => {
         
         // Validate required fields
         if (!printer_id || !institution_id || !service_description) {
-            console.log('âŒ Missing required fields');
+            console.log('❌ Missing required fields');
             return res.status(400).json({ 
                 error: 'Printer ID, institution ID, and service description are required' 
             });
@@ -291,7 +291,7 @@ router.post('/', auth, async (req, res) => {
             [technicianId, institution_id]
         );
         
-        console.log('ðŸ” Assignment check:', assignment.length > 0 ? 'PASSED' : 'FAILED');
+        console.log('🔍 Assignment check:', assignment.length > 0 ? 'PASSED' : 'FAILED');
         
         if (assignment.length === 0) {
             return res.status(403).json({ error: 'Not assigned to this institution' });
@@ -306,7 +306,7 @@ router.post('/', auth, async (req, res) => {
             [printer_id, institution_id]
         );
         
-        console.log('ðŸ–¨ï¸  Printer check:', printer.length > 0 ? 'FOUND' : 'NOT FOUND');
+        console.log('🖨️  Printer check:', printer.length > 0 ? 'FOUND' : 'NOT FOUND');
         
         if (printer.length === 0) {
             return res.status(400).json({ error: 'Printer not found in this institution' });
@@ -337,7 +337,7 @@ router.post('/', auth, async (req, res) => {
         }
         
         const requester_id = printer[0].requester_id;
-        console.log('ðŸ‘¤ institution_user ID:', requester_id);
+        console.log('👤 institution_user ID:', requester_id);
         
         // Enrich parts_used with part names for display
         let enrichedPartsUsed = null;
@@ -370,7 +370,7 @@ router.post('/', auth, async (req, res) => {
             ) VALUES (?, ?, ?, ?, ?, ?, 'pending')
         `;
         
-        console.log('ðŸ’¾ Inserting maintenance service...');
+        console.log('💾 Inserting maintenance service...');
         const [result] = await db.query(insertQuery, [
             technicianId,
             printer_id,
@@ -380,7 +380,7 @@ router.post('/', auth, async (req, res) => {
             completion_photo || null
         ]);
         
-        console.log('âœ… Service inserted, ID:', result.insertId);
+        console.log('✅ Service inserted, ID:', result.insertId);
         
         // Parts will be deducted only upon approval (not during submission)
         
@@ -422,7 +422,7 @@ router.post('/', auth, async (req, res) => {
             service_id: result.insertId
         });
     } catch (error) {
-        console.error('âŒ Error submitting Maintenance Service:', error);
+        console.error('❌ Error submitting Maintenance Service:', error);
         console.error('Stack trace:', error.stack);
         res.status(500).json({ 
             error: 'Failed to submit Maintenance Service',
@@ -499,16 +499,16 @@ router.get('/institution_admin/pending', auth, async (req, res) => {
             [institution_adminId]
         );
         
-        console.log('ðŸ¢ institution_admin institutions:', institutions);
+        console.log('🏢 institution_admin institutions:', institutions);
         
         if (institutions.length === 0) {
-            console.log('âš ï¸ No institutions found for institution_admin');
+            console.log('⚠️ No institutions found for institution_admin');
             return res.json({ services: [] });
         }
         
         const institutionIds = institutions.map(i => i.institution_id);
         
-        console.log('ðŸ” Looking for services in institutions:', institutionIds);
+        console.log('🔍 Looking for services in institutions:', institutionIds);
         
         const query = `
             SELECT 
@@ -523,7 +523,7 @@ router.get('/institution_admin/pending', auth, async (req, res) => {
                 u_tech.email as technician_email
             FROM maintenance_services vs
             INNER JOIN printers inv ON vs.printer_id = inv.id
-            INNER JOIN institutions i ON vs.institution_id COLLATE utf8mb4_unicode_ci = i.institution_id
+            INNER JOIN institutions i ON vs.institution_id COLLATE utf8mb4_0900_ai_ci = i.institution_id
             LEFT JOIN users u_coord ON i.user_id = u_coord.id
             INNER JOIN users u_tech ON vs.technician_id = u_tech.id
             WHERE vs.institution_id IN (?)
@@ -533,7 +533,7 @@ router.get('/institution_admin/pending', auth, async (req, res) => {
         
         const [services] = await db.query(query, [institutionIds]);
         
-        console.log('âœ… Found', services.length, 'Maintenance Services');
+        console.log('✅ Found', services.length, 'Maintenance Services');
         
         // Parse JSON fields
         services.forEach(service => {
@@ -548,7 +548,7 @@ router.get('/institution_admin/pending', auth, async (req, res) => {
         
         res.json({ services });
     } catch (error) {
-        console.error('âŒ Error fetching pending services for institution_admin:', error);
+        console.error('❌ Error fetching pending services for institution_admin:', error);
         res.status(500).json({ error: 'Failed to fetch pending services' });
     }
 });
@@ -588,7 +588,7 @@ router.get('/institution_admin/history', auth, async (req, res) => {
                 u_tech.email as technician_email
             FROM maintenance_services vs
             INNER JOIN printers inv ON vs.printer_id = inv.id
-            INNER JOIN institutions i ON vs.institution_id COLLATE utf8mb4_unicode_ci = i.institution_id
+            INNER JOIN institutions i ON vs.institution_id COLLATE utf8mb4_0900_ai_ci = i.institution_id
             LEFT JOIN users u_coord ON i.user_id = u_coord.id
             INNER JOIN users u_tech ON vs.technician_id = u_tech.id
             WHERE vs.institution_id IN (?)
@@ -598,7 +598,7 @@ router.get('/institution_admin/history', auth, async (req, res) => {
         
         const [services] = await db.query(query, [institutionIds]);
         
-        console.log('âœ… Found', services.length, 'Maintenance Services in history');
+        console.log('✅ Found', services.length, 'Maintenance Services in history');
         
         // Parse JSON fields
         services.forEach(service => {
@@ -613,7 +613,7 @@ router.get('/institution_admin/history', auth, async (req, res) => {
         
         res.json({ services });
     } catch (error) {
-        console.error('âŒ Error fetching history for institution_admin:', error);
+        console.error('❌ Error fetching history for institution_admin:', error);
         res.status(500).json({ error: 'Failed to fetch history' });
     }
 });
@@ -628,18 +628,18 @@ router.patch('/institution_admin/:id/approve', auth, async (req, res) => {
         const institution_adminId = req.user.id;
         const { notes } = req.body;
         
-        console.log('âœ… institution_admin', institution_adminId, 'approving service', serviceId);
+        console.log('✅ institution_admin', institution_adminId, 'approving service', serviceId);
         
         // Verify institution_admin owns this institution
         const [service] = await db.query(
             `SELECT vs.*, i.user_id as institution_admin_id
              FROM maintenance_services vs
-             INNER JOIN institutions i ON vs.institution_id COLLATE utf8mb4_unicode_ci = i.institution_id
+             INNER JOIN institutions i ON vs.institution_id COLLATE utf8mb4_0900_ai_ci = i.institution_id
              WHERE vs.id = ?`,
             [serviceId]
         );
         
-        console.log('ðŸ” Service data retrieved:', {
+        console.log('🔍 Service data retrieved:', {
             id: service[0]?.id,
             technician_id: service[0]?.technician_id,
             parts_used_type: typeof service[0]?.parts_used,
@@ -666,7 +666,7 @@ router.patch('/institution_admin/:id/approve', auth, async (req, res) => {
         // Single approval mode: institution_admin approval immediately completes the service
         const newStatus = 'completed';
         
-        console.log(`ðŸ“ institution_admin approving - service will be completed immediately`);
+        console.log(`📝 institution_admin approving - service will be completed immediately`);
         
         // Update approval status and complete the service
         await db.query(
@@ -682,9 +682,9 @@ router.patch('/institution_admin/:id/approve', auth, async (req, res) => {
         // Deduct parts from inventory after institution_admin approval
         if (service[0].parts_used) {
             const parts_used = JSON.parse(service[0].parts_used);
-            console.log('ðŸ“¦ Deducting parts from inventory after approval...');
-            console.log('ðŸ“¦ Parts to deduct:', JSON.stringify(parts_used, null, 2));
-            console.log('ðŸ‘¤ Technician ID:', service[0].technician_id);
+            console.log('📦 Deducting parts from inventory after approval...');
+            console.log('📦 Parts to deduct:', JSON.stringify(parts_used, null, 2));
+            console.log('👤 Technician ID:', service[0].technician_id);
             
             // First, let's see what's in the technician's inventory
             const [techInventory] = await db.query(
@@ -698,7 +698,7 @@ router.patch('/institution_admin/:id/approve', auth, async (req, res) => {
             
             for (const part of parts_used) {
                 try {
-                    console.log(`\nðŸ” Processing part_id: ${part.part_id}`);
+                    console.log(`\n🔍 Processing part_id: ${part.part_id}`);
                     console.log(`   Qty to deduct: ${part.qty}, Unit: ${part.unit}`);
                     
                     // Query by part_id directly
@@ -723,19 +723,19 @@ router.patch('/institution_admin/:id/approve', auth, async (req, res) => {
                                 'UPDATE technician_inventory SET quantity = ?, last_updated = NOW() WHERE id = ?',
                                 [newQty, inventoryItem[0].id]
                             );
-                            console.log(`   âœ… Deducted ${deductQty} of "${inventoryItem[0].name}", new qty: ${newQty}`);
+                            console.log(`   ✅ Deducted ${deductQty} of "${inventoryItem[0].name}", new qty: ${newQty}`);
                         } else {
-                            console.log(`   âš ï¸ Insufficient stock: have ${currentQty}, need ${deductQty}`);
+                            console.log(`   ⚠️ Insufficient stock: have ${currentQty}, need ${deductQty}`);
                         }
                     } else {
-                        console.log(`   âŒ Part ID ${part.part_id} not found in technician's inventory`);
+                        console.log(`   ❌ Part ID ${part.part_id} not found in technician's inventory`);
                     }
                 } catch (partError) {
-                    console.error(`âŒ Error deducting part:`, partError);
+                    console.error(`❌ Error deducting part:`, partError);
                 }
             }
         } else {
-            console.log('ðŸ“¦ No parts to deduct (parts_used is null/empty)');
+            console.log('📦 No parts to deduct (parts_used is null/empty)');
         }
         
         // Notify technician that service was approved and completed
@@ -773,13 +773,13 @@ router.patch('/institution_admin/:id/reject', auth, async (req, res) => {
             return res.status(400).json({ error: 'Rejection reason is required' });
         }
         
-        console.log('âŒ institution_admin', institution_adminId, 'rejecting service', serviceId);
+        console.log('❌ institution_admin', institution_adminId, 'rejecting service', serviceId);
         
         // Verify institution_admin owns this institution
         const [service] = await db.query(
             `SELECT vs.*, i.user_id as institution_admin_id
              FROM maintenance_services vs
-             INNER JOIN institutions i ON vs.institution_id COLLATE utf8mb4_unicode_ci = i.institution_id
+             INNER JOIN institutions i ON vs.institution_id COLLATE utf8mb4_0900_ai_ci = i.institution_id
              WHERE vs.id = ?`,
             [serviceId]
         );
@@ -857,7 +857,7 @@ router.get('/history', auth, async (req, res) => {
                 institution_admin.last_name as institution_admin_last_name
             FROM maintenance_services vs
             INNER JOIN printers inv ON vs.printer_id = inv.id
-            INNER JOIN institutions i ON vs.institution_id COLLATE utf8mb4_unicode_ci = i.institution_id
+            INNER JOIN institutions i ON vs.institution_id COLLATE utf8mb4_0900_ai_ci = i.institution_id
             LEFT JOIN users approver ON vs.approved_by_user_id = approver.id
             LEFT JOIN users institution_admin ON i.user_id = institution_admin.id
             WHERE vs.technician_id = ?
@@ -913,7 +913,7 @@ router.get('/institution_user/pending', auth, async (req, res) => {
             FROM maintenance_services vs
             INNER JOIN printers inv ON vs.printer_id = inv.id
             INNER JOIN user_printer_assignments upa ON upa.printer_id = inv.id
-            INNER JOIN institutions i ON vs.institution_id COLLATE utf8mb4_unicode_ci = i.institution_id
+            INNER JOIN institutions i ON vs.institution_id COLLATE utf8mb4_0900_ai_ci = i.institution_id
             LEFT JOIN users u_coord ON i.user_id = u_coord.id
             INNER JOIN users u_tech ON vs.technician_id = u_tech.id
             WHERE upa.user_id = ?
@@ -924,7 +924,7 @@ router.get('/institution_user/pending', auth, async (req, res) => {
         
         const [services] = await db.query(query, [requester_id, requester_id]);
         
-        console.log('âœ… Found', services.length, 'Maintenance Services for institution_user');
+        console.log('✅ Found', services.length, 'Maintenance Services for institution_user');
         
         // Parse JSON fields
         services.forEach(service => {
@@ -939,7 +939,7 @@ router.get('/institution_user/pending', auth, async (req, res) => {
         
         res.json({ services });
     } catch (error) {
-        console.error('âŒ Error fetching services for institution_user:', error);
+        console.error('❌ Error fetching services for institution_user:', error);
         res.status(500).json({ error: 'Failed to fetch services' });
     }
 });
@@ -966,7 +966,7 @@ router.get('/institution_user/history', auth, async (req, res) => {
             FROM maintenance_services vs
             INNER JOIN printers inv ON vs.printer_id = inv.id
             INNER JOIN user_printer_assignments upa ON upa.printer_id = inv.id
-            INNER JOIN institutions i ON vs.institution_id COLLATE utf8mb4_unicode_ci = i.institution_id
+            INNER JOIN institutions i ON vs.institution_id COLLATE utf8mb4_0900_ai_ci = i.institution_id
             LEFT JOIN users u_coord ON i.user_id = u_coord.id
             INNER JOIN users u_tech ON vs.technician_id = u_tech.id
             WHERE upa.user_id = ?
@@ -990,7 +990,7 @@ router.get('/institution_user/history', auth, async (req, res) => {
         
         res.json({ services });
     } catch (error) {
-        console.error('âŒ Error fetching history for institution_user:', error);
+        console.error('❌ Error fetching history for institution_user:', error);
         res.status(500).json({ error: 'Failed to fetch history' });
     }
 });
@@ -1005,7 +1005,7 @@ router.patch('/institution_user/:id/approve', auth, async (req, res) => {
         const requester_id = req.user.id;
         const { notes } = req.body;
         
-        console.log('✅ institution_user', requester_id, 'approving service', serviceId);
+        console.log('? institution_user', requester_id, 'approving service', serviceId);
         
         // Verify institution_user owns the printer
         const [service] = await db.query(
@@ -1016,7 +1016,7 @@ router.patch('/institution_user/:id/approve', auth, async (req, res) => {
             [serviceId, requester_id]
         );
         
-        console.log('🔍 Service query result:', {
+        console.log('?? Service query result:', {
             found: service.length > 0,
             service_id: service[0]?.id,
             printer_owner_id: service[0]?.printer_owner_id,
@@ -1046,13 +1046,13 @@ router.patch('/institution_user/:id/approve', auth, async (req, res) => {
         // Deduct parts from inventory after approval
         if (service[0].parts_used) {
             const parts_used = JSON.parse(service[0].parts_used);
-            console.log('📦 Deducting parts from inventory after institution_user approval...');
-            console.log('📦 Parts to deduct:', JSON.stringify(parts_used, null, 2));
-            console.log('👤 Technician ID:', service[0].technician_id);
+            console.log('?? Deducting parts from inventory after institution_user approval...');
+            console.log('?? Parts to deduct:', JSON.stringify(parts_used, null, 2));
+            console.log('?? Technician ID:', service[0].technician_id);
             
             for (const part of parts_used) {
                 try {
-                    console.log(`\n🔍 Processing part_id: ${part.part_id}`);
+                    console.log(`\n?? Processing part_id: ${part.part_id}`);
                     console.log(`   Qty to deduct: ${part.qty}, Unit: ${part.unit}`);
                     
                     // Query by part_id directly
@@ -1077,19 +1077,19 @@ router.patch('/institution_user/:id/approve', auth, async (req, res) => {
                                 'UPDATE technician_inventory SET quantity = ?, last_updated = NOW() WHERE id = ?',
                                 [newQty, inventoryItem[0].id]
                             );
-                            console.log(`   ✅ Deducted ${deductQty} of "${inventoryItem[0].name}", new qty: ${newQty}`);
+                            console.log(`   ? Deducted ${deductQty} of "${inventoryItem[0].name}", new qty: ${newQty}`);
                         } else {
-                            console.log(`   ⚠️ Insufficient stock: have ${currentQty}, need ${deductQty}`);
+                            console.log(`   ?? Insufficient stock: have ${currentQty}, need ${deductQty}`);
                         }
                     } else {
-                        console.log(`   ❌ Part ID ${part.part_id} not found in technician's inventory`);
+                        console.log(`   ? Part ID ${part.part_id} not found in technician's inventory`);
                     }
                 } catch (partError) {
-                    console.error(`❌ Error deducting part:`, partError);
+                    console.error(`? Error deducting part:`, partError);
                 }
             }
         } else {
-            console.log('📦 No parts to deduct (parts_used is null/empty)');
+            console.log('?? No parts to deduct (parts_used is null/empty)');
         }
         
         // Notify technician
@@ -1123,7 +1123,7 @@ router.patch('/institution_user/:id/reject', auth, async (req, res) => {
             return res.status(400).json({ error: 'Rejection reason is required' });
         }
         
-        console.log('âŒ institution_user', requester_id, 'rejecting service', serviceId);
+        console.log('❌ institution_user', requester_id, 'rejecting service', serviceId);
         
         // Verify institution_user owns the printer
         const [service] = await db.query(
@@ -1183,7 +1183,7 @@ router.get('/institution_admin/monthly-billing', auth, async (req, res) => {
         const year = req.query.year ? parseInt(req.query.year) : currentDate.getFullYear();
         const month = req.query.month ? parseInt(req.query.month) : currentDate.getMonth() + 1;
         
-        console.log(`📅 Fetching monthly billing for institution_admin ${institution_adminId}: ${year}-${month}`);
+        console.log(`?? Fetching monthly billing for institution_admin ${institution_adminId}: ${year}-${month}`);
         
         // Get institution_admin's institutions
         const [institutions] = await db.query(
@@ -1222,7 +1222,7 @@ router.get('/institution_admin/monthly-billing', auth, async (req, res) => {
                 'maintenance_service' as service_type
             FROM maintenance_services ms
             INNER JOIN printers p ON ms.printer_id = p.id
-            INNER JOIN institutions i ON ms.institution_id COLLATE utf8mb4_unicode_ci = i.institution_id
+            INNER JOIN institutions i ON ms.institution_id COLLATE utf8mb4_0900_ai_ci = i.institution_id
             INNER JOIN users u_tech ON ms.technician_id = u_tech.id
             WHERE ms.institution_id IN (?)
                 AND ms.status = 'completed'
@@ -1357,12 +1357,13 @@ router.get('/institution_admin/monthly-billing', auth, async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Error fetching monthly billing:', error);
+        console.error('? Error fetching monthly billing:', error);
         res.status(500).json({ error: 'Failed to fetch monthly billing data' });
     }
 });
 
 module.exports = router;
+
 
 
 
