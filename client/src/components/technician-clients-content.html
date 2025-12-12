@@ -1,64 +1,159 @@
 <!-- Clients Tab Content Component - Voluntary Services -->
-<!-- Version: 2025-11-26 - Updated parts selection with type filter -->
+<!-- Version: 2025-12-12 - Enhanced UI with Search & Filters -->
 <div class="container mx-auto px-4 py-6 pb-24">
-    <div class="max-w-4xl mx-auto">
-        <!-- Header -->
-        <div class="mb-4">
-            <h1 class="text-xl md:text-2xl font-bold text-slate-800 mb-1">📚 Public Schools</h1>
-            <p class="text-sm text-slate-600">View assigned schools and perform voluntary printer services</p>
+    <div class="max-w-5xl mx-auto">
+        <!-- Enhanced Header with Gradient -->
+        <div class="mb-6 bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 rounded-2xl shadow-xl p-6 text-white">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-4">
+                    <div class="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl md:text-3xl font-bold mb-1">Public Schools</h1>
+                        <p class="text-blue-100 text-sm">Manage voluntary printer maintenance services</p>
+                    </div>
+                </div>
+                <div class="hidden md:block text-right">
+                    <div class="text-3xl font-bold" id="total-schools-count">0</div>
+                    <div class="text-xs text-blue-100">Schools</div>
+                </div>
+            </div>
+            
+            <!-- Search Bar -->
+            <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <svg class="w-5 h-5 text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                </div>
+                <input type="text" id="school-search" placeholder="Search schools by name or ID..." 
+                    class="w-full pl-12 pr-4 py-3.5 bg-white/10 backdrop-blur-sm border-2 border-white/20 rounded-xl text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/40 transition-all"
+                    oninput="filterSchools()">
+                <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                    <span id="search-results-count" class="text-xs bg-white/20 px-2.5 py-1 rounded-lg text-blue-100 font-medium hidden"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter Buttons -->
+        <div class="mb-4 flex flex-wrap gap-2">
+            <button onclick="filterByStatus('all')" class="filter-btn active px-4 py-2 rounded-lg font-medium text-sm transition-all bg-blue-600 text-white hover:bg-blue-700" data-filter="all">
+                All Schools
+            </button>
+            <button onclick="filterByStatus('serviced')" class="filter-btn px-4 py-2 rounded-lg font-medium text-sm transition-all bg-slate-100 text-slate-700 hover:bg-slate-200" data-filter="serviced">
+                <span class="inline-block w-2 h-2 rounded-full bg-green-500 mr-1.5"></span>
+                Has Services
+            </button>
+            <button onclick="filterByStatus('not-serviced')" class="filter-btn px-4 py-2 rounded-lg font-medium text-sm transition-all bg-slate-100 text-slate-700 hover:bg-slate-200" data-filter="not-serviced">
+                <span class="inline-block w-2 h-2 rounded-full bg-orange-500 mr-1.5"></span>
+                Not Serviced
+            </button>
         </div>
 
         <!-- Loading State -->
-        <div id="schools-loading" class="text-center py-8">
-            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <p class="text-slate-600 mt-2">Loading schools...</p>
+        <div id="schools-loading" class="text-center py-12">
+            <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-blue-200 border-t-blue-600"></div>
+            <p class="text-slate-600 mt-3 font-medium">Loading schools...</p>
         </div>
 
         <!-- Schools List -->
-        <div id="schools-list" class="space-y-3 hidden">
+        <div id="schools-list" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden">
             <!-- Schools will be dynamically inserted here -->
+        </div>
+        
+        <!-- No Results State -->
+        <div id="schools-no-results" class="hidden bg-white rounded-xl shadow-md border border-slate-200 p-8 text-center">
+            <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+            </div>
+            <h3 class="text-lg font-bold text-slate-800 mb-2">No Schools Found</h3>
+            <p class="text-slate-600">Try adjusting your search or filters</p>
         </div>
 
         <!-- Empty State -->
-        <div id="schools-empty" class="hidden bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-6 text-center">
-            <div class="w-12 h-12 bg-gradient-to-br from-slate-100 to-slate-200 rounded-full flex items-center justify-center mx-auto mb-3">
-                <span class="text-2xl">🏫</span>
+        <div id="schools-empty" class="hidden bg-white rounded-xl shadow-md border border-slate-200 p-8 text-center">
+            <div class="w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span class="text-3xl">🏫</span>
             </div>
-            <h3 class="text-base font-semibold text-slate-800 mb-1">No Public Schools Assigned</h3>
-            <p class="text-sm text-slate-600">You don't have any public schools assigned yet.</p>
+            <h3 class="text-lg font-bold text-slate-800 mb-2">No Public Schools Assigned</h3>
+            <p class="text-slate-600">You don't have any public schools assigned yet.</p>
         </div>
     </div>
 </div>
 
-<!-- Printers Modal - Fullscreen -->
+<!-- Printers Modal - Fullscreen with Search -->
 <div id="printersModal" class="hidden fixed inset-0 bg-black/50 z-50 overflow-y-auto">
     <div class="min-h-screen flex items-start justify-center p-0">
         <div class="bg-white w-full h-screen flex flex-col">
             <!-- Header -->
-            <div class="p-4 border-b border-slate-200 flex-shrink-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
-                <div class="flex justify-between items-center">
-                    <div class="flex items-center gap-3">
-                        <button onclick="closePrintersModal()" class="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-all">
+            <div class="p-4 border-b border-slate-200 flex-shrink-0 bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 text-white">
+                <div class="flex justify-between items-center mb-4">
+                    <div class="flex items-center gap-3 flex-1 min-w-0">
+                        <button onclick="closePrintersModal()" class="p-2.5 bg-white/20 hover:bg-white/30 rounded-xl transition-all flex-shrink-0">
                             <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path>
                             </svg>
                         </button>
-                        <div>
-                            <h2 class="text-lg font-bold" id="modal-school-name">School Printers</h2>
-                            <p class="text-blue-100 text-xs" id="modal-school-id">INST-000</p>
+                        <div class="flex-1 min-w-0">
+                            <h2 class="text-xl font-bold truncate" id="modal-school-name">School Printers</h2>
+                            <p class="text-blue-100 text-xs font-mono" id="modal-school-id">INST-000</p>
                         </div>
                     </div>
-                    <div class="text-right">
-                        <div class="text-xl font-bold" id="modal-printer-count">0</div>
+                    <div class="text-right flex-shrink-0 ml-3">
+                        <div class="text-2xl font-bold" id="modal-printer-count">0</div>
                         <div class="text-xs text-blue-100">Printers</div>
+                    </div>
+                </div>
+                
+                <!-- Search Bar in Modal -->
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="w-5 h-5 text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </div>
+                    <input type="text" id="printer-search" placeholder="Search printers by brand, model, or serial..." 
+                        class="w-full pl-10 pr-4 py-2.5 bg-white/10 backdrop-blur-sm border-2 border-white/20 rounded-xl text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/40 transition-all text-sm"
+                        oninput="filterPrinters()">
+                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                        <span id="printer-search-count" class="text-xs bg-white/20 px-2 py-1 rounded-lg text-blue-100 font-medium hidden"></span>
                     </div>
                 </div>
             </div>
             
+            <!-- Filter Buttons in Modal -->
+            <div class="px-4 py-3 bg-slate-50 border-b border-slate-200 flex gap-2 overflow-x-auto flex-shrink-0">
+                <button onclick="filterPrintersByStatus('all')" class="printer-filter-btn active whitespace-nowrap px-3 py-1.5 rounded-lg font-medium text-xs transition-all bg-blue-600 text-white" data-filter="all">
+                    All Printers
+                </button>
+                <button onclick="filterPrintersByStatus('serviced')" class="printer-filter-btn whitespace-nowrap px-3 py-1.5 rounded-lg font-medium text-xs transition-all bg-slate-100 text-slate-700" data-filter="serviced">
+                    ✓ Serviced
+                </button>
+                <button onclick="filterPrintersByStatus('not-serviced')" class="printer-filter-btn whitespace-nowrap px-3 py-1.5 rounded-lg font-medium text-xs transition-all bg-slate-100 text-slate-700" data-filter="not-serviced">
+                    ⏳ Not Serviced
+                </button>
+            </div>
+            
             <!-- Content - Scrollable -->
             <div class="flex-1 overflow-y-auto p-4 bg-slate-50">
-                <div id="modal-printers-list" class="space-y-3 max-w-4xl mx-auto">
+                <div id="modal-printers-list" class="space-y-3 max-w-5xl mx-auto">
                     <!-- Printers will be loaded here -->
+                </div>
+                
+                <!-- No Results in Modal -->
+                <div id="modal-no-printers" class="hidden max-w-md mx-auto bg-white rounded-xl shadow-md border border-slate-200 p-8 text-center">
+                    <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-800 mb-2">No Printers Found</h3>
+                    <p class="text-slate-600 text-sm">Try adjusting your search or filters</p>
                 </div>
             </div>
         </div>
@@ -487,52 +582,165 @@
     }
 }
 
-// Render schools list
-window.renderSchools = function() {
+// Store filtered schools and current filter
+let filteredSchools = [];
+let currentFilter = 'all';
+
+// Render schools list with enhanced UI
+window.renderSchools = function(schoolsToRender = null) {
+    const schools = schoolsToRender || schoolsData;
     const container = document.getElementById('schools-list');
-    container.innerHTML = schoolsData.map(school => `
-        <div class="bg-white shadow-md border-l-4 border-l-blue-600 border border-slate-200 overflow-hidden hover:shadow-lg transition-all">
-            <div class="bg-blue-600 p-4">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-12 h-12 bg-white/10 flex items-center justify-center">
+    const noResultsElement = document.getElementById('schools-no-results');
+    const totalCountElement = document.getElementById('total-schools-count');
+    
+    // Update total count
+    if (totalCountElement) {
+        totalCountElement.textContent = schoolsData.length;
+    }
+    
+    // Handle empty results
+    if (schools.length === 0) {
+        container.classList.add('hidden');
+        noResultsElement.classList.remove('hidden');
+        return;
+    }
+    
+    container.classList.remove('hidden');
+    noResultsElement.classList.add('hidden');
+    
+    container.innerHTML = schools.map(school => {
+        const servicedCount = school.serviced_count || 0;
+        const totalPrinters = school.total_printers || 0;
+        const remainingCount = school.remaining_count || 0;
+        const pendingCount = school.pending_count || 0;
+        
+        // Determine status color
+        let statusColor = 'slate';
+        let statusText = 'Not Started';
+        if (servicedCount > 0 && servicedCount === totalPrinters) {
+            statusColor = 'green';
+            statusText = 'Complete';
+        } else if (servicedCount > 0) {
+            statusColor = 'blue';
+            statusText = 'In Progress';
+        }
+        
+        return `
+        <div class="school-card bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-slate-200 hover:border-blue-300"
+            data-school-id="${school.institution_id}"
+            data-school-name="${school.institution_name.toLowerCase()}"
+            data-serviced="${servicedCount > 0 ? 'yes' : 'no'}">
+            
+            <!-- Header with gradient -->
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-600 p-4">
+                <div class="flex items-start justify-between mb-3">
+                    <div class="flex items-center gap-3 flex-1 min-w-0">
+                        <div class="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center flex-shrink-0">
                             <span class="text-2xl">🏫</span>
                         </div>
-                        <div>
-                            <h3 class="font-bold text-lg text-white">${school.institution_name}</h3>
+                        <div class="flex-1 min-w-0">
+                            <h3 class="font-bold text-base text-white truncate">${school.institution_name}</h3>
                             <p class="text-blue-100 text-xs font-mono">${school.institution_id}</p>
                         </div>
                     </div>
-                    <div class="text-right bg-white/10 px-3 py-2">
-                        <div class="text-2xl font-bold text-white">${school.total_printers}</div>
-                        <div class="text-[10px] text-blue-100 uppercase tracking-wider">Printers</div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="p-4 bg-slate-50">
-                <div class="grid grid-cols-3 gap-3 mb-4">
-                    <div class="text-center border-l-4 border-l-green-500 bg-white p-3 shadow-sm">
-                        <div class="text-xl font-bold text-green-600">${school.serviced_count || 0}</div>
-                        <div class="text-[10px] text-slate-600 uppercase tracking-wide mt-1">Serviced</div>
-                    </div>
-                    <div class="text-center border-l-4 border-l-orange-500 bg-white p-3 shadow-sm">
-                        <div class="text-xl font-bold text-orange-600">${school.pending_count || 0}</div>
-                        <div class="text-[10px] text-slate-600 uppercase tracking-wide mt-1">Pending</div>
-                    </div>
-                    <div class="text-center border-l-4 border-l-slate-400 bg-white p-3 shadow-sm">
-                        <div class="text-xl font-bold text-slate-700">${school.remaining_count || 0}</div>
-                        <div class="text-[10px] text-slate-600 uppercase tracking-wide mt-1">Remaining</div>
+                    <div class="flex-shrink-0 ml-2">
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-white/20 text-white backdrop-blur-sm">
+                            ${totalPrinters} <svg class="w-3.5 h-3.5 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                        </span>
                     </div>
                 </div>
                 
-                <button onclick="loadSchoolPrinters('${school.institution_id}', '${school.institution_name.replace(/'/g, "\\'")}', ${school.total_printers})"
-                    class="w-full py-3 bg-blue-600 text-white hover:bg-blue-700 font-semibold text-sm transition-all shadow-sm uppercase tracking-wide">
-                    View Printers →
+                <!-- Status Badge -->
+                <div class="flex items-center gap-2">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-${statusColor}-100 text-${statusColor}-700">
+                        <span class="w-1.5 h-1.5 rounded-full bg-${statusColor}-500 mr-1.5"></span>
+                        ${statusText}
+                    </span>
+                    ${servicedCount > 0 ? `
+                    <span class="text-white/80 text-xs">
+                        ${Math.round((servicedCount / totalPrinters) * 100)}% Complete
+                    </span>
+                    ` : ''}
+                </div>
+            </div>
+            
+            <!-- Stats Grid -->
+            <div class="p-4 bg-slate-50">
+                <div class="grid grid-cols-3 gap-2 mb-3">
+                    <div class="text-center bg-white border-2 border-green-200 rounded-lg p-2.5 hover:shadow-sm transition-shadow">
+                        <div class="text-xl font-bold text-green-600">${servicedCount}</div>
+                        <div class="text-[10px] text-slate-600 uppercase tracking-wide font-semibold mt-0.5">Serviced</div>
+                    </div>
+                    <div class="text-center bg-white border-2 border-orange-200 rounded-lg p-2.5 hover:shadow-sm transition-shadow">
+                        <div class="text-xl font-bold text-orange-600">${pendingCount}</div>
+                        <div class="text-[10px] text-slate-600 uppercase tracking-wide font-semibold mt-0.5">Pending</div>
+                    </div>
+                    <div class="text-center bg-white border-2 border-slate-200 rounded-lg p-2.5 hover:shadow-sm transition-shadow">
+                        <div class="text-xl font-bold text-slate-700">${remainingCount}</div>
+                        <div class="text-[10px] text-slate-600 uppercase tracking-wide font-semibold mt-0.5">Remaining</div>
+                    </div>
+                </div>
+                
+                <!-- Action Button -->
+                <button onclick="loadSchoolPrinters('${school.institution_id}', '${school.institution_name.replace(/'/g, "\\'")}', ${totalPrinters})"
+                    class="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-sm transition-all shadow-sm rounded-lg uppercase tracking-wide flex items-center justify-center gap-2">
+                    View Printers
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path>
+                    </svg>
                 </button>
             </div>
         </div>
-    `).join('');
+    `}).join('');
+}
+
+// Filter schools by search query
+window.filterSchools = function() {
+    const searchInput = document.getElementById('school-search');
+    const searchTerm = searchInput.value.toLowerCase().trim();
+    const searchResultsCount = document.getElementById('search-results-count');
+    
+    // Apply both search and status filter
+    filteredSchools = schoolsData.filter(school => {
+        const matchesSearch = !searchTerm || 
+            school.institution_name.toLowerCase().includes(searchTerm) ||
+            school.institution_id.toLowerCase().includes(searchTerm);
+        
+        const matchesFilter = currentFilter === 'all' ||
+            (currentFilter === 'serviced' && (school.serviced_count || 0) > 0) ||
+            (currentFilter === 'not-serviced' && (school.serviced_count || 0) === 0);
+        
+        return matchesSearch && matchesFilter;
+    });
+    
+    // Update search results count
+    if (searchTerm) {
+        searchResultsCount.textContent = `${filteredSchools.length} found`;
+        searchResultsCount.classList.remove('hidden');
+    } else {
+        searchResultsCount.classList.add('hidden');
+    }
+    
+    renderSchools(filteredSchools);
+}
+
+// Filter schools by status
+window.filterByStatus = function(status) {
+    currentFilter = status;
+    
+    // Update button styles
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        if (btn.dataset.filter === status) {
+            btn.classList.remove('bg-slate-100', 'text-slate-700', 'hover:bg-slate-200');
+            btn.classList.add('bg-blue-600', 'text-white', 'hover:bg-blue-700', 'active');
+        } else {
+            btn.classList.remove('bg-blue-600', 'text-white', 'hover:bg-blue-700', 'active');
+            btn.classList.add('bg-slate-100', 'text-slate-700', 'hover:bg-slate-200');
+        }
+    });
+    
+    // Apply filter
+    filterSchools();
 }
 
 // Load printers for a specific school in modal
@@ -593,7 +801,82 @@ window.loadSchoolPrinters = async function(institutionId, schoolName, printerCou
 
 // Close printers modal
 window.closePrintersModal = function() {
-    document.getElementById('printersModal').classList.add('hidden');
+    const modal = document.getElementById('printersModal');
+    modal.classList.add('hidden');
+    // Reset search and filters
+    document.getElementById('printer-search').value = '';
+    document.getElementById('printer-search-count').classList.add('hidden');
+}
+
+// Store current printer filter
+let currentPrinterFilter = 'all';
+
+// Filter printers by search
+window.filterPrinters = function() {
+    const searchInput = document.getElementById('printer-search');
+    const searchTerm = searchInput.value.toLowerCase().trim();
+    const searchCountElement = document.getElementById('printer-search-count');
+    const modalList = document.getElementById('modal-printers-list');
+    const noResultsElement = document.getElementById('modal-no-printers');
+    
+    // Get current school's printers
+    const currentInstitutionId = document.getElementById('modal-school-id').textContent;
+    const allPrinters = currentSchoolPrinters[currentInstitutionId] || [];
+    
+    // Apply both search and filter
+    const filteredPrinters = allPrinters.filter(printer => {
+        const matchesSearch = !searchTerm || 
+            (printer.brand || '').toLowerCase().includes(searchTerm) ||
+            (printer.model || '').toLowerCase().includes(searchTerm) ||
+            (printer.serial_number || '').toLowerCase().includes(searchTerm) ||
+            (printer.location || '').toLowerCase().includes(searchTerm);
+        
+        const hasService = printer.last_service_status !== null;
+        const matchesFilter = currentPrinterFilter === 'all' ||
+            (currentPrinterFilter === 'serviced' && hasService) ||
+            (currentPrinterFilter === 'not-serviced' && !hasService);
+        
+        return matchesSearch && matchesFilter;
+    });
+    
+    // Update search count
+    if (searchTerm) {
+        searchCountElement.textContent = `${filteredPrinters.length} found`;
+        searchCountElement.classList.remove('hidden');
+    } else {
+        searchCountElement.classList.add('hidden');
+    }
+    
+    // Render filtered printers
+    if (filteredPrinters.length === 0) {
+        modalList.classList.add('hidden');
+        noResultsElement.classList.remove('hidden');
+    } else {
+        modalList.classList.remove('hidden');
+        noResultsElement.classList.add('hidden');
+        modalList.innerHTML = filteredPrinters.map(printer => 
+            window.renderPrinterCard(printer, currentInstitutionId)
+        ).join('');
+    }
+}
+
+// Filter printers by status
+window.filterPrintersByStatus = function(status) {
+    currentPrinterFilter = status;
+    
+    // Update button styles
+    document.querySelectorAll('.printer-filter-btn').forEach(btn => {
+        if (btn.dataset.filter === status) {
+            btn.classList.remove('bg-slate-100', 'text-slate-700');
+            btn.classList.add('bg-blue-600', 'text-white', 'active');
+        } else {
+            btn.classList.remove('bg-blue-600', 'text-white', 'active');
+            btn.classList.add('bg-slate-100', 'text-slate-700');
+        }
+    });
+    
+    // Apply filter
+    filterPrinters();
 }
 
 // Render printer card
