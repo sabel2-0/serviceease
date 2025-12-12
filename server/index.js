@@ -5953,7 +5953,7 @@ app.get('/api/admin/institution-service-calendar', authenticateAdmin, async (req
                 u.last_name as tech_last_name
             FROM maintenance_services ms
             JOIN printers p ON ms.printer_id = p.id
-            JOIN institutions i ON ms.institution_id COLLATE utf8mb4_unicode_ci = i.institution_id COLLATE utf8mb4_unicode_ci
+            JOIN institutions i ON ms.institution_id COLLATE utf8mb4_0900_ai_ci = i.institution_id COLLATE utf8mb4_0900_ai_ci
             LEFT JOIN users u ON ms.technician_id = u.id
             WHERE YEAR(ms.created_at) = ?
                 AND MONTH(ms.created_at) = ?
