@@ -424,7 +424,6 @@ async function submitNewUser() {
         const lastName = document.getElementById('lastName').value;
         const email = document.getElementById('userEmail').value;
         const role = document.getElementById('userRole').value;
-        const department = document.getElementById('department').value;
         
         // Validate form data
         if (!firstName || !lastName || !email) {
@@ -450,8 +449,7 @@ async function submitNewUser() {
                 firstName,
                 lastName,
                 email,
-                role,
-                department
+                role
             })
         });
         

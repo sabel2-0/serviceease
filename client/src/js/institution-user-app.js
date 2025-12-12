@@ -638,8 +638,9 @@ async function initRequestForm() {
         printers.forEach(p => {
           const opt = document.createElement('option');
           opt.value = p.printer_id || p.id || '';
-          // Store location in dataset for smart auto-fill
+          // Store location and department in dataset for smart auto-fill
           opt.dataset.location = p.location || '';
+          opt.dataset.department = p.department || '';
           const nameParts = [];
           if (p.name) nameParts.push(p.name);
           if (p.brand) nameParts.push(p.brand);
@@ -649,10 +650,13 @@ async function initRequestForm() {
           select.appendChild(opt);
         });
 
-        // Add event listener for smart location detection
+        // Add event listener for smart location and department detection
         select.addEventListener('change', function() {
           const selectedOption = this.options[this.selectedIndex];
           const printerLocation = selectedOption?.dataset.location || '';
+          const printerDepartment = selectedOption?.dataset.department || '';
+          
+          // Handle location
           const locationInput = document.getElementById('rq-location');
           const locationRequired = document.getElementById('locationRequired');
           const locationHint = document.getElementById('locationHint');
@@ -669,6 +673,25 @@ async function initRequestForm() {
             locationRequired.classList.remove('hidden');
             locationHint.innerHTML = '⚠️ Please provide printer location (Building, Floor, Room)';
             locationHint.className = 'text-xs text-orange-600 mt-1';
+          }
+
+          // Handle department
+          const departmentInput = document.getElementById('rq-department');
+          const departmentRequired = document.getElementById('departmentRequired');
+          const departmentHint = document.getElementById('departmentHint');
+
+          if (printerDepartment) {
+            // Department exists - auto-fill and make optional
+            departmentInput.value = printerDepartment;
+            departmentRequired.classList.add('hidden');
+            departmentHint.innerHTML = '✓ Department saved. Edit if changed.';
+            departmentHint.className = 'text-xs text-green-600 mt-1';
+          } else {
+            // No department - require user to provide
+            departmentInput.value = '';
+            departmentRequired.classList.remove('hidden');
+            departmentHint.innerHTML = '⚠️ Please provide the department/office';
+            departmentHint.className = 'text-xs text-orange-600 mt-1';
           }
         });
       } catch (e) {
@@ -694,12 +717,15 @@ async function initRequestForm() {
 async function submitRequestForm() {
   const printer = document.getElementById('rq-printer');
   const location = document.getElementById('rq-location');
+  const department = document.getElementById('rq-department');
   const priority = document.getElementById('rq-priority');
   const description = document.getElementById('rq-description');
   const printerErr = document.getElementById('rq-printer-error');
   const descErr = document.getElementById('rq-description-error');
   const locationErr = document.getElementById('rq-location-error');
+  const departmentErr = document.getElementById('rq-department-error');
   const locationRequired = document.getElementById('locationRequired');
+  const departmentRequired = document.getElementById('departmentRequired');
 
   // simple validation
   let ok = true;
@@ -717,6 +743,18 @@ async function submitRequestForm() {
   } else {
     locationErr?.classList.add('hidden');
   }
+
+  // Check if department is required and empty
+  if (!departmentRequired.classList.contains('hidden')) {
+    if (!department || !department.value.trim()) { 
+      departmentErr?.classList.remove('hidden'); 
+      ok = false; 
+    } else { 
+      departmentErr?.classList.add('hidden'); 
+    }
+  } else {
+    departmentErr?.classList.add('hidden');
+  }
   
   if (!ok) return;
 
@@ -727,7 +765,8 @@ async function submitRequestForm() {
       printerId: printer?.value,
       priority: priority?.value || 'medium',
       description: description?.value?.trim() || '',
-      location: location?.value?.trim() || null // Include location in payload
+      location: location?.value?.trim() || null, // Include location in payload
+      department: department?.value?.trim() || null // Include department in payload
     };
 
     console.log('Submitting service request:', payload);

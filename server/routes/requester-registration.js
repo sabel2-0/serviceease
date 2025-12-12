@@ -196,7 +196,6 @@ router.post('/submit', (req, res) => {
                     last_name,
                     email,
                     password,
-                    department,
                     institution_id,
                     institution_type,
                     printer_serial_numbers,
@@ -335,9 +334,9 @@ router.post('/submit', (req, res) => {
                 // Assign printers to user
                 for (const printer_id of validated) {
                     await db.query(
-                        `INSERT INTO user_printer_assignments (user_id, printer_id, institution_id, department, assigned_at)
-                         VALUES (?, ?, ?, ?, NOW())`,
-                        [newUserId, printer_id, institution_id, department]
+                        `INSERT INTO user_printer_assignments (user_id, printer_id, institution_id, assigned_at)
+                         VALUES (?, ?, ?, NOW())`,
+                        [newUserId, printer_id, institution_id]
                     );
                 }
         
@@ -417,7 +416,7 @@ router.get('/pending', auth, async (req, res) => {
                         'brand', ii.brand,
                         'model', ii.model,
                         'name', ii.name,
-                        'department', cpa.department
+                        'department', ii.department
                     ))
                     FROM user_printer_assignments cpa
                     INNER JOIN printers ii ON cpa.printer_id = ii.id
@@ -543,14 +542,13 @@ router.post('/:id/reject', auth, async (req, res) => {
             reviewed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`);
-        // Get department from user_printer_assignments
-        const [upa] = await db.query('SELECT department, institution_id FROM user_printer_assignments WHERE user_id = ? LIMIT 1', [user.id]);
-        const department = upa[0]?.department || null;
+        // Get institution_id from user_printer_assignments
+        const [upa] = await db.query('SELECT institution_id FROM user_printer_assignments WHERE user_id = ? LIMIT 1', [user.id]);
         const institution_id = upa[0]?.institution_id || null;
         await db.query(
-            `INSERT INTO institution_user_registration_history (user_id, email, first_name, last_name, department, institution_id, status, rejection_reason, reviewed_by, reviewed_at, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, 'rejected', ?, ?, NOW(), ?)`,
-            [user.id, user.email, user.first_name, user.last_name, department, institution_id, notes || '', institution_adminId, user.created_at]
+            `INSERT INTO institution_user_registration_history (user_id, email, first_name, last_name, institution_id, status, rejection_reason, reviewed_by, reviewed_at, created_at)
+             VALUES (?, ?, ?, ?, 'rejected', ?, ?, NOW(), ?)`,
+            [user.id, user.email, user.first_name, user.last_name, institution_id, notes || '', institution_adminId, user.created_at]
         );
         // Delete photos from Cloudinary
         if (photos && photos[0]) {
@@ -643,12 +641,12 @@ router.get('/history', auth, async (req, res) => {
 router.put('/institution_admins/:institution_adminId/users/:userId', auth, async (req, res) => {
     try {
         const { userId } = req.params;
-        const { firstName, lastName, email, department, printer_ids } = req.body;
+        const { firstName, lastName, email, printer_ids } = req.body;
 
         // Update user details
         await db.query(
-            `UPDATE users SET first_name = ?, last_name = ?, email = ?, department = ? WHERE id = ?`,
-            [firstName, lastName, email, department, userId]
+            `UPDATE users SET first_name = ?, last_name = ?, email = ? WHERE id = ?`,
+            [firstName, lastName, email, userId]
         );
 
         // Update printer assignments only if printer_ids is provided

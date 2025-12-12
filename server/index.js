@@ -1467,8 +1467,8 @@ app.post('/api/institution_admins/:id/users', authenticateinstitution_admin, asy
             return res.status(403).json({ error: 'Access denied' });
         }
 
-    const { firstName, lastName, email, printer_ids, department } = req.body;
-    const departmentToSave = department || null;
+    const { firstName, lastName, email, printer_ids } = req.body;
+    // Note: Department is now stored in printers table, not passed during user creation
 
         if (!firstName || !lastName || !email) {
             return res.status(400).json({ error: 'firstName, lastName, and email are required' });
@@ -1619,8 +1619,8 @@ app.post('/api/institution_admins/:id/users', authenticateinstitution_admin, asy
 
             if (currentStatus === 'available') {
                 // Straightforward: item is available, insert assignment and mark assigned
-                const assignSql = `INSERT INTO user_printer_assignments (user_id, printer_id, institution_id, department) VALUES (?, ?, ?, ?)`;
-                const assignParams = [newUserId, printer_id, institution_adminInstitutionId, departmentToSave];
+                const assignSql = `INSERT INTO user_printer_assignments (user_id, printer_id, institution_id) VALUES (?, ?, ?)`;
+                const assignParams = [newUserId, printer_id, institution_adminInstitutionId];
                 console.log('Inserting user_printer_assignments with params (transaction):', assignParams);
                     const [insertAssign] = await connection.query(assignSql, assignParams);
                     console.log('Assignment insert result:', insertAssign);
@@ -1686,14 +1686,14 @@ app.post('/api/institution_admins/:id/users', authenticateinstitution_admin, asy
                 }
 
                 // Insert user-printer assignment without changing printers.status (already 'assigned')
-                const assignSql = `INSERT INTO user_printer_assignments (user_id, printer_id, institution_id, department) VALUES (?, ?, ?, ?)`;
-                const assignParams = [newUserId, printer_id, institution_adminInstitutionId, departmentToSave];
+                const assignSql = `INSERT INTO user_printer_assignments (user_id, printer_id, institution_id) VALUES (?, ?, ?)`;
+                const assignParams = [newUserId, printer_id, institution_adminInstitutionId];
                 console.log('Inserting user_printer_assignments with params (existing assigned item, transaction):', assignParams);
                 const [insertAssign] = await connection.query(assignSql, assignParams);
                 console.log('Assignment insert result (existing assigned item):', insertAssign);
                 const assignmentId = insertAssign.insertId;
                 try {
-                    const [assignmentRows] = await db.query('SELECT id, user_id, printer_id, institution_id, department, assigned_at FROM user_printer_assignments WHERE id = ?', [assignmentId]);
+                    const [assignmentRows] = await db.query('SELECT id, user_id, printer_id, institution_id, assigned_at FROM user_printer_assignments WHERE id = ?', [assignmentId]);
                     console.log('Inserted assignment row (existing assigned item):', assignmentRows[0]);
                     var createdAssignmentRow = assignmentRows[0];
                 } catch (e) {
@@ -1787,7 +1787,7 @@ app.get('/api/institution_admins/:id/users', authenticateinstitution_admin, asyn
                 END AS status,
                 upa.printer_id,
                 COALESCE(ii.name, CONCAT_WS(' ', ii.brand, ii.model, ii.serial_number)) AS printer_name,
-                upa.department,
+                ii.department,
                 upa.assigned_at
             FROM user_printer_assignments upa
             JOIN users u ON upa.user_id = u.id
@@ -1955,7 +1955,7 @@ app.put('/api/institution_admins/:id/users/:userId', authenticateinstitution_adm
         // Handle printer assignment changes
         // Get all current assignments for this user
         const [currentAssignments] = await db.query(
-            'SELECT id, printer_id, department FROM user_printer_assignments WHERE user_id = ? AND institution_id = ?',
+            'SELECT id, printer_id FROM user_printer_assignments WHERE user_id = ? AND institution_id = ?',
             [userId, institution_adminInstitutionId]
         );
         
@@ -1998,8 +1998,8 @@ app.put('/api/institution_admins/:id/users/:userId', authenticateinstitution_adm
 
             // Insert new assignment
             await db.query(
-                'INSERT INTO user_printer_assignments (user_id, printer_id, institution_id, department) VALUES (?, ?, ?, ?)',
-                [userId, printer_id, institution_adminInstitutionId, department || null]
+                'INSERT INTO user_printer_assignments (user_id, printer_id, institution_id) VALUES (?, ?, ?)',
+                [userId, printer_id, institution_adminInstitutionId]
             );
             
             // Mark inventory as assigned
@@ -2037,13 +2037,7 @@ app.put('/api/institution_admins/:id/users/:userId', authenticateinstitution_adm
             }
         } // End of add new assignments loop
         
-        // Update department for all kept assignments if department changed
-        if (department !== undefined && toKeep.length > 0) {
-            await db.query(
-                'UPDATE user_printer_assignments SET department = ? WHERE user_id = ? AND institution_id = ?',
-                [department || null, userId, institution_adminInstitutionId]
-            );
-        }
+        // Note: Department is now stored in printers table, not user_printer_assignments
 
         // Return updated user row with all assignments
         const [updatedRows] = await db.query('SELECT id as user_id, first_name, last_name, email, role, status FROM users WHERE id = ?', [userId]);
@@ -2051,8 +2045,9 @@ app.put('/api/institution_admins/:id/users/:userId', authenticateinstitution_adm
         
         // Fetch all assignments
         const [newAssignRows] = await db.query(
-            `SELECT upa.id, upa.printer_id, upa.department, upa.assigned_at,
-                    COALESCE(ii.name, CONCAT_WS(' ', ii.brand, ii.model)) as printer_name
+            `SELECT upa.id, upa.printer_id, upa.assigned_at,
+                    COALESCE(ii.name, CONCAT_WS(' ', ii.brand, ii.model)) as printer_name,
+                    ii.department
              FROM user_printer_assignments upa
              LEFT JOIN printers ii ON upa.printer_id = ii.id
              WHERE upa.user_id = ? AND upa.institution_id = ?`,
@@ -3179,8 +3174,8 @@ app.get('/api/users/me/printers', auth, async (req, res) => {
         if (!userId) return res.status(401).json({ error: 'Not authenticated' });
 
         const [rows] = await db.query(`
-            SELECT upa.id as assignment_id, upa.printer_id, upa.department, upa.assigned_at,
-                   ii.name, ii.brand, ii.model, ii.serial_number, ii.location
+            SELECT upa.id as assignment_id, upa.printer_id, upa.assigned_at,
+                   ii.name, ii.brand, ii.model, ii.serial_number, ii.location, ii.department
             FROM user_printer_assignments upa
             LEFT JOIN printers ii ON upa.printer_id = ii.id
             WHERE upa.user_id = ?
@@ -3365,12 +3360,12 @@ app.post('/api/service-requests', auth, async (req, res) => {
                 console.log(`[LOCATION UPDATE] Printer ${actualPrinterId} location updated by ${req.user.role} to: ${location.trim()}`);
             }
             
-            // Update department if provided and different (only institution_admin can update department)
-            if (req.user.role === 'institution_admin' && department && department.trim() && department.trim() !== printer.department) {
+            // Update department if provided and different
+            if (department && department.trim() && department.trim() !== printer.department) {
                 updates.push('department = ?');
                 values.push(department.trim());
                 printer.department = department.trim();
-                console.log(`[DEPARTMENT UPDATE] Printer ${actualPrinterId} department updated to: ${department.trim()}`);
+                console.log(`[DEPARTMENT UPDATE] Printer ${actualPrinterId} department updated by ${req.user.role} to: ${department.trim()}`);
             }
             
             // Execute update if there are changes

@@ -32,7 +32,7 @@ router.get('/:id/users', authenticateinstitution_admin, async (req, res) => {
                         'model', ii.model,
                         'name', ii.name,
                         'location', ii.location,
-                        'department', upa2.department
+                        'department', ii.department
                     ))
                     FROM user_printer_assignments upa2
                     INNER JOIN printers ii ON upa2.printer_id = ii.id
