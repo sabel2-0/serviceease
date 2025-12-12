@@ -4453,6 +4453,36 @@ app.get('/api/service-requests/:id', async (req, res) => {
     }
 });
 
+// Check if printer has active service requests (for technicians before maintenance)
+app.get('/api/service-requests/printer/:printerId/active', auth, async (req, res) => {
+    try {
+        const { printerId } = req.params;
+        
+        const [activeRequests] = await db.query(
+            `SELECT sr.id, sr.request_number, sr.status
+             FROM service_requests sr
+             WHERE sr.printer_id = ? 
+             AND sr.status IN ('pending', 'assigned', 'in_progress', 'pending_approval')
+             LIMIT 1`,
+            [printerId]
+        );
+        
+        if (activeRequests.length > 0) {
+            return res.json({
+                hasActiveRequest: true,
+                activeRequest: activeRequests[0]
+            });
+        }
+        
+        res.json({
+            hasActiveRequest: false
+        });
+    } catch (error) {
+        console.error('Error checking for active requests:', error);
+        res.status(500).json({ error: 'Failed to check for active requests' });
+    }
+});
+
 // Update service request status
 app.post('/api/service-requests/:id/status', async (req, res) => {
     try {

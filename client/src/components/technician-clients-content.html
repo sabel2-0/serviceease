@@ -665,6 +665,27 @@ window.renderPrinterCard = function(printer, institutionId) {
 
 // Open service submission modal
 window.openServiceModal = async function(printerId, institutionId, brand, model, serialNumber) {
+    try {
+        // Check for active service requests before opening modal
+        const token = localStorage.getItem('token');
+        const checkResponse = await fetch(`/api/service-requests/printer/${printerId}/active`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (checkResponse.ok) {
+            const data = await checkResponse.json();
+            if (data.hasActiveRequest) {
+                alert(`⚠️ Cannot perform maintenance service.\n\nThis printer has an active service request:\n\nRequest: ${data.activeRequest.request_number}\nStatus: ${data.activeRequest.status.toUpperCase()}\n\nPlease complete the service request first.`);
+                return;
+            }
+        }
+    } catch (error) {
+        console.error('Error checking for active requests:', error);
+        // Continue anyway - backend will handle validation
+    }
+    
     document.getElementById('modal-printer-id').value = printerId;
     document.getElementById('modal-institution-id').value = institutionId;
     
@@ -1426,17 +1447,24 @@ window.submitService = async function() {
 
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.error || 'Failed to submit service');
+            
+            // Special handling for active service request error
+            if (error.activeRequest) {
+                alert(`⚠️ Cannot Submit Maintenance Service\n\nThis printer has an active service request that must be completed first:\n\nRequest: ${error.activeRequest.request_number}\nStatus: ${error.activeRequest.status.toUpperCase()}\n\n${error.error}`);
+            } else {
+                alert(error.error || 'Failed to submit service');
+            }
+            return;
         }
 
-        alert('Service submitted successfully! Awaiting coordinator approval.');
+        alert('✅ Service submitted successfully! Awaiting coordinator approval.');
         closeServiceModal();
         
         // Reload the printers for this school
         loadSchoolPrinters(institutionId);
     } catch (error) {
         console.error('Error submitting service:', error);
-        alert(error.message);
+        alert(error.message || 'Failed to submit service');
     }
 }
 

@@ -263,6 +263,30 @@ router.post('/', auth, async (req, res) => {
             return res.status(400).json({ error: 'Printer not found in this institution' });
         }
         
+        // Check for active service requests on this printer
+        const [activeServiceRequests] = await db.query(
+            `SELECT sr.id, sr.request_number, sr.status
+             FROM service_requests sr
+             WHERE sr.printer_id = ? 
+             AND sr.status IN ('pending', 'assigned', 'in_progress', 'pending_approval')
+             LIMIT 1`,
+            [printer_id]
+        );
+        
+        console.log('Active service request check:', activeServiceRequests.length > 0 ? 'FOUND ACTIVE' : 'NONE');
+        
+        if (activeServiceRequests.length > 0) {
+            const activeRequest = activeServiceRequests[0];
+            console.log('Cannot perform maintenance - active service request exists:', activeRequest.request_number);
+            return res.status(400).json({ 
+                error: 'Cannot perform maintenance service. This printer has an active service request that must be completed first.',
+                activeRequest: {
+                    request_number: activeRequest.request_number,
+                    status: activeRequest.status
+                }
+            });
+        }
+        
         const requester_id = printer[0].requester_id;
         console.log('ðŸ‘¤ institution_user ID:', requester_id);
         
