@@ -5947,6 +5947,7 @@ app.get('/api/admin/institution-service-calendar', authenticateAdmin, async (req
                 ms.printer_id,
                 p.name as printer_name,
                 p.location,
+                p.department,
                 ms.status,
                 u.first_name as tech_first_name,
                 u.last_name as tech_last_name
@@ -5992,6 +5993,7 @@ app.get('/api/admin/institution-service-calendar', authenticateAdmin, async (req
                     printer_id: service.printer_id,
                     printer_name: service.printer_name,
                     location: service.location,
+                    department: service.department,
                     status: service.status,
                     technician: `${service.tech_first_name} ${service.tech_last_name}`
                 });
@@ -6040,7 +6042,8 @@ app.get('/api/admin/institution-service-details', authenticateAdmin, async (req,
             SELECT 
                 p.id as printer_id,
                 p.name as printer_name,
-                p.location
+                p.location,
+                p.department
             FROM printers p
             JOIN institution_printer_assignments ipa ON p.id = ipa.printer_id
             WHERE ipa.institution_id = ?
@@ -6053,6 +6056,7 @@ app.get('/api/admin/institution-service-details', authenticateAdmin, async (req,
                 p.id as printer_id,
                 p.name as printer_name,
                 p.location,
+                p.department,
                 ms.status,
                 ms.created_at,
                 u.first_name as tech_first_name,
