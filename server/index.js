@@ -5965,7 +5965,9 @@ app.get('/api/admin/institution-service-calendar', authenticateAdmin, async (req
         // Group by date and institution
         const calendarData = {};
         services.forEach(service => {
-            const date = service.service_date;
+            // Format date as YYYY-MM-DD string
+            const dateObj = new Date(service.service_date);
+            const date = dateObj.toISOString().split('T')[0];
             if (!calendarData[date]) {
                 calendarData[date] = {
                     total_institutions: 0,
