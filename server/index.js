@@ -5915,6 +5915,99 @@ app.get('/api/admin/technician-progress/:technicianId', authenticateAdmin, async
 
 // ===== END TECHNICIAN PROGRESS TRACKING API =====
 
+// ===== ADMIN TECHNICIAN SERVICE CALENDAR API =====
+
+// Get technician service calendar data for a specific month
+app.get('/api/admin/technician-service-calendar', authenticateAdmin, async (req, res) => {
+    try {
+        const { technician_id, year, month } = req.query;
+        
+        if (!technician_id || !year || !month) {
+            return res.status(400).json({ error: 'Technician ID, year, and month are required' });
+        }
+
+        // Get maintenance services for the specified month
+        const query = `
+            SELECT 
+                DATE(ms.created_at) as service_date,
+                i.institution_id,
+                i.name as institution_name,
+                COUNT(DISTINCT ms.printer_id) as printers_serviced,
+                GROUP_CONCAT(DISTINCT p.name ORDER BY p.name SEPARATOR ', ') as printer_names
+            FROM maintenance_services ms
+            JOIN printers p ON ms.printer_id = p.id
+            JOIN institution_printer_assignments ipa ON p.id = ipa.printer_id
+            JOIN institutions i ON ipa.institution_id = i.institution_id
+            WHERE ms.technician_id = ?
+                AND YEAR(ms.created_at) = ?
+                AND MONTH(ms.created_at) = ?
+                AND i.type = 'public_school'
+                AND ms.status IN ('completed', 'approved')
+            GROUP BY DATE(ms.created_at), i.institution_id, i.name
+            ORDER BY service_date, institution_name
+        `;
+
+        const [services] = await db.query(query, [technician_id, year, month]);
+
+        // Group by date for calendar display
+        const calendarData = {};
+        services.forEach(service => {
+            const date = service.service_date;
+            if (!calendarData[date]) {
+                calendarData[date] = {
+                    total_schools: 0,
+                    total_printers: 0,
+                    institutions: []
+                };
+            }
+            
+            calendarData[date].total_schools++;
+            calendarData[date].total_printers += service.printers_serviced;
+            calendarData[date].institutions.push({
+                institution_id: service.institution_id,
+                institution_name: service.institution_name,
+                printers_serviced: service.printers_serviced,
+                printer_names: service.printer_names
+            });
+        });
+
+        // Get technician info
+        const [techInfo] = await db.query(
+            'SELECT id, first_name, last_name, email FROM users WHERE id = ? AND role = "technician"',
+            [technician_id]
+        );
+
+        res.json({
+            technician: techInfo[0] || null,
+            calendar_data: calendarData,
+            year: parseInt(year),
+            month: parseInt(month)
+        });
+
+    } catch (error) {
+        console.error('Error fetching technician service calendar:', error);
+        res.status(500).json({ error: 'Failed to fetch service calendar' });
+    }
+});
+
+// Get list of all technicians for calendar filter
+app.get('/api/admin/technicians-list', authenticateAdmin, async (req, res) => {
+    try {
+        const [technicians] = await db.query(
+            `SELECT id, first_name, last_name, email 
+             FROM users 
+             WHERE role = 'technician' AND status = 'active' AND approval_status = 'approved'
+             ORDER BY first_name, last_name`
+        );
+        res.json(technicians);
+    } catch (error) {
+        console.error('Error fetching technicians list:', error);
+        res.status(500).json({ error: 'Failed to fetch technicians' });
+    }
+});
+
+// ===== END ADMIN TECHNICIAN SERVICE CALENDAR API =====
+
 // ===== ADMIN TECHNICIAN INVENTORY API =====
 
 // Get all technicians with their inventory summary
