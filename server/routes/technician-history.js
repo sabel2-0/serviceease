@@ -14,7 +14,7 @@ router.get('/service-history', authenticateTechnician, async (req, res) => {
                 sr.id,
                 sr.request_number,
                 sr.description,
-                sr.location,
+                ii.location,
                 sr.status,
                 sr.priority,
                 sr.created_at,

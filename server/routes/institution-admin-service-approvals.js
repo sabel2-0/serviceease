@@ -55,7 +55,8 @@ router.get('/pending', authenticateinstitution_admin, async (req, res) => {
                 sa.technician_notes as actions_performed,
                 sr.description as request_description,
                 sr.priority,
-                sr.location,
+                ii.location,
+                ii.department as printer_department,
                 sr.resolution_notes,
                 sr.technician_id,
                 tech.first_name as technician_first_name,
@@ -69,13 +70,14 @@ router.get('/pending', authenticateinstitution_admin, async (req, res) => {
             JOIN service_requests sr ON sa.service_request_id = sr.id
             JOIN users tech ON sr.technician_id = tech.id
             JOIN institutions i ON sr.institution_id = i.institution_id
+            LEFT JOIN printers ii ON sr.printer_id = ii.id
             LEFT JOIN service_parts_used spu ON sr.id = spu.service_request_id
             LEFT JOIN printer_parts pp ON spu.part_id = pp.id
             WHERE i.user_id = ?
                 AND sa.status = 'pending_approval'
                 AND sr.status = 'pending_approval'
             GROUP BY sa.id, sa.service_request_id, sa.status, sa.submitted_at,
-                     sa.technician_notes, sr.description, sr.priority, sr.location, sr.resolution_notes,
+                     sa.technician_notes, sr.description, sr.priority, ii.location, ii.department, sr.resolution_notes,
                      sr.technician_id, tech.first_name, tech.last_name, i.name
             ORDER BY sa.submitted_at DESC
         `, [institution_adminId]);
