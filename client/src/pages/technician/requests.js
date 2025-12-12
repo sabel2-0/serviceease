@@ -1240,6 +1240,8 @@ function populateServiceRequestModal(request) {
                         ${request.brand ? `<div class="text-sm text-slate-600"><span class="font-medium">Brand:</span> ${request.brand}</div>` : ''}
                         ${request.model ? `<div class="text-sm text-slate-600"><span class="font-medium">Model:</span> ${request.model}</div>` : ''}
                         ${request.serial_number ? `<div class="text-sm text-slate-600"><span class="font-medium">Serial Number:</span> ${request.serial_number}</div>` : ''}
+                        ${request.location ? `<div class="text-sm text-slate-600"><span class="font-medium">Location:</span> ${request.location}</div>` : ''}
+                        ${request.printer_department ? `<div class="text-sm text-slate-600"><span class="font-medium">Department:</span> ${request.printer_department}</div>` : ''}
                     </div>
                 </div>
                 ` : ''}

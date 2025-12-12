@@ -78,11 +78,13 @@ router.post('/', auth, async (req, res) => {
             priority,
             description,
             location: rawLocation,
+            department: rawDepartment,
             status
         } = req.body;
         
-        // Normalize location: convert empty string to null
+        // Normalize location and department: convert empty string to null
         const location = rawLocation && rawLocation.trim() ? rawLocation.trim() : null;
+        const department = rawDepartment && rawDepartment.trim() ? rawDepartment.trim() : null;
 
         // institution_user info from auth
         const actor = req.user || {};
@@ -250,6 +252,30 @@ router.post('/', auth, async (req, res) => {
             location: location,
             description
         });
+
+        // Update printer location and department if provided
+        if (location !== null || department !== null) {
+            const updateFields = [];
+            const updateValues = [];
+            
+            if (location !== null) {
+                updateFields.push('location = ?');
+                updateValues.push(location);
+            }
+            if (department !== null) {
+                updateFields.push('department = ?');
+                updateValues.push(department);
+            }
+            
+            if (updateFields.length > 0) {
+                updateValues.push(printer_id);
+                await db.query(
+                    `UPDATE printers SET ${updateFields.join(', ')} WHERE id = ?`,
+                    updateValues
+                );
+                console.log('Updated printer location/department:', { printer_id, location, department });
+            }
+        }
 
         // Insert into service_requests table within a transaction to ensure FK consistency
         const conn = await db.getConnection();
