@@ -554,64 +554,6 @@
                 return `${Math.floor(diffInSeconds / 86400)}d ago`;
             }
 
-            // Initial load
-            updateNotificationCount();
-            loadDashboardStats();
-            initializeCalendar();
-            
-            // Refresh notification count every 30 seconds
-            setInterval(updateNotificationCount, 30000);
-            // Refresh dashboard stats every minute
-            setInterval(loadDashboardStats, 60000);
-
-            // Load dashboard statistics
-            async function loadDashboardStats() {
-                try {
-                    const token = localStorage.getItem('token');
-                    const response = await fetch('/api/admin/dashboard-stats', {
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        }
-                    });
-
-                    if (response.ok) {
-                        const stats = await response.json();
-                        updateDashboardStats(stats);
-                    } else {
-                        console.error('Failed to load dashboard stats');
-                        showErrorStats();
-                    }
-                } catch (error) {
-                    console.error('Error loading dashboard stats:', error);
-                    showErrorStats();
-                }
-            }
-
-        function updateDashboardStats(stats) {
-            document.getElementById('totalUsers').textContent = stats.totalUsers || 0;
-            document.getElementById('pendingInstitutionAdmins').textContent = stats.pendingInstitutionAdmins || 0;
-            document.getElementById('totalInstitutions').textContent = stats.totalInstitutions || 0;
-                document.getElementById('activeServiceRequests').textContent = stats.activeServiceRequests || 0;
-                document.getElementById('totalPrinters').textContent = stats.totalPrinters || 0;
-                document.getElementById('availablePrinters').textContent = stats.availablePrinters || 0;
-                document.getElementById('partsRequests').textContent = stats.pendingPartsRequests || 0;
-                document.getElementById('totalParts').textContent = stats.totalParts || 0;
-                document.getElementById('totalTechnicians').textContent = stats.totalTechnicians || 0;
-            }
-
-            function showErrorStats() {
-                const statElements = [
-                    'totalUsers', 'pendingInstitutionAdmins', 'totalInstitutions', 
-                    'activeServiceRequests', 'totalPrinters', 'partsRequests',
-                    'totalParts', 'totalTechnicians'
-                ];
-                
-                statElements.forEach(id => {
-                    document.getElementById(id).innerHTML = '<i class="fas fa-exclamation-triangle text-red-500"></i>';
-                });
-                document.getElementById('availablePrinters').textContent = '0';
-            }
-
             // ===== INSTITUTION SERVICE CALENDAR =====
             let currentYear = new Date().getFullYear();
             let currentMonth = new Date().getMonth() + 1; // 1-12
@@ -908,6 +850,64 @@
                 document.getElementById('calendarGrid').classList.add('hidden');
                 document.getElementById('calendarLoading').classList.add('hidden');
                 document.getElementById('calendarEmpty').classList.remove('hidden');
+            }
+
+            // Initial load
+            updateNotificationCount();
+            loadDashboardStats();
+            initializeCalendar();
+            
+            // Refresh notification count every 30 seconds
+            setInterval(updateNotificationCount, 30000);
+            // Refresh dashboard stats every minute
+            setInterval(loadDashboardStats, 60000);
+
+            // Load dashboard statistics
+            async function loadDashboardStats() {
+                try {
+                    const token = localStorage.getItem('token');
+                    const response = await fetch('/api/admin/dashboard-stats', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    if (response.ok) {
+                        const stats = await response.json();
+                        updateDashboardStats(stats);
+                    } else {
+                        console.error('Failed to load dashboard stats');
+                        showErrorStats();
+                    }
+                } catch (error) {
+                    console.error('Error loading dashboard stats:', error);
+                    showErrorStats();
+                }
+            }
+
+        function updateDashboardStats(stats) {
+            document.getElementById('totalUsers').textContent = stats.totalUsers || 0;
+            document.getElementById('pendingInstitutionAdmins').textContent = stats.pendingInstitutionAdmins || 0;
+            document.getElementById('totalInstitutions').textContent = stats.totalInstitutions || 0;
+                document.getElementById('activeServiceRequests').textContent = stats.activeServiceRequests || 0;
+                document.getElementById('totalPrinters').textContent = stats.totalPrinters || 0;
+                document.getElementById('availablePrinters').textContent = stats.availablePrinters || 0;
+                document.getElementById('partsRequests').textContent = stats.pendingPartsRequests || 0;
+                document.getElementById('totalParts').textContent = stats.totalParts || 0;
+                document.getElementById('totalTechnicians').textContent = stats.totalTechnicians || 0;
+            }
+
+            function showErrorStats() {
+                const statElements = [
+                    'totalUsers', 'pendingInstitutionAdmins', 'totalInstitutions', 
+                    'activeServiceRequests', 'totalPrinters', 'partsRequests',
+                    'totalParts', 'totalTechnicians'
+                ];
+                
+                statElements.forEach(id => {
+                    document.getElementById(id).innerHTML = '<i class="fas fa-exclamation-triangle text-red-500"></i>';
+                });
+                document.getElementById('availablePrinters').textContent = '0';
             }
         });
     </script>
