@@ -5956,13 +5956,12 @@ app.get('/api/admin/institution-service-calendar', authenticateAdmin, async (req
                 ms.completion_photo,
                 ms.created_at,
                 ms.approved_by_user_id,
-                ms.approved_by_institution_admin,
                 u.first_name as tech_first_name,
                 u.last_name as tech_last_name,
                 CONCAT(approver.first_name, ' ', approver.last_name) as approved_by_name
             FROM maintenance_services ms
             JOIN printers p ON ms.printer_id = p.id
-            JOIN institutions i ON ms.institution_id COLLATE utf8mb4_0900_ai_ci = i.institution_id COLLATE utf8mb4_0900_ai_ci
+            JOIN institutions i ON ms.institution_id = i.institution_id
             LEFT JOIN users u ON ms.technician_id = u.id
             LEFT JOIN users approver ON ms.approved_by_user_id = approver.id
             WHERE YEAR(ms.created_at) = ?
@@ -6010,7 +6009,6 @@ app.get('/api/admin/institution-service-calendar', authenticateAdmin, async (req
                 completion_photo: service.completion_photo,
                 created_at: service.created_at,
                 approved_by_user_id: service.approved_by_user_id,
-                approved_by_institution_admin: service.approved_by_institution_admin,
                 approved_by_name: service.approved_by_name,
                 technician: `${service.tech_first_name} ${service.tech_last_name}`,
                 tech_first_name: service.tech_first_name,
