@@ -238,7 +238,10 @@ function renderRequestsList(requests, filter = 'all') {
                                 ${req.is_walk_in ? '<span class="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full font-semibold">Walk-In</span>' : '<span class="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full font-semibold">Institution</span>'}
                             </div>
                             <p class="text-sm text-slate-600 mb-2">${escapeHtml(req.description || req.issue)}</p>
-                            ${req.location ? `<p class="text-xs text-slate-500"><i class="fas fa-map-marker-alt mr-1"></i>${escapeHtml(req.location)}</p>` : ''}
+                            <div class="flex flex-wrap gap-3 text-xs">
+                                ${req.location ? `<span class="text-slate-500"><i class="fas fa-map-marker-alt mr-1"></i>${escapeHtml(req.location)}</span>` : ''}
+                                ${req.printer_department ? `<span class="text-slate-500"><i class="fas fa-building mr-1"></i>${escapeHtml(req.printer_department)}</span>` : ''}
+                            </div>
                         </div>
                         <span class="px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadgeClass(req.status)}">
                             ${formatStatus(req.status)}

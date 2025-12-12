@@ -516,7 +516,12 @@ function displayHistoryRequests(requests) {
         
         <div class="space-y-2 mb-3">
           <div class="text-sm text-gray-700">${req.description}</div>
-          ${req.location ? `<div class="text-xs text-gray-500">${req.location}</div>` : ''}
+          ${req.location || req.printer_department ? `
+            <div class="flex flex-wrap gap-2 text-xs text-gray-500">
+              ${req.location ? `<span><i class="fas fa-map-marker-alt mr-1"></i>${req.location}</span>` : ''}
+              ${req.printer_department ? `<span><i class="fas fa-building mr-1"></i>${req.printer_department}</span>` : ''}
+            </div>
+          ` : ''}
           ${technicianName && !needsApproval ? `<div class="text-xs text-gray-500">${technicianName}</div>` : ''}
         </div>
         

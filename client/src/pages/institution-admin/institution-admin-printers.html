@@ -196,28 +196,40 @@
                     </div>
                 </div>
                 
-                <!-- Printer Location Section -->
+                <!-- Printer Location & Department Section -->
                 <div class="mt-6 bg-blue-50 rounded-lg p-4 border border-blue-200">
                     <h4 class="text-sm font-semibold text-blue-900 mb-2">
-                        <i class="fas fa-map-marker-alt mr-2"></i>Printer Location
+                        <i class="fas fa-map-marker-alt mr-2"></i>Printer Location & Department
                     </h4>
                     <p class="text-xs text-gray-600 mb-3">
-                        Please provide a detailed location so technicians can easily find this printer.<br>
-                        Include: Building, Floor, Room/Section, Department (if applicable)
+                        Please provide detailed location and department information so technicians can easily find this printer.<br>
+                        Location: Building, Floor, Room/Section | Department: The organizational unit
                     </p>
-                    <div class="flex gap-2">
-                        <input 
-                            type="text" 
-                            id="printerLocationInput" 
-                            placeholder="e.g., Building A, 3rd Floor, Room 305, IT Department"
-                            class="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
-                        />
-                        <button 
-                            id="updateLocationBtn" 
-                            onclick="updatePrinterLocation()"
-                            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
-                            <i class="fas fa-save mr-1"></i>Update Location
-                        </button>
+                    <div class="space-y-3">
+                        <div class="flex gap-2">
+                            <input 
+                                type="text" 
+                                id="printerLocationInput" 
+                                placeholder="e.g., Building A, 3rd Floor, Room 305"
+                                class="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
+                            />
+                        </div>
+                        <div class="flex gap-2">
+                            <input 
+                                type="text" 
+                                id="printerDepartmentInput" 
+                                placeholder="e.g., IT Department, Finance, Administration"
+                                class="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
+                            />
+                        </div>
+                        <div class="flex justify-end">
+                            <button 
+                                id="updateLocationBtn" 
+                                onclick="updatePrinterLocationAndDepartment()"
+                                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
+                                <i class="fas fa-save mr-1"></i>Update Location & Department
+                            </button>
+                        </div>
                     </div>
                     <p id="locationUpdateStatus" class="text-xs mt-2 hidden"></p>
                 </div>

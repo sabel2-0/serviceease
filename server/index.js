@@ -3244,7 +3244,7 @@ app.get('/api/users/me/service-requests', auth, async (req, res) => {
             query = `
                 SELECT sr.id, sr.request_number, sr.printer_id, sr.institution_id, sr.priority, sr.description,
                        sr.location, sr.status, sr.created_at, sr.completed_at, sr.requested_by, sr.resolution_notes,
-                       ii.name as printer_name, ii.brand as printer_brand, ii.model as printer_model,
+                       ii.name as printer_name, ii.brand as printer_brand, ii.model as printer_model, ii.department as printer_department,
                        i.name as institution_name,
                        institution_user.first_name as institution_user_first_name, institution_user.last_name as institution_user_last_name,
                        tech.first_name as technician_first_name, tech.last_name as technician_last_name,
@@ -3266,7 +3266,7 @@ app.get('/api/users/me/service-requests', auth, async (req, res) => {
             query = `
                 SELECT sr.id, sr.request_number, sr.printer_id, sr.institution_id, sr.priority, sr.description,
                        sr.location, sr.status, sr.created_at, sr.completed_at, sr.requested_by, sr.resolution_notes,
-                       ii.name as printer_name, ii.brand as printer_brand, ii.model as printer_model,
+                       ii.name as printer_name, ii.brand as printer_brand, ii.model as printer_model, ii.department as printer_department,
                        i.name as institution_name,
                        institution_user.first_name as institution_user_first_name, institution_user.last_name as institution_user_last_name,
                        tech.first_name as technician_first_name, tech.last_name as technician_last_name,
@@ -5854,6 +5854,7 @@ app.get('/api/admin/technician-progress/:technicianId', authenticateAdmin, async
                 sr.priority,
                 sr.description,
                 COALESCE(ii.location, sr.location) as location,
+                ii.department as printer_department,
                 sr.status,
                 sr.created_at,
                 sr.completed_at,

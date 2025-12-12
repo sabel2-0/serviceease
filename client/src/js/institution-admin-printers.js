@@ -357,11 +357,15 @@ function viewPrinterDetails(printerId) {
                 year: 'numeric'
             }) : 'No service history';
         
-        // Load printer location
+        // Load printer location and department
         const locationInput = document.getElementById('printerLocationInput');
+        const departmentInput = document.getElementById('printerDepartmentInput');
         if (locationInput) {
             locationInput.value = printer.location || '';
             locationInput.dataset.printerId = printerId; // Store printerId for update function
+        }
+        if (departmentInput) {
+            departmentInput.value = printer.department || '';
         }
         
         // Show the modal
@@ -564,11 +568,12 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 /**
- * Update printer location
+ * Update printer location and department
  * Make it globally accessible for onclick handlers
  */
-window.updatePrinterLocation = function() {
+window.updatePrinterLocationAndDepartment = function() {
     const locationInput = document.getElementById('printerLocationInput');
+    const departmentInput = document.getElementById('printerDepartmentInput');
     const statusElement = document.getElementById('locationUpdateStatus');
     const updateBtn = document.getElementById('updateLocationBtn');
     
@@ -579,9 +584,10 @@ window.updatePrinterLocation = function() {
     
     const printerId = locationInput.dataset.printerId;
     const newLocation = locationInput.value.trim();
+    const newDepartment = departmentInput.value.trim();
     
-    if (!newLocation) {
-        statusElement.textContent = 'Please enter a location';
+    if (!newLocation && !newDepartment) {
+        statusElement.textContent = 'Please enter at least location or department';
         statusElement.className = 'text-xs mt-2 text-red-600';
         statusElement.classList.remove('hidden');
         return;
@@ -592,13 +598,17 @@ window.updatePrinterLocation = function() {
     updateBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Updating...';
     statusElement.classList.add('hidden');
     
+    const updateData = {};
+    if (newLocation) updateData.location = newLocation;
+    if (newDepartment) updateData.department = newDepartment;
+    
     fetch(`/api/institutions/${institutionAdminData.institution_id}/printers/${printerId}/location`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${getAuthToken() || ''}`
         },
-        body: JSON.stringify({ location: newLocation })
+        body: JSON.stringify(updateData)
     })
     .then(response => {
         if (!response.ok) {
@@ -607,24 +617,24 @@ window.updatePrinterLocation = function() {
         return response.json();
     })
     .then(data => {
-        statusElement.textContent = '✓ Location updated successfully!';
+        statusElement.textContent = '✓ Location and department updated successfully!';
         statusElement.className = 'text-xs mt-2 text-green-600';
         statusElement.classList.remove('hidden');
         
-        showToast('Printer location updated successfully', 'success');
+        showToast('Printer location and department updated successfully', 'success');
         
-        // Refresh the printers list to show updated location
+        // Refresh the printers list to show updated information
         setTimeout(() => {
             fetchAssignedPrinters();
         }, 1000);
     })
     .catch(error => {
-        console.error('Error updating printer location:', error);
-        statusElement.textContent = '✗ Failed to update location';
+        console.error('Error updating printer information:', error);
+        statusElement.textContent = '✗ Failed to update information';
         statusElement.className = 'text-xs mt-2 text-red-600';
         statusElement.classList.remove('hidden');
         
-        showToast('Failed to update printer location', 'error');
+        showToast('Failed to update printer information', 'error');
     })
     .finally(() => {
         // Re-enable button
