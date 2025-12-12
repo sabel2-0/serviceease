@@ -502,6 +502,11 @@
                             <span class="font-medium">Serial Number:</span> ${request.printer_serial_number}
                         </p>
                     ` : ''}
+                    ${request.printer_department || request.department ? `
+                        <p class="text-xs sm:text-sm text-gray-600 mt-1">
+                            <span class="font-medium">Department:</span> ${request.printer_department || request.department}
+                        </p>
+                    ` : ''}
                 </div>
             </div>
             ` : ''}

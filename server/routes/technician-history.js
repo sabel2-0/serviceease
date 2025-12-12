@@ -36,6 +36,7 @@ router.get('/service-history', authenticateTechnician, async (req, res) => {
                 ii.brand as printer_brand,
                 ii.model as printer_model,
                 ii.serial_number as printer_serial_number,
+                ii.department as printer_department,
                 CONCAT(ii.name, ' (', ii.brand, ' ', ii.model, ' SN:', ii.serial_number, ')') as printer_full_details,
                 approver.first_name as approver_first_name,
                 approver.last_name as approver_last_name,
@@ -128,6 +129,7 @@ router.get('/service-history/:requestId', authenticateTechnician, async (req, re
                 ii.brand as printer_brand,
                 ii.model as printer_model,
                 ii.serial_number as printer_serial_number,
+                ii.department as printer_department,
                 CONCAT(ii.name, ' (', ii.brand, ' ', ii.model, ' SN:', ii.serial_number, ')') as printer_full_details
             FROM service_requests sr
             LEFT JOIN institutions i ON sr.institution_id = i.institution_id

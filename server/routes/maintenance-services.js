@@ -799,6 +799,7 @@ router.get('/history', auth, async (req, res) => {
                 inv.model as printer_model,
                 inv.serial_number as printer_serial_number,
                 inv.location,
+                inv.department as printer_department,
                 CONCAT('VS-', vs.id) as request_number,
                 CONCAT(approver.first_name, ' ', approver.last_name) as approver_name,
                 approver.role as approver_role,

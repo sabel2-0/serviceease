@@ -139,6 +139,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         </span>
                     </td>
                     <td class="px-3 sm:px-6 py-4"><span class="font-mono text-xs text-slate-600 bg-slate-100 px-2 py-1 rounded">${escapeHtml(record.serial_number || 'N/A')}</span></td>
+                    <td class="px-3 sm:px-6 py-4"><span class="text-sm text-slate-700">${escapeHtml(record.location || 'N/A')}</span></td>
+                    <td class="px-3 sm:px-6 py-4"><span class="text-sm text-slate-700">${escapeHtml(record.department || 'N/A')}</span></td>
                     <td class="px-3 sm:px-6 py-4">${statusBadge}</td>
                     <td class="px-3 sm:px-6 py-4"><span class="text-sm text-slate-600">${assignedDate}</span></td>
                     <td class="px-3 sm:px-6 py-4"><span class="text-sm text-slate-600">${unassignedDate}</span></td>
@@ -705,6 +707,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td class="px-3 sm:px-6 py-5">
                     <span class="font-mono text-sm text-slate-600 bg-slate-100 px-2 py-1 rounded">
                         ${escapeHtml(p.serial_number || 'N/A')}
+                    </span>
+                </td>
+                <td class="px-3 sm:px-6 py-5">
+                    <span class="text-sm text-slate-700">
+                        ${escapeHtml(p.location || 'N/A')}
+                    </span>
+                </td>
+                <td class="px-3 sm:px-6 py-5">
+                    <span class="text-sm text-slate-700">
+                        ${escapeHtml(p.department || 'N/A')}
                     </span>
                 </td>
                 <td class="px-3 sm:px-6 py-5 text-right">
