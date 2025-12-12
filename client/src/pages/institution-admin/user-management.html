@@ -92,7 +92,6 @@
                                                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User Info</th>
                                                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
                                                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Department</th>
                                                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Assigned Printer</th>
                                                 <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
                                             </tr>
@@ -206,10 +205,6 @@
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
                         <input type="email" id="editEmail" class="w-full px-4 py-2 border rounded-md" required>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Department</label>
-                        <input type="text" id="editDepartment" class="w-full px-4 py-2 border rounded-md">
                     </div>
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Assign Printers (optional)</label>
@@ -641,10 +636,6 @@
                         const statusColor = statusLabel === 'active' ? 'bg-green-100 text-green-800' : statusLabel === 'inactive' ? 'bg-gray-100 text-gray-800' : 'bg-yellow-100 text-yellow-800';
                         statusTd.innerHTML = `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${statusColor}">${u.status || ''}</span>`;
 
-                        const deptTd = document.createElement('td');
-                        deptTd.className = 'px-6 py-4 whitespace-nowrap text-sm text-gray-600';
-                        deptTd.textContent = u.printers?.[0]?.department || '';
-
                         const printerTd = document.createElement('td');
                         printerTd.className = 'px-6 py-4 text-sm text-gray-600';
                         // Show multiple printers
@@ -805,9 +796,6 @@
                 document.getElementById('editFirstName').value = user.first_name || '';
                 document.getElementById('editLastName').value = user.last_name || '';
                 document.getElementById('editEmail').value = user.email || '';
-                // Prefill department. Some API responses include department at the
-                // user level, others include it on the assigned printer object.
-                document.getElementById('editDepartment').value = user.department ?? (user.printers && user.printers[0] && user.printers[0].department) ?? '';
                 document.getElementById('editUserModal').classList.remove('hidden');
 
                 // Load printers and preselect those assigned to the user
@@ -860,7 +848,6 @@
                 const firstName = document.getElementById('editFirstName').value.trim();
                 const lastName = document.getElementById('editLastName').value.trim();
                 const email = document.getElementById('editEmail').value.trim();
-                const department = document.getElementById('editDepartment').value.trim() || null;
                 
                 // Collect all selected printer IDs
                 const selectedPrinters = Array.from(document.querySelectorAll('.edit-printer-checkbox:checked'))
@@ -874,7 +861,7 @@
 
                 try {
                     const token = localStorage.getItem('token');
-                    const payload = { firstName, lastName, email, department };
+                    const payload = { firstName, lastName, email };
                     // Send array of printer IDs only when Institution Admin selected printers.
                     // If no printer field is present in the payload, the backend will
                     // leave assignments unchanged (avoid accidental removals).
