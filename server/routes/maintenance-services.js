@@ -29,7 +29,6 @@ router.get('/:id', authenticateAdmin, async (req, res) => {
                 ms.status,
                 ms.created_at,
                 ms.approved_by_user_id,
-                ms.approved_by_institution_admin,
                 ms.approved_at,
                 i.institution_id,
                 i.name as institution_name,
@@ -41,7 +40,7 @@ router.get('/:id', authenticateAdmin, async (req, res) => {
                 CONCAT(approver.first_name, ' ', approver.last_name) as approved_by_name
             FROM maintenance_services ms
             JOIN printers p ON ms.printer_id = p.id
-            JOIN institutions i ON ms.institution_id COLLATE utf8mb4_0900_ai_ci = i.institution_id COLLATE utf8mb4_0900_ai_ci
+            JOIN institutions i ON ms.institution_id COLLATE utf8mb4_0900_ai_ci = i.institution_id
             LEFT JOIN users tech ON ms.technician_id = tech.id
             LEFT JOIN users approver ON ms.approved_by_user_id = approver.id
             WHERE ms.id = ?
