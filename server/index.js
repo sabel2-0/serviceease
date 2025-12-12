@@ -5980,28 +5980,23 @@ app.get('/api/admin/institution-service-calendar', authenticateAdmin, async (req
                 calendarData[date].institutions[service.institution_id] = {
                     institution_id: service.institution_id,
                     institution_name: service.institution_name,
-                    printers_serviced: [],
+                    services: [],
                     serviced_count: 0
                 };
                 calendarData[date].total_institutions++;
             }
             
-            // Add printer to serviced list (avoid duplicates)
-            const existing = calendarData[date].institutions[service.institution_id].printers_serviced
-                .find(p => p.printer_id === service.printer_id);
-            
-            if (!existing) {
-                calendarData[date].institutions[service.institution_id].printers_serviced.push({
-                    printer_id: service.printer_id,
-                    printer_name: service.printer_name,
-                    location: service.location,
-                    department: service.department,
-                    status: service.status,
-                    technician: `${service.tech_first_name} ${service.tech_last_name}`
-                });
-                calendarData[date].institutions[service.institution_id].serviced_count++;
-                calendarData[date].total_printers_serviced++;
-            }
+            // Add each service (count all services, not just unique printers)
+            calendarData[date].institutions[service.institution_id].services.push({
+                printer_id: service.printer_id,
+                printer_name: service.printer_name,
+                location: service.location,
+                department: service.department,
+                status: service.status,
+                technician: `${service.tech_first_name} ${service.tech_last_name}`
+            });
+            calendarData[date].institutions[service.institution_id].serviced_count++;
+            calendarData[date].total_printers_serviced++;
         });
 
         // Convert institutions object to array for each date

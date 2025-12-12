@@ -716,7 +716,7 @@
                 const list = document.getElementById('modalInstitutionsList');
                 list.innerHTML = dayData.institutions.map(inst => `
                     <div class="bg-slate-50 rounded-lg p-4 border border-slate-200 hover:border-blue-400 cursor-pointer transition-all hover:shadow-md"
-                         onclick="showInstitutionDetail(${inst.institution_id}, '${dateStr}', '${inst.institution_name.replace(/'/g, "\\'")}')">
+                         onclick="showInstitutionDetail('${inst.institution_id}', '${dateStr}', '${inst.institution_name.replace(/'/g, "\\'")}')">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-3">
                                 <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
