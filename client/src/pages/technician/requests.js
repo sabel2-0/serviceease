@@ -235,13 +235,8 @@ async function loadServiceRequests() {
         console.error('G�� Error loading service requests:', error);
         
         // If error is 401 (unauthorized), redirect to login
-        if (error.message.includes('401') || error.message.includes('Unauthorized')) {
-            console.log('=��� Authentication failed, redirecting to login...');
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            window.location.href = '/pages/login.html';
-            return;
-        }
+        // Don't auto-logout on errors - let the user stay logged in
+        // Only the global fetch interceptor will handle TOKEN_INVALIDATED cases
         
         // For other errors, show empty state with retry option
         currentServiceRequests = [];
@@ -2600,15 +2595,8 @@ async function handleJobCompletion(e) {
         // Show specific error message based on error type
         let errorMessage = 'Failed to submit service completion.';
         
-        if (error.message.includes('401') || error.message.includes('authentication')) {
-            errorMessage = 'Authentication expired. Please log in again.';
-            // Redirect to login after a delay
-            setTimeout(() => {
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                window.location.href = '/pages/login.html';
-            }, 2000);
-        } else if (error.message.includes('403')) {
+        // Don't auto-logout - global interceptor handles this
+            console.error('Authentication error:', error); else if (error.message.includes('403')) {
             errorMessage = 'You do not have permission to complete this service request.';
         } else if (error.message.includes('400')) {
             errorMessage = error.message.replace('Error: ', '');
@@ -2874,6 +2862,8 @@ window.forceSetupModalHandlers = function() {
     window._modalHandlersSetup = false; // Reset flag
     setupModalEventHandlers();
 };
+
+
 
 
 

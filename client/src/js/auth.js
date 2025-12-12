@@ -27,35 +27,33 @@
             // Skip if already logging out
             if (isLoggingOut) return response;
             
-            // Check if response is 401 Unauthorized or 403 Forbidden
-            if (response.status === 401 || response.status === 403) {
+            // Check if response is 401 Unauthorized
+            if (response.status === 401) {
                 // Clone the response to read it
                 const clonedResponse = response.clone();
                 
                 try {
                     const data = await clonedResponse.json();
                     
-                    if (response.status === 401) {
-                        // Check if it's a token expiration or session invalidation
-                        if (data.code === 'TOKEN_INVALIDATED' || 
-                            data.code === 'ACCOUNT_INACTIVE' || 
-                            data.code === 'INSTITUTION_DEACTIVATED' ||
-                            data.message?.includes('token') || 
-                            data.message?.includes('Session expired')) {
-                            
-                            performLogout(data.message || 'Your session has expired. Please log in again.');
-                        }
-                    } else if (response.status === 403) {
-                        // Handle 403 Forbidden - auto logout
-                        performLogout(data.error || data.message || 'Access denied. You do not have permission. Logging out...');
+                    // Only logout for specific token invalidation cases
+                    if (data.code === 'TOKEN_INVALIDATED' || 
+                        data.code === 'ACCOUNT_INACTIVE' || 
+                        data.code === 'INSTITUTION_DEACTIVATED') {
+                        
+                        performLogout(data.message || 'Your session has expired. Please log in again.');
+                    }
+                    // For other 401 errors, just log them without auto-logout
+                    else {
+                        console.error('401 Unauthorized:', data.message || 'Unauthorized access');
                     }
                 } catch (jsonError) {
-                    // If we can't parse the response, still logout on 401/403
-                    const message = response.status === 403 
-                        ? 'Access denied. Logging out...' 
-                        : 'Session expired. Please log in again.';
-                    performLogout(message);
+                    // If we can't parse the response, log it but don't auto-logout
+                    console.error('401 Unauthorized - Unable to parse error response');
                 }
+            }
+            // Don't auto-logout on 403 Forbidden - just log the error
+            else if (response.status === 403) {
+                console.error('403 Forbidden - Access denied');
             }
             
             return response;
