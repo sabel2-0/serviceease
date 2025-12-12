@@ -233,8 +233,88 @@
                     </div>
                 </div>
 
+                <!-- Technician Service Calendar -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-900">Technician Service Calendar</h2>
+                            <p class="text-sm text-slate-600 mt-1">Monthly maintenance services across public schools</p>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <!-- Technician Selector -->
+                            <select id="technicianSelect" class="px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Select Technician...</option>
+                            </select>
+                            
+                            <!-- Month/Year Navigation -->
+                            <div class="flex items-center gap-2">
+                                <button id="prevMonth" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+                                <span id="currentMonthYear" class="px-4 py-2 font-semibold text-slate-900 min-w-[150px] text-center">
+                                    December 2025
+                                </span>
+                                <button id="nextMonth" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Calendar Grid -->
+                    <div id="calendarGrid" class="grid grid-cols-7 gap-2">
+                        <!-- Calendar will be generated here -->
+                    </div>
+
+                    <!-- Loading State -->
+                    <div id="calendarLoading" class="text-center py-12 hidden">
+                        <i class="fas fa-spinner fa-spin text-4xl text-slate-400 mb-4"></i>
+                        <p class="text-slate-600">Loading calendar...</p>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div id="calendarEmpty" class="text-center py-12 hidden">
+                        <i class="fas fa-calendar-times text-4xl text-slate-300 mb-4"></i>
+                        <p class="text-slate-600">Select a technician to view their service calendar</p>
+                    </div>
+                </div>
+
             </div>
         </main>
+    </div>
+
+    <!-- Day Detail Modal -->
+    <div id="dayDetailModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+            <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex items-center justify-between">
+                <div>
+                    <h3 class="text-xl font-bold text-white" id="modalDate">December 12, 2025</h3>
+                    <p class="text-blue-100 text-sm" id="modalTechnician">Technician Name</p>
+                </div>
+                <button onclick="closeDayDetailModal()" class="text-white hover:bg-blue-800 rounded-lg p-2 transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 overflow-y-auto max-h-[calc(80vh-120px)]">
+                <!-- Summary -->
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="bg-blue-50 rounded-lg p-4">
+                        <div class="text-sm text-blue-600 font-medium">Schools Serviced</div>
+                        <div class="text-3xl font-bold text-blue-900 mt-1" id="modalTotalSchools">0</div>
+                    </div>
+                    <div class="bg-green-50 rounded-lg p-4">
+                        <div class="text-sm text-green-600 font-medium">Printers Serviced</div>
+                        <div class="text-3xl font-bold text-green-900 mt-1" id="modalTotalPrinters">0</div>
+                    </div>
+                </div>
+
+                <!-- Institutions List -->
+                <div id="modalInstitutionsList" class="space-y-4">
+                    <!-- Generated content -->
+                </div>
+            </div>
+        </div>
     </div>
     
     <!-- Load dynamic sidebar system -->
@@ -427,6 +507,7 @@
             // Initial load
             updateNotificationCount();
             loadDashboardStats();
+            initializeCalendar();
             
             // Refresh notification count every 30 seconds
             setInterval(updateNotificationCount, 30000);
@@ -479,6 +560,242 @@
                     document.getElementById(id).innerHTML = '<i class="fas fa-exclamation-triangle text-red-500"></i>';
                 });
                 document.getElementById('availablePrinters').textContent = '0';
+            }
+
+            // ===== TECHNICIAN SERVICE CALENDAR =====
+            let currentYear = new Date().getFullYear();
+            let currentMonth = new Date().getMonth() + 1; // 1-12
+            let selectedTechnicianId = null;
+            let calendarData = {};
+
+            async function initializeCalendar() {
+                // Load technicians list
+                await loadTechniciansList();
+                
+                // Set up event listeners
+                document.getElementById('technicianSelect').addEventListener('change', function(e) {
+                    selectedTechnicianId = e.target.value;
+                    if (selectedTechnicianId) {
+                        loadCalendarData();
+                    } else {
+                        showEmptyCalendar();
+                    }
+                });
+
+                document.getElementById('prevMonth').addEventListener('click', function() {
+                    currentMonth--;
+                    if (currentMonth < 1) {
+                        currentMonth = 12;
+                        currentYear--;
+                    }
+                    updateMonthYearDisplay();
+                    if (selectedTechnicianId) {
+                        loadCalendarData();
+                    }
+                });
+
+                document.getElementById('nextMonth').addEventListener('click', function() {
+                    currentMonth++;
+                    if (currentMonth > 12) {
+                        currentMonth = 1;
+                        currentYear++;
+                    }
+                    updateMonthYearDisplay();
+                    if (selectedTechnicianId) {
+                        loadCalendarData();
+                    }
+                });
+
+                updateMonthYearDisplay();
+                showEmptyCalendar();
+            }
+
+            async function loadTechniciansList() {
+                try {
+                    const token = localStorage.getItem('token');
+                    const response = await fetch('/api/admin/technicians-list', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+
+                    if (response.ok) {
+                        const technicians = await response.json();
+                        const select = document.getElementById('technicianSelect');
+                        
+                        technicians.forEach(tech => {
+                            const option = document.createElement('option');
+                            option.value = tech.id;
+                            option.textContent = `${tech.first_name} ${tech.last_name}`;
+                            select.appendChild(option);
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error loading technicians list:', error);
+                }
+            }
+
+            async function loadCalendarData() {
+                try {
+                    showCalendarLoading();
+
+                    const token = localStorage.getItem('token');
+                    const response = await fetch(
+                        `/api/admin/technician-service-calendar?technician_id=${selectedTechnicianId}&year=${currentYear}&month=${currentMonth}`,
+                        { headers: { 'Authorization': `Bearer ${token}` } }
+                    );
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        calendarData = data.calendar_data || {};
+                        renderCalendar();
+                    } else {
+                        console.error('Failed to load calendar data');
+                        showEmptyCalendar();
+                    }
+                } catch (error) {
+                    console.error('Error loading calendar data:', error);
+                    showEmptyCalendar();
+                }
+            }
+
+            function updateMonthYearDisplay() {
+                const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+                                   'July', 'August', 'September', 'October', 'November', 'December'];
+                document.getElementById('currentMonthYear').textContent = 
+                    `${monthNames[currentMonth - 1]} ${currentYear}`;
+            }
+
+            function renderCalendar() {
+                const grid = document.getElementById('calendarGrid');
+                grid.innerHTML = '';
+                
+                // Hide loading/empty states
+                document.getElementById('calendarLoading').classList.add('hidden');
+                document.getElementById('calendarEmpty').classList.add('hidden');
+                grid.classList.remove('hidden');
+
+                // Day headers
+                const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                dayHeaders.forEach(day => {
+                    const header = document.createElement('div');
+                    header.className = 'text-center font-semibold text-slate-700 py-2';
+                    header.textContent = day;
+                    grid.appendChild(header);
+                });
+
+                // Get first day of month and total days
+                const firstDay = new Date(currentYear, currentMonth - 1, 1).getDay();
+                const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+
+                // Empty cells before first day
+                for (let i = 0; i < firstDay; i++) {
+                    const emptyCell = document.createElement('div');
+                    emptyCell.className = 'bg-slate-50 rounded-lg p-3 min-h-[100px]';
+                    grid.appendChild(emptyCell);
+                }
+
+                // Day cells
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dateStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    const dayData = calendarData[dateStr];
+                    
+                    const dayCell = document.createElement('div');
+                    dayCell.className = 'bg-white border border-slate-200 rounded-lg p-3 min-h-[100px] hover:shadow-md transition-shadow';
+                    
+                    if (dayData && dayData.total_schools > 0) {
+                        dayCell.classList.add('cursor-pointer', 'hover:border-blue-400');
+                        
+                        // Color intensity based on activity
+                        let bgColor = 'bg-blue-50';
+                        if (dayData.total_schools >= 6) bgColor = 'bg-blue-200';
+                        else if (dayData.total_schools >= 3) bgColor = 'bg-blue-100';
+                        
+                        dayCell.classList.add(bgColor);
+                        
+                        dayCell.innerHTML = `
+                            <div class="font-semibold text-slate-900 mb-2">${day}</div>
+                            <div class="space-y-1">
+                                <div class="text-xs">
+                                    <span class="font-medium text-blue-700">🏫 ${dayData.total_schools}</span>
+                                    <span class="text-slate-600"> school${dayData.total_schools > 1 ? 's' : ''}</span>
+                                </div>
+                                <div class="text-xs">
+                                    <span class="font-medium text-green-700">🖨️ ${dayData.total_printers}</span>
+                                    <span class="text-slate-600"> printer${dayData.total_printers > 1 ? 's' : ''}</span>
+                                </div>
+                            </div>
+                        `;
+                        
+                        dayCell.addEventListener('click', () => showDayDetail(dateStr, dayData));
+                    } else {
+                        dayCell.innerHTML = `
+                            <div class="font-semibold text-slate-400">${day}</div>
+                            <div class="text-xs text-slate-400 mt-2">No services</div>
+                        `;
+                    }
+                    
+                    grid.appendChild(dayCell);
+                }
+            }
+
+            function showDayDetail(dateStr, dayData) {
+                const modal = document.getElementById('dayDetailModal');
+                const date = new Date(dateStr);
+                const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+                                   'July', 'August', 'September', 'October', 'November', 'December'];
+                
+                document.getElementById('modalDate').textContent = 
+                    `${monthNames[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+                
+                const techSelect = document.getElementById('technicianSelect');
+                const techName = techSelect.options[techSelect.selectedIndex].text;
+                document.getElementById('modalTechnician').textContent = techName;
+                
+                document.getElementById('modalTotalSchools').textContent = dayData.total_schools;
+                document.getElementById('modalTotalPrinters').textContent = dayData.total_printers;
+                
+                const list = document.getElementById('modalInstitutionsList');
+                list.innerHTML = dayData.institutions.map(inst => `
+                    <div class="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                        <div class="flex items-center justify-between mb-3">
+                            <h4 class="font-semibold text-slate-900 text-lg">${inst.institution_name}</h4>
+                            <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                                ${inst.printer_count} printer${inst.printer_count > 1 ? 's' : ''}
+                            </span>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            ${inst.printers.map(printer => `
+                                <span class="bg-white border border-slate-300 px-3 py-1 rounded-lg text-sm text-slate-700">
+                                    🖨️ ${printer}
+                                </span>
+                            `).join('')}
+                        </div>
+                    </div>
+                `).join('');
+                
+                modal.classList.remove('hidden');
+            }
+
+            window.closeDayDetailModal = function() {
+                document.getElementById('dayDetailModal').classList.add('hidden');
+            };
+
+            // Close modal on overlay click
+            document.getElementById('dayDetailModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeDayDetailModal();
+                }
+            });
+
+            function showCalendarLoading() {
+                document.getElementById('calendarGrid').classList.add('hidden');
+                document.getElementById('calendarEmpty').classList.add('hidden');
+                document.getElementById('calendarLoading').classList.remove('hidden');
+            }
+
+            function showEmptyCalendar() {
+                document.getElementById('calendarGrid').classList.add('hidden');
+                document.getElementById('calendarLoading').classList.add('hidden');
+                document.getElementById('calendarEmpty').classList.remove('hidden');
             }
         });
     </script>
