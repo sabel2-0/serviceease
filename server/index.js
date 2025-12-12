@@ -6081,7 +6081,6 @@ app.get('/api/admin/institution-service-details', authenticateAdmin, async (req,
                 ms.completion_photo,
                 ms.created_at,
                 ms.approved_by_user_id,
-                ms.approved_by_institution_admin,
                 u.first_name as tech_first_name,
                 u.last_name as tech_last_name,
                 CONCAT(approver.first_name, ' ', approver.last_name) as approved_by_name
@@ -6089,7 +6088,7 @@ app.get('/api/admin/institution-service-details', authenticateAdmin, async (req,
             JOIN printers p ON ms.printer_id = p.id
             LEFT JOIN users u ON ms.technician_id = u.id
             LEFT JOIN users approver ON ms.approved_by_user_id = approver.id
-            WHERE ms.institution_id = ?
+            WHERE ms.institution_id COLLATE utf8mb4_0900_ai_ci = ?
                 AND DATE(ms.created_at) = ?
                 AND ms.status IN ('completed', 'approved')
             ORDER BY p.name
