@@ -590,21 +590,25 @@
                     showCalendarLoading();
 
                     const token = localStorage.getItem('token');
-                    const response = await fetch(
-                        `/api/admin/institution-service-calendar?year=${currentYear}&month=${currentMonth}`,
-                        { headers: { 'Authorization': `Bearer ${token}` } }
-                    );
+                    const url = `/api/admin/institution-service-calendar?year=${currentYear}&month=${currentMonth}`;
+                    console.log('📅 Loading calendar data:', url);
+                    
+                    const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+                    console.log('📊 Response status:', response.status);
 
                     if (response.ok) {
                         const data = await response.json();
+                        console.log('✅ Calendar data received:', data);
+                        console.log('📆 Calendar entries:', Object.keys(data.calendar_data || {}).length);
                         calendarData = data.calendar_data || {};
                         renderCalendar();
                     } else {
-                        console.error('Failed to load calendar data');
+                        const errorText = await response.text();
+                        console.error('❌ Failed to load calendar data. Status:', response.status, 'Error:', errorText);
                         showEmptyCalendar();
                     }
                 } catch (error) {
-                    console.error('Error loading calendar data:', error);
+                    console.error('❌ Error loading calendar data:', error);
                     showEmptyCalendar();
                 }
             }
@@ -617,6 +621,7 @@
             }
 
             function renderCalendar() {
+                console.log('🎨 Rendering calendar with data:', calendarData);
                 const grid = document.getElementById('calendarGrid');
                 grid.innerHTML = '';
                 
@@ -637,6 +642,8 @@
                 // Get first day of month and total days
                 const firstDay = new Date(currentYear, currentMonth - 1, 1).getDay();
                 const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+                
+                console.log('📅 Rendering', daysInMonth, 'days for', currentYear + '-' + currentMonth);
 
                 // Empty cells before first day
                 for (let i = 0; i < firstDay; i++) {
@@ -649,6 +656,11 @@
                 for (let day = 1; day <= daysInMonth; day++) {
                     const dateStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                     const dayData = calendarData[dateStr];
+                    
+                    if (day === 1) {
+                        console.log('🔍 Sample dateStr:', dateStr, 'dayData:', dayData);
+                        console.log('🔍 All calendar data keys:', Object.keys(calendarData));
+                    }
                     
                     const dayCell = document.createElement('div');
                     dayCell.className = 'bg-white border border-slate-200 rounded-lg p-3 min-h-[100px] hover:shadow-md transition-shadow';

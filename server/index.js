@@ -5953,8 +5953,7 @@ app.get('/api/admin/institution-service-calendar', authenticateAdmin, async (req
                 u.last_name as tech_last_name
             FROM maintenance_services ms
             JOIN printers p ON ms.printer_id = p.id
-            JOIN institution_printer_assignments ipa ON p.id = ipa.printer_id
-            JOIN institutions i ON ipa.institution_id = i.institution_id
+            JOIN institutions i ON ms.institution_id = i.institution_id
             LEFT JOIN users u ON ms.technician_id = u.id
             WHERE YEAR(ms.created_at) = ?
                 AND MONTH(ms.created_at) = ?
@@ -6064,9 +6063,8 @@ app.get('/api/admin/institution-service-details', authenticateAdmin, async (req,
                 u.last_name as tech_last_name
             FROM maintenance_services ms
             JOIN printers p ON ms.printer_id = p.id
-            JOIN institution_printer_assignments ipa ON p.id = ipa.printer_id
             LEFT JOIN users u ON ms.technician_id = u.id
-            WHERE ipa.institution_id = ?
+            WHERE ms.institution_id = ?
                 AND DATE(ms.created_at) = ?
                 AND ms.status IN ('completed', 'approved')
             ORDER BY p.name
