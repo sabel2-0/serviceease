@@ -5915,98 +5915,186 @@ app.get('/api/admin/technician-progress/:technicianId', authenticateAdmin, async
 
 // ===== END TECHNICIAN PROGRESS TRACKING API =====
 
-// ===== ADMIN TECHNICIAN SERVICE CALENDAR API =====
+// ===== ADMIN INSTITUTION SERVICE CALENDAR API =====
 
-// Get technician service calendar data for a specific month
-app.get('/api/admin/technician-service-calendar', authenticateAdmin, async (req, res) => {
+// Get institution service calendar data for a specific month (maintenance services only for public schools)
+app.get('/api/admin/institution-service-calendar', authenticateAdmin, async (req, res) => {
     try {
-        const { technician_id, year, month } = req.query;
+        const { year, month } = req.query;
         
-        if (!technician_id || !year || !month) {
-            return res.status(400).json({ error: 'Technician ID, year, and month are required' });
+        if (!year || !month) {
+            return res.status(400).json({ error: 'Year and month are required' });
         }
 
+        // Get all public school institutions with their total printers
+        const [institutions] = await db.query(`
+            SELECT 
+                i.institution_id,
+                i.name as institution_name,
+                COUNT(DISTINCT ipa.printer_id) as total_printers
+            FROM institutions i
+            LEFT JOIN institution_printer_assignments ipa ON i.institution_id = ipa.institution_id
+            WHERE i.type = 'public_school'
+            GROUP BY i.institution_id, i.name
+        `);
+
         // Get maintenance services for the specified month
-        const query = `
+        const [services] = await db.query(`
             SELECT 
                 DATE(ms.created_at) as service_date,
                 i.institution_id,
                 i.name as institution_name,
-                COUNT(DISTINCT ms.printer_id) as printers_serviced,
-                GROUP_CONCAT(DISTINCT p.name ORDER BY p.name SEPARATOR ', ') as printer_names
+                ms.printer_id,
+                p.name as printer_name,
+                p.location,
+                p.department,
+                ms.status,
+                u.first_name as tech_first_name,
+                u.last_name as tech_last_name
             FROM maintenance_services ms
             JOIN printers p ON ms.printer_id = p.id
             JOIN institution_printer_assignments ipa ON p.id = ipa.printer_id
             JOIN institutions i ON ipa.institution_id = i.institution_id
-            WHERE ms.technician_id = ?
-                AND YEAR(ms.created_at) = ?
+            LEFT JOIN users u ON ms.technician_id = u.id
+            WHERE YEAR(ms.created_at) = ?
                 AND MONTH(ms.created_at) = ?
                 AND i.type = 'public_school'
                 AND ms.status IN ('completed', 'approved')
-            GROUP BY DATE(ms.created_at), i.institution_id, i.name
-            ORDER BY service_date, institution_name
-        `;
+            ORDER BY service_date, institution_name, printer_name
+        `, [year, month]);
 
-        const [services] = await db.query(query, [technician_id, year, month]);
-
-        // Group by date for calendar display
+        // Group by date and institution
         const calendarData = {};
         services.forEach(service => {
             const date = service.service_date;
             if (!calendarData[date]) {
                 calendarData[date] = {
-                    total_schools: 0,
-                    total_printers: 0,
-                    institutions: []
+                    total_institutions: 0,
+                    total_printers_serviced: 0,
+                    institutions: {}
                 };
             }
             
-            calendarData[date].total_schools++;
-            calendarData[date].total_printers += service.printers_serviced;
-            calendarData[date].institutions.push({
-                institution_id: service.institution_id,
-                institution_name: service.institution_name,
-                printers_serviced: service.printers_serviced,
-                printer_names: service.printer_names
-            });
+            if (!calendarData[date].institutions[service.institution_id]) {
+                calendarData[date].institutions[service.institution_id] = {
+                    institution_id: service.institution_id,
+                    institution_name: service.institution_name,
+                    printers_serviced: [],
+                    serviced_count: 0
+                };
+                calendarData[date].total_institutions++;
+            }
+            
+            // Add printer to serviced list (avoid duplicates)
+            const existing = calendarData[date].institutions[service.institution_id].printers_serviced
+                .find(p => p.printer_id === service.printer_id);
+            
+            if (!existing) {
+                calendarData[date].institutions[service.institution_id].printers_serviced.push({
+                    printer_id: service.printer_id,
+                    printer_name: service.printer_name,
+                    location: service.location,
+                    department: service.department,
+                    status: service.status,
+                    technician: `${service.tech_first_name} ${service.tech_last_name}`
+                });
+                calendarData[date].institutions[service.institution_id].serviced_count++;
+                calendarData[date].total_printers_serviced++;
+            }
         });
 
-        // Get technician info
-        const [techInfo] = await db.query(
-            'SELECT id, first_name, last_name, email FROM users WHERE id = ? AND role = "technician"',
-            [technician_id]
-        );
+        // Convert institutions object to array for each date
+        Object.keys(calendarData).forEach(date => {
+            calendarData[date].institutions = Object.values(calendarData[date].institutions);
+        });
 
         res.json({
-            technician: techInfo[0] || null,
             calendar_data: calendarData,
+            all_institutions: institutions,
             year: parseInt(year),
             month: parseInt(month)
         });
 
     } catch (error) {
-        console.error('Error fetching technician service calendar:', error);
+        console.error('Error fetching institution service calendar:', error);
         res.status(500).json({ error: 'Failed to fetch service calendar' });
     }
 });
 
-// Get list of all technicians for calendar filter
-app.get('/api/admin/technicians-list', authenticateAdmin, async (req, res) => {
+// Get detailed institution service info for a specific date (serviced and not serviced printers)
+app.get('/api/admin/institution-service-details', authenticateAdmin, async (req, res) => {
     try {
-        const [technicians] = await db.query(
-            `SELECT id, first_name, last_name, email 
-             FROM users 
-             WHERE role = 'technician' AND status = 'active' AND approval_status = 'approved'
-             ORDER BY first_name, last_name`
+        const { institution_id, year, month, day } = req.query;
+        
+        if (!institution_id || !year || !month || !day) {
+            return res.status(400).json({ error: 'Institution ID, year, month, and day are required' });
+        }
+
+        const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+        // Get institution info
+        const [institutionInfo] = await db.query(
+            'SELECT institution_id, name, type FROM institutions WHERE institution_id = ?',
+            [institution_id]
         );
-        res.json(technicians);
+
+        // Get all printers for this institution
+        const [allPrinters] = await db.query(`
+            SELECT 
+                p.id as printer_id,
+                p.name as printer_name,
+                p.location,
+                p.department
+            FROM printers p
+            JOIN institution_printer_assignments ipa ON p.id = ipa.printer_id
+            WHERE ipa.institution_id = ?
+            ORDER BY p.name
+        `, [institution_id]);
+
+        // Get serviced printers for this date
+        const [servicedPrinters] = await db.query(`
+            SELECT 
+                p.id as printer_id,
+                p.name as printer_name,
+                p.location,
+                p.department,
+                ms.status,
+                ms.created_at,
+                u.first_name as tech_first_name,
+                u.last_name as tech_last_name
+            FROM maintenance_services ms
+            JOIN printers p ON ms.printer_id = p.id
+            JOIN institution_printer_assignments ipa ON p.id = ipa.printer_id
+            LEFT JOIN users u ON ms.technician_id = u.id
+            WHERE ipa.institution_id = ?
+                AND DATE(ms.created_at) = ?
+                AND ms.status IN ('completed', 'approved')
+            ORDER BY p.name
+        `, [institution_id, date]);
+
+        // Create set of serviced printer IDs
+        const servicedIds = new Set(servicedPrinters.map(p => p.printer_id));
+
+        // Separate into serviced and not serviced
+        const notServicedPrinters = allPrinters.filter(p => !servicedIds.has(p.printer_id));
+
+        res.json({
+            institution: institutionInfo[0] || null,
+            date: date,
+            serviced_printers: servicedPrinters,
+            not_serviced_printers: notServicedPrinters,
+            total_printers: allPrinters.length,
+            serviced_count: servicedPrinters.length,
+            not_serviced_count: notServicedPrinters.length
+        });
+
     } catch (error) {
-        console.error('Error fetching technicians list:', error);
-        res.status(500).json({ error: 'Failed to fetch technicians' });
+        console.error('Error fetching institution service details:', error);
+        res.status(500).json({ error: 'Failed to fetch service details' });
     }
 });
 
-// ===== END ADMIN TECHNICIAN SERVICE CALENDAR API =====
+// ===== END ADMIN INSTITUTION SERVICE CALENDAR API =====
 
 // ===== ADMIN TECHNICIAN INVENTORY API =====
 
