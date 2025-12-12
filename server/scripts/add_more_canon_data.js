@@ -76,9 +76,9 @@ async function addMoreCanonData() {
             const [requestResult] = await db.query(
                 `INSERT INTO service_requests 
                 (request_number, institution_id, requested_by, technician_id, 
-                 printer_id, priority, status, location, description, created_at, 
+                 printer_id, priority, status, description, created_at, 
                  started_at, completed_at, resolution_notes)
-                VALUES (?, ?, ?, ?, ?, ?, 'completed', ?, ?, ?, ?, ?, ?)`,
+                VALUES (?, ?, ?, ?, ?, ?, 'completed', ?, ?, ?, ?, ?)`,
                 [
                     requestNumber,
                     institutions[0].institution_id,
@@ -86,7 +86,6 @@ async function addMoreCanonData() {
                     tech.id,
                     printer.id,
                     ['medium', 'high'][Math.floor(Math.random() * 2)],
-                    locations[Math.floor(Math.random() * locations.length)],
                     pattern.description,
                     requestDate,
                     new Date(requestDate.getTime() + 30 * 60000),

@@ -128,6 +128,7 @@ router.get('/school-printers/:institutionId', auth, async (req, res) => {
                 inv.model,
                 inv.serial_number,
                 inv.location,
+                inv.department,
                 inv.status,
                 cpa.assigned_at,
                 cpa.status as assignment_status,

@@ -257,15 +257,14 @@ router.post('/', auth, async (req, res) => {
             await conn.beginTransaction();
             const [result] = await conn.query(
                 `INSERT INTO service_requests (
-                    request_number, institution_id, requested_by, priority, status, location, description, created_at, printer_id
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?)`,
+                    request_number, institution_id, requested_by, priority, status, description, created_at, printer_id
+                ) VALUES (?, ?, ?, ?, ?, ?, NOW(), ?)`,
                 [
                     requestNumber,
                     institution_id,
                     requested_by,
                     normalizedPriority,
                     normalizedStatus,
-                    location,
                     description,
                     printer_id
                 ]

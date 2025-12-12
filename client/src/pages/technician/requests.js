@@ -1222,9 +1222,9 @@ function populateServiceRequestModal(request) {
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
                         </svg>
-                        Location:
+                        Walk-in Service
                     </div>
-                    <div class="text-sm text-purple-900 font-semibold">${request.location || 'Not specified'}</div>
+                    <div class="text-sm text-purple-900 font-semibold">Customer: ${request.walk_in_customer_name || 'N/A'}</div>
                 </div>
                 ${request.printer_brand ? `
                 <div class="mb-3 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
@@ -1424,11 +1424,12 @@ function populateJobCompletionModal(request) {
             `;
         }
         
-        // Location display
+        // Location display (from printer location, not service_requests table)
         let locationDisplay = '';
         if (request.is_walk_in) {
-            locationDisplay = request.location || 'Walk-in';
+            locationDisplay = 'Walk-in';
         } else {
+            // location comes from printers table via JOIN
             locationDisplay = request.institution_name ? `${request.institution_name}${request.location ? ' - ' + request.location : ''}` : (request.location || 'Not specified');
         }
         

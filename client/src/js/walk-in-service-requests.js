@@ -234,12 +234,6 @@ function renderRequestCard(request) {
                     <i class="fas fa-info-circle mr-2 text-slate-400"></i>
                     ${escapeHtml(request.issue_description)}
                 </p>
-                ${request.location ? `
-                <p class="text-sm text-slate-600">
-                    <i class="fas fa-map-marker-alt mr-2 text-slate-400"></i>
-                    ${escapeHtml(request.location)}
-                </p>
-                ` : ''}
                 ${request.technician_name ? `
                 <p class="text-sm text-slate-600">
                     <i class="fas fa-user-cog mr-2 text-slate-400"></i>
@@ -348,12 +342,6 @@ async function viewRequestDetails(requestId) {
                     <p class="text-sm text-slate-600 mb-1">Priority</p>
                     <p class="font-semibold text-slate-900">${request.priority.toUpperCase()}</p>
                 </div>
-                ${request.location ? `
-                <div class="bg-slate-50 rounded-lg p-4 col-span-2">
-                    <p class="text-sm text-slate-600 mb-1">Location</p>
-                    <p class="font-semibold text-slate-900">${escapeHtml(request.location)}</p>
-                </div>
-                ` : ''}
             </div>
 
             <!-- Issue Description -->
@@ -479,8 +467,7 @@ async function handleCreateRequest(e) {
         walk_in_customer_name: document.getElementById('customerName').value.trim(),
         printer_brand: document.getElementById('printerBrand').value.trim(),
         priority: document.getElementById('priority').value,
-        issue: document.getElementById('issueDescription').value.trim(),
-        location: document.getElementById('location').value.trim() || null
+        issue: document.getElementById('issueDescription').value.trim()
     };
 
     try {
@@ -506,8 +493,6 @@ async function handleCreateRequest(e) {
                 'urgent': 'Urgent'
             }[requestData.priority] || requestData.priority;
             document.getElementById('createdPriority').textContent = priorityBadge;
-            
-            document.getElementById('createdLocation').textContent = requestData.location || 'Not specified';
             
             // Close create modal and show success modal
             closeCreateModal();

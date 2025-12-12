@@ -214,8 +214,8 @@ router.post('/service-requests', authenticateinstitution_admin, async (req, res)
         // Insert the service request with request_number and required fields
         const [result] = await db.query(`
             INSERT INTO service_requests 
-            (request_number, printer_id, institution_id, requested_by, priority, status, location, description, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
+            (request_number, printer_id, institution_id, requested_by, priority, status, description, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
         `, [
             requestNumber,
             printer_id,
@@ -223,7 +223,6 @@ router.post('/service-requests', authenticateinstitution_admin, async (req, res)
             req.user.id,
             priority,
             'pending',
-            location || 'Unknown',
             description
         ]);
 

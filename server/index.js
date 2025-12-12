@@ -3411,19 +3411,17 @@ app.post('/api/service-requests', auth, async (req, res) => {
                 institution_id,
                 priority,
                 description,
-                location,
                 status,
                 requested_by,
                 is_walk_in,
                 created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, FALSE, NOW())`,
+            ) VALUES (?, ?, ?, ?, ?, 'pending', ?, FALSE, NOW())`,
             [
                 requestNumber,
                 actualPrinterId,
                 institutionId,
                 priority || 'medium',
                 description,
-                printer.location || '',
                 userId
             ]
         );
@@ -4514,7 +4512,7 @@ app.post('/api/service-requests/:id/status', async (req, res) => {
 // Create walk-in service request
 app.post('/api/walk-in-service-requests', authenticateAdmin, async (req, res) => {
     try {
-        const { walk_in_customer_name, printer_brand, priority, issue, location } = req.body;
+        const { walk_in_customer_name, printer_brand, priority, issue } = req.body;
         const created_by = req.user.id;
         
         // Validation
@@ -4537,13 +4535,12 @@ app.post('/api/walk-in-service-requests', authenticateAdmin, async (req, res) =>
                 is_walk_in,
                 priority,
                 description,
-                location,
                 status,
                 requested_by,
                 institution_id,
                 created_at
-            ) VALUES (?, ?, ?, TRUE, ?, ?, ?, 'pending', ?, NULL, NOW())`,
-            [requestNumber, walk_in_customer_name, printer_brand, priority || 'medium', issue, location || '', created_by]
+            ) VALUES (?, ?, ?, TRUE, ?, ?, 'pending', ?, NULL, NOW())`,
+            [requestNumber, walk_in_customer_name, printer_brand, priority || 'medium', issue, created_by]
         );
         
         // Get available technicians to notify

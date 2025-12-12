@@ -198,9 +198,9 @@ async function populateTestData() {
             const [requestResult] = await db.query(
                 `INSERT INTO service_requests 
                 (request_number, institution_id, requested_by, technician_id, 
-                 printer_id, priority, status, location, description, created_at, 
+                 printer_id, priority, status, description, created_at, 
                  started_at, completed_at, resolution_notes)
-                VALUES (?, ?, ?, ?, ?, ?, 'completed', ?, ?, ?, ?, ?, ?)`,
+                VALUES (?, ?, ?, ?, ?, ?, 'completed', ?, ?, ?, ?, ?)`,
                 [
                     requestNumber,
                     institution.institution_id,
@@ -208,7 +208,6 @@ async function populateTestData() {
                     tech.id,
                     printer.id,
                     ['medium', 'high', 'urgent'][Math.floor(Math.random() * 3)],
-                    locations[Math.floor(Math.random() * locations.length)],
                     issuePattern.description,
                     requestDate,
                     new Date(requestDate.getTime() + 30 * 60000), // 30 mins later
