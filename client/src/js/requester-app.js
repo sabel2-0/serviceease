@@ -317,7 +317,7 @@ function displayHomePrinters(printers) {
             <div class="font-medium text-gray-800">${printerName}</div>
             <div class="text-xs text-gray-500 mt-1 flex flex-wrap gap-2">
               ${serialNumber ? `<span>${serialNumber}</span>` : ''}
-              ${department ? `<span>â¢ ${department}</span>` : ''}
+              ${department ? `<span>${department}</span>` : ''}
             </div>
           </div>
           <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -396,7 +396,7 @@ function displayRecentRequests(requests) {
             </div>
             <div class="text-xs text-gray-600 mb-2 line-clamp-2">${req.description}</div>
             <div class="flex items-center gap-3 text-xs text-gray-500">
-              <span>ð ${timeAgo}</span>
+              <span>${timeAgo}</span>
               ${req.priority ? `<span class="px-2 py-0.5 rounded ${getPriorityColorCompact(req.priority)}">${req.priority.toUpperCase()}</span>` : ''}
             </div>
           </div>
@@ -513,12 +513,12 @@ function displayHistoryRequests(requests) {
         
         <div class="space-y-2 mb-3">
           <div class="text-sm text-gray-700">${req.description}</div>
-          ${req.location ? `<div class="text-xs text-gray-500">ð ${req.location}</div>` : ''}
-          ${technicianName && !needsApproval ? `<div class="text-xs text-gray-500">ð· ${technicianName}</div>` : ''}
+          ${req.location ? `<div class="text-xs text-gray-500">${req.location}</div>` : ''}
+          ${technicianName && !needsApproval ? `<div class="text-xs text-gray-500">${technicianName}</div>` : ''}
         </div>
         
         <div class="flex items-center justify-between text-xs text-gray-500 pt-3 border-t">
-          <div>ð¤ ${institutionUserName}</div>
+          <div>${institutionUserName}</div>
           <div>${date} ${time}</div>
         </div>
         

@@ -3180,7 +3180,7 @@ app.get('/api/users/me/printers', auth, async (req, res) => {
 
         const [rows] = await db.query(`
             SELECT upa.id as assignment_id, upa.printer_id, upa.department, upa.assigned_at,
-                   ii.name, ii.brand, ii.model, ii.serial_number
+                   ii.name, ii.brand, ii.model, ii.serial_number, ii.location
             FROM user_printer_assignments upa
             LEFT JOIN printers ii ON upa.printer_id = ii.id
             WHERE upa.user_id = ?
@@ -3352,8 +3352,8 @@ app.post('/api/service-requests', auth, async (req, res) => {
         // Get location and department from request body
         const { location, department } = req.body;
         
-        // If institution admin provides location or department, update the printer
-        if (req.user.role === 'institution_admin') {
+        // If institution admin or institution user provides location or department, update the printer
+        if (req.user.role === 'institution_admin' || req.user.role === 'institution_user') {
             const updates = [];
             const values = [];
             
@@ -3362,11 +3362,11 @@ app.post('/api/service-requests', auth, async (req, res) => {
                 updates.push('location = ?');
                 values.push(location.trim());
                 printer.location = location.trim();
-                console.log(`[LOCATION UPDATE] Printer ${actualPrinterId} location updated to: ${location.trim()}`);
+                console.log(`[LOCATION UPDATE] Printer ${actualPrinterId} location updated by ${req.user.role} to: ${location.trim()}`);
             }
             
-            // Update department if provided and different
-            if (department && department.trim() && department.trim() !== printer.department) {
+            // Update department if provided and different (only institution_admin can update department)
+            if (req.user.role === 'institution_admin' && department && department.trim() && department.trim() !== printer.department) {
                 updates.push('department = ?');
                 values.push(department.trim());
                 printer.department = department.trim();

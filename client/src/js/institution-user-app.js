@@ -317,7 +317,7 @@ function displayHomePrinters(printers) {
             <div class="font-medium text-gray-800">${printerName}</div>
             <div class="text-xs text-gray-500 mt-1 flex flex-wrap gap-2">
               ${serialNumber ? `<span>${serialNumber}</span>` : ''}
-              ${department ? `<span>â¢ ${department}</span>` : ''}
+              ${department ? `<span>${department}</span>` : ''}
             </div>
           </div>
           <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -396,7 +396,7 @@ function displayRecentRequests(requests) {
             </div>
             <div class="text-xs text-gray-600 mb-2 line-clamp-2">${req.description}</div>
             <div class="flex items-center gap-3 text-xs text-gray-500">
-              <span> ${timeAgo}</span>
+              <span>${timeAgo}</span>
               ${req.priority ? `<span class="px-2 py-0.5 rounded ${getPriorityColorCompact(req.priority)}">${req.priority.toUpperCase()}</span>` : ''}
             </div>
           </div>
@@ -516,12 +516,12 @@ function displayHistoryRequests(requests) {
         
         <div class="space-y-2 mb-3">
           <div class="text-sm text-gray-700">${req.description}</div>
-          ${req.location ? `<div class="text-xs text-gray-500"> ${req.location}</div>` : ''}
-          ${technicianName && !needsApproval ? `<div class="text-xs text-gray-500">· ${technicianName}</div>` : ''}
+          ${req.location ? `<div class="text-xs text-gray-500">${req.location}</div>` : ''}
+          ${technicianName && !needsApproval ? `<div class="text-xs text-gray-500">${technicianName}</div>` : ''}
         </div>
         
         <div class="flex items-center justify-between text-xs text-gray-500 pt-3 border-t">
-          <div>¤ ${institutionUserName}</div>
+          <div>${institutionUserName}</div>
           <div>${date} ${time}</div>
         </div>
         
@@ -638,6 +638,8 @@ async function initRequestForm() {
         printers.forEach(p => {
           const opt = document.createElement('option');
           opt.value = p.printer_id || p.id || '';
+          // Store location in dataset for smart auto-fill
+          opt.dataset.location = p.location || '';
           const nameParts = [];
           if (p.name) nameParts.push(p.name);
           if (p.brand) nameParts.push(p.brand);
@@ -645,6 +647,29 @@ async function initRequestForm() {
           if (p.serial_number) nameParts.push('SN:' + p.serial_number);
           opt.textContent = nameParts.join(' ') || `Printer ${p.printer_id || p.id}`;
           select.appendChild(opt);
+        });
+
+        // Add event listener for smart location detection
+        select.addEventListener('change', function() {
+          const selectedOption = this.options[this.selectedIndex];
+          const printerLocation = selectedOption?.dataset.location || '';
+          const locationInput = document.getElementById('rq-location');
+          const locationRequired = document.getElementById('locationRequired');
+          const locationHint = document.getElementById('locationHint');
+
+          if (printerLocation) {
+            // Location exists - auto-fill and make optional
+            locationInput.value = printerLocation;
+            locationRequired.classList.add('hidden');
+            locationHint.innerHTML = '✓ Location saved. Edit if printer moved.';
+            locationHint.className = 'text-xs text-green-600 mt-1';
+          } else {
+            // No location - require user to provide
+            locationInput.value = '';
+            locationRequired.classList.remove('hidden');
+            locationHint.innerHTML = '⚠️ Please provide printer location (Building, Floor, Room)';
+            locationHint.className = 'text-xs text-orange-600 mt-1';
+          }
         });
       } catch (e) {
         console.error('populate assigned printers', e);
@@ -673,11 +698,26 @@ async function submitRequestForm() {
   const description = document.getElementById('rq-description');
   const printerErr = document.getElementById('rq-printer-error');
   const descErr = document.getElementById('rq-description-error');
+  const locationErr = document.getElementById('rq-location-error');
+  const locationRequired = document.getElementById('locationRequired');
 
   // simple validation
   let ok = true;
   if (printer && printer.value === '') { printerErr?.classList.remove('hidden'); ok = false; } else { printerErr?.classList.add('hidden'); }
   if (!description || !description.value.trim()) { descErr?.classList.remove('hidden'); ok = false; } else { descErr?.classList.add('hidden'); }
+  
+  // Check if location is required and empty
+  if (!locationRequired.classList.contains('hidden')) {
+    if (!location || !location.value.trim()) { 
+      locationErr?.classList.remove('hidden'); 
+      ok = false; 
+    } else { 
+      locationErr?.classList.add('hidden'); 
+    }
+  } else {
+    locationErr?.classList.add('hidden');
+  }
+  
   if (!ok) return;
 
   try {
@@ -686,7 +726,8 @@ async function submitRequestForm() {
     const payload = {
       printerId: printer?.value,
       priority: priority?.value || 'medium',
-      description: description?.value?.trim() || ''
+      description: description?.value?.trim() || '',
+      location: location?.value?.trim() || null // Include location in payload
     };
 
     console.log('Submitting service request:', payload);
