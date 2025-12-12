@@ -116,15 +116,139 @@
                 </div>
             </div>
 
-            <!-- Recent Activities Section -->
-            <!-- ...existing code... -->
+            <!-- Public Schools Maintenance Calendar -->
+            <div class="bg-white rounded-xl shadow-lg p-6 mt-8">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900">Public Schools Maintenance Calendar</h2>
+                        <p class="text-sm text-slate-600 mt-1">View maintenance services across all public schools</p>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <!-- Month/Year Navigation -->
+                        <div class="flex items-center gap-2">
+                            <button id="prevMonth" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <span id="currentMonthYear" class="px-4 py-2 font-semibold text-slate-900 min-w-[150px] text-center">
+                                December 2025
+                            </span>
+                            <button id="nextMonth" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Calendar Grid -->
+                <div id="calendarGrid" class="grid grid-cols-7 gap-2">
+                    <!-- Calendar will be generated here -->
+                </div>
+
+                <!-- Loading State -->
+                <div id="calendarLoading" class="text-center py-12 hidden">
+                    <i class="fas fa-spinner fa-spin text-4xl text-slate-400 mb-4"></i>
+                    <p class="text-slate-600">Loading calendar...</p>
+                </div>
+
+                <!-- Empty State -->
+                <div id="calendarEmpty" class="text-center py-12">
+                    <i class="fas fa-calendar text-4xl text-slate-300 mb-4"></i>
+                    <p class="text-slate-600">Loading maintenance calendar...</p>
+                </div>
+            </div>
         </main>
+    </div>
+
+    <!-- Modals (same as admin) -->
+    <div id="dayDetailModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[80vh] overflow-hidden">
+            <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex items-center justify-between">
+                <div>
+                    <h3 class="text-xl font-bold text-white" id="modalDate">December 12, 2025</h3>
+                    <p class="text-blue-100 text-sm">Maintenance Services Summary</p>
+                </div>
+                <button onclick="closeDayDetailModal()" class="text-white hover:bg-blue-800 rounded-lg p-2 transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 overflow-y-auto max-h-[calc(80vh-120px)]">
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="bg-blue-50 rounded-lg p-4">
+                        <div class="text-sm text-blue-600 font-medium">Schools Serviced</div>
+                        <div class="text-3xl font-bold text-blue-900 mt-1" id="modalTotalSchools">0</div>
+                    </div>
+                    <div class="bg-green-50 rounded-lg p-4">
+                        <div class="text-sm text-green-600 font-medium">Services Completed</div>
+                        <div class="text-3xl font-bold text-green-900 mt-1" id="modalTotalPrinters">0</div>
+                    </div>
+                </div>
+                <div id="modalInstitutionsList" class="space-y-3"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="institutionDetailModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[85vh] overflow-hidden">
+            <div class="bg-gradient-to-r from-green-600 to-green-700 px-6 py-4 flex items-center justify-between">
+                <div>
+                    <h3 class="text-xl font-bold text-white" id="instModalName">Institution Name</h3>
+                    <p class="text-green-100 text-sm" id="instModalDate">December 12, 2025</p>
+                </div>
+                <button onclick="closeInstitutionDetailModal()" class="text-white hover:bg-green-800 rounded-lg p-2 transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto max-h-[calc(85vh-120px)]">
+                <div class="grid grid-cols-3 gap-4 mb-6">
+                    <div class="bg-slate-50 rounded-lg p-4 text-center">
+                        <div class="text-sm text-slate-600 font-medium">Total Printers</div>
+                        <div class="text-3xl font-bold text-slate-900 mt-1" id="instTotalPrinters">0</div>
+                    </div>
+                    <div class="bg-green-50 rounded-lg p-4 text-center">
+                        <div class="text-sm text-green-600 font-medium">Serviced</div>
+                        <div class="text-3xl font-bold text-green-900 mt-1" id="instServicedCount">0</div>
+                    </div>
+                    <div class="bg-amber-50 rounded-lg p-4 text-center">
+                        <div class="text-sm text-amber-600 font-medium">Not Serviced</div>
+                        <div class="text-3xl font-bold text-amber-900 mt-1" id="instNotServicedCount">0</div>
+                    </div>
+                </div>
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-slate-900 mb-3 flex items-center">
+                        <i class="fas fa-check-circle text-green-600 mr-2"></i>
+                        Serviced Printers
+                    </h4>
+                    <div id="servicedPrintersList" class="space-y-2"></div>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold text-slate-900 mb-3 flex items-center">
+                        <i class="fas fa-exclamation-circle text-amber-600 mr-2"></i>
+                        Not Serviced Printers
+                    </h4>
+                    <div id="notServicedPrintersList" class="space-y-2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="serviceDetailModal" class="fixed inset-0 bg-black bg-opacity-50 z-[60] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden">
+            <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex items-center justify-between">
+                <h3 class="text-xl font-bold text-white">Maintenance Service Details</h3>
+                <button onclick="closeServiceDetailModal()" class="text-white hover:bg-blue-800 rounded-lg p-2 transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div id="serviceDetailContent" class="p-6 overflow-y-auto max-h-[calc(90vh-80px)]"></div>
+        </div>
     </div>
 
     <script src="../../js/auth.js"></script>
     <script src="../../js/dynamic-sidebar-loader.js"></script>
     <script src="../../js/operations-officer.js"></script>
     <script src="../../js/operations-officer/role-verification.js"></script>
+    <script src="../../js/admin-calendar.js"></script>
 </body>
 </html>
 

@@ -366,6 +366,22 @@
             </div>
         </div>
     </div>
+
+    <!-- Service Detail Modal -->
+    <div id="serviceDetailModal" class="fixed inset-0 bg-black bg-opacity-50 z-[60] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden">
+            <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex items-center justify-between">
+                <h3 class="text-xl font-bold text-white">Maintenance Service Details</h3>
+                <button onclick="closeServiceDetailModal()" class="text-white hover:bg-blue-800 rounded-lg p-2 transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div id="serviceDetailContent" class="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
+                <!-- Content will be dynamically loaded -->
+            </div>
+        </div>
+    </div>
     
     <!-- Load dynamic sidebar system -->
     <script src="/js/auth.js"></script>
@@ -790,7 +806,8 @@
                     const servicedList = document.getElementById('servicedPrintersList');
                     if (data.serviced_printers.length > 0) {
                         servicedList.innerHTML = data.serviced_printers.map(printer => `
-                            <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+                            <div class="bg-green-50 border border-green-200 rounded-lg p-3 cursor-pointer hover:bg-green-100 transition-colors"
+                                 onclick="showServiceDetail(${printer.id}, '${printer.service_number}')">
                                 <div class="flex items-center justify-between">
                                     <div class="flex items-center gap-3">
                                         <i class="fas fa-print text-green-600"></i>
@@ -799,11 +816,14 @@
                                             <div class="text-xs text-slate-600">
                                                 📍 ${printer.location || 'N/A'} • 🏢 ${printer.department || 'N/A'}
                                             </div>
+                                            <div class="text-xs font-semibold text-green-700 mt-1">
+                                                ${printer.service_number}
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="text-right">
                                         <div class="text-xs text-slate-600">Technician:</div>
-                                        <div class="text-sm font-medium text-slate-900">${printer.technician || 'N/A'}</div>
+                                        <div class="text-sm font-medium text-slate-900">${printer.tech_first_name} ${printer.tech_last_name}</div>
                                     </div>
                                 </div>
                             </div>
@@ -849,6 +869,131 @@
             document.getElementById('institutionDetailModal').addEventListener('click', function(e) {
                 if (e.target === this) {
                     closeInstitutionDetailModal();
+                }
+            });
+
+            // Show service detail modal
+            window.showServiceDetail = async function(serviceId, serviceNumber) {
+                try {
+                    const token = localStorage.getItem('token');
+                    const response = await fetch(`/api/maintenance-services/${serviceId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to load service details');
+                    }
+
+                    const service = await response.json();
+                    
+                    // Parse parts_used if string
+                    let partsUsed = [];
+                    if (service.parts_used) {
+                        try {
+                            partsUsed = typeof service.parts_used === 'string' ? JSON.parse(service.parts_used) : service.parts_used;
+                        } catch (e) {
+                            partsUsed = [];
+                        }
+                    }
+                    
+                    const content = `
+                        <div class="space-y-6">
+                            <!-- Service Number Badge -->
+                            <div class="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 text-center">
+                                <div class="text-sm text-blue-600 font-medium">Service Number</div>
+                                <div class="text-3xl font-bold text-blue-900 mt-1">${serviceNumber}</div>
+                            </div>
+
+                            <!-- Institution & Printer Info -->
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <div class="text-sm text-slate-600 font-medium mb-2">🏫 Institution</div>
+                                    <div class="font-semibold text-slate-900">${service.institution_name || 'N/A'}</div>
+                                </div>
+                                <div>
+                                    <div class="text-sm text-slate-600 font-medium mb-2">🖨️ Printer</div>
+                                    <div class="font-semibold text-slate-900">${service.printer_name || 'N/A'}</div>
+                                </div>
+                                <div>
+                                    <div class="text-sm text-slate-600 font-medium mb-2">📍 Location</div>
+                                    <div class="text-slate-900">${service.location || 'N/A'}</div>
+                                </div>
+                                <div>
+                                    <div class="text-sm text-slate-600 font-medium mb-2">🏢 Department</div>
+                                    <div class="text-slate-900">${service.department || 'N/A'}</div>
+                                </div>
+                            </div>
+
+                            <!-- Technician Info -->
+                            <div class="bg-slate-50 rounded-lg p-4">
+                                <div class="text-sm text-slate-600 font-medium mb-2">👨‍🔧 Technician</div>
+                                <div class="font-semibold text-slate-900">${service.technician_name || 'N/A'}</div>
+                                <div class="text-xs text-slate-600 mt-1">Submitted: ${new Date(service.created_at).toLocaleString()}</div>
+                            </div>
+
+                            <!-- Service Description -->
+                            <div>
+                                <div class="text-sm text-slate-600 font-medium mb-2">📋 Service Description</div>
+                                <div class="bg-slate-50 rounded-lg p-3 text-slate-900">${service.service_description || 'No description provided'}</div>
+                            </div>
+
+                            <!-- Parts Used -->
+                            ${partsUsed.length > 0 ? `
+                                <div>
+                                    <div class="text-sm text-slate-600 font-medium mb-2">🔧 Parts Used</div>
+                                    <div class="space-y-2">
+                                        ${partsUsed.map(part => `
+                                            <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 flex justify-between items-center">
+                                                <span class="font-medium text-slate-900">${part.name}</span>
+                                                <span class="text-sm text-slate-600">Qty: ${part.quantity}</span>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
+
+                            <!-- Completion Photo -->
+                            ${service.completion_photo ? `
+                                <div>
+                                    <div class="text-sm text-slate-600 font-medium mb-2">📷 Completion Photo</div>
+                                    <img src="${service.completion_photo}" alt="Completion" class="w-full rounded-lg border border-slate-200">
+                                </div>
+                            ` : ''}
+
+                            <!-- Approval Info -->
+                            ${service.approved_by_name ? `
+                                <div class="bg-green-50 rounded-lg p-4">
+                                    <div class="text-sm text-green-600 font-medium mb-2">✓ Approved By</div>
+                                    <div class="font-semibold text-green-900">${service.approved_by_name}</div>
+                                </div>
+                            ` : ''}
+
+                            <!-- Status Badge -->
+                            <div class="text-center">
+                                <span class="inline-block px-4 py-2 rounded-full text-sm font-semibold ${service.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}">
+                                    ${service.status.toUpperCase()}
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                    
+                    document.getElementById('serviceDetailContent').innerHTML = content;
+                    document.getElementById('serviceDetailModal').classList.remove('hidden');
+                    
+                } catch (error) {
+                    console.error('Error loading service details:', error);
+                    alert('Failed to load service details');
+                }
+            };
+
+            window.closeServiceDetailModal = function() {
+                document.getElementById('serviceDetailModal').classList.add('hidden');
+            };
+
+            // Close service detail modal on overlay click
+            document.getElementById('serviceDetailModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeServiceDetailModal();
                 }
             });
 

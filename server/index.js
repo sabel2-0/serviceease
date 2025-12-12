@@ -5941,6 +5941,8 @@ app.get('/api/admin/institution-service-calendar', authenticateAdmin, async (req
         // Get maintenance services for the specified month
         const [services] = await db.query(`
             SELECT 
+                ms.id,
+                CONCAT('MS-', ms.id) as service_number,
                 DATE(ms.created_at) as service_date,
                 i.institution_id,
                 i.name as institution_name,
@@ -5949,12 +5951,20 @@ app.get('/api/admin/institution-service-calendar', authenticateAdmin, async (req
                 p.location,
                 p.department,
                 ms.status,
+                ms.service_description,
+                ms.parts_used,
+                ms.completion_photo,
+                ms.created_at,
+                ms.approved_by_user_id,
+                ms.approved_by_institution_admin,
                 u.first_name as tech_first_name,
-                u.last_name as tech_last_name
+                u.last_name as tech_last_name,
+                CONCAT(approver.first_name, ' ', approver.last_name) as approved_by_name
             FROM maintenance_services ms
             JOIN printers p ON ms.printer_id = p.id
             JOIN institutions i ON ms.institution_id COLLATE utf8mb4_0900_ai_ci = i.institution_id COLLATE utf8mb4_0900_ai_ci
             LEFT JOIN users u ON ms.technician_id = u.id
+            LEFT JOIN users approver ON ms.approved_by_user_id = approver.id
             WHERE YEAR(ms.created_at) = ?
                 AND MONTH(ms.created_at) = ?
                 AND i.type = 'public_school'
@@ -5988,12 +5998,23 @@ app.get('/api/admin/institution-service-calendar', authenticateAdmin, async (req
             
             // Add each service (count all services, not just unique printers)
             calendarData[date].institutions[service.institution_id].services.push({
+                id: service.id,
+                service_number: service.service_number,
                 printer_id: service.printer_id,
                 printer_name: service.printer_name,
                 location: service.location,
                 department: service.department,
                 status: service.status,
-                technician: `${service.tech_first_name} ${service.tech_last_name}`
+                service_description: service.service_description,
+                parts_used: service.parts_used,
+                completion_photo: service.completion_photo,
+                created_at: service.created_at,
+                approved_by_user_id: service.approved_by_user_id,
+                approved_by_institution_admin: service.approved_by_institution_admin,
+                approved_by_name: service.approved_by_name,
+                technician: `${service.tech_first_name} ${service.tech_last_name}`,
+                tech_first_name: service.tech_first_name,
+                tech_last_name: service.tech_last_name
             });
             calendarData[date].institutions[service.institution_id].serviced_count++;
             calendarData[date].total_printers_serviced++;
@@ -6050,17 +6071,26 @@ app.get('/api/admin/institution-service-details', authenticateAdmin, async (req,
         // Get serviced printers for this date
         const [servicedPrinters] = await db.query(`
             SELECT 
+                ms.id,
+                CONCAT('MS-', ms.id) as service_number,
                 p.id as printer_id,
                 p.name as printer_name,
                 p.location,
                 p.department,
                 ms.status,
+                ms.service_description,
+                ms.parts_used,
+                ms.completion_photo,
                 ms.created_at,
+                ms.approved_by_user_id,
+                ms.approved_by_institution_admin,
                 u.first_name as tech_first_name,
-                u.last_name as tech_last_name
+                u.last_name as tech_last_name,
+                CONCAT(approver.first_name, ' ', approver.last_name) as approved_by_name
             FROM maintenance_services ms
             JOIN printers p ON ms.printer_id = p.id
             LEFT JOIN users u ON ms.technician_id = u.id
+            LEFT JOIN users approver ON ms.approved_by_user_id = approver.id
             WHERE ms.institution_id = ?
                 AND DATE(ms.created_at) = ?
                 AND ms.status IN ('completed', 'approved')

@@ -1,13 +1,62 @@
 ﻿const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
-const { auth } = require('../middleware/auth');
+const { auth, authenticateAdmin } = require('../middleware/auth');
 
 /**
  * Maintenance Services API
  * Allows technicians to submit scheduled maintenance services for printers
  * Requires dual approval from institution_admin and institution_user
  */
+
+// ==================== ADMIN ENDPOINTS ====================
+
+/**
+ * Get a single maintenance service by ID (for admin/operations officer)
+ * GET /api/maintenance-services/:id
+ */
+router.get('/:id', authenticateAdmin, async (req, res) => {
+    try {
+        const serviceId = req.params.id;
+        
+        const [services] = await db.query(`
+            SELECT 
+                ms.id,
+                CONCAT('MS-', ms.id) as service_number,
+                ms.service_description,
+                ms.parts_used,
+                ms.completion_photo,
+                ms.status,
+                ms.created_at,
+                ms.approved_by_user_id,
+                ms.approved_by_institution_admin,
+                ms.approved_at,
+                i.institution_id,
+                i.name as institution_name,
+                p.id as printer_id,
+                p.name as printer_name,
+                p.location,
+                p.department,
+                CONCAT(tech.first_name, ' ', tech.last_name) as technician_name,
+                CONCAT(approver.first_name, ' ', approver.last_name) as approved_by_name
+            FROM maintenance_services ms
+            JOIN printers p ON ms.printer_id = p.id
+            JOIN institutions i ON ms.institution_id COLLATE utf8mb4_0900_ai_ci = i.institution_id COLLATE utf8mb4_0900_ai_ci
+            LEFT JOIN users tech ON ms.technician_id = tech.id
+            LEFT JOIN users approver ON ms.approved_by_user_id = approver.id
+            WHERE ms.id = ?
+        `, [serviceId]);
+        
+        if (services.length === 0) {
+            return res.status(404).json({ error: 'Service not found' });
+        }
+        
+        res.json(services[0]);
+    } catch (error) {
+        console.error('Error fetching maintenance service:', error);
+        res.status(500).json({ error: 'Failed to fetch service details' });
+    }
+});
 
 // ==================== TECHNICIAN ENDPOINTS ====================
 
@@ -801,7 +850,7 @@ router.get('/history', auth, async (req, res) => {
                 inv.serial_number as printer_serial_number,
                 inv.location,
                 inv.department as printer_department,
-                CONCAT('VS-', vs.id) as request_number,
+                CONCAT('MS-', vs.id) as request_number,
                 CONCAT(approver.first_name, ' ', approver.last_name) as approver_name,
                 approver.role as approver_role,
                 CONCAT(institution_admin.first_name, ' ', institution_admin.last_name) as institution_admin_name,
