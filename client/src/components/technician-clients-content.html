@@ -829,7 +829,8 @@ window.filterPrinters = function() {
             (printer.brand || '').toLowerCase().includes(searchTerm) ||
             (printer.model || '').toLowerCase().includes(searchTerm) ||
             (printer.serial_number || '').toLowerCase().includes(searchTerm) ||
-            (printer.location || '').toLowerCase().includes(searchTerm);
+            (printer.location || '').toLowerCase().includes(searchTerm) ||
+            (printer.department || '').toLowerCase().includes(searchTerm);
         
         const hasService = printer.last_service_status !== null;
         const matchesFilter = currentPrinterFilter === 'all' ||
@@ -915,6 +916,7 @@ window.renderPrinterCard = function(printer, institutionId) {
                         <h4 class="font-bold text-slate-800 text-base truncate">${printer.brand} ${printer.model}</h4>
                         <p class="text-xs text-slate-500 font-mono mt-1">S/N: ${printer.serial_number || 'N/A'}</p>
                         ${printer.location ? `<p class="text-xs text-slate-600 truncate mt-1">📍 ${printer.location}</p>` : ''}
+                        ${printer.department ? `<p class="text-xs text-slate-600 truncate mt-1">🏢 ${printer.department}</p>` : ''}
                     </div>
                 </div>
                 ${hasService ? `

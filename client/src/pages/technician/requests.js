@@ -392,6 +392,12 @@ function createMobileRequestCard(request) {
                     ${request.institution_user_first_name || ''} ${request.institution_user_last_name || 'N/A'}
                     ${request.institution_user_role ? `<span class="ml-1 px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-semibold uppercase">${request.institution_user_role}</span>` : ''}
                 </div>
+                ${request.location || request.printer_department ? `
+                <div class="mt-1 flex flex-wrap gap-2 text-xs text-slate-500">
+                    ${request.location ? `<span>📍 ${request.location}</span>` : ''}
+                    ${request.printer_department ? `<span>🏢 ${request.printer_department}</span>` : ''}
+                </div>
+                ` : ''}
                 `}
             </div>
             
