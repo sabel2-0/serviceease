@@ -137,12 +137,15 @@ router.get('/my-submissions', auth, async (req, res) => {
 // ==================== ADMIN ENDPOINTS ====================
 
 /**
- * Get a single maintenance service by ID (for admin/operations officer)
+ * Get a single maintenance service by ID
  * GET /api/maintenance-services/:id
+ * Accessible by: admin, operations officer, technician (own services), institution_admin (own institution), institution_user (own institution)
  */
-router.get('/:id', authenticateAdmin, async (req, res) => {
+router.get('/:id', auth, async (req, res) => {
     try {
         const serviceId = req.params.id;
+        const userId = req.user.id;
+        const userRole = req.user.role;
         
         const [services] = await db.query(`
             SELECT 
@@ -155,8 +158,10 @@ router.get('/:id', authenticateAdmin, async (req, res) => {
                 ms.created_at,
                 ms.approved_by_user_id,
                 ms.approved_at,
+                ms.technician_id,
                 i.institution_id,
                 i.name as institution_name,
+                i.user_id as institution_admin_id,
                 p.id as printer_id,
                 p.name as printer_name,
                 p.location,
@@ -175,7 +180,33 @@ router.get('/:id', authenticateAdmin, async (req, res) => {
             return res.status(404).json({ error: 'Service not found' });
         }
         
-        res.json(services[0]);
+        const service = services[0];
+        
+        // Role-based access control
+        if (userRole === 'admin' || userRole === 'operations_officer') {
+            // Admins and operations officers can view all services
+            return res.json(service);
+        } else if (userRole === 'technician' && service.technician_id === userId) {
+            // Technicians can view their own services
+            return res.json(service);
+        } else if (userRole === 'institution_admin' && service.institution_admin_id === userId) {
+            // Institution admins can view services for their institution
+            return res.json(service);
+        } else if (userRole === 'institution_user') {
+            // Institution users can view services for printers they manage
+            // Check if they have access to this institution
+            const [userInstitution] = await db.query(
+                'SELECT institution_id FROM users WHERE id = ?',
+                [userId]
+            );
+            if (userInstitution.length > 0 && userInstitution[0].institution_id === service.institution_id) {
+                return res.json(service);
+            }
+        }
+        
+        // If none of the above conditions are met, deny access
+        return res.status(403).json({ error: 'Access denied. You do not have permission to view this service.' });
+        
     } catch (error) {
         console.error('Error fetching maintenance service:', error);
         res.status(500).json({ error: 'Failed to fetch service details' });
