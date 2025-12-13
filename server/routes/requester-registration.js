@@ -242,7 +242,7 @@ router.post('/submit', (req, res) => {
                         `SELECT ii.id
                         FROM institution_printer_assignments cpa
                         INNER JOIN printers ii ON cpa.printer_id = ii.id
-                        WHERE cpa.institution_id COLLATE utf8mb4_unicode_ci = ? COLLATE utf8mb4_unicode_ci
+                        WHERE cpa.institution_id = ?
                         AND LOWER(TRIM(ii.serial_number)) = LOWER(TRIM(?))
                         AND LOWER(TRIM(ii.brand)) LIKE LOWER(TRIM(?))`,
                         [institution_id, printer.serial_number, `%${printer.brand}%`]

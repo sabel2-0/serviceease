@@ -817,7 +817,7 @@ app.post('/api/change-temporary-password', async (req, res) => {
 });
 
 // API endpoint to get pending user registrations
-app.get('/api/pending-users', async (req, res) => {
+app.get('/api/pending-users', authenticateAdmin, async (req, res) => {
     try {
         const pendingUsers = await User.getPendingUsers();
         res.json(pendingUsers);
@@ -1192,6 +1192,19 @@ app.get('/api/admin/dashboard-stats', authenticateAdmin, async (req, res) => {
         );
         const totalTechnicians = techniciansResult[0].count;
 
+        // Get pending completions (maintenance services pending approval)
+        const [pendingCompletionsResult] = await db.query(
+            `SELECT COUNT(*) as count FROM maintenance_services 
+             WHERE status IN ('pending_approval', 'pending_institution_admin', 'pending_institution_user')`
+        );
+        const pendingCompletions = pendingCompletionsResult[0].count;
+
+        // Get total service requests
+        const [totalServiceRequestsResult] = await db.query(
+            'SELECT COUNT(*) as count FROM service_requests'
+        );
+        const totalServiceRequests = totalServiceRequestsResult[0].count;
+
         res.json({
             totalUsers,
             pendingInstitutionAdmins,
@@ -1201,7 +1214,9 @@ app.get('/api/admin/dashboard-stats', authenticateAdmin, async (req, res) => {
             availablePrinters,
             pendingPartsRequests,
             totalParts,
-            totalTechnicians
+            totalTechnicians,
+            pendingCompletions,
+            totalServiceRequests
         });
     } catch (error) {
         console.error('Error fetching dashboard stats:', error);
@@ -2574,7 +2589,7 @@ app.get('/api/institutions/:institutionId/printers', async (req, res) => {
                 cpa.status
             FROM institution_printer_assignments cpa
             JOIN printers ii ON cpa.printer_id = ii.id
-            WHERE cpa.institution_id COLLATE utf8mb4_unicode_ci = ? COLLATE utf8mb4_unicode_ci
+            WHERE cpa.institution_id = ?
             AND cpa.status = 'assigned'
             ORDER BY cpa.assigned_at DESC`,
             [institutionId]
@@ -2609,7 +2624,7 @@ app.get('/api/institutions/:institutionId/printers/history', authenticateAdmin, 
                 cpa.status
             FROM institution_printer_assignments cpa
             JOIN printers ii ON cpa.printer_id = ii.id
-            WHERE cpa.institution_id COLLATE utf8mb4_unicode_ci = ? COLLATE utf8mb4_unicode_ci
+            WHERE cpa.institution_id = ?
             ORDER BY 
                 CASE WHEN cpa.status = 'assigned' THEN 0 ELSE 1 END,
                 cpa.assigned_at DESC`,
@@ -3138,7 +3153,7 @@ app.put('/api/staff/:id', authenticateAdmin, async (req, res) => {
 });
 
 // Get a single staff member by ID
-app.get('/api/staff/:id', async (req, res) => {
+app.get('/api/staff/:id', auth, async (req, res) => {
     try {
         const [rows] = await db.query(
             `SELECT 
@@ -4005,7 +4020,7 @@ app.patch('/api/institutions/:id/status', authenticateAdmin, async (req, res) =>
 // Technician Assignment API endpoints
 
 // Get all technician assignments
-app.get('/api/technician-assignments', async (req, res) => {
+app.get('/api/technician-assignments', auth, async (req, res) => {
     try {
         const [rows] = await db.query(`
             SELECT 
@@ -4279,7 +4294,7 @@ app.post('/api/test-notification', authenticateAdmin, async (req, res) => {
 // Service Requests API endpoints
 
 // Get all service requests
-app.get('/api/service-requests', async (req, res) => {
+app.get('/api/service-requests', auth, async (req, res) => {
     try {
         const [rows] = await db.query(`
             SELECT 
@@ -5141,7 +5156,7 @@ app.get('/api/debug/assignments', async (req, res) => {
     }
 });
 
-app.get('/api/inventory-items', async (req, res) => {
+app.get('/api/inventory-items', auth, async (req, res) => {
     try {
         const onlyAvailable = String(req.query.available || '').toLowerCase() === 'true';
         const includeAssignments = String(req.query.assignments || '').toLowerCase() === 'true';
