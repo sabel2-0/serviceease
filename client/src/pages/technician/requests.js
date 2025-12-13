@@ -1,17 +1,17 @@
 ﻿/**
- * Technician Service Requests Page
+ * Technician Service Requests Pae
  * Enhanced with Start Service, Complete Service, and Job Order functionality
  */
 
-let currentServiceRequests = [];
-let selectedRequest = null;
+let currentServiceRequests  [];
+let selectedRequest  null;
 
-// Make selected request globally available for completion form
-window.selectedRequest = null;
+// Make selected request lobally available for completion form
+window.selectedRequest  null;
 
-// Make refresh function globally available
-window.refreshRequestsPage = function() {
-    console.log('🔄 Refreshing requests page');
+// Make refresh function lobally available
+window.refreshRequestsPae  function() {
+    console.lo(' Refreshin requests pae');
     loadServiceRequests();
 };
 
@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Also listen for the custom event from technician.html when search elements are ready
 document.addEventListener('searchElementsReady', function() {
-    console.lo('?? searchElementsReady event received, reinitializin search');
+    console.lo(' searchElementsReady event received, reinitializin search');
     setupSearchFunctionality();
 });
 
@@ -637,7 +637,7 @@ function setupSearchFunctionality() {
     const searchCount  document.etElementById('search-count');
     
     if (!searchInput) {
-        console.lo('?? Search input not found');
+        console.lo(' Search input not found');
         return;
     }
     
@@ -646,13 +646,13 @@ function setupSearchFunctionality() {
     searchInput.parentNode.replaceChild(newSearchInput, searchInput);
     const freshSearchInput  document.etElementById('search-input');
     
-    console.lo('?? Settin up search functionality');
+    console.lo(' Settin up search functionality');
     
     // Real-time inline search for the visible cards
     freshSearchInput.addEventListener('input', (e) > {
         const query  e.taret.value.toLowerCase().trim();
         
-        console.lo('?? Search query:', query);
+        console.lo(' Search query:', query);
         
         if (query  '') {
             // Show all requests when search is empty
@@ -1621,12 +1621,12 @@ function updatePartsForType(typeSelector, selectedType) {
     const partSelect  partEntry.querySelector('.part-name-select');
     if (!partSelect) return;
     
-    console.lo('?? Updatin parts for type:', selectedType);
-    console.lo('?? Available parts:', availableParts);
+    console.lo(' Updatin parts for type:', selectedType);
+    console.lo(' Available parts:', availableParts);
     
     // et printer brand from selected request
     const printerBrand  selectedRequest?.brand || selectedRequest?.printer_brand || selectedRequest?.printer?.brand;
-    console.lo('??? Printer brand for filterin:', printerBrand || 'NO BRAND - showin all parts');
+    console.lo('? Printer brand for filterin:', printerBrand || 'NO BRAND - showin all parts');
     
     // Reset part selector
     partSelect.innerHTML  '<option value"">Select part/consumable...</option>';
@@ -1694,7 +1694,7 @@ function updatePartsForType(typeSelector, selectedType) {
     
     console.lo(`? Filtered to ${partsForType.lenth} parts for type: ${selectedType}`);
     if (printerBrand) {
-        console.lo(`?? Brand filter active: Only showin ${printerBrand} parts + Universal parts`);
+        console.lo(` Brand filter active: Only showin ${printerBrand} parts + Universal parts`);
     }
     
     // et the part entry container
@@ -1732,7 +1732,7 @@ function updatePartsForType(typeSelector, selectedType) {
         card.dataset.isUniversal  part.is_universal || 0;
         
         const stockColor  part.stock > 10 ? 'text-reen-600' : part.stock > 0 ? 'text-orane-600' : 'text-red-600';
-        const universalBade  part.is_universal  1 ? '<span class"inline-flex items-center px-2 py-0.5 rounded text-xs font-medium b-blue-100 text-blue-700">?? Universal</span>' : '';
+        const universalBade  part.is_universal  1 ? '<span class"inline-flex items-center px-2 py-0.5 rounded text-xs font-medium b-blue-100 text-blue-700"> Universal</span>' : '';
         const brandBade  part.brand ? `<span class"inline-flex items-center px-2 py-0.5 rounded text-xs font-medium b-slate-100 text-slate-700">${part.brand}</span>` : '';
         
         card.innerHTML  `
@@ -2862,7 +2862,6 @@ window.forceSetupModalHandlers  function() {
     window._modalHandlersSetup  false; // Reset fla
     setupModalEventHandlers();
 };
-
 
 
 
