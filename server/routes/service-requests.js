@@ -199,6 +199,29 @@ router.post('/', auth, async (req, res) => {
             });
         }
 
+        // Check if there's a pending maintenance service for this printer
+        const [pendingMaintenance] = await db.query(
+            `SELECT ms.id, CONCAT('MS-', ms.id) as service_number, ms.status, ii.name as printer_name
+             FROM maintenance_services ms
+             LEFT JOIN printers ii ON ms.printer_id = ii.id
+             WHERE ms.printer_id = ? 
+             AND ms.status IN ('pending', 'pending_approval', 'pending_institution_admin', 'pending_institution_user')
+             LIMIT 1`,
+            [printer_id]
+        );
+
+        if (pendingMaintenance.length > 0) {
+            const existing = pendingMaintenance[0];
+            return res.status(400).json({ 
+                error: `This printer has a pending maintenance service (${existing.service_number}) that must be approved first. Please wait for it to be completed before submitting a new service request.`,
+                pendingMaintenance: {
+                    service_number: existing.service_number,
+                    status: existing.status,
+                    printer_name: existing.printer_name
+                }
+            });
+        }
+
         // If no assigned technician found, return clear message per requirements
         if (assignedTechnicianIds.length === 0) {
             return res.status(400).json({ error: 'No active technician is linked to your institution. Please contact your institution_admin.' });
