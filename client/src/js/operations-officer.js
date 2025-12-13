@@ -65,7 +65,7 @@ async function setupDashboardMetrics() {
         }
 
         // Fetch dashboard stats from API
-        const response = await fetch(`${window.API_CONFIG.API_BASE_URL}/admin/dashboard-stats`, {
+        const response = await fetch('/api/admin/dashboard-stats', {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'

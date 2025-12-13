@@ -493,6 +493,7 @@ router.post('/', auth, async (req, res) => {
         }
 
         // Check for pending maintenance services on this printer
+        console.log('🔍 Checking for pending maintenance services on printer_id:', printer_id);
         const [pendingMaintenanceServices] = await db.query(
             `SELECT ms.id, CONCAT('MS-', ms.id) as service_number, ms.status
              FROM maintenance_services ms
@@ -502,11 +503,15 @@ router.post('/', auth, async (req, res) => {
             [printer_id]
         );
         
-        console.log('Pending maintenance service check:', pendingMaintenanceServices.length > 0 ? 'FOUND PENDING' : 'NONE');
+        console.log('📊 Pending maintenance service check results:', {
+            found: pendingMaintenanceServices.length > 0,
+            count: pendingMaintenanceServices.length,
+            services: pendingMaintenanceServices
+        });
         
         if (pendingMaintenanceServices.length > 0) {
             const pendingService = pendingMaintenanceServices[0];
-            console.log('Cannot submit new maintenance - pending service exists:', pendingService.service_number);
+            console.log('❌ Cannot submit new maintenance - pending service exists:', pendingService.service_number, 'Status:', pendingService.status);
             return res.status(400).json({ 
                 error: 'Cannot submit another maintenance service. This printer has a pending maintenance service that must be approved first.',
                 pendingService: {
@@ -515,6 +520,8 @@ router.post('/', auth, async (req, res) => {
                 }
             });
         }
+        
+        console.log('✅ No pending services found, proceeding with submission');
         
         const requester_id = printer[0].requester_id;
         console.log('👤 institution_user ID:', requester_id);
