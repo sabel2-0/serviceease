@@ -79,11 +79,11 @@ async function setupDashboardMetrics() {
         const data = await response.json();
         console.log('Dashboard stats received:', data);
 
-        // Update the dashboard cards with real data
-        updateDashboardCard('Pending Approvals', data.pendingInstitutionAdmins || 0);
-        updateDashboardCard('Service Requests', data.totalServiceRequests || 0);
-        updateDashboardCard('Parts Requests', data.pendingPartsRequests || 0);
-        updateDashboardCard('Pending Completions', data.pendingCompletions || 0);
+        // Update the dashboard cards with real data using IDs
+        document.getElementById('pending-approvals-count').textContent = data.pendingInstitutionAdmins || 0;
+        document.getElementById('service-requests-count').textContent = data.totalServiceRequests || 0;
+        document.getElementById('parts-requests-count').textContent = data.pendingPartsRequests || 0;
+        document.getElementById('pending-completions-count').textContent = data.pendingCompletions || 0;
 
     } catch (error) {
         console.error('Error fetching dashboard metrics:', error);
