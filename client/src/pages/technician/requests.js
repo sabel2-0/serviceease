@@ -2596,7 +2596,7 @@ async function handleJobCompletion(e) {
         let errorMessage = 'Failed to submit service completion.';
         
         // Don't auto-logout - global interceptor handles this
-            console.error('Authentication error:', error); else if (error.message.includes('403')) {
+        if (error.message.includes('403')) {
             errorMessage = 'You do not have permission to complete this service request.';
         } else if (error.message.includes('400')) {
             errorMessage = error.message.replace('Error: ', '');
