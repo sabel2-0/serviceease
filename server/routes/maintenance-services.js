@@ -134,90 +134,10 @@ router.get('/my-submissions', auth, async (req, res) => {
     }
 });
 
-// ==================== ADMIN ENDPOINTS ====================
-
-/**
- * Get a single maintenance service by ID
- * GET /api/maintenance-services/:id
- * Accessible by: admin, operations officer, technician (own services), institution_admin (own institution), institution_user (own institution)
- */
-router.get('/:id', auth, async (req, res) => {
-    try {
-        const serviceId = req.params.id;
-        const userId = req.user.id;
-        const userRole = req.user.role;
-        
-        const [services] = await db.query(`
-            SELECT 
-                ms.id,
-                CONCAT('MS-', ms.id) as service_number,
-                ms.service_description,
-                ms.parts_used,
-                ms.completion_photo,
-                ms.status,
-                ms.created_at,
-                ms.approved_by_user_id,
-                ms.approved_at,
-                ms.technician_id,
-                i.institution_id,
-                i.name as institution_name,
-                i.user_id as institution_admin_id,
-                p.id as printer_id,
-                p.name as printer_name,
-                p.location,
-                p.department,
-                CONCAT(tech.first_name, ' ', tech.last_name) as technician_name,
-                CONCAT(approver.first_name, ' ', approver.last_name) as approved_by_name
-            FROM maintenance_services ms
-            JOIN printers p ON ms.printer_id = p.id
-            JOIN institutions i ON ms.institution_id COLLATE utf8mb4_0900_ai_ci = i.institution_id
-            LEFT JOIN users tech ON ms.technician_id = tech.id
-            LEFT JOIN users approver ON ms.approved_by_user_id = approver.id
-            WHERE ms.id = ?
-        `, [serviceId]);
-        
-        if (services.length === 0) {
-            return res.status(404).json({ error: 'Service not found' });
-        }
-        
-        const service = services[0];
-        
-        // Role-based access control
-        if (userRole === 'admin' || userRole === 'operations_officer') {
-            // Admins and operations officers can view all services
-            return res.json(service);
-        } else if (userRole === 'technician' && service.technician_id === userId) {
-            // Technicians can view their own services
-            return res.json(service);
-        } else if (userRole === 'institution_admin' && service.institution_admin_id === userId) {
-            // Institution admins can view services for their institution
-            return res.json(service);
-        } else if (userRole === 'institution_user') {
-            // Institution users can view services for printers they manage
-            // Check if they have access to this institution
-            const [userInstitution] = await db.query(
-                'SELECT institution_id FROM users WHERE id = ?',
-                [userId]
-            );
-            if (userInstitution.length > 0 && userInstitution[0].institution_id === service.institution_id) {
-                return res.json(service);
-            }
-        }
-        
-        // If none of the above conditions are met, deny access
-        return res.status(403).json({ error: 'Access denied. You do not have permission to view this service.' });
-        
-    } catch (error) {
-        console.error('Error fetching maintenance service:', error);
-        res.status(500).json({ error: 'Failed to fetch service details' });
-    }
-});
-
-// ==================== TECHNICIAN ENDPOINTS ====================
-
 /**
  * Get technician's assigned public schools with printer stats
  * GET /api/maintenance-services/assigned-schools
+ * IMPORTANT: This must come BEFORE /:id route to avoid route collision
  */
 router.get('/assigned-schools', auth, async (req, res) => {
     try {
@@ -307,7 +227,8 @@ router.get('/assigned-schools', auth, async (req, res) => {
 
 /**
  * Get printers in a specific school with service history
- * GET /api/Maintenance-services/school-printers/:institutionId
+ * GET /api/maintenance-services/school-printers/:institutionId
+ * IMPORTANT: This must come BEFORE /:id route to avoid route collision
  */
 router.get('/school-printers/:institutionId', auth, async (req, res) => {
     try {
@@ -407,6 +328,85 @@ router.get('/school-printers/:institutionId', auth, async (req, res) => {
     } catch (error) {
         console.error('Error fetching school printers:', error);
         res.status(500).json({ error: 'Failed to fetch school printers' });
+    }
+});
+
+// ==================== ADMIN ENDPOINTS ====================
+
+/**
+ * Get a single maintenance service by ID
+ * GET /api/maintenance-services/:id
+ * Accessible by: admin, operations officer, technician (own services), institution_admin (own institution), institution_user (own institution)
+ */
+router.get('/:id', auth, async (req, res) => {
+    try {
+        const serviceId = req.params.id;
+        const userId = req.user.id;
+        const userRole = req.user.role;
+        
+        const [services] = await db.query(`
+            SELECT 
+                ms.id,
+                CONCAT('MS-', ms.id) as service_number,
+                ms.service_description,
+                ms.parts_used,
+                ms.completion_photo,
+                ms.status,
+                ms.created_at,
+                ms.approved_by_user_id,
+                ms.approved_at,
+                ms.technician_id,
+                i.institution_id,
+                i.name as institution_name,
+                i.user_id as institution_admin_id,
+                p.id as printer_id,
+                p.name as printer_name,
+                p.location,
+                p.department,
+                CONCAT(tech.first_name, ' ', tech.last_name) as technician_name,
+                CONCAT(approver.first_name, ' ', approver.last_name) as approved_by_name
+            FROM maintenance_services ms
+            JOIN printers p ON ms.printer_id = p.id
+            JOIN institutions i ON ms.institution_id COLLATE utf8mb4_0900_ai_ci = i.institution_id
+            LEFT JOIN users tech ON ms.technician_id = tech.id
+            LEFT JOIN users approver ON ms.approved_by_user_id = approver.id
+            WHERE ms.id = ?
+        `, [serviceId]);
+        
+        if (services.length === 0) {
+            return res.status(404).json({ error: 'Service not found' });
+        }
+        
+        const service = services[0];
+        
+        // Role-based access control
+        if (userRole === 'admin' || userRole === 'operations_officer') {
+            // Admins and operations officers can view all services
+            return res.json(service);
+        } else if (userRole === 'technician' && service.technician_id === userId) {
+            // Technicians can view their own services
+            return res.json(service);
+        } else if (userRole === 'institution_admin' && service.institution_admin_id === userId) {
+            // Institution admins can view services for their institution
+            return res.json(service);
+        } else if (userRole === 'institution_user') {
+            // Institution users can view services for printers they manage
+            // Check if they have access to this institution
+            const [userInstitution] = await db.query(
+                'SELECT institution_id FROM users WHERE id = ?',
+                [userId]
+            );
+            if (userInstitution.length > 0 && userInstitution[0].institution_id === service.institution_id) {
+                return res.json(service);
+            }
+        }
+        
+        // If none of the above conditions are met, deny access
+        return res.status(403).json({ error: 'Access denied. You do not have permission to view this service.' });
+        
+    } catch (error) {
+        console.error('Error fetching maintenance service:', error);
+        res.status(500).json({ error: 'Failed to fetch service details' });
     }
 });
 
