@@ -410,11 +410,23 @@
             } else if (service.institution_admin_approval_status === 'rejected') {
                 return 'Rejected by Institution Admin';
             } else if (service.institution_user_approval_status === 'rejected') {
-                return 'Rejected by institution_user';
+                return 'Rejected by Institution User';
             } else if (service.institution_admin_approval_status === 'pending') {
                 return 'Pending Your Approval';
+            } else if (service.institution_user_approval_status === 'pending') {
+                return 'Pending Institution User Approval';
+            } else if (service.status === 'pending') {
+                return 'Pending';
+            } else if (service.status === 'pending_approval') {
+                return 'Pending Approval';
+            } else if (service.status === 'pending_institution_admin') {
+                return 'Pending Your Approval';
+            } else if (service.status === 'pending_institution_user') {
+                return 'Pending Institution User';
+            } else if (service.status === 'approved') {
+                return 'Approved';
             }
-            return 'Unknown';
+            return 'Pending Review';
         }
 
         function formatDate(dateString) {
