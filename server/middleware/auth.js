@@ -136,6 +136,8 @@ const auth = async (req, res, next) => {
         // Verify token
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'serviceease_dev_secret');
         
+        console.log(`✅ Token verified for user ${decoded.id}, role: ${decoded.role || 'unknown'}`);
+        
         // Check if user's token version matches (to invalidate sessions after password change)
         try {
             // Also check account status along with token_version so that deactivated users
@@ -210,6 +212,8 @@ const auth = async (req, res, next) => {
         
         // Add user data to request
         req.user = decoded;
+        
+        console.log(`✅ Auth successful - user ${decoded.id} authenticated for ${req.method} ${req.path}`);
         
         // Audit logging for tracked roles (admin, technician, operations_officer)
         // Log important actions: logins, data modifications (POST, PUT, PATCH, DELETE)
