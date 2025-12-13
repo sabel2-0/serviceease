@@ -9,15 +9,36 @@ from mlxtend.frequent_patterns import apriori, association_rules
 from mlxtend.preprocessing import TransactionEncoder
 import json
 import sys
+import os
 from datetime import datetime
+from urllib.parse import urlparse
 
-# Database configuration
-DB_CONFIG = {
-    'host': 'localhost',
-    'user': 'root',
-    'password': 'Natusv1ncere.',
-    'database': 'serviceease'
-}
+# Database configuration from environment variables
+def get_db_config():
+    """Get database configuration from environment or fallback to defaults"""
+    db_url = os.getenv('DATABASE_URL')
+    
+    if db_url:
+        # Parse the database URL (format: mysql://user:password@host:port/database)
+        parsed = urlparse(db_url)
+        return {
+            'host': parsed.hostname,
+            'user': parsed.username,
+            'password': parsed.password,
+            'database': parsed.path.lstrip('/'),
+            'port': parsed.port or 3306
+        }
+    else:
+        # Fallback to individual environment variables or defaults
+        return {
+            'host': os.getenv('DB_HOST', 'localhost'),
+            'user': os.getenv('DB_USER', 'root'),
+            'password': os.getenv('DB_PASSWORD', 'Natusv1ncere.'),
+            'database': os.getenv('DB_NAME', 'serviceease'),
+            'port': int(os.getenv('DB_PORT', 3306))
+        }
+
+DB_CONFIG = get_db_config()
 
 def connect_db():
     """Connect to MySQL database"""
