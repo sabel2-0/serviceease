@@ -883,13 +883,13 @@ router.get('/history', auth, async (req, res) => {
             } else {
                 service.parts_used = [];
             }
+        });
+        
         console.log(`📤 Returning ${services.length} maintenance services`);
         res.json(services);
     } catch (error) {
         console.error('❌ Error fetching Maintenance Service history:', error);
-        console.error('Error stack:', error.stack
-    } catch (error) {
-        console.error('Error fetching Maintenance Service history:', error);
+        console.error('Error stack:', error.stack);
         res.status(500).json({ error: 'Failed to fetch Maintenance Service history' });
     }
 });
