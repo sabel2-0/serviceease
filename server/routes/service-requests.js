@@ -199,7 +199,7 @@ router.post('/', auth, async (req, res) => {
             });
         }
 
-        // Check if there's a pending maintenance service for this printer
+        // Check if there's a pending maintenance service for this printer BEFORE allowing submission
         console.log('🔍 [SERVICE REQUEST CHECK] Checking for pending maintenance services on printer_id:', printer_id);
         const [pendingMaintenance] = await db.query(
             `SELECT ms.id, CONCAT('MS-', ms.id) as service_number, ms.status, ii.name as printer_name
