@@ -165,7 +165,7 @@ router.get('/assigned-schools', auth, async (req, res) => {
                         THEN cpa.printer_id
                     END) as serviced_count,
                     COUNT(DISTINCT CASE 
-                        WHEN latest_service.latest_status IN ('pending_approval', 'pending_institution_admin', 'pending_institution_user')
+                        WHEN latest_service.latest_status = 'pending'
                         THEN cpa.printer_id
                     END) as pending_count
                 FROM institution_printer_assignments cpa
@@ -346,7 +346,7 @@ router.get('/printer/:printerId/pending', auth, async (req, res) => {
             `SELECT ms.id, CONCAT('MS-', ms.id) as service_number, ms.status
              FROM maintenance_services ms
              WHERE ms.printer_id = ? 
-             AND ms.status IN ('pending', 'pending_approval', 'pending_institution_admin', 'pending_institution_user')
+             AND ms.status = 'pending'
              LIMIT 1`,
             [printerId]
         );
@@ -538,7 +538,7 @@ router.post('/', auth, async (req, res) => {
             `SELECT ms.id, CONCAT('MS-', ms.id) as service_number, ms.status
              FROM maintenance_services ms
              WHERE ms.printer_id = ? 
-             AND ms.status IN ('pending', 'pending_approval', 'pending_institution_admin', 'pending_institution_user')
+             AND ms.status = 'pending'
              LIMIT 1`,
             [printer_id]
         );

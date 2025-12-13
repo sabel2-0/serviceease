@@ -206,7 +206,7 @@ router.post('/', auth, async (req, res) => {
              FROM maintenance_services ms
              LEFT JOIN printers ii ON ms.printer_id = ii.id
              WHERE ms.printer_id = ? 
-             AND ms.status IN ('pending', 'pending_approval', 'pending_institution_admin', 'pending_institution_user')
+             AND ms.status = 'pending'
              LIMIT 1`,
             [printer_id]
         );
