@@ -200,7 +200,7 @@ router.post('/', auth, async (req, res) => {
         }
 
         // Check if there's a pending maintenance service for this printer
-        console.log('🔍 Checking for pending maintenance services on printer_id:', printer_id);
+        console.log('🔍 [SERVICE REQUEST CHECK] Checking for pending maintenance services on printer_id:', printer_id);
         const [pendingMaintenance] = await db.query(
             `SELECT ms.id, CONCAT('MS-', ms.id) as service_number, ms.status, ii.name as printer_name
              FROM maintenance_services ms
@@ -211,7 +211,7 @@ router.post('/', auth, async (req, res) => {
             [printer_id]
         );
 
-        console.log('📊 Pending maintenance check results:', {
+        console.log('📊 [SERVICE REQUEST CHECK] Pending maintenance check results:', {
             printer_id,
             found: pendingMaintenance.length > 0,
             count: pendingMaintenance.length,
@@ -220,7 +220,7 @@ router.post('/', auth, async (req, res) => {
 
         if (pendingMaintenance.length > 0) {
             const existing = pendingMaintenance[0];
-            console.log('❌ Blocking service request - pending maintenance service exists:', existing.service_number);
+            console.log('❌ [SERVICE REQUEST CHECK] BLOCKING service request - pending maintenance service exists:', existing.service_number);
             return res.status(400).json({ 
                 error: `This printer has a pending maintenance service (${existing.service_number}) that must be approved first. Please wait for it to be completed before submitting a new service request.`,
                 pendingMaintenance: {
@@ -231,7 +231,7 @@ router.post('/', auth, async (req, res) => {
             });
         }
 
-        console.log('✅ No pending maintenance services found, allowing service request submission');
+        console.log('✅ [SERVICE REQUEST CHECK] No pending maintenance services found, allowing service request submission');
 
         // If no assigned technician found, return clear message per requirements
         if (assignedTechnicianIds.length === 0) {
