@@ -5,8 +5,6 @@ echo "Installing Python dependencies..."
 pip install -r server/scripts/requirements.txt
 
 echo "Installing Node.js dependencies..."
-npm install
-cd server && npm install
-cd ..
+cd server && yarn
 
 echo "Build completed successfully!"
