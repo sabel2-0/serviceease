@@ -826,8 +826,11 @@ router.patch('/institution_admin/:id/reject', auth, async (req, res) => {
  * GET /api/Maintenance-services/history
  */
 router.get('/history', auth, async (req, res) => {
+    console.log('🔍 /history endpoint hit - user:', req.user.id, 'role:', req.user.role);
     try {
         const technicianId = req.user.id;
+        
+        console.log('📋 Fetching maintenance services for technician:', technicianId);
         
         const query = `
             SELECT 
@@ -867,6 +870,8 @@ router.get('/history', auth, async (req, res) => {
         
         const [services] = await db.query(query, [technicianId]);
         
+        console.log(`✅ Found ${services.length} maintenance services for technician ${technicianId}`);
+        
         // Parse parts_used JSON for each service
         services.forEach(service => {
             if (service.parts_used) {
@@ -878,9 +883,11 @@ router.get('/history', auth, async (req, res) => {
             } else {
                 service.parts_used = [];
             }
-        });
-        
+        console.log(`📤 Returning ${services.length} maintenance services`);
         res.json(services);
+    } catch (error) {
+        console.error('❌ Error fetching Maintenance Service history:', error);
+        console.error('Error stack:', error.stack
     } catch (error) {
         console.error('Error fetching Maintenance Service history:', error);
         res.status(500).json({ error: 'Failed to fetch Maintenance Service history' });
