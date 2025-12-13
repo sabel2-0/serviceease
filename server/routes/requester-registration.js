@@ -141,7 +141,7 @@ router.post('/validate-printers', async (req, res) => {
                     p.serial_number
                 FROM institution_printer_assignments ipa
                 INNER JOIN printers p ON ipa.printer_id = p.id
-                WHERE ipa.institution_id COLLATE utf8mb4_unicode_ci = ? COLLATE utf8mb4_unicode_ci
+                WHERE ipa.institution_id = ?
                 AND ipa.status = 'assigned'
                 AND LOWER(TRIM(p.serial_number)) = LOWER(TRIM(?))
                 AND LOWER(TRIM(p.brand)) LIKE LOWER(TRIM(?))
