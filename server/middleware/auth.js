@@ -115,6 +115,11 @@ const auth = async (req, res, next) => {
     // Get token from header
     const authHeader = req.headers['authorization'];
     
+    console.log(`🔐 Auth middleware: ${req.method} ${req.path}`, {
+        hasAuthHeader: !!authHeader,
+        userId: authHeader ? 'checking...' : 'none'
+    });
+    
     if (!authHeader) {
         return res.status(401).json({ message: 'No authentication token provided' });
     }

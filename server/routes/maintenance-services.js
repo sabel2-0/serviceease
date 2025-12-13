@@ -827,12 +827,11 @@ router.patch('/institution_admin/:id/reject', auth, async (req, res) => {
  */
 router.get('/history', auth, async (req, res) => {
     try {
-        // This endpoint is for technicians only
-        // If non-technician accesses it, return empty array instead of error
-        if (req.user.role !== 'technician') {
-            console.log(`ℹ️ Non-technician (${req.user.role}) accessed /history - returning empty array`);
-            return res.json([]);
-        }
+        console.log('📋 /history endpoint accessed by user:', {
+            id: req.user.id,
+            role: req.user.role,
+            email: req.user.email
+        });
         
         const technicianId = req.user.id;
         
