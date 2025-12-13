@@ -571,6 +571,13 @@
                                         // Scroll to the active request or refresh the list
                                         location.reload();
                                     };
+                                } else if (responseData.pendingMaintenance) {
+                                    // Close the new request modal
+                                    document.getElementById('newRequestModal').classList.add('hidden');
+                                    
+                                    // Show alert for pending maintenance service
+                                    const pendingMaint = responseData.pendingMaintenance;
+                                    alert(`⚠️ Cannot Submit Service Request\n\nThis printer has a pending maintenance service:\n\nService: ${pendingMaint.service_number}\nStatus: ${pendingMaint.status.replace(/_/g, ' ').toUpperCase()}\n\nPlease wait for the maintenance service to be approved before submitting a new service request.`);
                                 } else {
                                     showNotification('Error', responseData.error || responseData.message || 'Failed to submit request', 'error');
                                 }
