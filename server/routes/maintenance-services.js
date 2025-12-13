@@ -827,12 +827,6 @@ router.patch('/institution_admin/:id/reject', auth, async (req, res) => {
  */
 router.get('/history', auth, async (req, res) => {
     try {
-        console.log('📋 /history endpoint accessed by user:', {
-            id: req.user.id,
-            role: req.user.role,
-            email: req.user.email
-        });
-        
         const technicianId = req.user.id;
         
         const query = `

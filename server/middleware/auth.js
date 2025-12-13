@@ -115,11 +115,6 @@ const auth = async (req, res, next) => {
     // Get token from header
     const authHeader = req.headers['authorization'];
     
-    console.log(`🔐 Auth middleware: ${req.method} ${req.path}`, {
-        hasAuthHeader: !!authHeader,
-        userId: authHeader ? 'checking...' : 'none'
-    });
-    
     if (!authHeader) {
         return res.status(401).json({ message: 'No authentication token provided' });
     }
@@ -135,8 +130,6 @@ const auth = async (req, res, next) => {
     try {
         // Verify token
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'serviceease_dev_secret');
-        
-        console.log(`✅ Token verified for user ${decoded.id}, role: ${decoded.role || 'unknown'}`);
         
         // Check if user's token version matches (to invalidate sessions after password change)
         try {
@@ -215,8 +208,6 @@ const auth = async (req, res, next) => {
         
         console.log(`✅ Auth successful - user ${decoded.id} authenticated for ${req.method} ${req.path}`);
         
-        // Audit logging for tracked roles (admin, technician, operations_officer)
-        // Log important actions: logins, data modifications (POST, PUT, PATCH, DELETE)
         if (['admin', 'technician', 'operations_officer'].includes(req.user.role)) {
             // Define which actions should be logged
             const shouldLog = 
