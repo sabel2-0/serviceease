@@ -498,6 +498,25 @@
                             return;
                         }
 
+                        // Check for pending maintenance service BEFORE submitting
+                        try {
+                            const pendingCheckRes = await fetch(`/api/maintenance-services/printer/${printerId}/pending`, {
+                                headers: {
+                                    'Authorization': 'Bearer ' + localStorage.getItem('token')
+                                }
+                            });
+                            const pendingData = await pendingCheckRes.json();
+                            
+                            if (pendingData.hasPendingService) {
+                                const pending = pendingData.pendingService;
+                                alert(`⚠️ Cannot Submit Service Request\n\nThis printer has a pending maintenance service:\n\nService: ${pending.service_number}\nStatus: ${pending.status.replace(/_/g, ' ').toUpperCase()}\n\nPlease approve or reject the maintenance service before submitting a new service request.`);
+                                return;
+                            }
+                        } catch (err) {
+                            console.warn('Could not check for pending maintenance:', err);
+                            // Continue with submission even if check fails
+                        }
+
                         const user = JSON.parse(localStorage.getItem('user'));
                         // Fetch assigned technician for this institution
                         let assignedTechnicianId = null;
