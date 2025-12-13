@@ -497,7 +497,7 @@ router.post('/', auth, async (req, res) => {
             `SELECT ms.id, CONCAT('MS-', ms.id) as service_number, ms.status
              FROM maintenance_services ms
              WHERE ms.printer_id = ? 
-             AND ms.status IN ('pending_approval', 'pending_institution_admin', 'pending_institution_user')
+             AND ms.status IN ('pending', 'pending_approval', 'pending_institution_admin', 'pending_institution_user')
              LIMIT 1`,
             [printer_id]
         );
