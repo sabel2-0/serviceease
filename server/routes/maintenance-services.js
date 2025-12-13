@@ -331,6 +331,46 @@ router.get('/school-printers/:institutionId', auth, async (req, res) => {
     }
 });
 
+/**
+ * Check if printer has pending maintenance service
+ * GET /api/maintenance-services/printer/:printerId/pending
+ * Returns whether a printer has any pending maintenance services
+ */
+router.get('/printer/:printerId/pending', auth, async (req, res) => {
+    try {
+        const { printerId } = req.params;
+        
+        console.log('🔍 Checking pending maintenance for printer:', printerId);
+        
+        const [pendingServices] = await db.query(
+            `SELECT ms.id, CONCAT('MS-', ms.id) as service_number, ms.status
+             FROM maintenance_services ms
+             WHERE ms.printer_id = ? 
+             AND ms.status IN ('pending', 'pending_approval', 'pending_institution_admin', 'pending_institution_user')
+             LIMIT 1`,
+            [printerId]
+        );
+        
+        if (pendingServices.length > 0) {
+            console.log('✅ Found pending service:', pendingServices[0].service_number);
+            return res.json({
+                hasPendingService: true,
+                pendingService: {
+                    service_number: pendingServices[0].service_number,
+                    status: pendingServices[0].status
+                }
+            });
+        }
+        
+        console.log('✅ No pending services found');
+        res.json({ hasPendingService: false });
+        
+    } catch (error) {
+        console.error('Error checking pending maintenance services:', error);
+        res.status(500).json({ error: 'Failed to check pending services' });
+    }
+});
+
 // ==================== ADMIN ENDPOINTS ====================
 
 /**

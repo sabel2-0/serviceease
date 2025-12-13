@@ -951,8 +951,9 @@ window.renderPrinterCard = function(printer, institutionId) {
 // Open service submission modal
 window.openServiceModal = async function(printerId, institutionId, brand, model, serialNumber) {
     try {
-        // Check for active service requests before opening modal
         const token = localStorage.getItem('token');
+        
+        // Check for active service requests before opening modal
         const checkResponse = await fetch(`/api/service-requests/printer/${printerId}/active`, {
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -966,8 +967,23 @@ window.openServiceModal = async function(printerId, institutionId, brand, model,
                 return;
             }
         }
+
+        // Check for pending maintenance services
+        const maintenanceCheckResponse = await fetch(`/api/maintenance-services/printer/${printerId}/pending`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (maintenanceCheckResponse.ok) {
+            const maintenanceData = await maintenanceCheckResponse.json();
+            if (maintenanceData.hasPendingService) {
+                alert(`⚠️ Cannot Submit New Maintenance Service\n\nThis printer already has a pending maintenance service:\n\nService: ${maintenanceData.pendingService.service_number}\nStatus: ${maintenanceData.pendingService.status.replace(/_/g, ' ').toUpperCase()}\n\nPlease wait for the current service to be approved before submitting a new one.`);
+                return;
+            }
+        }
     } catch (error) {
-        console.error('Error checking for active requests:', error);
+        console.error('Error checking for active requests/services:', error);
         // Continue anyway - backend will handle validation
     }
     
