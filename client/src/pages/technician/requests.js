@@ -1,17 +1,17 @@
 ﻿/**
- * Technician Service Requests Pae
+ * Technician Service Requests Page
  * Enhanced with Start Service, Complete Service, and Job Order functionality
  */
 
-let currentServiceRequests  [];
-let selectedRequest  null;
+let currentServiceRequests = [];
+let selectedRequest = null;
 
-// Make selected request lobally available for completion form
-window.selectedRequest  null;
+// Make selected request globally available for completion form
+window.selectedRequest = null;
 
-// Make refresh function lobally available
-window.refreshRequestsPae  function() {
-    console.lo('?? Refreshin requests pae');
+// Make refresh function globally available
+window.refreshRequestsPage = function() {
+    console.log('🔄 Refreshing requests page');
     loadServiceRequests();
 };
 

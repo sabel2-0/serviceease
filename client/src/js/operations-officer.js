@@ -54,26 +54,60 @@ function initializeDashboard() {
 /**
  * Set up dashboard metrics
  */
-function setupDashboardMetrics() {
-    // This would typically fetch data from an API
+async function setupDashboardMetrics() {
     console.log('Setting up dashboard metrics');
     
-    // Example of how you might update metrics dynamically
-    // In a real application, these would come from API calls
-    /*
-    fetch('/api/operations/metrics')
-        .then(response => response.json())
-        .then(data => {
-            // Update metrics with real data
-            document.querySelector('.pending-approvals').textContent = data.pendingApprovals;
-            document.querySelector('.service-requests').textContent = data.serviceRequests;
-            document.querySelector('.parts-requests').textContent = data.partsRequests;
-            document.querySelector('.pending-completions').textContent = data.pendingCompletions;
-        })
-        .catch(error => {
-            console.error('Error fetching metrics:', error);
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            console.error('No auth token found');
+            return;
+        }
+
+        // Fetch dashboard stats from API
+        const response = await fetch(`${window.API_CONFIG.API_BASE_URL}/admin/dashboard-stats`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
         });
-    */
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('Dashboard stats received:', data);
+
+        // Update the dashboard cards with real data
+        updateDashboardCard('Pending Approvals', data.pendingInstitutionAdmins || 0);
+        updateDashboardCard('Service Requests', data.totalServiceRequests || 0);
+        updateDashboardCard('Parts Requests', data.pendingPartsRequests || 0);
+        updateDashboardCard('Pending Completions', data.pendingCompletions || 0);
+
+    } catch (error) {
+        console.error('Error fetching dashboard metrics:', error);
+        // Keep the hard-coded values as fallback
+    }
+}
+
+/**
+ * Update a dashboard card with new value
+ * @param {string} cardTitle - The title of the card to update
+ * @param {number} value - The new value to display
+ */
+function updateDashboardCard(cardTitle, value) {
+    const cards = document.querySelectorAll('.bg-white.p-6.rounded-lg.shadow-md');
+    
+    cards.forEach(card => {
+        const title = card.querySelector('.text-sm.text-gray-500');
+        if (title && title.textContent.trim() === cardTitle) {
+            const valueElement = card.querySelector('.text-2xl.font-bold');
+            if (valueElement) {
+                valueElement.textContent = value;
+            }
+        }
+    });
 }
 
 /**
