@@ -2709,7 +2709,7 @@ async function loadARMRecommendations(requestId, printerBrand, printerModel) {
             body: JSON.stringify({
                 printer_brand: printerBrand,
                 printer_model: printerModel,
-                min_support: 0.1,
+                min_support: 0.2,
                 min_confidence: 0.5
             })
         });
