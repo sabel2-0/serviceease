@@ -9,6 +9,131 @@ const { auth, authenticateAdmin } = require('../middleware/auth');
  * Requires dual approval from institution_admin and institution_user
  */
 
+// ==================== TECHNICIAN ENDPOINTS ====================
+
+/**
+ * Get technician's Maintenance Service history
+ * GET /api/maintenance-services/history
+ * IMPORTANT: This must come BEFORE /:id route to avoid route collision
+ */
+router.get('/history', auth, async (req, res) => {
+    console.log('🔍 /history endpoint hit - user:', req.user.id, 'role:', req.user.role);
+    try {
+        const technicianId = req.user.id;
+        
+        console.log('📋 Fetching maintenance services for technician:', technicianId);
+        
+        const query = `
+            SELECT 
+                vs.id,
+                vs.service_description as description,
+                vs.parts_used,
+                vs.completion_photo as completion_photo_url,
+                vs.status,
+                vs.created_at,
+                vs.approved_by_user_id,
+                vs.approved_at,
+                vs.approval_notes,
+                i.institution_id,
+                i.name as institution_name,
+                i.type as institution_type,
+                inv.name as printer_name,
+                inv.brand as printer_brand,
+                inv.model as printer_model,
+                inv.serial_number as printer_serial_number,
+                inv.location,
+                inv.department as printer_department,
+                CONCAT('MS-', vs.id) as request_number,
+                CONCAT(approver.first_name, ' ', approver.last_name) as approver_name,
+                approver.role as approver_role,
+                CONCAT(institution_admin.first_name, ' ', institution_admin.last_name) as institution_admin_name,
+                institution_admin.first_name as institution_admin_first_name,
+                institution_admin.last_name as institution_admin_last_name
+            FROM maintenance_services vs
+            INNER JOIN printers inv ON vs.printer_id = inv.id
+            INNER JOIN institutions i ON vs.institution_id COLLATE utf8mb4_0900_ai_ci = i.institution_id
+            LEFT JOIN users approver ON vs.approved_by_user_id = approver.id
+            LEFT JOIN users institution_admin ON i.user_id = institution_admin.id
+            WHERE vs.technician_id = ?
+            AND vs.status IN ('completed', 'rejected')
+            ORDER BY vs.created_at DESC
+        `;
+        
+        const [services] = await db.query(query, [technicianId]);
+        
+        console.log(`✅ Found ${services.length} maintenance services for technician ${technicianId}`);
+        
+        // Parse parts_used JSON for each service
+        services.forEach(service => {
+            if (service.parts_used) {
+                try {
+                    service.parts_used = JSON.parse(service.parts_used);
+                } catch (e) {
+                    service.parts_used = [];
+                }
+            } else {
+                service.parts_used = [];
+            }
+        });
+        
+        console.log(`📤 Returning ${services.length} maintenance services`);
+        res.json(services);
+    } catch (error) {
+        console.error('❌ Error fetching Maintenance Service history:', error);
+        console.error('Error stack:', error.stack);
+        res.status(500).json({ error: 'Failed to fetch Maintenance Service history' });
+    }
+});
+
+/**
+ * Get technician's Maintenance Service submissions
+ * GET /api/maintenance-services/my-submissions
+ * IMPORTANT: This must come BEFORE /:id route to avoid route collision
+ */
+router.get('/my-submissions', auth, async (req, res) => {
+    try {
+        const technicianId = req.user.id;
+        const { status } = req.query;
+        
+        const query = `
+            SELECT 
+                vs.*,
+                inv.name as printer_name,
+                inv.brand,
+                inv.model,
+                inv.location,
+                i.name as institution_name,
+                i.type as institution_type,
+                CONCAT(u_coord.first_name, ' ', u_coord.last_name) as institution_admin_name,
+                u_coord.first_name as institution_admin_first_name,
+                u_coord.last_name as institution_admin_last_name
+            FROM maintenance_services vs
+            INNER JOIN printers inv ON vs.printer_id = inv.id
+            INNER JOIN institutions i ON vs.institution_id = i.institution_id
+            LEFT JOIN users u_coord ON u_coord.id = i.user_id
+            WHERE vs.technician_id = ?
+            ${status ? 'AND vs.status = ?' : ''}
+            ORDER BY vs.created_at DESC
+        `;
+        
+        const params = status ? [technicianId, status] : [technicianId];
+        
+        const [services] = await db.query(query, params);
+        
+        // Parse JSON fields
+        services.forEach(service => {
+            if (service.parts_used) {
+                service.parts_used = JSON.parse(service.parts_used);
+            }
+        });
+        
+        res.json(services);
+    } catch (error) {
+        console.error('Error fetching submissions:', error);
+        res.status(500).json({ error: 'Failed to fetch submissions' });
+    }
+});
+
 // ==================== ADMIN ENDPOINTS ====================
 
 /**
@@ -432,54 +557,6 @@ router.post('/', auth, async (req, res) => {
     }
 });
 
-/**
- * Get technician's Maintenance Service submissions
- * GET /api/Maintenance-services/my-submissions
- */
-router.get('/my-submissions', auth, async (req, res) => {
-    try {
-        const technicianId = req.user.id;
-        const { status } = req.query;
-        
-        const query = `
-            SELECT 
-                vs.*,
-                inv.name as printer_name,
-                inv.brand,
-                inv.model,
-                inv.location,
-                i.name as institution_name,
-                i.type as institution_type,
-                CONCAT(u_coord.first_name, ' ', u_coord.last_name) as institution_admin_name,
-                u_coord.first_name as institution_admin_first_name,
-                u_coord.last_name as institution_admin_last_name
-            FROM maintenance_services vs
-            INNER JOIN printers inv ON vs.printer_id = inv.id
-            INNER JOIN institutions i ON vs.institution_id = i.institution_id
-            LEFT JOIN users u_coord ON u_coord.id = i.user_id
-            WHERE vs.technician_id = ?
-            ${status ? 'AND vs.status = ?' : ''}
-            ORDER BY vs.created_at DESC
-        `;
-        
-        const params = status ? [technicianId, status] : [technicianId];
-        
-        const [services] = await db.query(query, params);
-        
-        // Parse JSON fields
-        services.forEach(service => {
-            if (service.parts_used) {
-                service.parts_used = JSON.parse(service.parts_used);
-            }
-        });
-        
-        res.json(services);
-    } catch (error) {
-        console.error('Error fetching submissions:', error);
-        res.status(500).json({ error: 'Failed to fetch submissions' });
-    }
-});
-
 // ==================== institution_admin ENDPOINTS ====================
 
 /**
@@ -818,79 +895,6 @@ router.patch('/institution_admin/:id/reject', auth, async (req, res) => {
     } catch (error) {
         console.error('Error rejecting service:', error);
         res.status(500).json({ error: 'Failed to reject service' });
-    }
-});
-
-/**
- * Get technician's Maintenance Service history
- * GET /api/Maintenance-services/history
- */
-router.get('/history', auth, async (req, res) => {
-    console.log('🔍 /history endpoint hit - user:', req.user.id, 'role:', req.user.role);
-    try {
-        const technicianId = req.user.id;
-        
-        console.log('📋 Fetching maintenance services for technician:', technicianId);
-        
-        const query = `
-            SELECT 
-                vs.id,
-                vs.service_description as description,
-                vs.parts_used,
-                vs.completion_photo as completion_photo_url,
-                vs.status,
-                vs.created_at,
-                vs.approved_by_user_id,
-                vs.approved_at,
-                vs.approval_notes,
-                i.institution_id,
-                i.name as institution_name,
-                i.type as institution_type,
-                inv.name as printer_name,
-                inv.brand as printer_brand,
-                inv.model as printer_model,
-                inv.serial_number as printer_serial_number,
-                inv.location,
-                inv.department as printer_department,
-                CONCAT('MS-', vs.id) as request_number,
-                CONCAT(approver.first_name, ' ', approver.last_name) as approver_name,
-                approver.role as approver_role,
-                CONCAT(institution_admin.first_name, ' ', institution_admin.last_name) as institution_admin_name,
-                institution_admin.first_name as institution_admin_first_name,
-                institution_admin.last_name as institution_admin_last_name
-            FROM maintenance_services vs
-            INNER JOIN printers inv ON vs.printer_id = inv.id
-            INNER JOIN institutions i ON vs.institution_id COLLATE utf8mb4_0900_ai_ci = i.institution_id
-            LEFT JOIN users approver ON vs.approved_by_user_id = approver.id
-            LEFT JOIN users institution_admin ON i.user_id = institution_admin.id
-            WHERE vs.technician_id = ?
-            AND vs.status IN ('completed', 'rejected')
-            ORDER BY vs.created_at DESC
-        `;
-        
-        const [services] = await db.query(query, [technicianId]);
-        
-        console.log(`✅ Found ${services.length} maintenance services for technician ${technicianId}`);
-        
-        // Parse parts_used JSON for each service
-        services.forEach(service => {
-            if (service.parts_used) {
-                try {
-                    service.parts_used = JSON.parse(service.parts_used);
-                } catch (e) {
-                    service.parts_used = [];
-                }
-            } else {
-                service.parts_used = [];
-            }
-        });
-        
-        console.log(`📤 Returning ${services.length} maintenance services`);
-        res.json(services);
-    } catch (error) {
-        console.error('❌ Error fetching Maintenance Service history:', error);
-        console.error('Error stack:', error.stack);
-        res.status(500).json({ error: 'Failed to fetch Maintenance Service history' });
     }
 });
 
