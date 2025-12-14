@@ -11,7 +11,7 @@ router.get('/inventory/brands', authenticateTechnician, async (req, res) => {
         const [rows] = await db.query(`
             SELECT DISTINCT pp.brand
             FROM technician_inventory ti
-            JOIN printer_parts pp ON ti.part_id = pp.id
+            JOIN printer_items pp ON ti.part_id = pp.id
             WHERE ti.technician_id = ? AND ti.quantity > 0 AND pp.brand IS NOT NULL
             ORDER BY pp.brand ASC
         `, [technicianId]);
@@ -46,7 +46,7 @@ router.get('/inventory', authenticateTechnician, async (req, res) => {
                 pp.unit,
                 CONCAT(u.first_name, ' ', u.last_name) as assigned_by_name
             FROM technician_inventory ti
-            JOIN printer_parts pp ON ti.part_id = pp.id
+            JOIN printer_items pp ON ti.part_id = pp.id
             LEFT JOIN users u ON ti.assigned_by = u.id
             WHERE ti.technician_id = ? AND ti.quantity > 0
             ORDER BY ti.last_updated DESC, pp.name ASC
@@ -81,7 +81,7 @@ router.get('/parts', authenticateTechnician, async (req, res) => {
                 ti.quantity as technician_stock,
                 ti.id as tech_inventory_id
             FROM technician_inventory ti
-            JOIN printer_parts pp ON ti.part_id = pp.id
+            JOIN printer_items pp ON ti.part_id = pp.id
             WHERE ti.technician_id = ? AND ti.quantity > 0
             ORDER BY pp.name ASC
         `, [technicianId]);
@@ -113,7 +113,7 @@ router.get('/available-parts', authenticateTechnician, async (req, res) => {
                 unit,
                 minimum_stock,
                 is_universal
-            FROM printer_parts
+            FROM printer_items
             WHERE quantity > 0
         `;
         
@@ -216,7 +216,7 @@ router.post('/request', authenticateTechnician, async (req, res) => {
         
         // Check if part exists and has enough stock
         const [partRows] = await db.query(
-            'SELECT id, name, quantity FROM printer_parts WHERE id = ?',
+            'SELECT id, name, quantity FROM printer_items WHERE id = ?',
             [part_id]
         );
         
@@ -283,7 +283,7 @@ router.get('/requests', authenticateTechnician, async (req, res) => {
                 pp.unit as part_unit,
                 CONCAT(approver.first_name, ' ', approver.last_name) as approved_by_name
             FROM parts_requests pr
-            JOIN printer_parts pp ON pr.part_id = pp.id
+            JOIN printer_items pp ON pr.part_id = pp.id
             LEFT JOIN users approver ON pr.approved_by = approver.id
             WHERE pr.technician_id = ?
         `;
@@ -341,7 +341,7 @@ router.get('/requests/:id', authenticateTechnician, async (req, res) => {
                 pp.unit as part_unit,
                 CONCAT(approver.first_name, ' ', approver.last_name) as approved_by_name
             FROM parts_requests pr
-            JOIN printer_parts pp ON pr.part_id = pp.id
+            JOIN printer_items pp ON pr.part_id = pp.id
             LEFT JOIN users approver ON pr.approved_by = approver.id
             WHERE pr.id = ? AND pr.technician_id = ?
         `, [requestId, technicianId]);

@@ -45,7 +45,7 @@ router.get('/', async (req, res) => {
                 approver.first_name as approved_by_first_name,
                 approver.last_name as approved_by_last_name
             FROM parts_requests pr
-            LEFT JOIN printer_parts pp ON pr.part_id = pp.id
+            LEFT JOIN printer_items pp ON pr.part_id = pp.id
             LEFT JOIN users u ON pr.technician_id = u.id
             LEFT JOIN users approver ON pr.approved_by = approver.id
         `;
@@ -119,7 +119,7 @@ router.get('/:id', async (req, res) => {
                 approver.first_name as approved_by_first_name,
                 approver.last_name as approved_by_last_name
             FROM parts_requests pr
-            LEFT JOIN printer_parts pp ON pr.part_id = pp.id
+            LEFT JOIN printer_items pp ON pr.part_id = pp.id
             LEFT JOIN users u ON pr.technician_id = u.id
             LEFT JOIN users approver ON pr.approved_by = approver.id
             WHERE pr.id = ?
@@ -190,7 +190,7 @@ router.post('/', async (req, res) => {
         
         // Check if part exists and has enough stock
         const [partRows] = await db.query(
-            'SELECT id, name, quantity FROM printer_parts WHERE id = ?',
+            'SELECT id, name, quantity FROM printer_items WHERE id = ?',
             [part_id]
         );
         
@@ -321,7 +321,7 @@ router.patch('/:id', async (req, res) => {
             let stockAtApproval = null;
             if (status === 'approved') {
                 const [stockCheck] = await db.query(
-                    'SELECT quantity FROM printer_parts WHERE id = ?',
+                    'SELECT quantity FROM printer_items WHERE id = ?',
                     [currentRequest.part_id]
                 );
                 stockAtApproval = stockCheck.length > 0 ? stockCheck[0].quantity : 0;
@@ -338,7 +338,7 @@ router.patch('/:id', async (req, res) => {
             if (status === 'approved') {
                 // First, check and deduct from main inventory
                 const [inventoryCheck] = await db.query(
-                    'SELECT quantity FROM printer_parts WHERE id = ?',
+                    'SELECT quantity FROM printer_items WHERE id = ?',
                     [currentRequest.part_id]
                 );
                 
@@ -351,7 +351,7 @@ router.patch('/:id', async (req, res) => {
                 
                 // Deduct from main inventory
                 await db.query(
-                    'UPDATE printer_parts SET quantity = quantity - ? WHERE id = ? AND quantity >= ?',
+                    'UPDATE printer_items SET quantity = quantity - ? WHERE id = ? AND quantity >= ?',
                     [currentRequest.quantity_requested, currentRequest.part_id, currentRequest.quantity_requested]
                 );
                 

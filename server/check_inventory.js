@@ -21,7 +21,7 @@ require('dotenv').config();
                 pp.brand,
                 pp.is_universal
             FROM technician_inventory ti
-            JOIN printer_parts pp ON ti.part_id = pp.id
+            JOIN printer_items pp ON ti.part_id = pp.id
             WHERE ti.technician_id = 2
             ORDER BY ti.id
         `);
@@ -35,7 +35,7 @@ require('dotenv').config();
                 brand,
                 quantity,
                 is_universal
-            FROM printer_parts
+            FROM printer_items
             ORDER BY id
         `);
         console.table(allParts);
@@ -51,7 +51,7 @@ require('dotenv').config();
                 pp.brand,
                 pp.is_universal
             FROM service_parts_used spu
-            JOIN printer_parts pp ON spu.part_id = pp.id
+            JOIN printer_items pp ON spu.part_id = pp.id
             ORDER BY spu.id DESC
             LIMIT 5
         `);

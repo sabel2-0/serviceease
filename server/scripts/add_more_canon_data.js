@@ -23,7 +23,7 @@ async function addMoreCanonData() {
 
         // Get Canon parts
         const [parts] = await db.query(
-            'SELECT id, name FROM printer_parts WHERE brand = "Canon"'
+            'SELECT id, name FROM printer_items WHERE brand = "Canon"'
         );
 
         console.log(`✅ Found ${parts.length} Canon parts\n`);

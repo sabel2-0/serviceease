@@ -86,7 +86,7 @@ async function testInventoryDeduction() {
                     ti.quantity as tech_stock,
                     pp.is_universal
                 FROM service_parts_used spu
-                JOIN printer_parts pp ON spu.part_id = pp.id
+                JOIN printer_items pp ON spu.part_id = pp.id
                 LEFT JOIN technician_inventory ti ON ti.technician_id = spu.used_by AND ti.part_id = spu.part_id
                 WHERE spu.service_request_id = ?
             `, [testRequest.id]);

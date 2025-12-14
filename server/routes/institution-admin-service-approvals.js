@@ -72,7 +72,7 @@ router.get('/pending', authenticateinstitution_admin, async (req, res) => {
             JOIN institutions i ON sr.institution_id = i.institution_id
             LEFT JOIN printers ii ON sr.printer_id = ii.id
             LEFT JOIN service_parts_used spu ON sr.id = spu.service_request_id
-            LEFT JOIN printer_parts pp ON spu.part_id = pp.id
+            LEFT JOIN printer_items pp ON spu.part_id = pp.id
             WHERE i.user_id = ?
                 AND sa.status = 'pending_approval'
                 AND sr.status = 'pending_approval'
@@ -134,7 +134,7 @@ router.get('/:approvalId/details', authenticateinstitution_admin, async (req, re
                 pp.category,
                 pp.brand
             FROM service_parts_used spu
-            JOIN printer_parts pp ON spu.part_id = pp.id
+            JOIN printer_items pp ON spu.part_id = pp.id
             WHERE spu.service_request_id = ?
             ORDER BY pp.category, pp.name
         `, [approvalDetails[0].service_request_id]);

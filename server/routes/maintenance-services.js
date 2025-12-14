@@ -571,7 +571,7 @@ router.post('/', auth, async (req, res) => {
         if (parts_used && parts_used.length > 0) {
             enrichedPartsUsed = await Promise.all(parts_used.map(async (part) => {
                 const [partInfo] = await db.query(
-                    'SELECT name, brand FROM printer_parts WHERE id = ?',
+                    'SELECT name, brand FROM printer_items WHERE id = ?',
                     [part.part_id]
                 );
                 return {
@@ -869,7 +869,7 @@ router.patch('/institution_admin/:id/approve', auth, async (req, res) => {
             const [techInventory] = await db.query(
                 `SELECT ti.id, ti.quantity, pp.id as part_id, pp.name, pp.brand, pp.category, pp.is_universal
                  FROM technician_inventory ti
-                 INNER JOIN printer_parts pp ON ti.part_id = pp.id
+                 INNER JOIN printer_items pp ON ti.part_id = pp.id
                  WHERE ti.technician_id = ?`,
                 [service[0].technician_id]
             );
@@ -884,7 +884,7 @@ router.patch('/institution_admin/:id/approve', auth, async (req, res) => {
                     const [inventoryItem] = await db.query(
                         `SELECT ti.id, ti.quantity, pp.name, pp.brand
                          FROM technician_inventory ti
-                         INNER JOIN printer_parts pp ON ti.part_id = pp.id
+                         INNER JOIN printer_items pp ON ti.part_id = pp.id
                          WHERE ti.technician_id = ? AND ti.part_id = ?
                          LIMIT 1`,
                         [service[0].technician_id, part.part_id]
@@ -1172,7 +1172,7 @@ router.patch('/institution_user/:id/approve', auth, async (req, res) => {
                     const [inventoryItem] = await db.query(
                         `SELECT ti.id, ti.quantity, pp.name, pp.brand
                          FROM technician_inventory ti
-                         INNER JOIN printer_parts pp ON ti.part_id = pp.id
+                         INNER JOIN printer_items pp ON ti.part_id = pp.id
                          WHERE ti.technician_id = ? AND ti.part_id = ?
                          LIMIT 1`,
                         [service[0].technician_id, part.part_id]

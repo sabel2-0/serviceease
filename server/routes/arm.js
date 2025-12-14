@@ -299,7 +299,7 @@ router.get('/statistics', async (req, res) => {
             FROM service_requests sr
             INNER JOIN printers ii ON sr.printer_id = ii.id
             INNER JOIN service_parts_used spu ON sr.id = spu.service_request_id
-            INNER JOIN printer_parts pp ON spu.part_id = pp.id
+            INNER JOIN printer_items pp ON spu.part_id = pp.id
             WHERE sr.status = 'completed'
             GROUP BY sr.id, ii.brand, ii.model
             HAVING COUNT(DISTINCT spu.part_id) >= 2

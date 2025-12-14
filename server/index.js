@@ -1182,7 +1182,7 @@ app.get('/api/admin/dashboard-stats', authenticateAdmin, async (req, res) => {
 
         // Get total parts in inventory
         const [partsResult] = await db.query(
-            'SELECT SUM(quantity) as count FROM printer_parts'
+            'SELECT SUM(quantity) as count FROM printer_items'
         );
         const totalParts = partsResult[0].count || 0;
 
@@ -3571,7 +3571,7 @@ app.patch('/api/users/me/service-requests/:id/approve', auth, async (req, res) =
                     `SELECT spu.part_id, spu.quantity_used, spu.used_by as technician_id, 
                             pp.name, pp.brand, ti.quantity as current_quantity
                      FROM service_parts_used spu
-                     JOIN printer_parts pp ON spu.part_id = pp.id
+                     JOIN printer_items pp ON spu.part_id = pp.id
                      JOIN technician_inventory ti ON ti.technician_id = spu.used_by AND ti.part_id = spu.part_id
                      WHERE spu.service_request_id = ?`,
                     [requestId]
@@ -4445,7 +4445,7 @@ app.get('/api/service-requests/:id', async (req, res) => {
                 u.first_name as used_by_first_name,
                 u.last_name as used_by_last_name
             FROM service_parts_used spu
-            LEFT JOIN printer_parts pp ON spu.part_id = pp.id
+            LEFT JOIN printer_items pp ON spu.part_id = pp.id
             LEFT JOIN users u ON spu.used_by = u.id
             WHERE spu.service_request_id = ?
             ORDER BY spu.used_at ASC
@@ -4703,7 +4703,7 @@ app.post('/api/service-requests/:id/complete', auth, async (req, res) => {
             
             for (const part of parts) {
                 // Frontend sends { name, brand, quantity/qty, notes, unit }
-                // We need to look up the part_id from printer_parts table
+                // We need to look up the part_id from printer_items table
                 const partName = part.name;
                 const partBrand = part.brand || null;
                 const partQuantity = part.quantity || part.qty || 1;
@@ -4714,12 +4714,12 @@ app.post('/api/service-requests/:id/complete', auth, async (req, res) => {
                     continue;
                 }
                 
-                // Look up part ID from printer_parts table
+                // Look up part ID from printer_items table
                 // Priority: parts in technician's inventory first, then any matching part
                 const [partRows] = await db.query(
                     `SELECT pp.id, 
                             CASE WHEN ti.id IS NOT NULL THEN 1 ELSE 0 END as in_inventory
-                     FROM printer_parts pp
+                     FROM printer_items pp
                      LEFT JOIN technician_inventory ti ON pp.id = ti.part_id 
                          AND ti.technician_id = ? 
                          AND ti.quantity > 0
@@ -4738,7 +4738,7 @@ app.post('/api/service-requests/:id/complete', auth, async (req, res) => {
                     // Part doesn't exist, create it
                     console.log(`Creating new part: ${partName} (${partBrand || 'Generic'})`);
                     const [insertResult] = await db.query(
-                        `INSERT INTO printer_parts (name, brand, category, unit, is_universal)
+                        `INSERT INTO printer_items (name, brand, category, unit, is_universal)
                          VALUES (?, ?, 'other', ?, ?)`,
                         [partName, partBrand, part.unit || 'pieces', partBrand ? 0 : 1]
                     );
@@ -4934,7 +4934,7 @@ app.post('/api/service-requests/:id/approve-completion', authenticateAdmin, asyn
                 const [partsUsed] = await db.query(
                     `SELECT spu.*, pp.name as part_name, pp.brand as part_brand
                      FROM service_parts_used spu
-                     JOIN printer_parts pp ON spu.part_id = pp.id
+                     JOIN printer_items pp ON spu.part_id = pp.id
                      WHERE spu.service_request_id = ?`,
                     [id]
                 );
@@ -4972,7 +4972,7 @@ app.post('/api/service-requests/:id/approve-completion', authenticateAdmin, asyn
                         } else {
                             // Part not in technician inventory - check if it's a universal part in central stock
                             const [centralPart] = await db.query(
-                                `SELECT quantity, is_universal, name FROM printer_parts WHERE id = ?`,
+                                `SELECT quantity, is_universal, name FROM printer_items WHERE id = ?`,
                                 [part.part_id]
                             );
                             
@@ -4988,7 +4988,7 @@ app.post('/api/service-requests/:id/approve-completion', authenticateAdmin, asyn
                                 if (isUniversal && newCentralStock >= 0) {
                                     // Universal part - deduct from central inventory
                                     await db.query(
-                                        `UPDATE printer_parts 
+                                        `UPDATE printer_items 
                                          SET quantity = ? 
                                          WHERE id = ?`,
                                         [newCentralStock, part.part_id]
@@ -5000,7 +5000,7 @@ app.post('/api/service-requests/:id/approve-completion', authenticateAdmin, asyn
                                     console.warn(`[INVENTORY WARNING] ⚠️ Part ${part.part_name} (ID: ${part.part_id}) not found in technician ${technicianId}'s inventory and is not universal`);
                                 }
                             } else {
-                                console.error(`[INVENTORY ERROR] ❌ Part ${part.part_name} (ID: ${part.part_id}) not found in printer_parts table`);
+                                console.error(`[INVENTORY ERROR] ❌ Part ${part.part_name} (ID: ${part.part_id}) not found in printer_items table`);
                             }
                         }
                     } catch (partError) {
@@ -5090,7 +5090,7 @@ app.get('/api/service-parts-used/:requestId', auth, async (req, res) => {
                 u.first_name as used_by_first_name,
                 u.last_name as used_by_last_name
              FROM service_parts_used spu
-             LEFT JOIN printer_parts pp ON spu.part_id = pp.id
+             LEFT JOIN printer_items pp ON spu.part_id = pp.id
              LEFT JOIN users u ON spu.used_by = u.id
              WHERE spu.service_request_id = ? 
              ORDER BY spu.used_at ASC`,
@@ -5599,15 +5599,15 @@ app.get('/:page.html', (req, res, next) => {
     });
 });
 
-// Database migration for printer_parts industry standard fields
-async function migratePrinterPartsTable() {
+// Database migration for printer_items industry standard fields
+async function migratePrinterItemsTable() {
     try {
         // Check if the new columns already exist
         const [columns] = await db.query(`
             SELECT COLUMN_NAME 
             FROM INFORMATION_SCHEMA.COLUMNS 
             WHERE TABLE_SCHEMA = 'serviceease' 
-            AND TABLE_NAME = 'printer_parts'
+            AND TABLE_NAME = 'printer_items'
             AND COLUMN_NAME IN ('page_yield', 'ink_volume', 'color')
         `);
         
@@ -5615,27 +5615,27 @@ async function migratePrinterPartsTable() {
         
         // Add missing columns
         if (!existingColumns.includes('page_yield')) {
-            console.log('📦 Adding page_yield column to printer_parts table...');
+            console.log('📦 Adding page_yield column to printer_items table...');
             await db.query(`
-                ALTER TABLE printer_parts 
+                ALTER TABLE printer_items 
                 ADD COLUMN page_yield INT DEFAULT NULL COMMENT 'Approximate number of pages the consumable can print'
             `);
             console.log('✅ page_yield column added successfully');
         }
         
         if (!existingColumns.includes('ink_volume')) {
-            console.log('📦 Adding ink_volume column to printer_parts table...');
+            console.log('📦 Adding ink_volume column to printer_items table...');
             await db.query(`
-                ALTER TABLE printer_parts 
+                ALTER TABLE printer_items 
                 ADD COLUMN ink_volume DECIMAL(10,2) DEFAULT NULL COMMENT 'Volume of ink in milliliters for ink bottles'
             `);
             console.log('✅ ink_volume column added successfully');
         }
         
         if (!existingColumns.includes('color')) {
-            console.log('📦 Adding color column to printer_parts table...');
+            console.log('📦 Adding color column to printer_items table...');
             await db.query(`
-                ALTER TABLE printer_parts 
+                ALTER TABLE printer_items 
                 ADD COLUMN color VARCHAR(50) DEFAULT NULL COMMENT 'Color of ink/toner (black, cyan, magenta, yellow, etc.)'
             `);
             console.log('✅ color column added successfully');
@@ -5645,7 +5645,7 @@ async function migratePrinterPartsTable() {
             console.log('✅ All printer parts industry fields already exist');
         }
     } catch (error) {
-        console.error('❌ Error during printer_parts migration:', error);
+        console.error('❌ Error during printer_items migration:', error);
         // Don't stop the server if migration fails
     }
 }
@@ -5653,7 +5653,7 @@ async function migratePrinterPartsTable() {
 // Run migrations before starting server - DISABLED
 // Migrations should be run manually, not on server start
 (async () => {
-    // await migratePrinterPartsTable(); // COMMENTED OUT - Run migrations manually
+    // await migratePrinterItemsTable(); // COMMENTED OUT - Run migrations manually
     
     // Start server
     const PORT = process.env.PORT || 3000;
@@ -5910,7 +5910,7 @@ app.get('/api/admin/technician-progress/:technicianId', authenticateAdmin, async
                     pp.unit,
                     pp.category
                 FROM service_parts_used spu
-                JOIN printer_parts pp ON spu.part_id = pp.id
+                JOIN printer_items pp ON spu.part_id = pp.id
                 WHERE spu.service_request_id = ?`,
                 [request.id]
             );
@@ -6211,7 +6211,7 @@ app.get('/api/admin/technician-inventory/:technicianId', authenticateAdmin, asyn
                 pp.unit,
                 CONCAT(assigned_by_user.first_name, ' ', assigned_by_user.last_name) as assigned_by_name
             FROM technician_inventory ti
-            JOIN printer_parts pp ON ti.part_id = pp.id
+            JOIN printer_items pp ON ti.part_id = pp.id
             LEFT JOIN users assigned_by_user ON ti.assigned_by = assigned_by_user.id
             WHERE ti.technician_id = ? AND ti.quantity > 0
             ORDER BY pp.name ASC, pp.brand ASC

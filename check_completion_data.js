@@ -49,7 +49,7 @@ const mysql = require('./server/node_modules/mysql2/promise');
                 pp.unit,
                 pp.category
             FROM service_parts_used spu
-            JOIN printer_parts pp ON spu.part_id = pp.id
+            JOIN printer_items pp ON spu.part_id = pp.id
             WHERE spu.service_request_id = 6
         `);
 

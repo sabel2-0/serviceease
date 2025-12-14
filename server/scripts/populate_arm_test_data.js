@@ -138,7 +138,7 @@ async function populateTestData() {
             for (const partName of printerSet.parts) {
                 // Check if part exists
                 const [existing] = await db.query(
-                    'SELECT id FROM printer_parts WHERE name = ? AND brand = ? LIMIT 1',
+                    'SELECT id FROM printer_items WHERE name = ? AND brand = ? LIMIT 1',
                     [partName, printerSet.brand]
                 );
 
@@ -159,7 +159,7 @@ async function populateTestData() {
                     else if (partName.toLowerCase().includes('board')) category = 'mainboard';
 
                     const [result] = await db.query(
-                        `INSERT INTO printer_parts (name, brand, category, quantity, minimum_stock, status, part_type)
+                        `INSERT INTO printer_items (name, brand, category, quantity, minimum_stock, status, part_type)
                          VALUES (?, ?, ?, 100, 10, 'in_stock', 'brand_specific')`,
                         [partName, printerSet.brand, category]
                     );

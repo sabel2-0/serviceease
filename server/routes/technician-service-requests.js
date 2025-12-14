@@ -180,7 +180,7 @@ router.get('/service-requests/:requestId', authenticateTechnician, async (req, r
                 u.first_name as used_by_first_name,
                 u.last_name as used_by_last_name
             FROM service_parts_used spu
-            JOIN printer_parts pp ON spu.part_id = pp.id
+            JOIN printer_items pp ON spu.part_id = pp.id
             LEFT JOIN users u ON spu.used_by = u.id
             WHERE spu.service_request_id = ?
             ORDER BY spu.used_at DESC
@@ -416,7 +416,7 @@ router.post('/service-requests/:requestId/complete', authenticateTechnician, asy
                     let query = `
                         SELECT ti.quantity 
                         FROM technician_inventory ti 
-                        JOIN printer_parts pp ON ti.part_id = pp.id 
+                        JOIN printer_items pp ON ti.part_id = pp.id 
                         WHERE ti.technician_id = ? AND pp.name = ?
                     `;
                     const queryParams = [technicianId, part.name];
@@ -492,11 +492,11 @@ router.post('/service-requests/:requestId/complete', authenticateTechnician, asy
                 for (const part of parts) {
                     console.log('[COMPLETE] Processing part:', part);
                     if (part.name && part.qty > 0) {
-                        // Get part_id from printer_parts table, prioritizing parts in technician's inventory
+                        // Get part_id from printer_items table, prioritizing parts in technician's inventory
                         let query = `
                             SELECT pp.id, 
                                    CASE WHEN ti.id IS NOT NULL THEN 1 ELSE 0 END as in_inventory
-                            FROM printer_parts pp
+                            FROM printer_items pp
                             LEFT JOIN technician_inventory ti ON pp.id = ti.part_id 
                                 AND ti.technician_id = ? 
                                 AND ti.quantity > 0

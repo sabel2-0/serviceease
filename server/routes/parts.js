@@ -22,7 +22,7 @@ router.get('/', async (req, res) => {
                 page_yield,
                 ink_volume,
                 color
-            FROM printer_parts
+            FROM printer_items
             ORDER BY created_at DESC
         `);
 
@@ -35,22 +35,22 @@ router.get('/', async (req, res) => {
         const isNoSuchTable = error && (error.code === 'ER_NO_SUCH_TABLE' || error.errno === 1146 || (error.message && error.message.includes("doesn't exist")));
         if (isNoSuchTable) {
             try {
-                console.log('[GET /api/parts] printer_parts table missing — attempting to create from schema');
+                console.log('[GET /api/parts] printer_items table missing — attempting to create from schema');
                 const fs = require('fs');
                 const path = require('path');
-                const schema = fs.readFileSync(path.join(__dirname, '../config/printer_parts_schema.sql'), 'utf8');
+                const schema = fs.readFileSync(path.join(__dirname, '../config/printer_items_schema.sql'), 'utf8');
                 await db.executeMultiStatementSql(schema);
 
                 // Retry select
                 const [rows2] = await db.query(`
                     SELECT id, name, brand, category, quantity, minimum_stock, status, created_at, updated_at, is_universal, unit, page_yield, ink_volume, color
-                    FROM printer_parts
+                    FROM printer_items
                     ORDER BY created_at DESC
                 `);
                 console.log(`[GET /api/parts] fetched ${rows2.length} rows after creating table`);
                 return res.json({ count: rows2.length, rows: rows2 });
             } catch (createErr) {
-                console.error('[GET /api/parts] failed to create printer_parts table:', createErr);
+                console.error('[GET /api/parts] failed to create printer_items table:', createErr);
                 return res.status(500).json({ count: 0, rows: [], error: 'Failed to initialize parts table', message: createErr.message });
             }
         }
@@ -82,7 +82,7 @@ router.post('/', async (req, res) => {
         }
 
         const [result] = await db.query(
-            `INSERT INTO printer_parts (
+            `INSERT INTO printer_items (
                 name,
                 brand,
                 category,
@@ -154,7 +154,7 @@ router.put('/:id', async (req, res) => {
         values.push(id);
 
         await db.query(
-            `UPDATE printer_parts 
+            `UPDATE printer_items 
              SET ${updateFields.join(', ')}, updated_at = CURRENT_TIMESTAMP
              WHERE id = ?`,
             values
@@ -173,7 +173,7 @@ router.delete('/:id', async (req, res) => {
         const { id } = req.params;
 
         const [result] = await db.query(
-            'DELETE FROM printer_parts WHERE id = ?',
+            'DELETE FROM printer_items WHERE id = ?',
             [id]
         );
 
@@ -191,11 +191,11 @@ router.delete('/:id', async (req, res) => {
 // Debug endpoint: return count and a sample of parts (safe, read-only)
 router.get('/debug', async (req, res) => {
     try {
-        const [countRows] = await db.query('SELECT COUNT(*) as cnt FROM printer_parts');
+        const [countRows] = await db.query('SELECT COUNT(*) as cnt FROM printer_items');
         const count = countRows && countRows[0] ? Number(countRows[0].cnt) : 0;
         const [sampleRows] = await db.query(
             `SELECT id, name, brand, category, quantity, minimum_stock, status, created_at
-             FROM printer_parts
+             FROM printer_items
              ORDER BY created_at DESC
              LIMIT 20`
         );

@@ -517,7 +517,7 @@ router.get('/:id', auth, async (req, res) => {
                 u.first_name as used_by_first_name,
                 u.last_name as used_by_last_name
             FROM service_parts_used spu
-            JOIN printer_parts pp ON spu.part_id = pp.id
+            JOIN printer_items pp ON spu.part_id = pp.id
             LEFT JOIN users u ON spu.used_by = u.id
             WHERE spu.service_request_id = ?
             ORDER BY spu.used_at DESC

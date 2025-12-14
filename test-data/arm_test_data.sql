@@ -85,7 +85,7 @@ INSERT INTO user_printer_assignments (user_id, printer_id, institution_id, depar
 (5, 9, 'INST003', 'Computer Lab', NOW());         -- Brother MFC-L2750DW
 
 -- Step 4: Create printer parts
-INSERT INTO printer_parts (name, brand, category, quantity, minimum_stock, status, item_type) VALUES
+INSERT INTO printer_items (name, brand, category, quantity, minimum_stock, status, item_type) VALUES
 -- HP Parts
 ('HP Toner CF259A', 'HP', 'toner', 100, 10, 'in_stock', 'printer_part'),
 ('HP Drum Unit', 'HP', 'drum', 80, 8, 'in_stock', 'printer_part'),
@@ -343,7 +343,7 @@ SELECT
     (SELECT COUNT(*) FROM users WHERE role = 'institution_user') as institution_users,
     (SELECT COUNT(*) FROM users WHERE role = 'technician') as technicians,
     (SELECT COUNT(*) FROM printers) as printers,
-    (SELECT COUNT(*) FROM printer_parts) as parts,
+    (SELECT COUNT(*) FROM printer_items) as parts,
     (SELECT COUNT(*) FROM service_requests WHERE status = 'completed') as completed_requests,
     (SELECT COUNT(*) FROM service_parts_used) as parts_used_records
 FROM institutions;
