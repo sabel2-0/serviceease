@@ -572,10 +572,10 @@ router.post('/', auth, async (req, res) => {
             enrichedPartsUsed = await Promise.all(parts_used.map(async (part) => {
                 const [partInfo] = await db.query(
                     'SELECT name, brand FROM printer_items WHERE id = ?',
-                    [part.part_id]
+                    [part.item_id]
                 );
                 return {
-                    part_id: part.part_id,
+                    item_id: part.item_id,
                     name: partInfo[0]?.name || 'Unknown Part',
                     brand: partInfo[0]?.brand || null,
                     qty: part.qty,
@@ -867,9 +867,9 @@ router.patch('/institution_admin/:id/approve', auth, async (req, res) => {
             
             // First, let's see what's in the technician's inventory
             const [techInventory] = await db.query(
-                `SELECT ti.id, ti.quantity, pp.id as part_id, pp.name, pp.brand, pp.category, pp.is_universal
+                `SELECT ti.id, ti.quantity, pp.id as item_id, pp.name, pp.brand, pp.category, pp.is_universal
                  FROM technician_inventory ti
-                 INNER JOIN printer_items pp ON ti.part_id = pp.id
+                 INNER JOIN printer_items pp ON ti.item_id = pp.id
                  WHERE ti.technician_id = ?`,
                 [service[0].technician_id]
             );
@@ -877,17 +877,17 @@ router.patch('/institution_admin/:id/approve', auth, async (req, res) => {
             
             for (const part of parts_used) {
                 try {
-                    console.log(`\n🔍 Processing part_id: ${part.part_id}`);
+                    console.log(`\n🔍 Processing item_id: ${part.item_id}`);
                     console.log(`   Qty to deduct: ${part.qty}, Unit: ${part.unit}`);
                     
-                    // Query by part_id directly
+                    // Query by item_id directly
                     const [inventoryItem] = await db.query(
                         `SELECT ti.id, ti.quantity, pp.name, pp.brand
                          FROM technician_inventory ti
-                         INNER JOIN printer_items pp ON ti.part_id = pp.id
-                         WHERE ti.technician_id = ? AND ti.part_id = ?
+                         INNER JOIN printer_items pp ON ti.item_id = pp.id
+                         WHERE ti.technician_id = ? AND ti.item_id = ?
                          LIMIT 1`,
-                        [service[0].technician_id, part.part_id]
+                        [service[0].technician_id, part.item_id]
                     );
                     
                     console.log(`Query result: ${inventoryItem.length > 0 ? 'FOUND' : 'NOT FOUND'}`);
@@ -907,7 +907,7 @@ router.patch('/institution_admin/:id/approve', auth, async (req, res) => {
                             console.log(`   ⚠️ Insufficient stock: have ${currentQty}, need ${deductQty}`);
                         }
                     } else {
-                        console.log(`   ❌ Part ID ${part.part_id} not found in technician's inventory`);
+                        console.log(`   ❌ Item ID ${part.item_id} not found in technician's inventory`);
                     }
                 } catch (partError) {
                     console.error(`❌ Error deducting part:`, partError);
@@ -1165,17 +1165,17 @@ router.patch('/institution_user/:id/approve', auth, async (req, res) => {
             
             for (const part of parts_used) {
                 try {
-                    console.log(`\n?? Processing part_id: ${part.part_id}`);
+                    console.log(`\n?? Processing item_id: ${part.item_id}`);
                     console.log(`   Qty to deduct: ${part.qty}, Unit: ${part.unit}`);
                     
-                    // Query by part_id directly
+                    // Query by item_id directly
                     const [inventoryItem] = await db.query(
                         `SELECT ti.id, ti.quantity, pp.name, pp.brand
                          FROM technician_inventory ti
-                         INNER JOIN printer_items pp ON ti.part_id = pp.id
-                         WHERE ti.technician_id = ? AND ti.part_id = ?
+                         INNER JOIN printer_items pp ON ti.item_id = pp.id
+                         WHERE ti.technician_id = ? AND ti.item_id = ?
                          LIMIT 1`,
-                        [service[0].technician_id, part.part_id]
+                        [service[0].technician_id, part.item_id]
                     );
                     
                     console.log(`Query result: ${inventoryItem.length > 0 ? 'FOUND' : 'NOT FOUND'}`);
@@ -1195,7 +1195,7 @@ router.patch('/institution_user/:id/approve', auth, async (req, res) => {
                             console.log(`   ?? Insufficient stock: have ${currentQty}, need ${deductQty}`);
                         }
                     } else {
-                        console.log(`   ? Part ID ${part.part_id} not found in technician's inventory`);
+                        console.log(`   ? Item ID ${part.item_id} not found in technician's inventory`);
                     }
                 } catch (partError) {
                     console.error(`? Error deducting part:`, partError);

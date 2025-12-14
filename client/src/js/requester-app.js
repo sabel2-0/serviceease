@@ -1026,7 +1026,7 @@ function viewVoluntaryDetails(serviceId) {
       <div class="font-medium">${p.name}</div>
       <div class="text-xs text-gray-600">Qty: ${p.qty} ${p.unit || 'pcs'} | Brand: ${p.brand || 'N/A'}</div>
     </div>
-  `).join('') : '<p class="text-sm text-gray-500">No parts used</p>';
+  `).join('') : '<p class="text-sm text-gray-500">No items used</p>';
   
   const modalContent = `
     <div class="space-y-4">
@@ -1060,7 +1060,7 @@ function viewVoluntaryDetails(serviceId) {
       </div>
       
       <div>
-        <div class="text-xs text-gray-600 font-medium mb-2">Parts Used</div>
+        <div class="text-xs text-gray-600 font-medium mb-2">Items Used</div>
         <div class="space-y-2">${partsHtml}</div>
       </div>
       

@@ -522,7 +522,7 @@
             const monthName = new Date(year, month - 1, 1).toLocaleString('en-US', { month: 'long' });
             
             // CSV headers
-            let csv = 'Date,Time,Printer,Brand,Model,Serial Number,Location,Technician,Institution,Service Description,Parts Used\n';
+            let csv = 'Date,Time,Printer,Brand,Model,Serial Number,Location,Technician,Institution,Service Description,Items Used\n';
             
             // CSV rows
             allServices.forEach(service => {

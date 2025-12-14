@@ -179,8 +179,8 @@ router.get('/service-requests/:requestId', authenticateTechnician, async (req, r
                 CONCAT(u.first_name, ' ', u.last_name) as used_by_name,
                 u.first_name as used_by_first_name,
                 u.last_name as used_by_last_name
-            FROM service_parts_used spu
-            JOIN printer_items pp ON spu.part_id = pp.id
+            FROM service_items_used spu
+            JOIN printer_items pp ON spu.item_id = pp.id
             LEFT JOIN users u ON spu.used_by = u.id
             WHERE spu.service_request_id = ?
             ORDER BY spu.used_at DESC
@@ -416,7 +416,7 @@ router.post('/service-requests/:requestId/complete', authenticateTechnician, asy
                     let query = `
                         SELECT ti.quantity 
                         FROM technician_inventory ti 
-                        JOIN printer_items pp ON ti.part_id = pp.id 
+                        JOIN printer_items pp ON ti.item_id = pp.id 
                         WHERE ti.technician_id = ? AND pp.name = ?
                     `;
                     const queryParams = [technicianId, part.name];
@@ -480,24 +480,24 @@ router.post('/service-requests/:requestId/complete', authenticateTechnician, asy
             
             // Delete existing parts if resubmitting (to prevent duplicates)
             await db.query(
-                'DELETE FROM service_parts_used WHERE service_request_id = ?',
+                'DELETE FROM service_items_used WHERE service_request_id = ?',
                 [requestId]
             );
             
             console.log('[COMPLETE] Parts received:', JSON.stringify(parts, null, 2));
             
-            // Record parts used in service_parts_used table (but don't deduct from inventory yet)
+            // Record parts used in service_items_used table (but don't deduct from inventory yet)
             if (parts && Array.isArray(parts) && parts.length > 0) {
                 console.log('[COMPLETE] Processing', parts.length, 'parts');
                 for (const part of parts) {
                     console.log('[COMPLETE] Processing part:', part);
                     if (part.name && part.qty > 0) {
-                        // Get part_id from printer_items table, prioritizing parts in technician's inventory
+                        // Get item_id from printer_items table, prioritizing parts in technician's inventory
                         let query = `
                             SELECT pp.id, 
                                    CASE WHEN ti.id IS NOT NULL THEN 1 ELSE 0 END as in_inventory
                             FROM printer_items pp
-                            LEFT JOIN technician_inventory ti ON pp.id = ti.part_id 
+                            LEFT JOIN technician_inventory ti ON pp.id = ti.item_id 
                                 AND ti.technician_id = ? 
                                 AND ti.quantity > 0
                             WHERE pp.name = ?`;
@@ -518,14 +518,14 @@ router.post('/service-requests/:requestId/complete', authenticateTechnician, asy
                             const brandInfo = part.brand ? ` (Brand: ${part.brand})` : '';
                             console.log('[COMPLETE] Inserting part usage:', {
                                 service_request_id: requestId,
-                                part_id: partInfo[0].id,
+                                item_id: partInfo[0].id,
                                 quantity_used: part.qty,
                                 notes: `Used ${part.qty} ${part.unit || 'pieces'}${brandInfo}`,
                                 used_by: technicianId
                             });
                             await db.query(
-                                `INSERT INTO service_parts_used 
-                                 (service_request_id, part_id, quantity_used, notes, used_by)
+                                `INSERT INTO service_items_used 
+                                 (service_request_id, item_id, quantity_used, notes, used_by)
                                  VALUES (?, ?, ?, ?, ?)`,
                                 [requestId, partInfo[0].id, part.qty, `Used ${part.qty} ${part.unit || 'pieces'}${brandInfo}`, technicianId]
                             );

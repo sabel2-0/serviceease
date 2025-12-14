@@ -164,7 +164,7 @@ function displayServiceRequests(requests) {
                     <p class="text-sm text-gray-600">Institution: ${request.institution_name}</p>
                     <p class="text-sm text-gray-600">Technician: ${request.technician_first_name} ${request.technician_last_name}</p>
                     <p class="text-sm text-gray-600">Status: ${request.approval_status}</p>
-                    ${request.parts_used ? `<p class="text-sm text-gray-600">Parts used: ${request.parts_used}</p>` : ''}
+                    ${request.parts_used ? `<p class="text-sm text-gray-600">Items used: ${request.parts_used}</p>` : ''}
                 </div>
                 <div class="flex space-x-2">
                     ${request.approval_status === 'pending_approval' ? 

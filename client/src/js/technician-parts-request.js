@@ -329,7 +329,7 @@ class TechnicianPartsManager {
             }
             
             const requestData = {
-                part_id: this.selectedPart.id,
+                item_id: this.selectedPart.id,
                 technician_id: user.id,
                 quantity_requested: quantity,
                 reason: reason,

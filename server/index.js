@@ -1176,7 +1176,7 @@ app.get('/api/admin/dashboard-stats', authenticateAdmin, async (req, res) => {
 
         // Get pending parts requests
         const [partsRequestsResult] = await db.query(
-            'SELECT COUNT(*) as count FROM parts_requests WHERE status = "pending"'
+            'SELECT COUNT(*) as count FROM items_request WHERE status = "pending"'
         );
         const pendingPartsRequests = partsRequestsResult[0].count;
 
@@ -3568,11 +3568,11 @@ app.patch('/api/users/me/service-requests/:id/approve', auth, async (req, res) =
             try {
                 // Get parts used in this service request with technician and part details
                 const [partsUsed] = await db.query(
-                    `SELECT spu.part_id, spu.quantity_used, spu.used_by as technician_id, 
+                    `SELECT spu.item_id, spu.quantity_used, spu.used_by as technician_id, 
                             pp.name, pp.brand, ti.quantity as current_quantity
-                     FROM service_parts_used spu
-                     JOIN printer_items pp ON spu.part_id = pp.id
-                     JOIN technician_inventory ti ON ti.technician_id = spu.used_by AND ti.part_id = spu.part_id
+                     FROM service_items_used spu
+                     JOIN printer_items pp ON spu.item_id = pp.id
+                     JOIN technician_inventory ti ON ti.technician_id = spu.used_by AND ti.item_id = spu.item_id
                      WHERE spu.service_request_id = ?`,
                     [requestId]
                 );
@@ -3584,8 +3584,8 @@ app.patch('/api/users/me/service-requests/:id/approve', auth, async (req, res) =
                         const newQuantity = Math.max(0, part.current_quantity - part.quantity_used);
                         
                         await db.query(
-                            'UPDATE technician_inventory SET quantity = ?, last_updated = NOW() WHERE technician_id = ? AND part_id = ?',
-                            [newQuantity, part.technician_id, part.part_id]
+                            'UPDATE technician_inventory SET quantity = ?, last_updated = NOW() WHERE technician_id = ? AND item_id = ?',
+                            [newQuantity, part.technician_id, part.item_id]
                         );
                         
                         console.log(`✅ Deducted ${part.quantity_used} of "${part.name}" (${part.brand || 'Generic'}) from technician ${part.technician_id} inventory. Old: ${part.current_quantity}, New: ${newQuantity}`);
@@ -4444,8 +4444,8 @@ app.get('/api/service-requests/:id', async (req, res) => {
                 pp.category,
                 u.first_name as used_by_first_name,
                 u.last_name as used_by_last_name
-            FROM service_parts_used spu
-            LEFT JOIN printer_items pp ON spu.part_id = pp.id
+            FROM service_items_used spu
+            LEFT JOIN printer_items pp ON spu.item_id = pp.id
             LEFT JOIN users u ON spu.used_by = u.id
             WHERE spu.service_request_id = ?
             ORDER BY spu.used_at ASC
@@ -4693,17 +4693,17 @@ app.post('/api/service-requests/:id/complete', auth, async (req, res) => {
         
         // Delete existing parts if resubmitting (to prevent duplicates)
         await db.query(
-            'DELETE FROM service_parts_used WHERE service_request_id = ?',
+            'DELETE FROM service_items_used WHERE service_request_id = ?',
             [id]
         );
         
-        // Save parts used to service_parts_used table
+        // Save parts used to service_items_used table
         if (parts && Array.isArray(parts) && parts.length > 0) {
             console.log(`Saving ${parts.length} parts for service request ${id}:`, parts);
             
             for (const part of parts) {
                 // Frontend sends { name, brand, quantity/qty, notes, unit }
-                // We need to look up the part_id from printer_items table
+                // We need to look up the item_id from printer_items table
                 const partName = part.name;
                 const partBrand = part.brand || null;
                 const partQuantity = part.quantity || part.qty || 1;
@@ -4720,7 +4720,7 @@ app.post('/api/service-requests/:id/complete', auth, async (req, res) => {
                     `SELECT pp.id, 
                             CASE WHEN ti.id IS NOT NULL THEN 1 ELSE 0 END as in_inventory
                      FROM printer_items pp
-                     LEFT JOIN technician_inventory ti ON pp.id = ti.part_id 
+                     LEFT JOIN technician_inventory ti ON pp.id = ti.item_id 
                          AND ti.technician_id = ? 
                          AND ti.quantity > 0
                      WHERE pp.name = ? 
@@ -4745,9 +4745,9 @@ app.post('/api/service-requests/:id/complete', auth, async (req, res) => {
                     partId = insertResult.insertId;
                 }
                 
-                // Insert into service_parts_used with correct schema
+                // Insert into service_items_used with correct schema
                 await db.query(
-                    `INSERT INTO service_parts_used (service_request_id, part_id, quantity_used, notes, used_by)
+                    `INSERT INTO service_items_used (service_request_id, item_id, quantity_used, notes, used_by)
                      VALUES (?, ?, ?, ?, ?)`,
                     [id, partId, partQuantity, partNotes, technician_id]
                 );
@@ -4933,8 +4933,8 @@ app.post('/api/service-requests/:id/approve-completion', authenticateAdmin, asyn
                 // Get all parts used for this service request
                 const [partsUsed] = await db.query(
                     `SELECT spu.*, pp.name as part_name, pp.brand as part_brand
-                     FROM service_parts_used spu
-                     JOIN printer_items pp ON spu.part_id = pp.id
+                     FROM service_items_used spu
+                     JOIN printer_items pp ON spu.item_id = pp.id
                      WHERE spu.service_request_id = ?`,
                     [id]
                 );
@@ -4947,11 +4947,11 @@ app.post('/api/service-requests/:id/approve-completion', authenticateAdmin, asyn
                         // Check if part is in technician's personal inventory
                         const [inventory] = await db.query(
                             `SELECT quantity FROM technician_inventory 
-                             WHERE technician_id = ? AND part_id = ?`,
-                            [technicianId, part.part_id]
+                             WHERE technician_id = ? AND item_id = ?`,
+                            [technicianId, part.item_id]
                         );
                         
-                        console.log(`[INVENTORY DEDUCTION] Checking part ${part.part_id} (${part.part_name}) for technician ${technicianId}`);
+                        console.log(`[INVENTORY DEDUCTION] Checking part ${part.item_id} (${part.part_name}) for technician ${technicianId}`);
                         
                         if (inventory.length > 0) {
                             // Part is in technician's personal inventory - deduct from there
@@ -4962,8 +4962,8 @@ app.post('/api/service-requests/:id/approve-completion', authenticateAdmin, asyn
                                 await db.query(
                                     `UPDATE technician_inventory 
                                      SET quantity = ?, last_updated = NOW()
-                                     WHERE technician_id = ? AND part_id = ?`,
-                                    [newQty, technicianId, part.part_id]
+                                     WHERE technician_id = ? AND item_id = ?`,
+                                    [newQty, technicianId, part.item_id]
                                 );
                                 console.log(`[INVENTORY DEDUCTION] ✅ Deducted ${part.quantity_used}x ${part.part_name} from technician's personal inventory. Old: ${currentQty}, New: ${newQty}`);
                             } else {
@@ -4973,17 +4973,17 @@ app.post('/api/service-requests/:id/approve-completion', authenticateAdmin, asyn
                             // Part not in technician inventory - check if it's a universal part in central stock
                             const [centralPart] = await db.query(
                                 `SELECT quantity, is_universal, name FROM printer_items WHERE id = ?`,
-                                [part.part_id]
+                                [part.item_id]
                             );
                             
-                            console.log(`[INVENTORY DEDUCTION DEBUG] Central part lookup for ID ${part.part_id}:`, centralPart);
+                            console.log(`[INVENTORY DEDUCTION DEBUG] Central part lookup for ID ${part.item_id}:`, centralPart);
                             
                             if (centralPart.length > 0) {
                                 const centralStock = centralPart[0].quantity;
                                 const isUniversal = centralPart[0].is_universal;
                                 const newCentralStock = centralStock - part.quantity_used;
                                 
-                                console.log(`[INVENTORY DEDUCTION DEBUG] Part ${part.part_id} - Stock: ${centralStock}, is_universal: ${isUniversal}, Will deduct: ${part.quantity_used}, New stock: ${newCentralStock}`);
+                                console.log(`[INVENTORY DEDUCTION DEBUG] Part ${part.item_id} - Stock: ${centralStock}, is_universal: ${isUniversal}, Will deduct: ${part.quantity_used}, New stock: ${newCentralStock}`);
                                 
                                 if (isUniversal && newCentralStock >= 0) {
                                     // Universal part - deduct from central inventory
@@ -4991,16 +4991,16 @@ app.post('/api/service-requests/:id/approve-completion', authenticateAdmin, asyn
                                         `UPDATE printer_items 
                                          SET quantity = ? 
                                          WHERE id = ?`,
-                                        [newCentralStock, part.part_id]
+                                        [newCentralStock, part.item_id]
                                     );
                                     console.log(`[INVENTORY DEDUCTION] ✅ Deducted ${part.quantity_used}x ${part.part_name} (UNIVERSAL) from central stock. Old: ${centralStock}, New: ${newCentralStock}`);
                                 } else if (isUniversal && newCentralStock < 0) {
                                     console.warn(`[INVENTORY WARNING] ⚠️ Cannot deduct ${part.quantity_used}x ${part.part_name} - insufficient central stock (current: ${centralStock})`);
                                 } else {
-                                    console.warn(`[INVENTORY WARNING] ⚠️ Part ${part.part_name} (ID: ${part.part_id}) not found in technician ${technicianId}'s inventory and is not universal`);
+                                    console.warn(`[INVENTORY WARNING] ⚠️ Part ${part.part_name} (ID: ${part.item_id}) not found in technician ${technicianId}'s inventory and is not universal`);
                                 }
                             } else {
-                                console.error(`[INVENTORY ERROR] ❌ Part ${part.part_name} (ID: ${part.part_id}) not found in printer_items table`);
+                                console.error(`[INVENTORY ERROR] ❌ Part ${part.part_name} (ID: ${part.item_id}) not found in printer_items table`);
                             }
                         }
                     } catch (partError) {
@@ -5089,8 +5089,8 @@ app.get('/api/service-parts-used/:requestId', auth, async (req, res) => {
                 pp.category,
                 u.first_name as used_by_first_name,
                 u.last_name as used_by_last_name
-             FROM service_parts_used spu
-             LEFT JOIN printer_items pp ON spu.part_id = pp.id
+             FROM service_items_used spu
+             LEFT JOIN printer_items pp ON spu.item_id = pp.id
              LEFT JOIN users u ON spu.used_by = u.id
              WHERE spu.service_request_id = ? 
              ORDER BY spu.used_at ASC`,
@@ -5899,7 +5899,7 @@ app.get('/api/admin/technician-progress/:technicianId', authenticateAdmin, async
 
         const [requests] = await db.query(query, [technicianId]);
 
-        // Get parts used for each request from service_parts_used table
+        // Get parts used for each request from service_items_used table
         for (const request of requests) {
             const [parts] = await db.query(
                 `SELECT 
@@ -5909,8 +5909,8 @@ app.get('/api/admin/technician-progress/:technicianId', authenticateAdmin, async
                     pp.brand,
                     pp.unit,
                     pp.category
-                FROM service_parts_used spu
-                JOIN printer_items pp ON spu.part_id = pp.id
+                FROM service_items_used spu
+                JOIN printer_items pp ON spu.item_id = pp.id
                 WHERE spu.service_request_id = ?`,
                 [request.id]
             );
@@ -6154,7 +6154,7 @@ app.get('/api/admin/technician-inventory', authenticateAdmin, async (req, res) =
         for (const tech of technicians) {
             const [inventory] = await db.query(`
                 SELECT 
-                    COUNT(DISTINCT ti.part_id) as total_parts,
+                    COUNT(DISTINCT ti.item_id) as total_parts,
                     SUM(ti.quantity) as total_items
                 FROM technician_inventory ti
                 WHERE ti.technician_id = ? AND ti.quantity > 0
@@ -6200,7 +6200,7 @@ app.get('/api/admin/technician-inventory/:technicianId', authenticateAdmin, asyn
                 ti.assigned_at,
                 ti.last_updated,
                 ti.notes,
-                pp.id as part_id,
+                pp.id as item_id,
                 pp.name as part_name,
                 pp.brand,
                 pp.category,
@@ -6211,7 +6211,7 @@ app.get('/api/admin/technician-inventory/:technicianId', authenticateAdmin, asyn
                 pp.unit,
                 CONCAT(assigned_by_user.first_name, ' ', assigned_by_user.last_name) as assigned_by_name
             FROM technician_inventory ti
-            JOIN printer_items pp ON ti.part_id = pp.id
+            JOIN printer_items pp ON ti.item_id = pp.id
             LEFT JOIN users assigned_by_user ON ti.assigned_by = assigned_by_user.id
             WHERE ti.technician_id = ? AND ti.quantity > 0
             ORDER BY pp.name ASC, pp.brand ASC

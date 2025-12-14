@@ -24,7 +24,7 @@ async function testInventoryDeduction() {
                 sr.technician_id,
                 COUNT(spu.id) as parts_count
             FROM service_requests sr
-            LEFT JOIN service_parts_used spu ON sr.id = spu.service_request_id
+            LEFT JOIN service_items_used spu ON sr.id = spu.service_request_id
             WHERE sr.status = 'completed'
             GROUP BY sr.id
             HAVING parts_count > 0
@@ -44,7 +44,7 @@ async function testInventoryDeduction() {
                     sr.technician_id,
                     COUNT(spu.id) as parts_count
                 FROM service_requests sr
-                LEFT JOIN service_parts_used spu ON sr.id = spu.service_request_id
+                LEFT JOIN service_items_used spu ON sr.id = spu.service_request_id
                 WHERE sr.status = 'pending_approval'
                 GROUP BY sr.id
                 HAVING parts_count > 0
@@ -77,7 +77,7 @@ async function testInventoryDeduction() {
             const [partsUsed] = await connection.query(`
                 SELECT 
                     spu.id,
-                    spu.part_id,
+                    spu.item_id,
                     spu.quantity_used,
                     spu.used_by as technician_id,
                     pp.name as part_name,
@@ -85,9 +85,9 @@ async function testInventoryDeduction() {
                     pp.quantity as central_stock,
                     ti.quantity as tech_stock,
                     pp.is_universal
-                FROM service_parts_used spu
-                JOIN printer_items pp ON spu.part_id = pp.id
-                LEFT JOIN technician_inventory ti ON ti.technician_id = spu.used_by AND ti.part_id = spu.part_id
+                FROM service_items_used spu
+                JOIN printer_items pp ON spu.item_id = pp.id
+                LEFT JOIN technician_inventory ti ON ti.technician_id = spu.used_by AND ti.item_id = spu.item_id
                 WHERE spu.service_request_id = ?
             `, [testRequest.id]);
             

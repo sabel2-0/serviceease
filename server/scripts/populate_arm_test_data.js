@@ -228,7 +228,7 @@ async function populateTestData() {
 
                     if (partId) {
                         await db.query(
-                            `INSERT INTO service_parts_used (service_request_id, part_id, quantity_used, used_by, used_at, notes)
+                            `INSERT INTO service_items_used (service_request_id, item_id, quantity_used, used_by, used_at, notes)
                              VALUES (?, ?, ?, ?, ?, ?)`,
                             [
                                 serviceRequestId,
@@ -256,10 +256,10 @@ async function populateTestData() {
             SELECT 
                 COUNT(DISTINCT sr.id) as total_requests,
                 COUNT(DISTINCT spu.id) as total_parts_used,
-                COUNT(DISTINCT spu.part_id) as unique_parts,
+                COUNT(DISTINCT spu.item_id) as unique_parts,
                 COUNT(DISTINCT sr.printer_id) as unique_printers
             FROM service_requests sr
-            LEFT JOIN service_parts_used spu ON sr.id = spu.service_request_id
+            LEFT JOIN service_items_used spu ON sr.id = spu.service_request_id
             WHERE sr.status = 'completed'
         `);
 

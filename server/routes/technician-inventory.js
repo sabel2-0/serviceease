@@ -11,7 +11,7 @@ router.get('/inventory/brands', authenticateTechnician, async (req, res) => {
         const [rows] = await db.query(`
             SELECT DISTINCT pp.brand
             FROM technician_inventory ti
-            JOIN printer_items pp ON ti.part_id = pp.id
+            JOIN printer_items pp ON ti.item_id = pp.id
             WHERE ti.technician_id = ? AND ti.quantity > 0 AND pp.brand IS NOT NULL
             ORDER BY pp.brand ASC
         `, [technicianId]);
@@ -35,7 +35,7 @@ router.get('/inventory', authenticateTechnician, async (req, res) => {
                 ti.assigned_at,
                 ti.last_updated,
                 ti.notes,
-                pp.id as part_id,
+                pp.id as item_id,
                 pp.name,
                 pp.brand,
                 pp.category,
@@ -46,7 +46,7 @@ router.get('/inventory', authenticateTechnician, async (req, res) => {
                 pp.unit,
                 CONCAT(u.first_name, ' ', u.last_name) as assigned_by_name
             FROM technician_inventory ti
-            JOIN printer_items pp ON ti.part_id = pp.id
+            JOIN printer_items pp ON ti.item_id = pp.id
             LEFT JOIN users u ON ti.assigned_by = u.id
             WHERE ti.technician_id = ? AND ti.quantity > 0
             ORDER BY ti.last_updated DESC, pp.name ASC
@@ -81,7 +81,7 @@ router.get('/parts', authenticateTechnician, async (req, res) => {
                 ti.quantity as technician_stock,
                 ti.id as tech_inventory_id
             FROM technician_inventory ti
-            JOIN printer_items pp ON ti.part_id = pp.id
+            JOIN printer_items pp ON ti.item_id = pp.id
             WHERE ti.technician_id = ? AND ti.quantity > 0
             ORDER BY pp.name ASC
         `, [technicianId]);
@@ -186,12 +186,12 @@ router.get('/available-parts', authenticateTechnician, async (req, res) => {
 router.post('/request', authenticateTechnician, async (req, res) => {
     try {
         const technicianId = req.user.id;
-        const { part_id, quantity_requested, reason, priority } = req.body;
+        const { item_id, quantity_requested, reason, priority } = req.body;
         
         // Validation
-        if (!part_id || !quantity_requested || !reason) {
+        if (!item_id || !quantity_requested || !reason) {
             return res.status(400).json({ 
-                error: 'Missing required fields: part_id, quantity_requested, and reason are required' 
+                error: 'Missing required fields: item_id, quantity_requested, and reason are required' 
             });
         }
         
@@ -217,7 +217,7 @@ router.post('/request', authenticateTechnician, async (req, res) => {
         // Check if part exists and has enough stock
         const [partRows] = await db.query(
             'SELECT id, name, quantity FROM printer_items WHERE id = ?',
-            [part_id]
+            [item_id]
         );
         
         if (partRows.length === 0) {
@@ -233,15 +233,15 @@ router.post('/request', authenticateTechnician, async (req, res) => {
         
         // Create the parts request
         const [result] = await db.query(
-            `INSERT INTO parts_requests (
-                part_id, 
+            `INSERT INTO items_request (
+                item_id, 
                 technician_id, 
                 quantity_requested, 
                 reason, 
                 priority, 
                 status
             ) VALUES (?, ?, ?, ?, ?, 'pending')`,
-            [part_id, technicianId, quantity_requested, reason.trim(), priority || 'medium']
+            [item_id, technicianId, quantity_requested, reason.trim(), priority || 'medium']
         );
         
         console.log(`Parts request created with ID ${result.insertId} for technician ${technicianId}`);
@@ -282,8 +282,8 @@ router.get('/requests', authenticateTechnician, async (req, res) => {
                 pp.category as part_category,
                 pp.unit as part_unit,
                 CONCAT(approver.first_name, ' ', approver.last_name) as approved_by_name
-            FROM parts_requests pr
-            JOIN printer_items pp ON pr.part_id = pp.id
+            FROM items_request pr
+            JOIN printer_items pp ON pr.item_id = pp.id
             LEFT JOIN users approver ON pr.approved_by = approver.id
             WHERE pr.technician_id = ?
         `;
@@ -340,8 +340,8 @@ router.get('/requests/:id', authenticateTechnician, async (req, res) => {
                 pp.category as part_category,
                 pp.unit as part_unit,
                 CONCAT(approver.first_name, ' ', approver.last_name) as approved_by_name
-            FROM parts_requests pr
-            JOIN printer_items pp ON pr.part_id = pp.id
+            FROM items_request pr
+            JOIN printer_items pp ON pr.item_id = pp.id
             LEFT JOIN users approver ON pr.approved_by = approver.id
             WHERE pr.id = ? AND pr.technician_id = ?
         `, [requestId, technicianId]);
@@ -365,12 +365,12 @@ router.get('/requests/:id', authenticateTechnician, async (req, res) => {
 router.post('/use-part', authenticateTechnician, async (req, res) => {
     try {
         const technicianId = req.user.id;
-        const { part_id, quantity_used, service_request_id, notes } = req.body;
+        const { item_id, quantity_used, service_request_id, notes } = req.body;
         
         // Validation
-        if (!part_id || !quantity_used || quantity_used < 1) {
+        if (!item_id || !quantity_used || quantity_used < 1) {
             return res.status(400).json({ 
-                error: 'Valid part_id and quantity_used are required' 
+                error: 'Valid item_id and quantity_used are required' 
             });
         }
         
@@ -379,8 +379,8 @@ router.post('/use-part', authenticateTechnician, async (req, res) => {
         try {
             // Check if technician has this part in inventory
             const [inventoryRows] = await db.query(
-                'SELECT quantity FROM technician_inventory WHERE technician_id = ? AND part_id = ?',
-                [technicianId, part_id]
+                'SELECT quantity FROM technician_inventory WHERE technician_id = ? AND item_id = ?',
+                [technicianId, item_id]
             );
             
             if (inventoryRows.length === 0) {
@@ -397,20 +397,20 @@ router.post('/use-part', authenticateTechnician, async (req, res) => {
             if (newQuantity === 0) {
                 // Remove the entry if quantity becomes 0
                 await db.query(
-                    'DELETE FROM technician_inventory WHERE technician_id = ? AND part_id = ?',
-                    [technicianId, part_id]
+                    'DELETE FROM technician_inventory WHERE technician_id = ? AND item_id = ?',
+                    [technicianId, item_id]
                 );
             } else {
                 // Update the quantity
                 await db.query(
-                    'UPDATE technician_inventory SET quantity = ?, last_updated = CURRENT_TIMESTAMP WHERE technician_id = ? AND part_id = ?',
-                    [newQuantity, technicianId, part_id]
+                    'UPDATE technician_inventory SET quantity = ?, last_updated = CURRENT_TIMESTAMP WHERE technician_id = ? AND item_id = ?',
+                    [newQuantity, technicianId, item_id]
                 );
             }
             
             // Log the usage (you can create a parts_usage table for this)
             // For now, we'll just log it to console
-            console.log(`Technician ${technicianId} used ${quantity_used} units of part ${part_id}${service_request_id ? ` for service request ${service_request_id}` : ''}`);
+            console.log(`Technician ${technicianId} used ${quantity_used} units of part ${item_id}${service_request_id ? ` for service request ${service_request_id}` : ''}`);
             
             await db.query('COMMIT');
             

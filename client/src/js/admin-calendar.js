@@ -359,7 +359,7 @@ window.showServiceDetail = async function(serviceId, serviceNumber) {
 
                 ${partsUsed.length > 0 ? `
                     <div>
-                        <div class="text-sm text-slate-600 font-medium mb-2">🔧 Parts Used</div>
+                        <div class="text-sm text-slate-600 font-medium mb-2">🔧 Items Used</div>
                         <div class="space-y-2">
                             ${partsUsed.map(part => `
                                 <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 flex justify-between items-center">

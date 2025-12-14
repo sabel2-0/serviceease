@@ -44,8 +44,8 @@ router.get('/', async (req, res) => {
                 u.email as technician_email,
                 approver.first_name as approved_by_first_name,
                 approver.last_name as approved_by_last_name
-            FROM parts_requests pr
-            LEFT JOIN printer_items pp ON pr.part_id = pp.id
+            FROM items_request pr
+            LEFT JOIN printer_items pp ON pr.item_id = pp.id
             LEFT JOIN users u ON pr.technician_id = u.id
             LEFT JOIN users approver ON pr.approved_by = approver.id
         `;
@@ -118,8 +118,8 @@ router.get('/:id', async (req, res) => {
                 u.email as technician_email,
                 approver.first_name as approved_by_first_name,
                 approver.last_name as approved_by_last_name
-            FROM parts_requests pr
-            LEFT JOIN printer_items pp ON pr.part_id = pp.id
+            FROM items_request pr
+            LEFT JOIN printer_items pp ON pr.item_id = pp.id
             LEFT JOIN users u ON pr.technician_id = u.id
             LEFT JOIN users approver ON pr.approved_by = approver.id
             WHERE pr.id = ?
@@ -163,16 +163,16 @@ router.post('/', async (req, res) => {
         }
         
         const { 
-            part_id, 
+            item_id, 
             quantity_requested, 
             reason, 
             priority = 'medium' 
         } = req.body;
         
         // Validation
-        if (!part_id || !quantity_requested || !reason) {
+        if (!item_id || !quantity_requested || !reason) {
             return res.status(400).json({ 
-                error: 'Missing required fields: part_id, quantity_requested, reason' 
+                error: 'Missing required fields: item_id, quantity_requested, reason' 
             });
         }
         
@@ -191,7 +191,7 @@ router.post('/', async (req, res) => {
         // Check if part exists and has enough stock
         const [partRows] = await db.query(
             'SELECT id, name, quantity FROM printer_items WHERE id = ?',
-            [part_id]
+            [item_id]
         );
         
         if (partRows.length === 0) {
@@ -207,20 +207,20 @@ router.post('/', async (req, res) => {
         
         // Create the parts request
         const [result] = await db.query(
-            `INSERT INTO parts_requests (
-                part_id, 
+            `INSERT INTO items_request (
+                item_id, 
                 technician_id, 
                 quantity_requested, 
                 reason, 
                 priority, 
                 status
             ) VALUES (?, ?, ?, ?, ?, 'pending')`,
-            [part_id, user.id, quantity_requested, reason.trim(), priority]
+            [item_id, user.id, quantity_requested, reason.trim(), priority]
         );
         
         console.log('Parts request created:', {
             id: result.insertId,
-            part_id,
+            item_id,
             technician_id: user.id,
             quantity_requested,
             priority
@@ -287,7 +287,7 @@ router.patch('/:id', async (req, res) => {
         
         // Get current request
         const [requestRows] = await db.query(
-            'SELECT * FROM parts_requests WHERE id = ?',
+            'SELECT * FROM items_request WHERE id = ?',
             [id]
         );
         
@@ -322,7 +322,7 @@ router.patch('/:id', async (req, res) => {
             if (status === 'approved') {
                 const [stockCheck] = await db.query(
                     'SELECT quantity FROM printer_items WHERE id = ?',
-                    [currentRequest.part_id]
+                    [currentRequest.item_id]
                 );
                 stockAtApproval = stockCheck.length > 0 ? stockCheck[0].quantity : 0;
                 updateFields.push('stock_at_approval = ?');
@@ -330,7 +330,7 @@ router.patch('/:id', async (req, res) => {
             }
             
             await db.query(
-                `UPDATE parts_requests SET ${updateFields.join(', ')} WHERE id = ?`,
+                `UPDATE items_request SET ${updateFields.join(', ')} WHERE id = ?`,
                 updateParams
             );
             
@@ -339,7 +339,7 @@ router.patch('/:id', async (req, res) => {
                 // First, check and deduct from main inventory
                 const [inventoryCheck] = await db.query(
                     'SELECT quantity FROM printer_items WHERE id = ?',
-                    [currentRequest.part_id]
+                    [currentRequest.item_id]
                 );
                 
                 // Store the stock at approval time
@@ -352,30 +352,30 @@ router.patch('/:id', async (req, res) => {
                 // Deduct from main inventory
                 await db.query(
                     'UPDATE printer_items SET quantity = quantity - ? WHERE id = ? AND quantity >= ?',
-                    [currentRequest.quantity_requested, currentRequest.part_id, currentRequest.quantity_requested]
+                    [currentRequest.quantity_requested, currentRequest.item_id, currentRequest.quantity_requested]
                 );
                 
                 // Add to technician inventory
                 const [existingTechInventory] = await db.query(
-                    'SELECT * FROM technician_inventory WHERE technician_id = ? AND part_id = ?',
-                    [currentRequest.technician_id, currentRequest.part_id]
+                    'SELECT * FROM technician_inventory WHERE technician_id = ? AND item_id = ?',
+                    [currentRequest.technician_id, currentRequest.item_id]
                 );
                 
                 if (existingTechInventory.length > 0) {
                     // Update existing entry
                     await db.query(
-                        'UPDATE technician_inventory SET quantity = quantity + ?, last_updated = CURRENT_TIMESTAMP WHERE technician_id = ? AND part_id = ?',
-                        [currentRequest.quantity_requested, currentRequest.technician_id, currentRequest.part_id]
+                        'UPDATE technician_inventory SET quantity = quantity + ?, last_updated = CURRENT_TIMESTAMP WHERE technician_id = ? AND item_id = ?',
+                        [currentRequest.quantity_requested, currentRequest.technician_id, currentRequest.item_id]
                     );
                 } else {
                     // Create new entry
                     await db.query(
-                        'INSERT INTO technician_inventory (technician_id, part_id, quantity, assigned_by, assigned_at, last_updated) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)',
-                        [currentRequest.technician_id, currentRequest.part_id, currentRequest.quantity_requested, user.id]
+                        'INSERT INTO technician_inventory (technician_id, item_id, quantity, assigned_by, assigned_at, last_updated) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)',
+                        [currentRequest.technician_id, currentRequest.item_id, currentRequest.quantity_requested, user.id]
                     );
                 }
                 
-                console.log(`Added ${currentRequest.quantity_requested} units of part ${currentRequest.part_id} to technician ${currentRequest.technician_id} inventory`);
+                console.log(`Added ${currentRequest.quantity_requested} units of part ${currentRequest.item_id} to technician ${currentRequest.technician_id} inventory`);
             }
             
             await db.query('COMMIT');
@@ -447,7 +447,7 @@ router.delete('/:id', async (req, res) => {
         
         // Get the request first
         const [requestRows] = await db.query(
-            'SELECT * FROM parts_requests WHERE id = ?',
+            'SELECT * FROM items_request WHERE id = ?',
             [id]
         );
         
@@ -469,7 +469,7 @@ router.delete('/:id', async (req, res) => {
         }
         // Admins and operations officers can delete any request
         
-        await db.query('DELETE FROM parts_requests WHERE id = ?', [id]);
+        await db.query('DELETE FROM items_request WHERE id = ?', [id]);
         
         res.json({ message: 'Parts request deleted successfully' });
         
@@ -505,7 +505,7 @@ router.get('/stats/summary', async (req, res) => {
                 SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved_requests,
                 SUM(CASE WHEN priority = 'urgent' THEN 1 ELSE 0 END) as urgent_requests,
                 SUM(CASE WHEN created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) as recent_requests
-            FROM parts_requests 
+            FROM items_request 
             ${whereClause}
         `, params);
         

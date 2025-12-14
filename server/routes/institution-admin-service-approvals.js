@@ -71,8 +71,8 @@ router.get('/pending', authenticateinstitution_admin, async (req, res) => {
             JOIN users tech ON sr.technician_id = tech.id
             JOIN institutions i ON sr.institution_id = i.institution_id
             LEFT JOIN printers ii ON sr.printer_id = ii.id
-            LEFT JOIN service_parts_used spu ON sr.id = spu.service_request_id
-            LEFT JOIN printer_items pp ON spu.part_id = pp.id
+            LEFT JOIN service_items_used spu ON sr.id = spu.service_request_id
+            LEFT JOIN printer_items pp ON spu.item_id = pp.id
             WHERE i.user_id = ?
                 AND sa.status = 'pending_approval'
                 AND sr.status = 'pending_approval'
@@ -133,8 +133,8 @@ router.get('/:approvalId/details', authenticateinstitution_admin, async (req, re
                 pp.name as part_name,
                 pp.category,
                 pp.brand
-            FROM service_parts_used spu
-            JOIN printer_items pp ON spu.part_id = pp.id
+            FROM service_items_used spu
+            JOIN printer_items pp ON spu.item_id = pp.id
             WHERE spu.service_request_id = ?
             ORDER BY pp.category, pp.name
         `, [approvalDetails[0].service_request_id]);
@@ -212,8 +212,8 @@ router.post('/:approvalId/approve', authenticateinstitution_admin, async (req, r
             
             // Deduct parts from technician inventory
             const [partsToDeduct] = await db.query(`
-                SELECT spu.part_id, spu.quantity_used
-                FROM service_parts_used spu
+                SELECT spu.item_id, spu.quantity_used
+                FROM service_items_used spu
                 WHERE spu.service_request_id = ?
             `, [serviceRequestId]);
             
@@ -221,8 +221,8 @@ router.post('/:approvalId/approve', authenticateinstitution_admin, async (req, r
                 await db.query(`
                     UPDATE technician_inventory 
                     SET quantity = GREATEST(0, quantity - ?)
-                    WHERE technician_id = ? AND part_id = ?
-                `, [part.quantity_used, technicianId, part.part_id]);
+                    WHERE technician_id = ? AND item_id = ?
+                `, [part.quantity_used, technicianId, part.item_id]);
             }
             
             const [institutionInfo] = await db.query(`
@@ -326,7 +326,7 @@ router.post('/:approvalId/reject', authenticateinstitution_admin, async (req, re
             
             // Remove parts used records (they can be re-added when resubmitted)
             await db.query(`
-                DELETE FROM service_parts_used 
+                DELETE FROM service_items_used 
                 WHERE service_request_id = ?
             `, [serviceRequestId]);
             

@@ -1443,14 +1443,14 @@ async function viewRequestDetails(requestId) {
 
                 <!-- Right Column -->
                 <div class="space-y-3">
-                <!-- Parts Used (if any) -->
+                <!-- Items Used (if any) -->
                 ${request.parts_used && request.parts_used.length > 0 ? `
                 <div class="bg-gradient-to-br from-teal-50 to-teal-100 rounded-lg p-3 border border-teal-200">
                     <div class="flex items-center mb-2">
                         <div class="bg-teal-600 rounded-lg p-1.5 mr-2">
                             <i class="fas fa-toolbox text-white text-xs"></i>
                         </div>
-                        <h4 class="text-sm font-bold text-teal-900">Parts Used</h4>
+                        <h4 class="text-sm font-bold text-teal-900">Items Used</h4>
                     </div>
                     <div class="space-y-1">
                         ${request.parts_used.map(part => `
@@ -1678,14 +1678,14 @@ async function viewApprovalDetails(requestId) {
         // Format submission time
         const submittedTime = new Date(approval.submitted_at);
         
-        // Parse parts used - handle both detailed and basic data
+        // Parse items used - handle both detailed and basic data
         let partsUsedDisplay = '';
         if (partsUsed.length > 0) {
             partsUsedDisplay = partsUsed.map(part => `<li class="text-sm text-gray-600">• ${part.part_name} (${part.quantity_used} ${part.unit})</li>`).join('');
         } else if (approval.parts_used) {
             partsUsedDisplay = approval.parts_used.split(', ').map(part => `<li class="text-sm text-gray-600">• ${part}</li>`).join('');
         } else {
-            partsUsedDisplay = '<li class="text-sm text-gray-500">• No parts used</li>';
+            partsUsedDisplay = '<li class="text-sm text-gray-500">• No items used</li>';
         }
         
         const approvalModalContent = document.getElementById('approvalModalContent');
@@ -1760,10 +1760,10 @@ async function viewApprovalDetails(requestId) {
                 </div>
                 ` : ''}
 
-                <!-- Parts Used - Compact -->
+                <!-- Items Used - Compact -->
                 <div>
                     <h4 class="text-sm font-semibold text-gray-900 mb-1 flex items-center">
-                        <i class="fas fa-cogs mr-2 text-orange-500"></i>Parts Used
+                        <i class="fas fa-cogs mr-2 text-orange-500"></i>Items Used
                     </h4>
                     <div class="bg-orange-50 p-3 rounded-lg border border-orange-200">
                         <ul class="space-y-1 text-xs">

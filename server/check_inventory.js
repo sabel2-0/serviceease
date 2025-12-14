@@ -15,13 +15,13 @@ require('dotenv').config();
             SELECT 
                 ti.id,
                 ti.technician_id,
-                ti.part_id,
+                ti.item_id,
                 ti.quantity,
                 pp.name,
                 pp.brand,
                 pp.is_universal
             FROM technician_inventory ti
-            JOIN printer_items pp ON ti.part_id = pp.id
+            JOIN printer_items pp ON ti.item_id = pp.id
             WHERE ti.technician_id = 2
             ORDER BY ti.id
         `);
@@ -40,18 +40,18 @@ require('dotenv').config();
         `);
         console.table(allParts);
 
-        console.log('\n=== SERVICE PARTS USED (Last 5) ===');
+        console.log('\n=== SERVICE ITEMS USED (Last 5) ===');
         const [partsUsed] = await db.query(`
             SELECT 
                 spu.id,
                 spu.service_request_id,
-                spu.part_id,
+                spu.item_id,
                 spu.quantity_used,
                 pp.name,
                 pp.brand,
                 pp.is_universal
-            FROM service_parts_used spu
-            JOIN printer_items pp ON spu.part_id = pp.id
+            FROM service_items_used spu
+            JOIN printer_items pp ON spu.item_id = pp.id
             ORDER BY spu.id DESC
             LIMIT 5
         `);

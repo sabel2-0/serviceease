@@ -215,12 +215,12 @@ window.TechnicianNotifications = {
             items.push(n);
         });
 
-        // Parts requests
+        // Items requests
         parts.slice(0, 10).forEach(p => {
             items.push({
                 id: `parts-${p.id}`,
-                title: `Parts Request ${p.status ? p.status.replace('_', ' ') : ''}`,
-                message: `${p.quantity_requested} x ${p.part_name || p.part_id} — ${p.reason || ''}`,
+                title: `Items Request ${p.status ? p.status.replace('_', ' ') : ''}`,
+                message: `${p.quantity_requested} x ${p.part_name || p.item_id} — ${p.reason || ''}`,
                 type: `parts_${p.status || 'pending'}`,
                 created_at: p.created_at,
                 reference_id: p.id,

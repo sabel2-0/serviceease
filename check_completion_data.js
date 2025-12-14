@@ -41,22 +41,22 @@ const mysql = require('./server/node_modules/mysql2/promise');
             SELECT 
                 spu.id,
                 spu.service_request_id,
-                spu.part_id,
+                spu.item_id,
                 spu.quantity_used,
                 spu.notes,
                 pp.name as part_name,
                 pp.brand,
                 pp.unit,
                 pp.category
-            FROM service_parts_used spu
-            JOIN printer_items pp ON spu.part_id = pp.id
+            FROM service_items_used spu
+            JOIN printer_items pp ON spu.item_id = pp.id
             WHERE spu.service_request_id = 6
         `);
 
         if (parts.length > 0) {
             parts.forEach(part => {
                 console.log(`  - ${part.part_name} (${part.brand}): ${part.quantity_used} ${part.unit || 'pieces'}`);
-                console.log(`    Part ID: ${part.part_id}, Category: ${part.category || 'N/A'}`);
+                console.log(`    Item ID: ${part.item_id}, Category: ${part.category || 'N/A'}`);
             });
         } else {
             console.log('  No parts found');

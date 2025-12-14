@@ -373,7 +373,7 @@
                 
                 // Handle case where technician has no inventory assigned yet
                 if (response.status === 500 || response.status === 404) {
-                    showEmptyState('No parts have been assigned to your inventory yet. Contact an administrator to request part assignments, or submit parts requests through the Parts Request page.');
+                    showEmptyState('No items have been assigned to your inventory yet. Contact an administrator to request item assignments, or submit item requests through the Items Request page.');
                     return;
                 }
                 
@@ -387,7 +387,7 @@
                 allParts = Array.isArray(data) ? data : [];
                 
                 if (allParts.length === 0) {
-                    showEmptyState('No parts are currently assigned to your inventory. Contact an administrator to request part assignments, or submit parts requests through the Parts Request page.');
+                    showEmptyState('No items are currently assigned to your inventory. Contact an administrator to request item assignments, or submit item requests through the Items Request page.');
                 } else {
                     filteredParts = [...allParts];
                     updateStats();

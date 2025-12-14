@@ -282,10 +282,10 @@ router.get('/statistics', async (req, res) => {
             SELECT 
                 COUNT(DISTINCT sr.id) as total_completed_requests,
                 COUNT(DISTINCT spu.id) as total_parts_used,
-                COUNT(DISTINCT spu.part_id) as unique_parts_used,
+                COUNT(DISTINCT spu.item_id) as unique_parts_used,
                 COUNT(DISTINCT sr.printer_id) as unique_printers
             FROM service_requests sr
-            LEFT JOIN service_parts_used spu ON sr.id = spu.service_request_id
+            LEFT JOIN service_items_used spu ON sr.id = spu.service_request_id
             WHERE sr.status = 'completed'
         `);
 
@@ -298,11 +298,11 @@ router.get('/statistics', async (req, res) => {
                 COUNT(*) as frequency
             FROM service_requests sr
             INNER JOIN printers ii ON sr.printer_id = ii.id
-            INNER JOIN service_parts_used spu ON sr.id = spu.service_request_id
-            INNER JOIN printer_items pp ON spu.part_id = pp.id
+            INNER JOIN service_items_used spu ON sr.id = spu.service_request_id
+            INNER JOIN printer_items pp ON spu.item_id = pp.id
             WHERE sr.status = 'completed'
             GROUP BY sr.id, ii.brand, ii.model
-            HAVING COUNT(DISTINCT spu.part_id) >= 2
+            HAVING COUNT(DISTINCT spu.item_id) >= 2
             ORDER BY frequency DESC
             LIMIT 10
         `);

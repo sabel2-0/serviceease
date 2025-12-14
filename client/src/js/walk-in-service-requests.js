@@ -365,7 +365,7 @@ async function viewRequestDetails(requestId) {
             ${partsUsed.length > 0 ? `
             <div>
                 <h5 class="font-semibold text-slate-900 mb-2">
-                    <i class="fas fa-tools mr-2 text-blue-600"></i>Parts Used
+                    <i class="fas fa-tools mr-2 text-blue-600"></i>Items Used
                 </h5>
                 <div class="bg-blue-50 rounded-lg p-4 space-y-3">
                     ${partsUsed.map(part => `

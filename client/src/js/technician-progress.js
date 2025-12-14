@@ -293,7 +293,7 @@ function renderRequestsList(requests, filter = 'all') {
                         ` : ''}
                         ${req.parts_used && req.parts_used.length > 0 ? `
                         <div class="col-span-2 md:col-span-4">
-                            <p class="text-slate-500 mb-2">Parts Used</p>
+                            <p class="text-slate-500 mb-2">Items Used</p>
                             <div class="bg-slate-50 rounded-lg p-3 border border-slate-200">
                                 ${req.parts_used.map(part => `
                                     <div class="flex items-center justify-between py-2 border-b border-slate-200 last:border-b-0">

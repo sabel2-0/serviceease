@@ -1397,7 +1397,7 @@ function viewMaintenanceDetails(serviceId) {
       ` : ''}
       
       <div>
-        <div class="text-xs text-gray-600 font-medium mb-2">Parts Used</div>
+        <div class="text-xs text-gray-600 font-medium mb-2">Items Used</div>
         <div class="space-y-2">${partsHtml}</div>
       </div>
       

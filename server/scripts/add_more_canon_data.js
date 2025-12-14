@@ -101,7 +101,7 @@ async function addMoreCanonData() {
                 const part = parts.find(p => p.name === partName);
                 if (part) {
                     await db.query(
-                        `INSERT INTO service_parts_used (service_request_id, part_id, quantity_used, used_by, used_at, notes)
+                        `INSERT INTO service_items_used (service_request_id, item_id, quantity_used, used_by, used_at, notes)
                          VALUES (?, ?, ?, ?, ?, ?)`,
                         [
                             serviceRequestId,
@@ -126,7 +126,7 @@ async function addMoreCanonData() {
                 COUNT(DISTINCT sr.id) as total_requests,
                 COUNT(DISTINCT spu.id) as total_parts_used
             FROM service_requests sr
-            LEFT JOIN service_parts_used spu ON sr.id = spu.service_request_id
+            LEFT JOIN service_items_used spu ON sr.id = spu.service_request_id
             WHERE sr.printer_id = ? AND sr.status = 'completed'
         `, [printer.id]);
 
