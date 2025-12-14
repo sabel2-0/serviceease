@@ -159,7 +159,7 @@ class InventoryPartsManager {
                                 <i class="fas fa-search text-slate-400 text-xl"></i>
                             </div>
                             <div>
-                                <h3 class="text-lg font-medium text-slate-900 mb-1">No parts found</h3>
+                                <h3 class="text-lg font-medium text-slate-900 mb-1">No items found</h3>
                                 <p class="text-slate-500">Try adjusting your search or filter criteria</p>
                             </div>
                         </div>
@@ -199,11 +199,11 @@ class InventoryPartsManager {
                 <td class="px-6 py-4 whitespace-nowrap text-right">
                     <div class="flex justify-end gap-2">
                         <button onclick="inventoryManager.editPart(${part.id})" 
-                            class="action-button action-edit" title="Edit Part">
+                            class="action-button action-edit" title="Edit Item">
                             <i class="fas fa-edit"></i>
                         </button>
                         <button onclick="inventoryManager.deletePart(${part.id}, '${this.escapeHtml(part.name)}')" 
-                            class="action-button action-delete" title="Delete Part">
+                            class="action-button action-delete" title="Delete Item">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -229,7 +229,7 @@ class InventoryPartsManager {
                     <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
                         <i class="fas fa-search text-slate-400 text-xl"></i>
                     </div>
-                    <h3 class="text-lg font-medium text-slate-900 mb-1">No parts found</h3>
+                    <h3 class="text-lg font-medium text-slate-900 mb-1">No items found</h3>
                     <p class="text-slate-500">Try adjusting your search or filter criteria</p>
                 </div>
             `;
@@ -599,7 +599,7 @@ class InventoryPartsManager {
 
     validateForm(formData) {
         if (!formData.name) {
-            this.showError('Part name is required');
+            this.showError('Item name is required');
             document.getElementById('partName')?.focus();
             return false;
         }
@@ -715,15 +715,15 @@ class InventoryPartsManager {
     }
 
     updateModalForAdd() {
-        document.getElementById('modalTitle').textContent = 'Add New Part';
+        document.getElementById('modalTitle').textContent = 'Add New Item';
         document.getElementById('modalIcon').className = 'fas fa-plus-circle text-white text-xl';
-        document.getElementById('submitText').textContent = 'Save Part';
+        document.getElementById('submitText').textContent = 'Save Item';
     }
 
     updateModalForEdit() {
-        document.getElementById('modalTitle').textContent = 'Edit Part';
+        document.getElementById('modalTitle').textContent = 'Edit Item';
         document.getElementById('modalIcon').className = 'fas fa-edit text-white text-xl';
-        document.getElementById('submitText').textContent = 'Update Part';
+        document.getElementById('submitText').textContent = 'Update Item';
     }
 
     showModal() {
