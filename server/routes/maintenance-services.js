@@ -63,18 +63,40 @@ router.get('/history', auth, async (req, res) => {
         
         console.log(`✅ Found ${services.length} maintenance services for technician ${technicianId}`);
         
-        // Parse parts_used JSON for each service
-        services.forEach(service => {
+        // Parse and enrich parts_used JSON for each service
+        for (const service of services) {
             if (service.parts_used) {
                 try {
-                    service.parts_used = JSON.parse(service.parts_used);
+                    const parsedParts = JSON.parse(service.parts_used);
+                    
+                    // Enrich each part with name from database
+                    if (Array.isArray(parsedParts) && parsedParts.length > 0) {
+                        service.parts_used = await Promise.all(parsedParts.map(async (part) => {
+                            // Handle both old (part_id) and new (item_id) field names
+                            const partId = part.item_id || part.part_id;
+                            if (!partId) return part;
+                            
+                            const [partInfo] = await db.query(
+                                'SELECT name, brand FROM printer_items WHERE id = ?',
+                                [partId]
+                            );
+                            return {
+                                ...part,
+                                item_id: partId,
+                                name: partInfo[0]?.name || 'Unknown Part',
+                                brand: partInfo[0]?.brand || null
+                            };
+                        }));
+                    } else {
+                        service.parts_used = [];
+                    }
                 } catch (e) {
                     service.parts_used = [];
                 }
             } else {
                 service.parts_used = [];
             }
-        });
+        }
         
         console.log(`📤 Returning ${services.length} maintenance services`);
         res.json(services);
@@ -714,16 +736,40 @@ router.get('/institution_admin/pending', auth, async (req, res) => {
         
         console.log('✅ Found', services.length, 'Maintenance Services');
         
-        // Parse JSON fields
-        services.forEach(service => {
+        // Parse and enrich parts_used JSON for each service
+        for (const service of services) {
             if (service.parts_used) {
                 try {
-                    service.parts_used = JSON.parse(service.parts_used);
+                    const parsedParts = JSON.parse(service.parts_used);
+                    
+                    // Enrich each part with name from database
+                    if (Array.isArray(parsedParts) && parsedParts.length > 0) {
+                        service.parts_used = await Promise.all(parsedParts.map(async (part) => {
+                            // Handle both old (part_id) and new (item_id) field names
+                            const partId = part.item_id || part.part_id;
+                            if (!partId) return part;
+                            
+                            const [partInfo] = await db.query(
+                                'SELECT name, brand FROM printer_items WHERE id = ?',
+                                [partId]
+                            );
+                            return {
+                                ...part,
+                                item_id: partId,
+                                name: partInfo[0]?.name || 'Unknown Part',
+                                brand: partInfo[0]?.brand || null
+                            };
+                        }));
+                    } else {
+                        service.parts_used = [];
+                    }
                 } catch (e) {
                     service.parts_used = [];
                 }
+            } else {
+                service.parts_used = [];
             }
-        });
+        }
         
         res.json({ services });
     } catch (error) {
@@ -779,16 +825,40 @@ router.get('/institution_admin/history', auth, async (req, res) => {
         
         console.log('✅ Found', services.length, 'Maintenance Services in history');
         
-        // Parse JSON fields
-        services.forEach(service => {
+        // Parse and enrich parts_used JSON for each service
+        for (const service of services) {
             if (service.parts_used) {
                 try {
-                    service.parts_used = JSON.parse(service.parts_used);
+                    const parsedParts = JSON.parse(service.parts_used);
+                    
+                    // Enrich each part with name from database
+                    if (Array.isArray(parsedParts) && parsedParts.length > 0) {
+                        service.parts_used = await Promise.all(parsedParts.map(async (part) => {
+                            // Handle both old (part_id) and new (item_id) field names
+                            const partId = part.item_id || part.part_id;
+                            if (!partId) return part;
+                            
+                            const [partInfo] = await db.query(
+                                'SELECT name, brand FROM printer_items WHERE id = ?',
+                                [partId]
+                            );
+                            return {
+                                ...part,
+                                item_id: partId,
+                                name: partInfo[0]?.name || 'Unknown Part',
+                                brand: partInfo[0]?.brand || null
+                            };
+                        }));
+                    } else {
+                        service.parts_used = [];
+                    }
                 } catch (e) {
                     service.parts_used = [];
                 }
+            } else {
+                service.parts_used = [];
             }
-        });
+        }
         
         res.json({ services });
     } catch (error) {
