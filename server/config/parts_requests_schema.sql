@@ -1,7 +1,7 @@
--- Parts requests table schema
-CREATE TABLE IF NOT EXISTS parts_requests (
+-- Items requests table schema (renamed from parts_requests)
+CREATE TABLE IF NOT EXISTS items_request (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    part_id INT NOT NULL,
+    item_id INT NOT NULL,
     technician_id INT NOT NULL,
     quantity_requested INT NOT NULL DEFAULT 1,
     reason TEXT NOT NULL,
@@ -10,14 +10,15 @@ CREATE TABLE IF NOT EXISTS parts_requests (
     admin_response TEXT NULL,
     approved_by INT NULL,
     approved_at TIMESTAMP NULL,
+    stock_at_approval INT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
-    FOREIGN KEY (part_id) REFERENCES printer_parts(id) ON DELETE CASCADE,
+    FOREIGN KEY (item_id) REFERENCES printer_items(id) ON DELETE CASCADE,
     FOREIGN KEY (technician_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (approved_by) REFERENCES users(id) ON DELETE SET NULL,
     
-    INDEX idx_part_id (part_id),
+    INDEX idx_item_id (item_id),
     INDEX idx_technician_id (technician_id),
     INDEX idx_status (status),
     INDEX idx_priority (priority),
