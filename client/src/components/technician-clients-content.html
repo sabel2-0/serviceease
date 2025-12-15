@@ -1739,7 +1739,7 @@ window.submitService = async function() {
             if (partSelect && partSelect.value && quantity > 0) {
                 const selectedOption = partSelect.options[partSelect.selectedIndex];
                 partsUsed.push({
-                    part_id: parseInt(partSelect.value),
+                    item_id: parseInt(partSelect.value),
                     qty: parseInt(quantity),
                     unit: unit
                 });
