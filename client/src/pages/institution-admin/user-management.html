@@ -439,7 +439,8 @@
                     .map(cb => Number(cb.value))
                     .filter(id => id);
                 
-                const department = document.getElementById('department').value.trim() || null;
+                // Department field doesn't exist in this form, so we'll set it to null
+                const department = null;
 
                 if (!firstName || !lastName || !email) {
                     showNotification('Error', 'First name, last name, and email are required', 'error');
