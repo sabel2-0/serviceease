@@ -495,10 +495,10 @@ router.post('/', auth, async (req, res) => {
         
         // Verify printer belongs to this institution
         const [printer] = await db.query(
-            `SELECT inv.id, inv.name, inv.brand, inv.model, upa.user_id as requester_id
+            `SELECT inv.id, inv.name, inv.brand, inv.model, ipa.institution_id
              FROM printers inv
-             INNER JOIN user_printer_assignments upa ON upa.printer_id = inv.id
-             WHERE inv.id = ? AND upa.institution_id = ?`,
+             INNER JOIN institution_printer_assignments ipa ON ipa.printer_id = inv.id
+             WHERE inv.id = ? AND ipa.institution_id = ?`,
             [printer_id, institution_id]
         );
         
