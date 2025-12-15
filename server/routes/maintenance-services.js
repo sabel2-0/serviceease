@@ -593,9 +593,6 @@ router.post('/', auth, async (req, res) => {
         
         console.log('✅ No pending services found, proceeding with submission');
         
-        const requester_id = printer[0].requester_id;
-        console.log('👤 institution_user ID:', requester_id);
-        
         // Insert maintenance service
         const insertQuery = `
             INSERT INTO maintenance_services (
@@ -628,6 +625,12 @@ router.post('/', auth, async (req, res) => {
             `;
             
             for (const item of items_used) {
+                // Validate item_id exists
+                if (!item.item_id || item.item_id === null) {
+                    console.error('❌ Invalid item_id in items_used:', item);
+                    continue; // Skip invalid items
+                }
+                
                 await db.query(itemsQuery, [
                     serviceId,
                     item.item_id,
@@ -665,16 +668,6 @@ router.post('/', auth, async (req, res) => {
         `;
         
         await db.query(notificationQuery, [printer[0].name, result.insertId, institution_id]);
-        
-        // Also notify the institution_user
-        if (requester_id) {
-            await db.query(
-                `INSERT INTO notifications (user_id, type, title, message, reference_id, created_at)
-                 VALUES (?, 'maintenance_service', 'Maintenance Service Pending', 
-                         'A technician has performed service on your printer. Awaiting institution_admin approval.', ?, NOW())`,
-                [requester_id, result.insertId]
-            );
-        }
         
         res.status(201).json({
             message: 'Maintenance Service submitted successfully',
@@ -802,19 +795,12 @@ router.get('/institution_admin/history', auth, async (req, res) => {
                 i.name as institution_name,
                 CONCAT(u_coord.first_name, ' ', u_coord.last_name) as institution_admin_name,
                 CONCAT(u_tech.first_name, ' ', u_tech.last_name) as technician_name,
-                u_tech.email as technician_email,
-                sa.approved_by,
-                sa.approved_at,
-                sa.approval_status,
-                sa.notes as approval_notes,
-                CONCAT(approver.first_name, ' ', approver.last_name) as approved_by_name
+                u_tech.email as technician_email
             FROM maintenance_services vs
             INNER JOIN printers inv ON vs.printer_id = inv.id
-            INNER JOIN institutions i ON vs.institution_id COLLATE utf8mb4_0900_ai_ci = i.institution_id
+            INNER JOIN institutions i ON vs.institution_id = i.institution_id
             LEFT JOIN users u_coord ON i.user_id = u_coord.id
             INNER JOIN users u_tech ON vs.technician_id = u_tech.id
-            LEFT JOIN service_approvals sa ON sa.service_id = vs.id AND sa.service_type = 'maintenance_service'
-            LEFT JOIN users approver ON sa.approved_by = approver.id
             WHERE vs.institution_id IN (?)
             AND vs.status IN ('completed', 'rejected')
             ORDER BY vs.created_at DESC
@@ -907,12 +893,7 @@ router.patch('/institution_admin/:id/approve', auth, async (req, res) => {
             [serviceId]
         );
         
-        // Insert approval record into service_approvals table
-        await db.query(
-            `INSERT INTO service_approvals (service_id, service_type, approved_by, approved_at, approval_status, notes)
-             VALUES (?, 'maintenance_service', ?, NOW(), 'approved', ?)`,
-            [serviceId, institution_adminId, notes || null]
-        );
+        // Note: service_approvals tracking pending database migration
         
         // Deduct parts from inventory after institution_admin approval
         // Fetch items_used from service_items_used table
@@ -1045,12 +1026,8 @@ router.patch('/institution_admin/:id/reject', auth, async (req, res) => {
             [serviceId]
         );
         
-        // Insert rejection record into service_approvals table
-        await db.query(
-            `INSERT INTO service_approvals (service_id, service_type, approved_by, approved_at, approval_status, notes)
-             VALUES (?, 'maintenance_service', ?, NOW(), 'rejected', ?)`,
-            [serviceId, institution_adminId, rejectionReason]
-        );
+        // Note: Approval tracking stored in maintenance_services.status for now
+        // service_approvals integration pending database migration
         
         // Notify technician
         await db.query(
@@ -1240,12 +1217,7 @@ router.patch('/institution_user/:id/approve', auth, async (req, res) => {
             [serviceId]
         );
         
-        // Insert approval record into service_approvals table
-        await db.query(
-            `INSERT INTO service_approvals (service_id, service_type, approved_by, approved_at, approval_status, notes)
-             VALUES (?, 'maintenance_service', ?, NOW(), 'approved', ?)`,
-            [serviceId, requester_id, notes || null]
-        );
+        // Note: service_approvals tracking pending database migration
         
         // Deduct parts from inventory after approval
         // Fetch items_used from service_items_used table
@@ -1364,12 +1336,7 @@ router.patch('/institution_user/:id/reject', auth, async (req, res) => {
             [serviceId]
         );
         
-        // Insert rejection record into service_approvals table
-        await db.query(
-            `INSERT INTO service_approvals (service_id, service_type, approved_by, approved_at, approval_status, notes)
-             VALUES (?, 'maintenance_service', ?, NOW(), 'rejected', ?)`,
-            [serviceId, requester_id, rejectionReason]
-        );
+        // Note: service_approvals tracking pending database migration
         
         // Notify technician
         await db.query(
