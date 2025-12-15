@@ -798,7 +798,7 @@ router.get('/institution_admin/history', auth, async (req, res) => {
                 u_tech.email as technician_email
             FROM maintenance_services vs
             INNER JOIN printers inv ON vs.printer_id = inv.id
-            INNER JOIN institutions i ON vs.institution_id = i.institution_id
+            INNER JOIN institutions i ON vs.institution_id COLLATE utf8mb4_unicode_ci = i.institution_id
             LEFT JOIN users u_coord ON i.user_id = u_coord.id
             INNER JOIN users u_tech ON vs.technician_id = u_tech.id
             WHERE vs.institution_id IN (?)
