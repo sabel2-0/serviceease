@@ -519,7 +519,7 @@ router.get('/:id', auth, async (req, res) => {
             FROM service_items_used spu
             JOIN printer_items pp ON spu.item_id = pp.id
             LEFT JOIN users u ON spu.used_by = u.id
-            WHERE spu.service_request_id = ?
+            WHERE spu.service_id = ? AND spu.service_type = 'service_request'
             ORDER BY spu.used_at DESC
         `, [id]);
         

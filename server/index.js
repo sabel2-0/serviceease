@@ -4693,7 +4693,7 @@ app.post('/api/service-requests/:id/complete', auth, async (req, res) => {
         
         // Delete existing parts if resubmitting (to prevent duplicates)
         await db.query(
-            'DELETE FROM service_items_used WHERE service_request_id = ?',
+            'DELETE FROM service_items_used WHERE service_id = ? AND service_type = \'service_request\'',
             [id]
         );
         
@@ -4747,8 +4747,8 @@ app.post('/api/service-requests/:id/complete', auth, async (req, res) => {
                 
                 // Insert into service_items_used with correct schema
                 await db.query(
-                    `INSERT INTO service_items_used (service_request_id, item_id, quantity_used, notes, used_by)
-                     VALUES (?, ?, ?, ?, ?)`,
+                    `INSERT INTO service_items_used (service_id, service_type, item_id, quantity_used, notes, used_by)
+                     VALUES (?, 'service_request', ?, ?, ?, ?)`,
                     [id, partId, partQuantity, partNotes, technician_id]
                 );
                 

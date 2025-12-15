@@ -74,7 +74,7 @@ router.get('/history', auth, async (req, res) => {
                     pi.brand
                 FROM service_items_used siu
                 INNER JOIN printer_items pi ON siu.item_id = pi.id
-                WHERE siu.service_id = ?
+                WHERE siu.service_id = ? AND siu.service_type = 'maintenance_service'
             `, [service.id]);
             
             service.items_used = items;
@@ -135,7 +135,7 @@ router.get('/my-submissions', auth, async (req, res) => {
                     pi.brand
                 FROM service_items_used siu
                 INNER JOIN printer_items pi ON siu.item_id = pi.id
-                WHERE siu.service_id = ?
+                WHERE siu.service_id = ? AND siu.service_type = 'maintenance_service'
             `, [service.id]);
             
             service.items_used = items;
@@ -444,7 +444,7 @@ router.get('/:id', auth, async (req, res) => {
                 pi.brand
             FROM service_items_used siu
             INNER JOIN printer_items pi ON siu.item_id = pi.id
-            WHERE siu.service_id = ?
+            WHERE siu.service_id = ? AND siu.service_type = 'maintenance_service'
         `, [service.id]);
         
         service.items_used = items;
@@ -620,8 +620,8 @@ router.post('/', auth, async (req, res) => {
         // Insert items into service_items_used table
         if (items_used && items_used.length > 0) {
             const itemsQuery = `
-                INSERT INTO service_items_used (service_id, item_id, quantity_used, used_by, notes)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO service_items_used (service_id, service_type, item_id, quantity_used, used_by, notes)
+                VALUES (?, 'maintenance_service', ?, ?, ?, ?)
             `;
             
             for (const item of items_used) {
@@ -750,7 +750,7 @@ router.get('/institution_admin/pending', auth, async (req, res) => {
                     pi.brand
                 FROM service_items_used siu
                 INNER JOIN printer_items pi ON siu.item_id = pi.id
-                WHERE siu.service_id = ?
+                WHERE siu.service_id = ? AND siu.service_type = 'maintenance_service'
             `, [service.id]);
             
             service.items_used = items;

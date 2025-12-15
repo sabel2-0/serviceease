@@ -182,7 +182,7 @@ router.get('/service-requests/:requestId', authenticateTechnician, async (req, r
             FROM service_items_used spu
             JOIN printer_items pp ON spu.item_id = pp.id
             LEFT JOIN users u ON spu.used_by = u.id
-            WHERE spu.service_id = ?
+            WHERE spu.service_id = ? AND spu.service_type = 'service_request'
             ORDER BY spu.used_at DESC
         `, [requestId]);
         
@@ -480,7 +480,7 @@ router.post('/service-requests/:requestId/complete', authenticateTechnician, asy
             
             // Delete existing parts if resubmitting (to prevent duplicates)
             await db.query(
-                'DELETE FROM service_items_used WHERE service_id = ?',
+                'DELETE FROM service_items_used WHERE service_id = ? AND service_type = \'service_request\'',
                 [requestId]
             );
             
@@ -525,8 +525,8 @@ router.post('/service-requests/:requestId/complete', authenticateTechnician, asy
                             });
                             await db.query(
                                 `INSERT INTO service_items_used 
-                                 (service_id, item_id, quantity_used, notes, used_by)
-                                 VALUES (?, ?, ?, ?, ?)`,
+                                 (service_id, service_type, item_id, quantity_used, notes, used_by)
+                                 VALUES (?, 'service_request', ?, ?, ?, ?)`,
                                 [requestId, partInfo[0].id, part.qty, `Used ${part.qty} ${part.unit || 'pieces'}${brandInfo}`, technicianId]
                             );
                             console.log('[COMPLETE] Part usage inserted successfully');
