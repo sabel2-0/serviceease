@@ -389,8 +389,8 @@ function createMobileRequestCard(request) {
                 </div>
                 ${request.location || request.printer_department ? `
                 <div class="mt-1 flex flex-wrap gap-2 text-xs text-slate-500">
-                    ${request.location ? `<span>?? ${request.location}</span>` : ''}
-                    ${request.printer_department ? `<span>?? ${request.printer_department}</span>` : ''}
+                    ${request.location ? `<span>📍 ${request.location}</span>` : ''}
+                    ${request.printer_department ? `<span>🏢 ${request.printer_department}</span>` : ''}
                 </div>
                 ` : ''}
                 `}
