@@ -795,12 +795,19 @@ router.get('/institution_admin/history', auth, async (req, res) => {
                 i.name as institution_name,
                 CONCAT(u_coord.first_name, ' ', u_coord.last_name) as institution_admin_name,
                 CONCAT(u_tech.first_name, ' ', u_tech.last_name) as technician_name,
-                u_tech.email as technician_email
+                u_tech.email as technician_email,
+                sa.approved_by,
+                sa.reviewed_at,
+                sa.status as approval_status,
+                sa.institution_admin_notes as approval_notes,
+                CONCAT(approver.first_name, ' ', approver.last_name) as approved_by_name
             FROM maintenance_services vs
             INNER JOIN printers inv ON vs.printer_id = inv.id
             INNER JOIN institutions i ON vs.institution_id = i.institution_id
             LEFT JOIN users u_coord ON i.user_id = u_coord.id
             INNER JOIN users u_tech ON vs.technician_id = u_tech.id
+            LEFT JOIN service_approvals sa ON sa.service_id = vs.id AND sa.service_type = 'maintenance_service'
+            LEFT JOIN users approver ON sa.approved_by = approver.id
             WHERE vs.institution_id IN (?)
             AND vs.status IN ('completed', 'rejected')
             ORDER BY vs.created_at DESC
@@ -893,7 +900,12 @@ router.patch('/institution_admin/:id/approve', auth, async (req, res) => {
             [serviceId]
         );
         
-        // Note: service_approvals tracking pending database migration
+        // Insert approval record into service_approvals table
+        await db.query(
+            `INSERT INTO service_approvals (service_id, service_type, approved_by, reviewed_at, status, institution_admin_notes)
+             VALUES (?, 'maintenance_service', ?, NOW(), 'approved', ?)`,
+            [serviceId, institution_adminId, notes || null]
+        );
         
         // Deduct parts from inventory after institution_admin approval
         // Fetch items_used from service_items_used table
@@ -1026,8 +1038,12 @@ router.patch('/institution_admin/:id/reject', auth, async (req, res) => {
             [serviceId]
         );
         
-        // Note: Approval tracking stored in maintenance_services.status for now
-        // service_approvals integration pending database migration
+        // Insert rejection record into service_approvals table
+        await db.query(
+            `INSERT INTO service_approvals (service_id, service_type, approved_by, reviewed_at, status, institution_admin_notes)
+             VALUES (?, 'maintenance_service', ?, NOW(), 'rejected', ?)`,
+            [serviceId, institution_adminId, rejectionReason]
+        );
         
         // Notify technician
         await db.query(
@@ -1217,7 +1233,12 @@ router.patch('/institution_user/:id/approve', auth, async (req, res) => {
             [serviceId]
         );
         
-        // Note: service_approvals tracking pending database migration
+        // Insert approval record into service_approvals table
+        await db.query(
+            `INSERT INTO service_approvals (service_id, service_type, approved_by, reviewed_at, status, institution_admin_notes)
+             VALUES (?, 'maintenance_service', ?, NOW(), 'approved', ?)`,
+            [serviceId, requester_id, notes || null]
+        );
         
         // Deduct parts from inventory after approval
         // Fetch items_used from service_items_used table
@@ -1336,7 +1357,12 @@ router.patch('/institution_user/:id/reject', auth, async (req, res) => {
             [serviceId]
         );
         
-        // Note: service_approvals tracking pending database migration
+        // Insert rejection record into service_approvals table
+        await db.query(
+            `INSERT INTO service_approvals (service_id, service_type, approved_by, reviewed_at, status, institution_admin_notes)
+             VALUES (?, 'maintenance_service', ?, NOW(), 'rejected', ?)`,
+            [serviceId, requester_id, rejectionReason]
+        );
         
         // Notify technician
         await db.query(
