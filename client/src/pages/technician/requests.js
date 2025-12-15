@@ -1908,7 +1908,7 @@ function addPartEntry() {
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
                     </svg>
                 </div>
-                <span class="text-xs font-semibold text-slate-700">Part #<span class="part-number">${partNumber}</span></span>
+                <span class="text-xs font-semibold text-slate-700">Item #<span class="part-number">${partNumber}</span></span>
             </div>
             <button type="button" class="remove-part-btn text-red-500 hover:text-red-700 p-1.5 hover:bg-red-50 rounded-lg transition-all duration-200">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

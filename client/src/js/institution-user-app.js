@@ -292,7 +292,7 @@ function displayHomePrinters(printers) {
   if (!printers || printers.length === 0) {
     container.innerHTML = `
       <div class="p-6 text-center">
-        <div class="text-4xl mb-2">??®Ô∏è</div>
+        <div class="text-4xl mb-2">??ÔøΩÔ∏è</div>
         <div class="text-gray-500 text-sm">No printers assigned yet</div>
         <p class="text-xs text-gray-400 mt-1">Contact your coordinator to assign a printer</p>
       </div>
@@ -347,7 +347,7 @@ function displayRecentRequests(requests) {
   if (!requests || requests.length === 0) {
     container.innerHTML = `
       <div class="p-6 text-center">
-        <div class="text-4xl mb-2">??ù</div>
+        <div class="text-4xl mb-2">??ÔøΩ</div>
         <div class="text-gray-500 text-sm">No service requests yet</div>
         <button onclick="navigateTo('request')" class="mt-3 text-blue-600 text-sm hover:underline">Create your first request</button>
       </div>
@@ -508,7 +508,7 @@ function displayHistoryRequests(requests) {
         ${needsApproval ? `
           <div class="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-3">
             <p class="text-sm text-orange-800 font-medium mb-2">
-              ‚?†Ô∏è Work completed - Please review and approve
+              ÔøΩ?ÔøΩÔ∏è Work completed - Please review and approve
             </p>
             ${technicianName ? `<p class="text-xs text-orange-700">Technician: ${technicianName}</p>` : ''}
           </div>
@@ -984,7 +984,7 @@ async function handleApproval(approved) {
     const data = await response.json();
     
     if (response.ok) {
-      alert(approved ? '‚?? Service request approved!' : '‚ù? Service request rejected. Technician will be notified.');
+      alert(approved ? 'ÔøΩ?? Service request approved!' : 'ÔøΩ? Service request rejected. Technician will be notified.');
       closeApprovalModal();
       // Reload the history page
       await initHistoryPage();
@@ -996,8 +996,8 @@ async function handleApproval(approved) {
     alert('Failed to process approval');
   } finally {
     // Re-enable buttons
-    if (approveBtn) { approveBtn.disabled = false; approveBtn.textContent = '‚?? Approve'; }
-    if (rejectBtn) { rejectBtn.disabled = false; rejectBtn.textContent = '‚ù? Reject'; }
+    if (approveBtn) { approveBtn.disabled = false; approveBtn.textContent = 'ÔøΩ?? Approve'; }
+    if (rejectBtn) { rejectBtn.disabled = false; rejectBtn.textContent = 'ÔøΩ? Reject'; }
   }
 }
 
@@ -1249,7 +1249,7 @@ function displayMaintenanceServices() {
         </button>
         ${service.requester_approval_status === 'pending' ? `
           <button onclick="approveMaintenanceService(${service.id})" class="flex-1 px-3 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition">
-            ‚?? Approve
+            ÔøΩ?? Approve
           </button>
         ` : ''}
       </div>
@@ -1357,7 +1357,7 @@ function viewMaintenanceDetails(serviceId) {
       <div class="font-medium">${p.name}</div>
       <div class="text-xs text-gray-600">Qty: ${p.qty} ${p.unit || 'pcs'} | Brand: ${p.brand || 'N/A'}</div>
     </div>
-  `).join('') : '<p class="text-sm text-gray-500">No parts used</p>';
+  `).join('') : '<p class="text-sm text-gray-500">No items used</p>';
   
   const modalContent = `
     <div class="space-y-4">
@@ -1456,7 +1456,7 @@ async function approveMaintenanceService(serviceId) {
     });
     
     if (response.ok) {
-      alert('‚?? Service approved successfully!');
+      alert('ÔøΩ?? Service approved successfully!');
       closeMaintenanceModal();
       await loadMaintenanceServices();
     } else {
