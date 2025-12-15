@@ -5953,7 +5953,7 @@ app.get('/api/admin/institution-service-calendar', authenticateAdmin, async (req
             GROUP BY i.institution_id, i.name
         `);
 
-        // Get maintenance services for the specified month
+        // Get maintenance services for the specified month (including rejected)
         const [services] = await db.query(`
             SELECT 
                 ms.id,
@@ -5970,15 +5970,22 @@ app.get('/api/admin/institution-service-calendar', authenticateAdmin, async (req
                 ms.completion_photo,
                 ms.created_at,
                 u.first_name as tech_first_name,
-                u.last_name as tech_last_name
+                u.last_name as tech_last_name,
+                sa.approved_by,
+                sa.reviewed_at,
+                sa.status as approval_status,
+                sa.institution_admin_notes,
+                CONCAT(approver.first_name, ' ', approver.last_name) as approved_by_name
             FROM maintenance_services ms
             JOIN printers p ON ms.printer_id = p.id
-            JOIN institutions i ON ms.institution_id = i.institution_id
+            JOIN institutions i ON ms.institution_id COLLATE utf8mb4_unicode_ci = i.institution_id
             LEFT JOIN users u ON ms.technician_id = u.id
+            LEFT JOIN service_approvals sa ON sa.service_id = ms.id AND sa.service_type = 'maintenance_service'
+            LEFT JOIN users approver ON sa.approved_by = approver.id
             WHERE YEAR(ms.created_at) = ?
                 AND MONTH(ms.created_at) = ?
                 AND i.type = 'public_school'
-                AND ms.status IN ('completed', 'approved')
+                AND ms.status IN ('completed', 'rejected')
             ORDER BY service_date, institution_name, printer_name
         `, [year, month]);
 
@@ -6021,7 +6028,12 @@ app.get('/api/admin/institution-service-calendar', authenticateAdmin, async (req
                 created_at: service.created_at,
                 technician: `${service.tech_first_name} ${service.tech_last_name}`,
                 tech_first_name: service.tech_first_name,
-                tech_last_name: service.tech_last_name
+                tech_last_name: service.tech_last_name,
+                approved_by: service.approved_by,
+                reviewed_at: service.reviewed_at,
+                approval_status: service.approval_status,
+                approval_notes: service.institution_admin_notes,
+                approved_by_name: service.approved_by_name
             });
             calendarData[date].institutions[service.institution_id].serviced_count++;
             calendarData[date].total_printers_serviced++;
