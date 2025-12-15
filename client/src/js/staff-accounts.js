@@ -848,13 +848,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
     async function loadAvailableInstitutions(technicianId) {
         try {
+            const token = localStorage.getItem('token');
+            
             // Load all institutions
-            const response = await fetch('/api/institutions');
+            const response = await fetch('/api/institutions', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
             const institutions = await response.json();
             
             // Load current assignments to show team information
-            const assignmentsResponse = await fetch('/api/technician-assignments');
-            const assignments = await assignmentsResponse.json();
+            const assignmentsResponse = await fetch('/api/technician-assignments', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            const assignmentsData = await assignmentsResponse.json();
+            const assignments = Array.isArray(assignmentsData) ? assignmentsData : [];
             
             // Get current technician's assignments to filter out duplicates
             const currentTechnicianAssignments = assignments
