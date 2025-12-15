@@ -822,7 +822,7 @@ router.get('/institution_admin/history', auth, async (req, res) => {
                         pi.brand
                     FROM service_items_used siu
                     INNER JOIN printer_items pi ON siu.item_id = pi.id
-                    WHERE siu.service_id = ?
+                    WHERE siu.service_id = ? AND siu.service_type = 'maintenance_service'
                 `, [service.id]);
                 
                 service.items_used = items;
@@ -1108,7 +1108,7 @@ router.get('/institution_user/pending', auth, async (req, res) => {
                     pi.brand
                 FROM service_items_used siu
                 INNER JOIN printer_items pi ON siu.item_id = pi.id
-                WHERE siu.service_id = ?
+                WHERE siu.service_id = ? AND siu.service_type = 'maintenance_service'
             `, [service.id]);
             
             service.items_used = items;
@@ -1493,7 +1493,7 @@ router.get('/institution_admin/monthly-billing', auth, async (req, res) => {
                         pi.brand
                     FROM service_items_used siu
                     INNER JOIN printer_items pi ON siu.item_id = pi.id
-                    WHERE siu.service_id = ?
+                    WHERE siu.service_id = ? AND siu.service_type = 'maintenance_service'
                 `, [service.id]);
                 
                 service.items_used = items;

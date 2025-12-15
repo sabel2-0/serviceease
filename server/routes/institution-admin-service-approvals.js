@@ -142,7 +142,7 @@ router.get('/:approvalId/details', authenticateinstitution_admin, async (req, re
         
         res.json({
             approval: approvalDetails[0],
-            parts_used: partsUsed
+            items_used: partsUsed
         });
     } catch (error) {
         console.error('Error fetching approval details:', error);
