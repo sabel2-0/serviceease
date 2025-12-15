@@ -34,7 +34,7 @@ if (window.sidebarInitialized) {
             try {
                 const data = await clonedResponse.json();
                 if (data.code === 'TOKEN_INVALIDATED' || data.message?.includes('password change')) {
-                    console.log('🔒 Token invalidated detected - initiating logout');
+                    console.log('?? Token invalidated detected - initiating logout');
                     sessionStorage.setItem('redirecting_to_login', 'true');
                     
                     // Clear all authentication data
@@ -42,7 +42,7 @@ if (window.sidebarInitialized) {
                     localStorage.removeItem('isLoggedIn');
                     localStorage.removeItem('token');
                     
-                    console.log('🔒 Redirecting to login page...');
+                    console.log('?? Redirecting to login page...');
                     // Small delay to ensure localStorage is cleared
                     setTimeout(() => {
                         window.location.replace('/pages/login.html');
@@ -468,6 +468,10 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 } // End of sidebarInitialized check
+
+
+
+
 
 
 

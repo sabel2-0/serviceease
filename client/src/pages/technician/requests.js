@@ -17,14 +17,14 @@ window.refreshRequestsPage = function() {
 
 // Initialize the page
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('G�� Technician Requests page loaded');
+    console.log('G?? Technician Requests page loaded');
     
     // Check authentication first
     const token = localStorage.getItem('token');
     const user = localStorage.getItem('user');
     
     if (!token || !user) {
-        console.log('G�� Authentication missing, redirecting to login...');
+        console.log('G?? Authentication missing, redirecting to login...');
         window.location.href = '/pages/login.html';
         return;
     }
@@ -33,12 +33,12 @@ document.addEventListener('DOMContentLoaded', function() {
     try {
         const userData = JSON.parse(user);
         if (userData.role !== 'technician') {
-            console.log('G�� User is not a technician, redirecting...');
+            console.log('G?? User is not a technician, redirecting...');
             window.location.href = '/pages/login.html';
             return;
         }
     } catch (e) {
-        console.log('G�� Invalid user data, redirecting to login...');
+        console.log('G?? Invalid user data, redirecting to login...');
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         window.location.href = '/pages/login.html';
@@ -196,7 +196,7 @@ function setupModalEventHandlers() {
 
 // Make refresh function globally available
 window.refreshRequestsPage = function() {
-    console.log('=��� Refreshing requests page');
+    console.log('=??? Refreshing requests page');
     loadServiceRequests();
 };
 
@@ -208,7 +208,7 @@ async function loadServiceRequests() {
         showLoadingState();
         
         const token = localStorage.getItem('token');
-        console.log('=��� Auth token:', token ? 'Present' : 'Missing');
+        console.log('=??? Auth token:', token ? 'Present' : 'Missing');
         
         const response = await fetch('/api/technician/service-requests', {
             headers: {
@@ -216,23 +216,23 @@ async function loadServiceRequests() {
             }
         });
         
-        console.log('=��� API Response status:', response.status);
+        console.log('=??? API Response status:', response.status);
         
         if (!response.ok) {
             throw new Error(`Failed to fetch service requests: ${response.statusText}`);
         }
         
         const requests = await response.json();
-        console.log('=��� Received requests data:', requests);
+        console.log('=??? Received requests data:', requests);
         currentServiceRequests = requests;
         
-        console.log(`G�� Loaded ${requests.length} service requests`);
+        console.log(`G?? Loaded ${requests.length} service requests`);
         
         displayServiceRequests(requests);
         hideLoadingState();
         
     } catch (error) {
-        console.error('G�� Error loading service requests:', error);
+        console.error('G?? Error loading service requests:', error);
         
         // If error is 401 (unauthorized), redirect to login
         // Don't auto-logout on errors - let the user stay logged in
@@ -240,7 +240,7 @@ async function loadServiceRequests() {
         
         // For other errors, show empty state with retry option
         currentServiceRequests = [];
-        console.log('G�� No service requests available');
+        console.log('G?? No service requests available');
         
         displayServiceRequests([]);
         hideLoadingState();
@@ -254,17 +254,17 @@ async function loadServiceRequests() {
  * Display service requests in both desktop and mobile views
  */
 function displayServiceRequests(requests) {
-    console.log('=�Ŀ displayServiceRequests called with:', requests);
+    console.log('=?? displayServiceRequests called with:', requests);
     
     const mobileContainer = document.getElementById('serviceRequestsCardsMobile');
     const desktopContainer = document.getElementById('serviceRequestsTableDesktop');
     const mobileCount = document.getElementById('mobile-requests-count');
     const desktopCount = document.getElementById('desktop-requests-count');
     
-    console.log('=��� Mobile container found:', !!mobileContainer);
-    console.log('=��+ Desktop container found:', !!desktopContainer);
-    console.log('=��� Mobile count element found:', !!mobileCount);
-    console.log('=��� Desktop count element found:', !!desktopCount);
+    console.log('=??? Mobile container found:', !!mobileContainer);
+    console.log('=??+ Desktop container found:', !!desktopContainer);
+    console.log('=??? Mobile count element found:', !!mobileCount);
+    console.log('=??? Desktop count element found:', !!desktopCount);
     
     // Update counts
     if (mobileCount) mobileCount.textContent = `${requests.length} requests`;
@@ -296,27 +296,27 @@ function displayServiceRequests(requests) {
         return;
     }
     
-    console.log(`=��� Generating UI for ${requests.length} requests`);
+    console.log(`=??? Generating UI for ${requests.length} requests`);
     
     // Generate mobile cards
     if (mobileContainer) {
         const mobileHTML = requests.map(request => createMobileRequestCard(request)).join('');
-        console.log('=��� Generated mobile HTML length:', mobileHTML.length);
+        console.log('=??? Generated mobile HTML length:', mobileHTML.length);
         mobileContainer.innerHTML = mobileHTML;
-        console.log('=��� Mobile container updated');
+        console.log('=??? Mobile container updated');
     }
     
     // Generate desktop table rows
     if (desktopContainer) {
         const desktopHTML = requests.map(request => createDesktopRequestRow(request)).join('');
-        console.log('=��+ Generated desktop HTML length:', desktopHTML.length);
+        console.log('=??+ Generated desktop HTML length:', desktopHTML.length);
         desktopContainer.innerHTML = desktopHTML;
-        console.log('=��+ Desktop container updated');
+        console.log('=??+ Desktop container updated');
     }
     
     // Add click handlers for viewing details
     addRequestClickHandlers();
-    console.log('G�� Request click handlers added');
+    console.log('G?? Request click handlers added');
 }
 
 /**
@@ -389,8 +389,8 @@ function createMobileRequestCard(request) {
                 </div>
                 ${request.location || request.printer_department ? `
                 <div class="mt-1 flex flex-wrap gap-2 text-xs text-slate-500">
-                    ${request.location ? `<span>📍 ${request.location}</span>` : ''}
-                    ${request.printer_department ? `<span>🏢 ${request.printer_department}</span>` : ''}
+                    ${request.location ? `<span>?? ${request.location}</span>` : ''}
+                    ${request.printer_department ? `<span>?? ${request.printer_department}</span>` : ''}
                 </div>
                 ` : ''}
                 `}
@@ -1194,7 +1194,7 @@ function populateServiceRequestModal(request) {
         const address = request.location || '';
         const description = request.issue || 'Service Request';
         const isLong = description.length > 120;
-        const shortDesc = isLong ? description.slice(0, 120) + 'GǪ' : description;
+        const shortDesc = isLong ? description.slice(0, 120) + 'GO' : description;
         function formatRequestNumber(fullNumber) {
             const match = fullNumber.match(/SR-(\d{4})-(\d+)/);
             if (match) {
@@ -1516,7 +1516,7 @@ let currentPartSlide = 0;
 let totalPartSlides = 1;
 
 async function loadAvailableParts() {
-    console.log('=��� Loading available parts from technician inventory...');
+    console.log('=??? Loading available parts from technician inventory...');
     try {
         const response = await fetch('/api/technician/parts', {
             headers: {
@@ -1528,7 +1528,7 @@ async function loadAvailableParts() {
         
         if (response.ok) {
             let parts = await response.json();
-            console.log('G�� Loaded parts (raw):', parts);
+            console.log('G?? Loaded parts (raw):', parts);
 
             // If API returns merged central+tech inventory, prefer technician_stock where available
             parts = parts.map(p => {
@@ -1545,18 +1545,18 @@ async function loadAvailableParts() {
             });
 
             availableParts = parts;
-            console.log('G�� Loaded parts (normalized):', availableParts);
+            console.log('G?? Loaded parts (normalized):', availableParts);
             updatePartSelectors();
             updatePartSearchFunctionality();
             return availableParts; // Return the parts for promise chaining
         } else {
             const errorData = await response.json();
-            console.error('G�� Parts API error:', errorData);
+            console.error('G?? Parts API error:', errorData);
             showToast('Failed to load parts inventory. Please try again.', 'error');
             return [];
         }
     } catch (error) {
-        console.error('G�� Error loading parts:', error);
+        console.error('G?? Error loading parts:', error);
         showToast('Failed to load parts inventory. Please check your connection.', 'error');
         return [];
     }
@@ -1592,7 +1592,7 @@ function filterPartSelectors(query) {
 }
 
 function updatePartSelectors() {
-    console.log('=��� Updating part selectors with', availableParts.length, 'parts');
+    console.log('=??? Updating part selectors with', availableParts.length, 'parts');
     
     // Update type selectors
     updateTypeSelectors();
@@ -1600,7 +1600,7 @@ function updatePartSelectors() {
     // Update parts summary
     updatePartsSummary();
     
-    console.log('G�� Part selectors updated');
+    console.log('G?? Part selectors updated');
 }
 
 function updateTypeSelectors() {
@@ -1769,7 +1769,7 @@ function updatePartsForType(typeSelector, selectedType) {
     // Setup search functionality
     setupPartSearch(partEntry, partsForType);
     
-    console.log('G�� Added', partsForType.length, 'parts for type', selectedType);
+    console.log('G?? Added', partsForType.length, 'parts for type', selectedType);
 }
 
 function selectPartFromCard(partEntry, card) {
@@ -1803,7 +1803,7 @@ function selectPartFromCard(partEntry, card) {
     const selectedPartName = selectedPartDisplay.querySelector('.selected-part-name');
     const selectedPartInfo = selectedPartDisplay.querySelector('.selected-part-info');
     selectedPartName.textContent = card.dataset.name;
-    selectedPartInfo.textContent = `${card.dataset.brand || 'Universal'} � ${card.dataset.stock} ${card.dataset.unit} available`;
+    selectedPartInfo.textContent = `${card.dataset.brand || 'Universal'} ? ${card.dataset.stock} ${card.dataset.unit} available`;
     selectedPartDisplay.classList.remove('hidden');
     
     // Hide grid and search
@@ -2229,8 +2229,8 @@ function setupPartEntryHandlers(entry) {
                         <span class="text-${stockBadgeColor}-700 font-semibold text-xs">
                             ${stock > 0 ? `Available: ${stock} ${unit}` : 'Out of Stock'}
                         </span>
-                        ${brand ? `<span class="text-slate-500 text-xs">� ${brand}</span>` : ''}
-                        ${category ? `<span class="text-slate-500 text-xs">� ${category}</span>` : ''}
+                        ${brand ? `<span class="text-slate-500 text-xs">? ${brand}</span>` : ''}
+                        ${category ? `<span class="text-slate-500 text-xs">? ${category}</span>` : ''}
                     </div>
                 `;
                 
@@ -2573,7 +2573,7 @@ async function handleJobCompletion(e) {
         console.log('Service completion submitted successfully:', result);
         
         // Show detailed success message
-        let successMessage = 'G�� Service completion submitted successfully!';
+        let successMessage = 'G?? Service completion submitted successfully!';
         if (parts.length > 0) {
             successMessage += ` ${parts.length} part${parts.length > 1 ? 's' : ''} recorded.`;
         }
@@ -2581,7 +2581,7 @@ async function handleJobCompletion(e) {
         
         // Show approval workflow info
         setTimeout(() => {
-            showToast('=��� Your Institution Admin will review and approve this service completion.', 'info');
+            showToast('=??? Your Institution Admin will review and approve this service completion.', 'info');
         }, 2000);
         
         closeJobCompletionModal();
@@ -2839,7 +2839,7 @@ function displayARMResults(requestId, data) {
             <!-- Info Box -->
             <div class="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-2 mt-2">
                 <div class="flex-1">
-                    <p class="text-amber-900 font-semibold text-xs mb-0.5">💡 Why These Parts?</p>
+                    <p class="text-amber-900 font-semibold text-xs mb-0.5">?? Why These Parts?</p>
                     <p class="text-amber-800 text-[10px] leading-relaxed">
                         Our AI analyzed <strong>${data.total_transactions} past service jobs</strong> on <strong>${data.printer_brand} ${data.printer_model}</strong> 
                         and found these parts are commonly used together. Bringing them now can save you a second trip!
@@ -2862,6 +2862,10 @@ window.forceSetupModalHandlers = function() {
     window._modalHandlersSetup = false; // Reset flag
     setupModalEventHandlers();
 };
+
+
+
+
 
 
 

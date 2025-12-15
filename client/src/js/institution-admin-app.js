@@ -114,7 +114,7 @@ async function loadRecentActivity() {
                         Maintenance service ${service.status} for ${service.printer_name}
                     </p>
                     <p class="text-xs text-gray-500 mt-1">
-                        ${service.technician_name} â€¢ ${new Date(service.created_at).toLocaleDateString()}
+                        ${service.technician_name} • ${new Date(service.created_at).toLocaleDateString()}
                     </p>
                 </div>
                 <a href="/pages/institution-admin/maintenance-services.html" class="ml-4 text-sm font-medium text-blue-600 hover:text-blue-800">
@@ -182,6 +182,10 @@ function showErrorNotification(message) {
     document.body.appendChild(notification);
     setTimeout(() => notification.remove(), 5000);
 }
+
+
+
+
 
 
 

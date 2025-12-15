@@ -35,24 +35,24 @@ async function loadCalendarData() {
 
         const token = localStorage.getItem('token');
         const url = `/api/admin/institution-service-calendar?year=${currentYear}&month=${currentMonth}`;
-        console.log('📅 Loading calendar data:', url);
+        console.log('?? Loading calendar data:', url);
         
         const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
-        console.log('📊 Response status:', response.status);
+        console.log('?? Response status:', response.status);
 
         if (response.ok) {
             const data = await response.json();
-            console.log('✅ Calendar data received:', data);
-            console.log('📆 Calendar entries:', Object.keys(data.calendar_data || {}).length);
+            console.log('? Calendar data received:', data);
+            console.log('?? Calendar entries:', Object.keys(data.calendar_data || {}).length);
             calendarData = data.calendar_data || {};
             renderCalendar();
         } else {
             const errorText = await response.text();
-            console.error('❌ Failed to load calendar data. Status:', response.status, 'Error:', errorText);
+            console.error('? Failed to load calendar data. Status:', response.status, 'Error:', errorText);
             showEmptyCalendar();
         }
     } catch (error) {
-        console.error('❌ Error loading calendar data:', error);
+        console.error('? Error loading calendar data:', error);
         showEmptyCalendar();
     }
 }
@@ -65,7 +65,7 @@ function updateMonthYearDisplay() {
 }
 
 function renderCalendar() {
-    console.log('🎨 Rendering calendar with data:', calendarData);
+    console.log('?? Rendering calendar with data:', calendarData);
     const grid = document.getElementById('calendarGrid');
     grid.innerHTML = '';
     
@@ -87,7 +87,7 @@ function renderCalendar() {
     const firstDay = new Date(currentYear, currentMonth - 1, 1).getDay();
     const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
     
-    console.log('📅 Rendering', daysInMonth, 'days for', currentYear + '-' + currentMonth);
+    console.log('?? Rendering', daysInMonth, 'days for', currentYear + '-' + currentMonth);
 
     // Empty cells before first day
     for (let i = 0; i < firstDay; i++) {
@@ -102,8 +102,8 @@ function renderCalendar() {
         const dayData = calendarData[dateStr];
         
         if (day === 1) {
-            console.log('🔍 Sample dateStr:', dateStr, 'dayData:', dayData);
-            console.log('🔍 All calendar data keys:', Object.keys(calendarData));
+            console.log('?? Sample dateStr:', dateStr, 'dayData:', dayData);
+            console.log('?? All calendar data keys:', Object.keys(calendarData));
         }
         
         const dayCell = document.createElement('div');
@@ -123,11 +123,11 @@ function renderCalendar() {
                 <div class="font-semibold text-slate-900 mb-2">${day}</div>
                 <div class="space-y-1">
                     <div class="text-xs">
-                        <span class="font-medium text-blue-700">🏫 ${dayData.total_institutions}</span>
+                        <span class="font-medium text-blue-700">?? ${dayData.total_institutions}</span>
                         <span class="text-slate-600"> school${dayData.total_institutions > 1 ? 's' : ''}</span>
                     </div>
                     <div class="text-xs">
-                        <span class="font-medium text-green-700">🖨️ ${dayData.total_printers_serviced}</span>
+                        <span class="font-medium text-green-700">??? ${dayData.total_printers_serviced}</span>
                         <span class="text-slate-600"> serviced</span>
                     </div>
                 </div>
@@ -246,7 +246,7 @@ window.showInstitutionDetail = async function(institutionId, dateStr, institutio
                             <div>
                                 <div class="font-medium text-slate-900">${printer.printer_name}</div>
                                 <div class="text-xs text-slate-600">
-                                    📍 ${printer.location || 'N/A'} • 🏢 ${printer.department || 'N/A'}
+                                    ?? ${printer.location || 'N/A'} � ?? ${printer.department || 'N/A'}
                                 </div>
                                 <div class="text-xs font-semibold text-green-700 mt-1">
                                     ${printer.service_number}
@@ -274,14 +274,14 @@ window.showInstitutionDetail = async function(institutionId, dateStr, institutio
                         <div>
                             <div class="font-medium text-slate-900">${printer.printer_name}</div>
                             <div class="text-xs text-slate-600">
-                                📍 ${printer.location || 'N/A'} • 🏢 ${printer.department || 'N/A'}
+                                ?? ${printer.location || 'N/A'} � ?? ${printer.department || 'N/A'}
                             </div>
                         </div>
                     </div>
                 </div>
             `).join('');
         } else {
-            notServicedList.innerHTML = '<p class="text-sm text-green-600 text-center py-4 font-medium">✓ All printers serviced!</p>';
+            notServicedList.innerHTML = '<p class="text-sm text-green-600 text-center py-4 font-medium">? All printers serviced!</p>';
         }
         
         instModal.classList.remove('hidden');
@@ -310,11 +310,11 @@ window.showServiceDetail = async function(serviceId, serviceNumber) {
 
         const service = await response.json();
         
-        // Parse parts_used if string
+        // Parse items_used if string
         let partsUsed = [];
-        if (service.parts_used) {
+        if (service.items_used) {
             try {
-                partsUsed = typeof service.parts_used === 'string' ? JSON.parse(service.parts_used) : service.parts_used;
+                partsUsed = typeof service.items_used === 'string' ? JSON.parse(service.items_used) : service.items_used;
             } catch (e) {
                 partsUsed = [];
             }
@@ -329,37 +329,37 @@ window.showServiceDetail = async function(serviceId, serviceNumber) {
 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <div class="text-sm text-slate-600 font-medium mb-2">🏫 Institution</div>
+                        <div class="text-sm text-slate-600 font-medium mb-2">?? Institution</div>
                         <div class="font-semibold text-slate-900">${service.institution_name || 'N/A'}</div>
                     </div>
                     <div>
-                        <div class="text-sm text-slate-600 font-medium mb-2">🖨️ Printer</div>
+                        <div class="text-sm text-slate-600 font-medium mb-2">??? Printer</div>
                         <div class="font-semibold text-slate-900">${service.printer_name || 'N/A'}</div>
                     </div>
                     <div>
-                        <div class="text-sm text-slate-600 font-medium mb-2">📍 Location</div>
+                        <div class="text-sm text-slate-600 font-medium mb-2">?? Location</div>
                         <div class="text-slate-900">${service.location || 'N/A'}</div>
                     </div>
                     <div>
-                        <div class="text-sm text-slate-600 font-medium mb-2">🏢 Department</div>
+                        <div class="text-sm text-slate-600 font-medium mb-2">?? Department</div>
                         <div class="text-slate-900">${service.department || 'N/A'}</div>
                     </div>
                 </div>
 
                 <div class="bg-slate-50 rounded-lg p-4">
-                    <div class="text-sm text-slate-600 font-medium mb-2">👨‍🔧 Technician</div>
+                    <div class="text-sm text-slate-600 font-medium mb-2">????? Technician</div>
                     <div class="font-semibold text-slate-900">${service.technician_name || 'N/A'}</div>
                     <div class="text-xs text-slate-600 mt-1">Submitted: ${new Date(service.created_at).toLocaleString()}</div>
                 </div>
 
                 <div>
-                    <div class="text-sm text-slate-600 font-medium mb-2">📋 Service Description</div>
+                    <div class="text-sm text-slate-600 font-medium mb-2">?? Service Description</div>
                     <div class="bg-slate-50 rounded-lg p-3 text-slate-900">${service.service_description || 'No description provided'}</div>
                 </div>
 
                 ${partsUsed.length > 0 ? `
                     <div>
-                        <div class="text-sm text-slate-600 font-medium mb-2">🔧 Items Used</div>
+                        <div class="text-sm text-slate-600 font-medium mb-2">?? Items Used</div>
                         <div class="space-y-2">
                             ${partsUsed.map(part => `
                                 <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 flex justify-between items-center">
@@ -373,14 +373,14 @@ window.showServiceDetail = async function(serviceId, serviceNumber) {
 
                 ${service.completion_photo ? `
                     <div>
-                        <div class="text-sm text-slate-600 font-medium mb-2">📷 Completion Photo</div>
+                        <div class="text-sm text-slate-600 font-medium mb-2">?? Completion Photo</div>
                         <img src="${service.completion_photo}" alt="Completion" class="w-full rounded-lg border border-slate-200">
                     </div>
                 ` : ''}
 
                 ${service.approved_by_name ? `
                     <div class="bg-green-50 rounded-lg p-4">
-                        <div class="text-sm text-green-600 font-medium mb-2">✓ Approved By</div>
+                        <div class="text-sm text-green-600 font-medium mb-2">? Approved By</div>
                         <div class="font-semibold text-green-900">${service.approved_by_name}</div>
                     </div>
                 ` : ''}
@@ -415,3 +415,7 @@ document.addEventListener('click', function(e) {
     if (e.target.id === 'institutionDetailModal') closeInstitutionDetailModal();
     if (e.target.id === 'serviceDetailModal') closeServiceDetailModal();
 });
+
+
+
+

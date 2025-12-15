@@ -2,7 +2,7 @@
 (function() {
     'use strict';
     
-    console.log('🎥 Loading completion-photo.js');
+    console.log('?? Loading completion-photo.js');
     
     // Handle completion photo capture - Make functions globally accessible
     window.openCamera = function() {
@@ -39,7 +39,7 @@
         if (image) image.src = '';
     };
 
-    console.log('✓ Camera functions registered on window object:', {
+    console.log('? Camera functions registered on window object:', {
         openCamera: typeof window.openCamera,
         retakePhoto: typeof window.retakePhoto,
         removeCompletionPhoto: typeof window.removeCompletionPhoto
@@ -65,7 +65,7 @@
                     reader.readAsDataURL(file);
                 }
             });
-            console.log('✓ Photo input handler initialized');
+            console.log('? Photo input handler initialized');
         } else {
             console.warn('Photo input not found, will retry...');
             setTimeout(initPhotoHandler, 100);
@@ -184,6 +184,10 @@
     };
 
 })();
+
+
+
+
 
 
 

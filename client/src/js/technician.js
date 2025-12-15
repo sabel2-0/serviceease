@@ -331,7 +331,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('emptyState')?.classList.add('hidden');
 
     // Note: Service request display is now handled by requests.js
-    console.log('✓ Technician page initialization complete. Service requests handled by requests.js');
+    console.log('? Technician page initialization complete. Service requests handled by requests.js');
 
     // Use verifyRole from auth.js to ensure only technicians can access
 	if (typeof verifyRole === 'function') {
@@ -340,7 +340,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	
 	// Note: Service requests are now handled by requests.js in the requests tab
 	// This avoids duplication between technician.js and requests.js
-	console.log('✓ Technician authentication verified. Service requests will be loaded by requests.js tab.');
+	console.log('? Technician authentication verified. Service requests will be loaded by requests.js tab.');
     
     // Function to view service request with glassmorphism design
     window.viewServiceRequest = function(requestId) {
@@ -831,7 +831,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                 </svg>
                 <span class="hidden xs:inline">Updated!</span>
-                <span class="xs:hidden">✓</span>
+                <span class="xs:hidden">?</span>
             `;
             button.className = button.className.replace('text-green-600 bg-green-50 hover:bg-green-100 border-green-200', 'text-green-700 bg-green-100 border-green-300');
             
@@ -1049,6 +1049,10 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     }
 });
+
+
+
+
 
 
 

@@ -13,24 +13,24 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Check if auth.js is loaded properly
     if (typeof isLoggedIn === 'function') {
-        console.log('✅ auth.js loaded successfully');
+        console.log('? auth.js loaded successfully');
         console.log('User logged in:', isLoggedIn());
         
         const user = getCurrentUser();
         if (user) {
             console.log('Current user role:', user.role);
         } else {
-            console.log('❌ No user found in localStorage');
+            console.log('? No user found in localStorage');
         }
     } else {
-        console.log('❌ auth.js not loaded properly - isLoggedIn function not found');
+        console.log('? auth.js not loaded properly - isLoggedIn function not found');
     }
     
     // Check if unified-sidebar.js is loaded
     if (typeof loadUnifiedSidebar === 'function') {
-        console.log('✅ unified-sidebar.js loaded successfully');
+        console.log('? unified-sidebar.js loaded successfully');
     } else {
-        console.log('❌ unified-sidebar.js not loaded properly - loadUnifiedSidebar function not found');
+        console.log('? unified-sidebar.js not loaded properly - loadUnifiedSidebar function not found');
     }
     
     // Check if operations-officer.js is loaded
@@ -64,6 +64,10 @@ window.onerror = function(msg, url, lineNo, columnNo, error) {
 };
 
 console.log('Debug script initialization complete');
+
+
+
+
 
 
 

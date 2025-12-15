@@ -1,18 +1,18 @@
 // institution_user Notifications Module
 (function() {
-  console.log('🔔 [INSTITUTION-USER-NOTIFICATIONS] Module loading...');
+  console.log('?? [INSTITUTION-USER-NOTIFICATIONS] Module loading...');
 
   const institution_userNotifications = {
     initialized: false,
     
     init() {
       if (this.initialized) {
-        console.log('🔔 [INSTITUTION-USER-NOTIFICATIONS] Already initialized, refreshing...');
+        console.log('?? [INSTITUTION-USER-NOTIFICATIONS] Already initialized, refreshing...');
         this.refresh();
         return;
       }
       
-      console.log('🔔 [INSTITUTION-USER-NOTIFICATIONS] Initializing...');
+      console.log('?? [INSTITUTION-USER-NOTIFICATIONS] Initializing...');
       this.initialized = true;
       this.fetchNotifications();
       
@@ -24,7 +24,7 @@
     },
     
     refresh() {
-      console.log('🔔 [INSTITUTION-USER-NOTIFICATIONS] Refreshing notifications...');
+      console.log('?? [INSTITUTION-USER-NOTIFICATIONS] Refreshing notifications...');
       this.fetchNotifications();
     },
     
@@ -44,7 +44,7 @@
           throw new Error('No authentication token');
         }
         
-        console.log('🔔 [INSTITUTION-USER-NOTIFICATIONS] Fetching from API...');
+        console.log('?? [INSTITUTION-USER-NOTIFICATIONS] Fetching from API...');
         const response = await fetch('/api/notifications', {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -57,11 +57,11 @@
         
         const data = await response.json();
         const notifications = data.notifications || [];
-        console.log('🔔 [INSTITUTION-USER-NOTIFICATIONS] Received:', notifications.length, 'notifications');
+        console.log('?? [INSTITUTION-USER-NOTIFICATIONS] Received:', notifications.length, 'notifications');
         
         this.renderNotifications(notifications);
       } catch (error) {
-        console.error('🔔 [INSTITUTION-USER-NOTIFICATIONS] Error:', error);
+        console.error('?? [INSTITUTION-USER-NOTIFICATIONS] Error:', error);
         this.showError();
       }
     },
@@ -146,7 +146,7 @@
               <p class="text-sm text-gray-600 mb-2">${this.escapeHtml(notification.message)}</p>
               <div class="flex items-center justify-between text-xs text-gray-500">
                 <span>${timeAgo}</span>
-                ${notification.sender_name ? `<span class="text-gray-400">• ${this.escapeHtml(notification.sender_name)}</span>` : ''}
+                ${notification.sender_name ? `<span class="text-gray-400">� ${this.escapeHtml(notification.sender_name)}</span>` : ''}
               </div>
             </div>
           </div>
@@ -173,8 +173,12 @@
   
   // Expose globally
   window.institution_userNotifications = institution_userNotifications;
-  console.log('🔔 [INSTITUTION-USER-NOTIFICATIONS] Module loaded');
+  console.log('?? [INSTITUTION-USER-NOTIFICATIONS] Module loaded');
 })();
+
+
+
+
 
 
 

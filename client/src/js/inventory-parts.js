@@ -847,11 +847,11 @@ class InventoryPartsManager {
 
     getCategoryIcon(category) {
         const icons = {
-            'toner': '🖨️',
-            'drum': '🔄',
-            'fuser': '🔥',
-            'roller': '⚙️',
-            'other': '🔧'
+            'toner': '???',
+            'drum': '??',
+            'fuser': '??',
+            'roller': '??',
+            'other': '??'
         };
         return icons[category] || icons['other'];
     }
@@ -906,6 +906,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Export for global access
 window.inventoryManager = inventoryManager;
+
+
+
+
 
 
 

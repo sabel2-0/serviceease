@@ -845,7 +845,7 @@ function createRequestCard(request) {
                                     ${printerInfo.name || printerInfo.model || 'Unknown Printer'}
                                 </h3>
                                 <p class="text-sm text-gray-700 truncate">
-                                    ${printerInfo.brand && printerInfo.model ? `${printerInfo.brand} ${printerInfo.model} • ` : ''}<span class="text-gray-600">Serial: ${printerInfo.serial_number}</span>
+                                    ${printerInfo.brand && printerInfo.model ? `${printerInfo.brand} ${printerInfo.model} � ` : ''}<span class="text-gray-600">Serial: ${printerInfo.serial_number}</span>
                                 </p>
                             </div>
                         </div>
@@ -1444,7 +1444,7 @@ async function viewRequestDetails(requestId) {
                 <!-- Right Column -->
                 <div class="space-y-3">
                 <!-- Items Used (if any) -->
-                ${request.parts_used && request.parts_used.length > 0 ? `
+                ${request.items_used && request.items_used.length > 0 ? `
                 <div class="bg-gradient-to-br from-teal-50 to-teal-100 rounded-lg p-3 border border-teal-200">
                     <div class="flex items-center mb-2">
                         <div class="bg-teal-600 rounded-lg p-1.5 mr-2">
@@ -1453,7 +1453,7 @@ async function viewRequestDetails(requestId) {
                         <h4 class="text-sm font-bold text-teal-900">Items Used</h4>
                     </div>
                     <div class="space-y-1">
-                        ${request.parts_used.map(part => `
+                        ${request.items_used.map(part => `
                         <div class="bg-white/60 rounded p-2 flex justify-between items-center">
                             <div class="flex-1">
                                 <span class="text-xs font-semibold text-teal-900">${part.part_name}</span>
@@ -1475,7 +1475,7 @@ async function viewRequestDetails(requestId) {
                         <div class="bg-green-600 rounded-lg p-2 mr-2">
                             <i class="fas fa-user-check text-white text-base"></i>
                         </div>
-                        <h4 class="text-base font-bold text-green-900">✅ Approval Information</h4>
+                        <h4 class="text-base font-bold text-green-900">? Approval Information</h4>
                     </div>
                     <div class="bg-white/80 rounded-lg p-3 text-sm space-y-2">
                         ${approverName ? `
@@ -1661,7 +1661,7 @@ async function viewApprovalDetails(requestId) {
         if (detailsResponse.ok) {
             const detailedData = await detailsResponse.json();
             approvalDetails = detailedData.approval;
-            partsUsed = detailedData.parts_used || [];
+            partsUsed = detailedData.items_used || [];
         }
         
         // Find printer details
@@ -1681,11 +1681,11 @@ async function viewApprovalDetails(requestId) {
         // Parse items used - handle both detailed and basic data
         let partsUsedDisplay = '';
         if (partsUsed.length > 0) {
-            partsUsedDisplay = partsUsed.map(part => `<li class="text-sm text-gray-600">• ${part.part_name} (${part.quantity_used} ${part.unit})</li>`).join('');
-        } else if (approval.parts_used) {
-            partsUsedDisplay = approval.parts_used.split(', ').map(part => `<li class="text-sm text-gray-600">• ${part}</li>`).join('');
+            partsUsedDisplay = partsUsed.map(part => `<li class="text-sm text-gray-600">� ${part.part_name} (${part.quantity_used} ${part.unit})</li>`).join('');
+        } else if (approval.items_used) {
+            partsUsedDisplay = approval.items_used.split(', ').map(part => `<li class="text-sm text-gray-600">� ${part}</li>`).join('');
         } else {
-            partsUsedDisplay = '<li class="text-sm text-gray-500">• No items used</li>';
+            partsUsedDisplay = '<li class="text-sm text-gray-500">� No items used</li>';
         }
         
         const approvalModalContent = document.getElementById('approvalModalContent');
@@ -1731,7 +1731,7 @@ async function viewApprovalDetails(requestId) {
                     <div class="bg-white p-2 rounded border border-green-200 text-xs text-gray-700">
                         ${approvalDetails.approver_first_name && approvalDetails.approver_last_name ? `
                         <p class="font-semibold text-green-800 mb-1">
-                            ✅ Approved by: <span class="capitalize">${approvalDetails.approver_role || 'Staff'}</span> - ${approvalDetails.approver_first_name} ${approvalDetails.approver_last_name}
+                            ? Approved by: <span class="capitalize">${approvalDetails.approver_role || 'Staff'}</span> - ${approvalDetails.approver_first_name} ${approvalDetails.approver_last_name}
                         </p>
                         ` : ''}
                         ${approvalDetails.resolution_notes || approval.actions_performed ? `
@@ -1775,8 +1775,8 @@ async function viewApprovalDetails(requestId) {
                 <!-- Approval Actions Guide - Compact -->
                 <div class="bg-yellow-50 rounded-lg p-3 border border-yellow-200">
                     <div class="text-xs text-yellow-800 space-y-1">
-                        <p><strong>✅ Approve:</strong> Parts will be deducted from technician inventory</p>
-                        <p><strong>❌ Reject:</strong> Request returns to technician; parts usage cleared</p>
+                        <p><strong>? Approve:</strong> Parts will be deducted from technician inventory</p>
+                        <p><strong>? Reject:</strong> Request returns to technician; parts usage cleared</p>
                     </div>
                 </div>
             </div>
@@ -2105,6 +2105,10 @@ window.viewRequestDetails = viewRequestDetails;
 window.viewApprovalDetails = viewApprovalDetails;
 window.loadAssignedPrinters = loadAssignedPrinters;
 window.loadServiceRequests = loadServiceRequests;
+
+
+
+
 
 
 

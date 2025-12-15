@@ -866,7 +866,7 @@
 
             // Check for duplicates among inputs
             if (isDuplicatePrinter(index, serialNumber, brand)) {
-                if (msgEl) { msgEl.textContent = 'Duplicate printer entry — you already added this printer.'; msgEl.classList.remove('hidden'); msgEl.classList.add('text-red-600'); }
+                if (msgEl) { msgEl.textContent = 'Duplicate printer entry � you already added this printer.'; msgEl.classList.remove('hidden'); msgEl.classList.add('text-red-600'); }
                 validationIcon.classList.remove('hidden');
                 validationIcon.innerHTML = '<i class="fas fa-times-circle text-red-500"></i>';
                 serialInput.classList.remove('border-green-300');
@@ -1176,7 +1176,7 @@
                 const data = await response.json();
                 
                 if (response.ok) {
-                    console.log('✅ Registration submitted:', data);
+                    console.log('? Registration submitted:', data);
                     // Show success message - no verification modal needed
                     document.getElementById('successMessage').classList.remove('hidden');
                     this.reset();
@@ -1199,6 +1199,10 @@
     </script>
 </body>
 </html>
+
+
+
+
 
 
 

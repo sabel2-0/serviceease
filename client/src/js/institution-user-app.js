@@ -107,17 +107,17 @@ function setupNotifications() {
   
   // Load notification JS module if not already loaded
   if (!window.institution_userNotifications) {
-    console.log(' [institution_user] Loading notification module...');
+    console.log('??? [institution_user] Loading notification module...');
     const script = document.createElement('script');
     script.src = '/js/institution-user-notifications.js';
-    script.onload = () => console.log(' [institution_user] Notification module loaded');
-    script.onerror = () => console.error(' [institution_user] Failed to load notification module');
+    script.onload = () => console.log('??? [institution_user] Notification module loaded');
+    script.onerror = () => console.error('??? [institution_user] Failed to load notification module');
     document.head.appendChild(script);
   }
   
   notificationBtn.addEventListener('click', function(e) {
     e.stopPropagation();
-    console.log(' [institution_user] Notification button clicked');
+    console.log('??? [institution_user] Notification button clicked');
     
     // Open modal
     notificationModal.classList.remove('hidden');
@@ -125,7 +125,7 @@ function setupNotifications() {
     
     if (!notificationsLoaded) {
       // First time - load the HTML
-      console.log(' [institution_user] Loading notifications component...');
+      console.log('??? [institution_user] Loading notifications component...');
       fetch('/components/institution-user-notifications.html')
         .then(res => res.text())
         .then(html => {
@@ -135,20 +135,20 @@ function setupNotifications() {
           // Initialize notifications module
           setTimeout(() => {
             if (window.institution_userNotifications) {
-              console.log(' [institution_user] Initializing institution_userNotifications module...');
+              console.log('??? [institution_user] Initializing institution_userNotifications module...');
               window.institution_userNotifications.init();
             } else {
-              console.error(' [institution_user] institution_userNotifications module not loaded!');
+              console.error('??? [institution_user] institution_userNotifications module not loaded!');
             }
           }, 100);
         })
         .catch(err => {
-          console.error(' [institution_user] Failed to load notifications component', err);
+          console.error('??? [institution_user] Failed to load notifications component', err);
           notificationModalContent.innerHTML = '<div class="p-4 text-center text-gray-500">Unable to load notifications.</div>';
         });
     } else {
       // Already loaded - just refresh the data
-      console.log(' [institution_user] Refreshing notifications...');
+      console.log('??? [institution_user] Refreshing notifications...');
       if (window.institution_userNotifications) {
         window.institution_userNotifications.refresh();
       }
@@ -292,7 +292,7 @@ function displayHomePrinters(printers) {
   if (!printers || printers.length === 0) {
     container.innerHTML = `
       <div class="p-6 text-center">
-        <div class="text-4xl mb-2">¨ï¸</div>
+        <div class="text-4xl mb-2">??�️</div>
         <div class="text-gray-500 text-sm">No printers assigned yet</div>
         <p class="text-xs text-gray-400 mt-1">Contact your coordinator to assign a printer</p>
       </div>
@@ -347,7 +347,7 @@ function displayRecentRequests(requests) {
   if (!requests || requests.length === 0) {
     container.innerHTML = `
       <div class="p-6 text-center">
-        <div class="text-4xl mb-2"></div>
+        <div class="text-4xl mb-2">??�</div>
         <div class="text-gray-500 text-sm">No service requests yet</div>
         <button onclick="navigateTo('request')" class="mt-3 text-blue-600 text-sm hover:underline">Create your first request</button>
       </div>
@@ -508,7 +508,7 @@ function displayHistoryRequests(requests) {
         ${needsApproval ? `
           <div class="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-3">
             <p class="text-sm text-orange-800 font-medium mb-2">
-              â ï¸ Work completed - Please review and approve
+              �?�️ Work completed - Please review and approve
             </p>
             ${technicianName ? `<p class="text-xs text-orange-700">Technician: ${technicianName}</p>` : ''}
           </div>
@@ -543,7 +543,7 @@ function displayHistoryRequests(requests) {
             <button 
               onclick="viewCompletedRequestDetails(${req.id})" 
               class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg text-sm font-medium transition">
-              📋 View Completion Details
+              ?? View Completion Details
             </button>
           </div>
         ` : ''}
@@ -670,13 +670,13 @@ async function initRequestForm() {
             // Location exists - auto-fill and make optional
             locationInput.value = printerLocation;
             locationRequired.classList.add('hidden');
-            locationHint.innerHTML = '✓ Location saved. Edit if printer moved.';
+            locationHint.innerHTML = '? Location saved. Edit if printer moved.';
             locationHint.className = 'text-xs text-green-600 mt-1';
           } else {
             // No location - require user to provide
             locationInput.value = '';
             locationRequired.classList.remove('hidden');
-            locationHint.innerHTML = '⚠️ Please provide printer location (Building, Floor, Room)';
+            locationHint.innerHTML = '?? Please provide printer location (Building, Floor, Room)';
             locationHint.className = 'text-xs text-orange-600 mt-1';
           }
 
@@ -689,13 +689,13 @@ async function initRequestForm() {
             // Department exists - auto-fill and make optional
             departmentInput.value = printerDepartment;
             departmentRequired.classList.add('hidden');
-            departmentHint.innerHTML = '✓ Department saved. Edit if changed.';
+            departmentHint.innerHTML = '? Department saved. Edit if changed.';
             departmentHint.className = 'text-xs text-green-600 mt-1';
           } else {
             // No department - require user to provide
             departmentInput.value = '';
             departmentRequired.classList.remove('hidden');
-            departmentHint.innerHTML = '⚠️ Please provide the department/office';
+            departmentHint.innerHTML = '?? Please provide the department/office';
             departmentHint.className = 'text-xs text-orange-600 mt-1';
           }
         });
@@ -865,7 +865,7 @@ async function openApprovalModal(requestId, requestNumber, technicianName) {
           <div class="p-4 space-y-3">
             <!-- Printer Info -->
             <div class="bg-blue-50 rounded-lg p-3">
-              <h4 class="font-semibold text-sm text-gray-800 mb-1">🖨️ Printer</h4>
+              <h4 class="font-semibold text-sm text-gray-800 mb-1">??? Printer</h4>
               <div class="text-sm text-gray-700">${printerName}</div>
               ${req.serial_number ? `<div class="text-xs text-gray-600 mt-1">SN: ${req.serial_number}</div>` : ''}
               ${req.location ? `<div class="text-xs text-gray-600 mt-1">${req.location}</div>` : ''}
@@ -873,7 +873,7 @@ async function openApprovalModal(requestId, requestNumber, technicianName) {
             
             <!-- Technician -->
             <div class="bg-purple-50 rounded-lg p-3">
-              <h4 class="font-semibold text-sm text-gray-800 mb-1">👷 Technician</h4>
+              <h4 class="font-semibold text-sm text-gray-800 mb-1">?? Technician</h4>
               <div class="text-sm text-gray-700">${technicianName}</div>
             </div>
             
@@ -886,7 +886,7 @@ async function openApprovalModal(requestId, requestNumber, technicianName) {
             <!-- Technician Notes -->
             ${req.technician_notes ? `
               <div>
-                <h4 class="font-semibold text-sm text-gray-800 mb-1">📋 Technician Notes</h4>
+                <h4 class="font-semibold text-sm text-gray-800 mb-1">?? Technician Notes</h4>
                 <p class="text-sm text-gray-700 bg-green-50 rounded-lg p-2">${req.technician_notes}</p>
               </div>
             ` : ''}
@@ -894,7 +894,7 @@ async function openApprovalModal(requestId, requestNumber, technicianName) {
             <!-- Completion Photo -->
             ${req.completion_photo_url ? `
               <div>
-                <h4 class="font-semibold text-sm text-gray-800 mb-1">📸 Completion Photo</h4>
+                <h4 class="font-semibold text-sm text-gray-800 mb-1">?? Completion Photo</h4>
                 <div class="bg-gray-50 rounded-lg p-2">
                   <img src="${req.completion_photo_url}" alt="Completion photo" class="w-full rounded-lg shadow-sm cursor-pointer" onclick="window.open('${req.completion_photo_url}', '_blank')">
                   <p class="text-xs text-gray-500 text-center mt-1">Tap to enlarge</p>
@@ -904,15 +904,15 @@ async function openApprovalModal(requestId, requestNumber, technicianName) {
             
             <!-- Feedback Section -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">💬 Your Feedback (Optional)</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1">?? Your Feedback (Optional)</label>
               <textarea id="approval-feedback" rows="3" class="w-full border border-gray-300 rounded-lg p-2 text-sm" placeholder="Share your thoughts about the completed work..."></textarea>
             </div>
             
             <!-- Info Box -->
             <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <p class="text-xs text-blue-800 mb-1">ℹ️ <strong>What happens next?</strong></p>
+              <p class="text-xs text-blue-800 mb-1">?? <strong>What happens next?</strong></p>
               <p class="text-xs text-blue-700"><strong>Approve:</strong> Request marked as completed</p>
-              <p class="text-xs text-blue-700">❌ <strong>Reject:</strong> Sent back for revision</p>
+              <p class="text-xs text-blue-700">? <strong>Reject:</strong> Sent back for revision</p>
             </div>
           </div>
           
@@ -920,7 +920,7 @@ async function openApprovalModal(requestId, requestNumber, technicianName) {
           <div class="sticky bottom-0 bg-white border-t p-4 space-y-2 rounded-b-xl">
             <div class="flex gap-2">
               <button id="approval-reject-btn" class="flex-1 bg-red-600 text-white px-4 py-3 rounded-lg font-medium hover:bg-red-700 transition">
-                ❌ Reject
+                ? Reject
               </button>
               <button id="approval-approve-btn" class="flex-1 bg-green-600 text-white px-4 py-3 rounded-lg font-medium hover:bg-green-700 transition">
                 Approve
@@ -984,7 +984,7 @@ async function handleApproval(approved) {
     const data = await response.json();
     
     if (response.ok) {
-      alert(approved ? 'â Service request approved!' : 'â Service request rejected. Technician will be notified.');
+      alert(approved ? '�?? Service request approved!' : '�? Service request rejected. Technician will be notified.');
       closeApprovalModal();
       // Reload the history page
       await initHistoryPage();
@@ -996,8 +996,8 @@ async function handleApproval(approved) {
     alert('Failed to process approval');
   } finally {
     // Re-enable buttons
-    if (approveBtn) { approveBtn.disabled = false; approveBtn.textContent = 'â Approve'; }
-    if (rejectBtn) { rejectBtn.disabled = false; rejectBtn.textContent = 'â Reject'; }
+    if (approveBtn) { approveBtn.disabled = false; approveBtn.textContent = '�?? Approve'; }
+    if (rejectBtn) { rejectBtn.disabled = false; rejectBtn.textContent = '�? Reject'; }
   }
 }
 
@@ -1045,7 +1045,7 @@ window.viewCompletedRequestDetails = async function(requestId) {
             
             <!-- Printer Info -->
             <div class="bg-blue-50 rounded-lg p-3">
-              <h4 class="font-semibold text-sm text-gray-800 mb-1">🖨️ Printer</h4>
+              <h4 class="font-semibold text-sm text-gray-800 mb-1">??? Printer</h4>
               <div class="text-sm text-gray-700">${printerName}</div>
               ${req.serial_number ? `<div class="text-xs text-gray-600 mt-1">SN: ${req.serial_number}</div>` : ''}
               ${req.location ? `<div class="text-xs text-gray-600 mt-1">${req.location}</div>` : ''}
@@ -1053,7 +1053,7 @@ window.viewCompletedRequestDetails = async function(requestId) {
             
             <!-- Technician -->
             <div class="bg-purple-50 rounded-lg p-3">
-              <h4 class="font-semibold text-sm text-gray-800 mb-1">👷 Technician</h4>
+              <h4 class="font-semibold text-sm text-gray-800 mb-1">?? Technician</h4>
               <div class="text-sm text-gray-700">${technicianName}</div>
             </div>
             
@@ -1066,7 +1066,7 @@ window.viewCompletedRequestDetails = async function(requestId) {
             <!-- Technician Notes -->
             ${req.technician_notes ? `
               <div>
-                <h4 class="font-semibold text-sm text-gray-800 mb-1">📋 Technician Notes</h4>
+                <h4 class="font-semibold text-sm text-gray-800 mb-1">?? Technician Notes</h4>
                 <p class="text-sm text-gray-700 bg-green-50 rounded-lg p-2">${req.technician_notes}</p>
               </div>
             ` : ''}
@@ -1074,7 +1074,7 @@ window.viewCompletedRequestDetails = async function(requestId) {
             <!-- Completion Photo -->
             ${req.completion_photo_url ? `
               <div>
-                <h4 class="font-semibold text-sm text-gray-800 mb-1">📸 Completion Photo</h4>
+                <h4 class="font-semibold text-sm text-gray-800 mb-1">?? Completion Photo</h4>
                 <div class="bg-gray-50 rounded-lg p-2">
                   <img src="${req.completion_photo_url}" alt="Completion photo" class="w-full rounded-lg shadow-sm cursor-pointer" onclick="window.open('${req.completion_photo_url}', '_blank')">
                   <p class="text-xs text-gray-500 text-center mt-1">Tap to enlarge</p>
@@ -1085,7 +1085,7 @@ window.viewCompletedRequestDetails = async function(requestId) {
             <!-- Approval Information -->
             ${(req.approver_first_name && req.approver_last_name) || req.resolution_notes ? `
               <div class="bg-green-50 rounded-lg p-3 border-2 border-green-200">
-                <h4 class="font-semibold text-sm text-gray-800 mb-2">✅ Approval Information</h4>
+                <h4 class="font-semibold text-sm text-gray-800 mb-2">? Approval Information</h4>
                 ${req.approver_first_name && req.approver_last_name ? `
                   <div class="text-sm text-green-800 font-semibold mb-1">
                     Approved by: <span class="capitalize">${req.approver_role ? req.approver_role.replace('_', ' ') : 'Staff'}</span> - ${req.approver_first_name} ${req.approver_last_name}
@@ -1249,7 +1249,7 @@ function displayMaintenanceServices() {
         </button>
         ${service.requester_approval_status === 'pending' ? `
           <button onclick="approveMaintenanceService(${service.id})" class="flex-1 px-3 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition">
-            â Approve
+            �?? Approve
           </button>
         ` : ''}
       </div>
@@ -1351,7 +1351,7 @@ function viewMaintenanceDetails(serviceId) {
   const service = allServices.find(s => s.id === serviceId);
   if (!service) return;
   
-  const partsUsed = service.parts_used || [];
+  const partsUsed = service.items_used || [];
   const partsHtml = partsUsed.length > 0 ? partsUsed.map(p => `
     <div class="bg-gray-50 rounded p-2 text-sm">
       <div class="font-medium">${p.name}</div>
@@ -1423,11 +1423,11 @@ function viewMaintenanceDetails(serviceId) {
       </div>
       ` : service.status === 'approved' ? `
       <div class="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-800">
-        ✓ Already approved
+        ? Already approved
       </div>
       ` : service.status === 'completed' ? `
       <div class="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-800">
-        ✓ Service completed
+        ? Service completed
       </div>
       ` : ''}
     </div>
@@ -1456,7 +1456,7 @@ async function approveMaintenanceService(serviceId) {
     });
     
     if (response.ok) {
-      alert('â Service approved successfully!');
+      alert('�?? Service approved successfully!');
       closeMaintenanceModal();
       await loadMaintenanceServices();
     } else {
@@ -1513,4 +1513,8 @@ window.closeMaintenanceModal = closeMaintenanceModal;
 window.approveMaintenanceService = approveMaintenanceService;
 window.rejectMaintenanceService = rejectMaintenanceService;
 window.handleApproval = handleApproval;
+
+
+
+
 

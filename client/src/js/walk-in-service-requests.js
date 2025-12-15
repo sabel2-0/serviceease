@@ -248,7 +248,7 @@ function renderRequestCard(request) {
                     ${formatDate(request.created_at)}
                 </p>
                 <button class="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                    View Details →
+                    View Details ?
                 </button>
             </div>
         </div>
@@ -276,7 +276,7 @@ async function viewRequestDetails(requestId) {
         }
         
         request = await response.json();
-        partsUsed = request.parts_used || [];
+        partsUsed = request.items_used || [];
     } catch (error) {
         console.error('Error fetching request details:', error);
         // Fall back to cached request if API fails
@@ -688,6 +688,10 @@ function showSuccess(message) {
 function showError(message) {
     alert('Error: ' + message);
 }
+
+
+
+
 
 
 

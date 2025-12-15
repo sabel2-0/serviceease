@@ -54,11 +54,11 @@
 
             // Load notification JS module if not already loaded
             if (!window.TechnicianNotifications) {
-                console.log('🔔 [TOPNAV] Loading notification module...');
+                console.log('?? [TOPNAV] Loading notification module...');
                 const script = document.createElement('script');
                 script.src = '/js/technician-notifications.js';
-                script.onload = () => console.log('🔔 [TOPNAV] Notification module loaded');
-                script.onerror = () => console.error('🔔 [TOPNAV] Failed to load notification module');
+                script.onload = () => console.log('?? [TOPNAV] Notification module loaded');
+                script.onerror = () => console.error('?? [TOPNAV] Failed to load notification module');
                 document.head.appendChild(script);
             }
 
@@ -66,47 +66,47 @@
 
             notificationBtn.addEventListener('click', function(e) {
                 e.stopPropagation();
-                console.log('🔔 [TOPNAV] Notification button clicked');
+                console.log('?? [TOPNAV] Notification button clicked');
                 // open modal
                 if (notificationModal) {
                     notificationModal.classList.remove('hidden');
-                    console.log('🔔 [TOPNAV] Modal opened');
+                    console.log('?? [TOPNAV] Modal opened');
                 }
                 document.body.classList.add('overflow-hidden');
                 
                 // Only load notifications HTML once
                 if (!notificationsLoaded) {
-                    console.log('🔔 [TOPNAV] Fetching notifications component...');
+                    console.log('?? [TOPNAV] Fetching notifications component...');
                     fetch('/components/technician-notifications.html')
                         .then(res => {
-                            console.log('🔔 [TOPNAV] Component fetch response:', res.status);
+                            console.log('?? [TOPNAV] Component fetch response:', res.status);
                             return res.text();
                         })
                         .then(html => {
-                            console.log('🔔 [TOPNAV] Component HTML loaded, length:', html.length);
+                            console.log('?? [TOPNAV] Component HTML loaded, length:', html.length);
                             if (notificationModalContent) {
                                 notificationModalContent.innerHTML = html;
                                 notificationsLoaded = true;
-                                console.log('🔔 [TOPNAV] Component injected into modal');
+                                console.log('?? [TOPNAV] Component injected into modal');
                                 
                                 // Initialize notifications module
                                 setTimeout(() => {
                                     if (window.TechnicianNotifications) {
-                                        console.log('🔔 [TOPNAV] Initializing TechnicianNotifications module...');
+                                        console.log('?? [TOPNAV] Initializing TechnicianNotifications module...');
                                         window.TechnicianNotifications.init();
                                     } else {
-                                        console.error('🔔 [TOPNAV] TechnicianNotifications module not loaded!');
+                                        console.error('?? [TOPNAV] TechnicianNotifications module not loaded!');
                                     }
                                 }, 100);
                             }
                         })
                         .catch(err => {
-                            console.error('🔔 [TOPNAV] Failed to load notifications component', err);
+                            console.error('?? [TOPNAV] Failed to load notifications component', err);
                             if (notificationModalContent) notificationModalContent.innerHTML = '<div class="p-4 text-center text-gray-500">Unable to load notifications.</div>';
                         });
                 } else {
                     // If already loaded, show loading and refresh
-                    console.log('🔔 [TOPNAV] Notifications already loaded, refreshing data...');
+                    console.log('?? [TOPNAV] Notifications already loaded, refreshing data...');
                     const loadingEl = document.getElementById('notifications-loading');
                     const listEl = document.getElementById('technician-notifications-list');
                     const emptyEl = document.getElementById('empty-technician-notifications');
@@ -309,3 +309,7 @@
         </div>
     </div>
 </div>
+
+
+
+

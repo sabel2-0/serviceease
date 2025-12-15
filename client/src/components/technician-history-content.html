@@ -1,4 +1,4 @@
-﻿<!-- History Tab Content Component -->
+<!-- History Tab Content Component -->
 <div class="min-h-screen bg-gray-50">
     <div class="container mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-24 max-w-7xl">
         <!-- Page Header -->
@@ -380,9 +380,9 @@
         
         // Debug: Log the request data and parts
         console.log('Opening details modal for request:', request);
-        console.log('Parts used:', request.parts_used);
-        console.log('Parts used is array:', Array.isArray(request.parts_used));
-        console.log('Parts used length:', request.parts_used ? request.parts_used.length : 0);
+        console.log('Parts used:', request.items_used);
+        console.log('Parts used is array:', Array.isArray(request.items_used));
+        console.log('Parts used length:', request.items_used ? request.items_used.length : 0);
         
         content.innerHTML = `
             <!-- Request Header Card -->
@@ -551,7 +551,7 @@
             </div>
             ` : ''}
             
-            ${request.parts_used && request.parts_used.length > 0 ? `
+            ${request.items_used && request.items_used.length > 0 ? `
             <!-- Parts Used -->
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 mb-4">
                 <div class="flex items-center mb-4">
@@ -560,10 +560,10 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
                         </svg>
                     </div>
-                    <h3 class="text-base sm:text-lg font-bold text-gray-900">Parts Used (${request.parts_used.length})</h3>
+                    <h3 class="text-base sm:text-lg font-bold text-gray-900">Parts Used (${request.items_used.length})</h3>
                 </div>
                 <div class="space-y-3">
-                    ${request.parts_used.map((part, idx) => `
+                    ${request.items_used.map((part, idx) => `
                         <div class="bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-200">
                             <div class="flex items-start justify-between mb-2">
                                 <div class="flex-1 mr-3">
@@ -805,10 +805,10 @@
                 console.log('Service history data:', serviceHistory);
                 console.log('Maintenance Services data:', MaintenanceServices);
                 
-                // Debug: Log parts_used for first service request
+                // Debug: Log items_used for first service request
                 if (serviceHistory.length > 0) {
-                    console.log('First service request parts_used:', serviceHistory[0].parts_used);
-                    console.log('Parts_used is array:', Array.isArray(serviceHistory[0].parts_used));
+                    console.log('First service request items_used:', serviceHistory[0].items_used);
+                    console.log('items_used is array:', Array.isArray(serviceHistory[0].items_used));
                 }
                 
                 allServiceHistory = serviceHistory;
@@ -848,6 +848,10 @@
     
 })();
 </script>
+
+
+
+
 
 
 

@@ -321,7 +321,7 @@
         
         // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🔧 Initializing Inventory Page');
+            console.log('?? Initializing Inventory Page');
             loadInventory();
             setupEventListeners();
         });
@@ -354,7 +354,7 @@
         
         // Load inventory from API
         async function loadInventory() {
-            console.log('📦 Loading technician inventory...');
+            console.log('?? Loading technician inventory...');
             showLoadingState();
             
             try {
@@ -382,7 +382,7 @@
                 }
                 
                 const data = await response.json();
-                console.log('📦 Technician inventory data received:', data);
+                console.log('?? Technician inventory data received:', data);
                 
                 allParts = Array.isArray(data) ? data : [];
                 
@@ -396,7 +396,7 @@
                 }
                 
             } catch (error) {
-                console.error('❌ Error loading technician inventory:', error);
+                console.error('? Error loading technician inventory:', error);
                 showEmptyState('Unable to load inventory. This might be because no parts have been assigned to you yet, or there was a connection error. Contact an administrator if this problem persists.');
             }
         }
@@ -517,8 +517,8 @@
                         </button>
                     </div>
                     
-                    ${part.assigned_at ? `<p class="text-xs text-gray-500 mt-2">📅 Assigned: ${new Date(part.assigned_at).toLocaleDateString()}</p>` : ''}
-                    ${part.notes ? `<p class="text-xs text-gray-600 mt-1">📝 ${part.notes}</p>` : ''}
+                    ${part.assigned_at ? `<p class="text-xs text-gray-500 mt-2">?? Assigned: ${new Date(part.assigned_at).toLocaleDateString()}</p>` : ''}
+                    ${part.notes ? `<p class="text-xs text-gray-600 mt-1">?? ${part.notes}</p>` : ''}
                 </div>
             `;
         }
@@ -678,3 +678,7 @@
     </script>
 </body>
 </html>
+
+
+
+

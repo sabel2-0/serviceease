@@ -45,7 +45,7 @@
                 institution_address: data.institution_address
             };
             localStorage.setItem('user', JSON.stringify(updatedUser));
-            console.log('✅ Updated localStorage user with institution_id:', data.institution_id);
+            console.log('? Updated localStorage user with institution_id:', data.institution_id);
             
             // Dispatch custom event to notify other scripts that profile is loaded
             window.dispatchEvent(new CustomEvent('institutionAdminProfileLoaded', { detail: data }));
@@ -158,7 +158,7 @@
                     response = await fetch(path);
                     if (response.ok) {
                         html = await response.text();
-                        console.log(`✓ Loaded header from: ${path}`);
+                        console.log(`? Loaded header from: ${path}`);
                         break;
                     }
                 } catch (e) {
@@ -187,7 +187,7 @@
                     if (subtitleEl) subtitleEl.textContent = options.subtitle;
                 }
                 
-                console.log('✓ institutionAdmin header loaded successfully');
+                console.log('? institutionAdmin header loaded successfully');
                 
                 // Now load the profile data and initialize interactions
                 await loadinstitutionAdminProfile();
@@ -224,6 +224,10 @@
         }
     }
 })();
+
+
+
+
 
 
 

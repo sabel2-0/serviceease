@@ -617,7 +617,7 @@ window.updatePrinterLocationAndDepartment = function() {
         return response.json();
     })
     .then(data => {
-        statusElement.textContent = '✓ Location and department updated successfully!';
+        statusElement.textContent = '? Location and department updated successfully!';
         statusElement.className = 'text-xs mt-2 text-green-600';
         statusElement.classList.remove('hidden');
         
@@ -630,7 +630,7 @@ window.updatePrinterLocationAndDepartment = function() {
     })
     .catch(error => {
         console.error('Error updating printer information:', error);
-        statusElement.textContent = '✗ Failed to update information';
+        statusElement.textContent = '? Failed to update information';
         statusElement.className = 'text-xs mt-2 text-red-600';
         statusElement.classList.remove('hidden');
         
@@ -642,6 +642,10 @@ window.updatePrinterLocationAndDepartment = function() {
         updateBtn.innerHTML = '<i class="fas fa-save mr-1"></i>Update Location';
     });
 }
+
+
+
+
 
 
 

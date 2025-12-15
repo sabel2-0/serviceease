@@ -259,7 +259,7 @@ class AdminPartsRequestsManager {
                         <div class="flex items-center text-xs text-gray-500">
                             <i class="fas fa-history text-gray-400 mr-3 w-4 flex-shrink-0"></i>
                             <span>Before: <span class="font-semibold text-blue-600">${request.available_stock}</span></span>
-                            <span class="mx-2">→</span>
+                            <span class="mx-2">?</span>
                             <span>After: <span class="font-semibold ${(request.available_stock - request.quantity_requested) > 0 ? 'text-green-600' : 'text-orange-600'}">${request.available_stock - request.quantity_requested}</span></span>
                         </div>
                         ` : `
@@ -805,6 +805,10 @@ document.addEventListener('DOMContentLoaded', function() {
     window.partsRequestsManager = new AdminPartsRequestsManager();
     window.AdminPartsRequestsManager = AdminPartsRequestsManager;
 });
+
+
+
+
 
 
 

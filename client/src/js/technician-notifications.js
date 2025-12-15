@@ -220,7 +220,7 @@ window.TechnicianNotifications = {
             items.push({
                 id: `parts-${p.id}`,
                 title: `Items Request ${p.status ? p.status.replace('_', ' ') : ''}`,
-                message: `${p.quantity_requested} x ${p.part_name || p.item_id} â€” ${p.reason || ''}`,
+                message: `${p.quantity_requested} x ${p.part_name || p.item_id} — ${p.reason || ''}`,
                 type: `parts_${p.status || 'pending'}`,
                 created_at: p.created_at,
                 reference_id: p.id,
@@ -233,7 +233,7 @@ window.TechnicianNotifications = {
             items.push({
                 id: `req-${r.id}`,
                 title: `Service Request Assigned`,
-                message: `${r.request_number || '#' + r.id} â€” ${r.description || r.issue || ''}`,
+                message: `${r.request_number || '#' + r.id} — ${r.description || r.issue || ''}`,
                 type: 'service_request',
                 created_at: r.created_at || r.assigned_at || r.updated_at,
                 reference_id: r.id,
@@ -355,6 +355,10 @@ window.TechnicianNotifications = {
 };
 
 console.log('[NOTIF-JS] Module ready, use window.TechnicianNotifications.init() to start');
+
+
+
+
 
 
 

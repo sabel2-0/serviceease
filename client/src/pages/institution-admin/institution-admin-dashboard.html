@@ -234,7 +234,7 @@
                             <i class="fas fa-print text-blue-600 mr-2"></i>${service.printer_name}
                         </div>
                         <div class="text-xs text-gray-600 mt-1">
-                            ${service.institution_name} • ${service.technician_name}
+                            ${service.institution_name} � ${service.technician_name}
                         </div>
                     </div>
                     <div class="text-right">
@@ -249,7 +249,7 @@
             if (data.services.length > 5) {
                 servicesList.innerHTML += `
                     <button onclick="viewFullServiceReport()" class="w-full text-center text-sm text-blue-600 hover:text-blue-800 py-2">
-                        View all ${data.services.length} services →
+                        View all ${data.services.length} services ?
                     </button>
                 `;
             }
@@ -261,5 +261,9 @@
     </script>
 </body>
 </html>
+
+
+
+
 
 

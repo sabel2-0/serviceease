@@ -967,7 +967,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                         <div>
                             <h3 class="text-2xl font-bold text-gray-900">${institution.institution_name}</h3>
-                            <p class="text-gray-600">${formatInstitutionType(institution.institution_type)} • Team of ${institutionAssignments.length}</p>
+                            <p class="text-gray-600">${formatInstitutionType(institution.institution_type)} � Team of ${institutionAssignments.length}</p>
                         </div>
                     </div>
                     <button onclick="this.closest('.fixed').remove()" class="p-3 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">
@@ -1222,7 +1222,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 throw new Error(result.error || result.message || 'Failed to assign client');
             }
 
-            console.log('[ASSIGN] ✓ Assignment successful!');
+            console.log('[ASSIGN] ? Assignment successful!');
             showSuccessMessage('Client assigned successfully!');
             hideAddAssignmentForm();
             
@@ -1748,6 +1748,10 @@ document.addEventListener('DOMContentLoaded', function() {
         alertDiv.classList.remove('hidden');
     }
 });
+
+
+
+
 
 
 

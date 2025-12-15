@@ -27,7 +27,6 @@ router.get('/history', auth, async (req, res) => {
             SELECT 
                 vs.id,
                 vs.service_description as description,
-                vs.parts_used,
                 vs.completion_photo as completion_photo_url,
                 vs.status,
                 vs.created_at,
@@ -63,39 +62,21 @@ router.get('/history', auth, async (req, res) => {
         
         console.log(`✅ Found ${services.length} maintenance services for technician ${technicianId}`);
         
-        // Parse and enrich parts_used JSON for each service
+        // Fetch items_used for each service from service_items_used table
         for (const service of services) {
-            if (service.parts_used) {
-                try {
-                    const parsedParts = JSON.parse(service.parts_used);
-                    
-                    // Enrich each part with name from database
-                    if (Array.isArray(parsedParts) && parsedParts.length > 0) {
-                        service.parts_used = await Promise.all(parsedParts.map(async (part) => {
-                            // Handle both old (part_id) and new (item_id) field names
-                            const partId = part.item_id || part.part_id;
-                            if (!partId) return part;
-                            
-                            const [partInfo] = await db.query(
-                                'SELECT name, brand FROM printer_items WHERE id = ?',
-                                [partId]
-                            );
-                            return {
-                                ...part,
-                                item_id: partId,
-                                name: partInfo[0]?.name || 'Unknown Part',
-                                brand: partInfo[0]?.brand || null
-                            };
-                        }));
-                    } else {
-                        service.parts_used = [];
-                    }
-                } catch (e) {
-                    service.parts_used = [];
-                }
-            } else {
-                service.parts_used = [];
-            }
+            const [items] = await db.query(`
+                SELECT 
+                    siu.item_id,
+                    siu.quantity_used as qty,
+                    siu.notes as unit,
+                    pi.name,
+                    pi.brand
+                FROM service_items_used siu
+                INNER JOIN printer_items pi ON siu.item_id = pi.id
+                WHERE siu.service_id = ?
+            `, [service.id]);
+            
+            service.items_used = items;
         }
         
         console.log(`📤 Returning ${services.length} maintenance services`);
@@ -142,12 +123,22 @@ router.get('/my-submissions', auth, async (req, res) => {
         
         const [services] = await db.query(query, params);
         
-        // Parse JSON fields
-        services.forEach(service => {
-            if (service.parts_used) {
-                service.parts_used = JSON.parse(service.parts_used);
-            }
-        });
+        // Fetch items_used for each service from service_items_used table
+        for (const service of services) {
+            const [items] = await db.query(`
+                SELECT 
+                    siu.item_id,
+                    siu.quantity_used as qty,
+                    siu.notes as unit,
+                    pi.name,
+                    pi.brand
+                FROM service_items_used siu
+                INNER JOIN printer_items pi ON siu.item_id = pi.id
+                WHERE siu.service_id = ?
+            `, [service.id]);
+            
+            service.items_used = items;
+        }
         
         res.json(services);
     } catch (error) {
@@ -411,7 +402,6 @@ router.get('/:id', auth, async (req, res) => {
                 ms.id,
                 CONCAT('MS-', ms.id) as service_number,
                 ms.service_description,
-                ms.parts_used,
                 ms.completion_photo,
                 ms.status,
                 ms.created_at,
@@ -440,6 +430,21 @@ router.get('/:id', auth, async (req, res) => {
         }
         
         const service = services[0];
+        
+        // Fetch items_used from service_items_used table
+        const [items] = await db.query(`
+            SELECT 
+                siu.item_id,
+                siu.quantity_used as qty,
+                siu.notes as unit,
+                pi.name,
+                pi.brand
+            FROM service_items_used siu
+            INNER JOIN printer_items pi ON siu.item_id = pi.id
+            WHERE siu.service_id = ?
+        `, [service.id]);
+        
+        service.items_used = items;
         
         // Role-based access control
         if (userRole === 'admin' || userRole === 'operations_officer') {
@@ -483,7 +488,7 @@ router.post('/', auth, async (req, res) => {
             printer_id,
             institution_id,
             service_description,
-            parts_used,
+            items_used,
             completion_photo
         } = req.body;
         
@@ -492,7 +497,7 @@ router.post('/', auth, async (req, res) => {
             printer_id,
             institution_id,
             service_description: service_description?.substring(0, 50),
-            parts_count: parts_used?.length || 0
+            parts_count: items_used?.length || 0
         });
         
         // Validate required fields
@@ -588,24 +593,6 @@ router.post('/', auth, async (req, res) => {
         const requester_id = printer[0].requester_id;
         console.log('👤 institution_user ID:', requester_id);
         
-        // Enrich parts_used with part names for display
-        let enrichedPartsUsed = null;
-        if (parts_used && parts_used.length > 0) {
-            enrichedPartsUsed = await Promise.all(parts_used.map(async (part) => {
-                const [partInfo] = await db.query(
-                    'SELECT name, brand FROM printer_items WHERE id = ?',
-                    [part.item_id]
-                );
-                return {
-                    item_id: part.item_id,
-                    name: partInfo[0]?.name || 'Unknown Part',
-                    brand: partInfo[0]?.brand || null,
-                    qty: part.qty,
-                    unit: part.unit
-                };
-            }));
-        }
-        
         // Insert maintenance service
         const insertQuery = `
             INSERT INTO maintenance_services (
@@ -613,10 +600,9 @@ router.post('/', auth, async (req, res) => {
                 printer_id,
                 institution_id,
                 service_description,
-                parts_used,
                 completion_photo,
                 status
-            ) VALUES (?, ?, ?, ?, ?, ?, 'pending')
+            ) VALUES (?, ?, ?, ?, ?, 'pending')
         `;
         
         console.log('💾 Inserting maintenance service...');
@@ -625,9 +611,30 @@ router.post('/', auth, async (req, res) => {
             printer_id,
             institution_id,
             service_description,
-            enrichedPartsUsed ? JSON.stringify(enrichedPartsUsed) : null,
             completion_photo || null
         ]);
+        
+        const serviceId = result.insertId;
+        console.log('✅ Service inserted, ID:', serviceId);
+        
+        // Insert items into service_items_used table
+        if (items_used && items_used.length > 0) {
+            const itemsQuery = `
+                INSERT INTO service_items_used (service_id, item_id, quantity_used, used_by, notes)
+                VALUES (?, ?, ?, ?, ?)
+            `;
+            
+            for (const item of items_used) {
+                await db.query(itemsQuery, [
+                    serviceId,
+                    item.item_id,
+                    item.qty,
+                    technicianId,
+                    item.unit || null
+                ]);
+            }
+            console.log(`✅ Inserted ${items_used.length} items into service_items_used`);
+        }
         
         console.log('✅ Service inserted, ID:', result.insertId);
         
@@ -736,39 +743,21 @@ router.get('/institution_admin/pending', auth, async (req, res) => {
         
         console.log('✅ Found', services.length, 'Maintenance Services');
         
-        // Parse and enrich parts_used JSON for each service
+        // Fetch items_used for each service from service_items_used table
         for (const service of services) {
-            if (service.parts_used) {
-                try {
-                    const parsedParts = JSON.parse(service.parts_used);
-                    
-                    // Enrich each part with name from database
-                    if (Array.isArray(parsedParts) && parsedParts.length > 0) {
-                        service.parts_used = await Promise.all(parsedParts.map(async (part) => {
-                            // Handle both old (part_id) and new (item_id) field names
-                            const partId = part.item_id || part.part_id;
-                            if (!partId) return part;
-                            
-                            const [partInfo] = await db.query(
-                                'SELECT name, brand FROM printer_items WHERE id = ?',
-                                [partId]
-                            );
-                            return {
-                                ...part,
-                                item_id: partId,
-                                name: partInfo[0]?.name || 'Unknown Part',
-                                brand: partInfo[0]?.brand || null
-                            };
-                        }));
-                    } else {
-                        service.parts_used = [];
-                    }
-                } catch (e) {
-                    service.parts_used = [];
-                }
-            } else {
-                service.parts_used = [];
-            }
+            const [items] = await db.query(`
+                SELECT 
+                    siu.item_id,
+                    siu.quantity_used as qty,
+                    siu.notes as unit,
+                    pi.name,
+                    pi.brand
+                FROM service_items_used siu
+                INNER JOIN printer_items pi ON siu.item_id = pi.id
+                WHERE siu.service_id = ?
+            `, [service.id]);
+            
+            service.items_used = items;
         }
         
         res.json({ services });
@@ -825,39 +814,21 @@ router.get('/institution_admin/history', auth, async (req, res) => {
         
         console.log('✅ Found', services.length, 'Maintenance Services in history');
         
-        // Parse and enrich parts_used JSON for each service
+        // Fetch items_used for each service from service_items_used table
         for (const service of services) {
-            if (service.parts_used) {
-                try {
-                    const parsedParts = JSON.parse(service.parts_used);
-                    
-                    // Enrich each part with name from database
-                    if (Array.isArray(parsedParts) && parsedParts.length > 0) {
-                        service.parts_used = await Promise.all(parsedParts.map(async (part) => {
-                            // Handle both old (part_id) and new (item_id) field names
-                            const partId = part.item_id || part.part_id;
-                            if (!partId) return part;
-                            
-                            const [partInfo] = await db.query(
-                                'SELECT name, brand FROM printer_items WHERE id = ?',
-                                [partId]
-                            );
-                            return {
-                                ...part,
-                                item_id: partId,
-                                name: partInfo[0]?.name || 'Unknown Part',
-                                brand: partInfo[0]?.brand || null
-                            };
-                        }));
-                    } else {
-                        service.parts_used = [];
-                    }
-                } catch (e) {
-                    service.parts_used = [];
-                }
-            } else {
-                service.parts_used = [];
-            }
+            const [items] = await db.query(`
+                SELECT 
+                    siu.item_id,
+                    siu.quantity_used as qty,
+                    siu.notes as unit,
+                    pi.name,
+                    pi.brand
+                FROM service_items_used siu
+                INNER JOIN printer_items pi ON siu.item_id = pi.id
+                WHERE siu.service_id = ?
+            `, [service.id]);
+            
+            service.items_used = items;
         }
         
         res.json({ services });
@@ -891,8 +862,8 @@ router.patch('/institution_admin/:id/approve', auth, async (req, res) => {
         console.log('🔍 Service data retrieved:', {
             id: service[0]?.id,
             technician_id: service[0]?.technician_id,
-            parts_used_type: typeof service[0]?.parts_used,
-            parts_used_value: service[0]?.parts_used,
+            items_used_type: typeof service[0]?.items_used,
+            items_used_value: service[0]?.items_used,
             status: service[0]?.status
         });
         
@@ -929,10 +900,16 @@ router.patch('/institution_admin/:id/approve', auth, async (req, res) => {
         );
         
         // Deduct parts from inventory after institution_admin approval
-        if (service[0].parts_used) {
-            const parts_used = JSON.parse(service[0].parts_used);
+        // Fetch items_used from service_items_used table
+        const [itemsUsedRows] = await db.query(`
+            SELECT item_id, quantity_used as qty
+            FROM service_items_used
+            WHERE service_id = ?
+        `, [serviceId]);
+        
+        if (itemsUsedRows && itemsUsedRows.length > 0) {
             console.log('📦 Deducting parts from inventory after approval...');
-            console.log('📦 Parts to deduct:', JSON.stringify(parts_used, null, 2));
+            console.log('📦 Parts to deduct:', JSON.stringify(itemsUsedRows, null, 2));
             console.log('👤 Technician ID:', service[0].technician_id);
             
             // First, let's see what's in the technician's inventory
@@ -945,7 +922,7 @@ router.patch('/institution_admin/:id/approve', auth, async (req, res) => {
             );
             console.log('Technician inventory:', JSON.stringify(techInventory, null, 2));
             
-            for (const part of parts_used) {
+            for (const part of itemsUsedRows) {
                 try {
                     console.log(`\n🔍 Processing item_id: ${part.item_id}`);
                     console.log(`   Qty to deduct: ${part.qty}, Unit: ${part.unit}`);
@@ -984,7 +961,7 @@ router.patch('/institution_admin/:id/approve', auth, async (req, res) => {
                 }
             }
         } else {
-            console.log('📦 No parts to deduct (parts_used is null/empty)');
+            console.log('📦 No parts to deduct (items_used is null/empty)');
         }
         
         // Notify technician that service was approved and completed
@@ -1109,16 +1086,22 @@ router.get('/institution_user/pending', auth, async (req, res) => {
         
         console.log('✅ Found', services.length, 'Maintenance Services for institution_user');
         
-        // Parse JSON fields
-        services.forEach(service => {
-            if (service.parts_used) {
-                try {
-                    service.parts_used = JSON.parse(service.parts_used);
-                } catch (e) {
-                    service.parts_used = [];
-                }
-            }
-        });
+        // Fetch items_used for each service from service_items_used table
+        for (const service of services) {
+            const [items] = await db.query(`
+                SELECT 
+                    siu.item_id,
+                    siu.quantity_used as qty,
+                    siu.notes as unit,
+                    pi.name,
+                    pi.brand
+                FROM service_items_used siu
+                INNER JOIN printer_items pi ON siu.item_id = pi.id
+                WHERE siu.service_id = ?
+            `, [service.id]);
+            
+            service.items_used = items;
+        }
         
         res.json({ services });
     } catch (error) {
@@ -1160,16 +1143,22 @@ router.get('/institution_user/history', auth, async (req, res) => {
         
         const [services] = await db.query(query, [requester_id, requester_id]);
         
-        // Parse JSON fields
-        services.forEach(service => {
-            if (service.parts_used) {
-                try {
-                    service.parts_used = JSON.parse(service.parts_used);
-                } catch (e) {
-                    service.parts_used = [];
-                }
-            }
-        });
+        // Fetch items_used for each service from service_items_used table
+        for (const service of services) {
+            const [items] = await db.query(`
+                SELECT 
+                    siu.item_id,
+                    siu.quantity_used as qty,
+                    siu.notes as unit,
+                    pi.name,
+                    pi.brand
+                FROM service_items_used siu
+                INNER JOIN printer_items pi ON siu.item_id = pi.id
+                WHERE siu.service_id = ?
+            `, [service.id]);
+            
+            service.items_used = items;
+        }
         
         res.json({ services });
     } catch (error) {
@@ -1227,13 +1216,19 @@ router.patch('/institution_user/:id/approve', auth, async (req, res) => {
         );
         
         // Deduct parts from inventory after approval
-        if (service[0].parts_used) {
-            const parts_used = JSON.parse(service[0].parts_used);
+        // Fetch items_used from service_items_used table
+        const [itemsUsedRows] = await db.query(`
+            SELECT item_id, quantity_used as qty
+            FROM service_items_used
+            WHERE service_id = ?
+        `, [serviceId]);
+        
+        if (itemsUsedRows && itemsUsedRows.length > 0) {
             console.log('?? Deducting parts from inventory after institution_user approval...');
-            console.log('?? Parts to deduct:', JSON.stringify(parts_used, null, 2));
+            console.log('?? Parts to deduct:', JSON.stringify(itemsUsedRows, null, 2));
             console.log('?? Technician ID:', service[0].technician_id);
             
-            for (const part of parts_used) {
+            for (const part of itemsUsedRows) {
                 try {
                     console.log(`\n?? Processing item_id: ${part.item_id}`);
                     console.log(`   Qty to deduct: ${part.qty}, Unit: ${part.unit}`);
@@ -1272,7 +1267,7 @@ router.patch('/institution_user/:id/approve', auth, async (req, res) => {
                 }
             }
         } else {
-            console.log('?? No parts to deduct (parts_used is null/empty)');
+            console.log('?? No parts to deduct (items_used is null/empty)');
         }
         
         // Notify technician
@@ -1458,16 +1453,31 @@ router.get('/institution_admin/monthly-billing', auth, async (req, res) => {
             new Date(b.completed_at) - new Date(a.completed_at)
         );
         
-        // Parse parts_used JSON
-        services.forEach(service => {
-            if (service.parts_used) {
+        // Fetch items_used for maintenance services from service_items_used table
+        for (const service of services) {
+            if (service.service_type === 'maintenance') {
+                const [items] = await db.query(`
+                    SELECT 
+                        siu.item_id,
+                        siu.quantity_used as qty,
+                        siu.notes as unit,
+                        pi.name,
+                        pi.brand
+                    FROM service_items_used siu
+                    INNER JOIN printer_items pi ON siu.item_id = pi.id
+                    WHERE siu.service_id = ?
+                `, [service.id]);
+                
+                service.items_used = items;
+            } else if (service.items_used) {
+                // For service_requests, parse JSON if needed
                 try {
-                    service.parts_used = JSON.parse(service.parts_used);
+                    service.items_used = JSON.parse(service.items_used);
                 } catch (e) {
-                    service.parts_used = [];
+                    service.items_used = [];
                 }
             }
-        });
+        }
         
         // Calculate summary statistics
         const uniquePrinters = new Set(services.map(s => s.printer_id)).size;
@@ -1546,6 +1556,7 @@ router.get('/institution_admin/monthly-billing', auth, async (req, res) => {
 });
 
 module.exports = router;
+
 
 
 

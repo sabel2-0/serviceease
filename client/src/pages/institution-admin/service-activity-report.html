@@ -482,7 +482,7 @@
                             </div>
                             <div class="text-sm text-gray-600 mt-1">
                                 ${service.brand || ''} ${service.model || ''} 
-                                ${service.serial_number ? `â€¢ SN: ${service.serial_number}` : ''}
+                                ${service.serial_number ? `• SN: ${service.serial_number}` : ''}
                             </div>
                             <div class="text-sm text-gray-600 mt-1">
                                 <i class="fas fa-user text-gray-400 mr-1"></i>
@@ -527,8 +527,8 @@
             // CSV rows
             allServices.forEach(service => {
                 const date = new Date(service.completed_at);
-                const partsUsed = service.parts_used ? 
-                    service.parts_used.map(p => `${p.name || p.part_name} (${p.qty} ${p.unit})`).join('; ') : 
+                const partsUsed = service.items_used ? 
+                    service.items_used.map(p => `${p.name || p.part_name} (${p.qty} ${p.unit})`).join('; ') : 
                     '';
                 
                 csv += `"${date.toLocaleDateString()}","${date.toLocaleTimeString()}",`;
@@ -553,3 +553,7 @@
     </script>
 </body>
 </html>
+
+
+
+

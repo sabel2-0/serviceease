@@ -36,9 +36,9 @@
         }
     </script>
     
-    <!-- 🎨 Glassmorphism Card Styles -->
+    <!-- ?? Glassmorphism Card Styles -->
     <style>
-        /* 🌍 GLOBAL MOBILE VIEWPORT CONSTRAINTS */
+        /* ?? GLOBAL MOBILE VIEWPORT CONSTRAINTS */
         @media (max-width: 768px) {
             * {
                 box-sizing: border-box !important;
@@ -58,7 +58,7 @@
             }
         }
 
-        /* 📱 PARTS GRID BOTTOM SPACING */
+        /* ?? PARTS GRID BOTTOM SPACING */
         #partsGrid {
             margin-bottom: 2rem !important;
         }
@@ -68,7 +68,7 @@
             margin-bottom: 1rem !important;
         }
 
-        /* 🔥 FORCE GLASSMORPHISM - Maximum Priority Override */
+        /* ?? FORCE GLASSMORPHISM - Maximum Priority Override */
         .service-requests-container .glass-card-container .glass-card {
             background: rgba(255, 255, 255, 0.85) !important;
             backdrop-filter: blur(20px) !important;
@@ -78,7 +78,7 @@
             border-radius: 16px !important;
         }
 
-        /* 📱 ENHANCED MOBILE GLASSMORPHISM */
+        /* ?? ENHANCED MOBILE GLASSMORPHISM */
         @media (max-width: 768px) {
             .service-requests-container .glass-card-container .glass-card.mobile-optimized {
                 background: rgba(255, 255, 255, 0.95) !important;
@@ -165,7 +165,7 @@
             }
         }
 
-        /* 📱 GLOBAL MOBILE LAYOUT OPTIMIZATION */
+        /* ?? GLOBAL MOBILE LAYOUT OPTIMIZATION */
         @media (max-width: 768px) {
             body {
                 margin: 0 !important;
@@ -212,7 +212,7 @@
             }
         }
 
-        /* 🎨 Glassmorphism Card Styles - Enhanced Priority */
+        /* ?? Glassmorphism Card Styles - Enhanced Priority */
         .glass-card-container {
             animation: slideInUp 0.6s ease-out forwards;
             animation-delay: var(--animation-delay, 0ms);
@@ -253,7 +253,7 @@
             border-color: rgba(255, 255, 255, 0.5) !important;
         }
 
-        /* 📱 COMPREHENSIVE MOBILE OPTIMIZATION */
+        /* ?? COMPREHENSIVE MOBILE OPTIMIZATION */
         @media (max-width: 768px) {
             /* Body and viewport constraints for mobile */
             body {
@@ -422,7 +422,7 @@
             }
         }
 
-        /* 📱 MOBILE CONTENT OPTIMIZATION & READABILITY */
+        /* ?? MOBILE CONTENT OPTIMIZATION & READABILITY */
         
         @media (max-width: 640px) {
             /* Ultra-compact mobile card spacing */
@@ -593,7 +593,7 @@
             }
         }
 
-        /* 📱 ADVANCED MOBILE LAYOUT OPTIMIZATIONS */
+        /* ?? ADVANCED MOBILE LAYOUT OPTIMIZATIONS */
         
         /* Improved text contrast and readability */
         @media (max-width: 768px) {
@@ -647,7 +647,7 @@
             }
         }
 
-        /* 📱 MOBILE ACCESSIBILITY IMPROVEMENTS */
+        /* ?? MOBILE ACCESSIBILITY IMPROVEMENTS */
         
         /* High contrast mode support */
         @media (prefers-contrast: high) {
@@ -682,7 +682,7 @@
             }
         }
 
-        /* 📱 ORIENTATION & DEVICE SIZE OPTIMIZATION */
+        /* ?? ORIENTATION & DEVICE SIZE OPTIMIZATION */
         
         /* Landscape orientation optimizations */
         @media (max-width: 768px) and (orientation: landscape) {
@@ -894,7 +894,7 @@
                 0 12px 40px rgba(31, 38, 135, 0.25) !important;
         }
 
-        /* 📱 FINAL MOBILE POLISH & PERFORMANCE */
+        /* ?? FINAL MOBILE POLISH & PERFORMANCE */
         
         /* GPU acceleration for smooth animations */
         .glass-card.mobile-optimized,
@@ -947,7 +947,7 @@
             }
         }
 
-        /* 📱 MOBILE MODAL OPTIMIZATION */
+        /* ?? MOBILE MODAL OPTIMIZATION */
         @media (max-width: 768px) {
             .modal-content {
                 width: 95% !important;
@@ -997,7 +997,7 @@
             }
         }
 
-        /* 📱 ENHANCED MOBILE TOUCH INTERACTIONS */
+        /* ?? ENHANCED MOBILE TOUCH INTERACTIONS */
         
         /* Touch optimization */
         .glass-card.mobile-optimized {
@@ -1380,7 +1380,7 @@
             transform: translateX(2px) !important;
         }
 
-        /* 🎨 Enhanced Mobile Card Components */
+        /* ?? Enhanced Mobile Card Components */
         
         /* Mobile-first title styling */
         .glass-card-title.mobile-title {
@@ -1584,7 +1584,7 @@
             transform: translateY(-2px) scale(1.01);
         }
 
-        /* 🌟 Glassmorphism Modal Styles - FULLSCREEN with Bottom Nav Fix */
+        /* ?? Glassmorphism Modal Styles - FULLSCREEN with Bottom Nav Fix */
         .glass-modal {
             background: rgba(255, 255, 255, 0.9);
             backdrop-filter: blur(25px);
@@ -2199,7 +2199,7 @@
                 font-size: 14px;
             }
             
-            /* 🎯 Complete Service Mobile Enhancements */
+            /* ?? Complete Service Mobile Enhancements */
             #jobCompletionModal .glass-modal-content {
                 -webkit-overflow-scrolling: touch !important;
                 scroll-behavior: smooth !important;
@@ -2288,7 +2288,7 @@
             }
         }
         
-        /* 🎛️ TOGGLE SWITCH STYLES */
+        /* ??? TOGGLE SWITCH STYLES */
         .toggle-switch {
             position: relative;
             width: 50px;
@@ -2548,7 +2548,7 @@
                             <div class="flex justify-between items-center mb-4">
                                 <h2 class="text-lg font-semibold text-slate-700">Request Items</h2>
                                 <button id="backToOptionsFromRequestBtn" class="px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                                    ← Back to Options
+                                    ? Back to Options
                                 </button>
                             </div>
                             
@@ -2939,14 +2939,14 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Check authentication status
             if (!localStorage.getItem('token') || !localStorage.getItem('user')) {
-                console.log('❌ No authentication found, redirecting to login...');
+                console.log('? No authentication found, redirecting to login...');
                 window.location.href = '/pages/login.html';
                 return;
             }
             
             // Function to initialize top navigation after it's loaded
             window.initializeTopNavigation = function() {
-                console.log('🔧 Initializing top navigation...');
+                console.log('?? Initializing top navigation...');
                 
                 // Get technician info from localStorage or API
                 const technicianInfo = getTechnicianInfo();
@@ -2974,13 +2974,13 @@
                 const backToMainFromSettings = document.getElementById('backToMainFromSettings');
                 
                 if (!technicianNameBtn) {
-                    console.error('❌ technicianNameBtn not found');
+                    console.error('? technicianNameBtn not found');
                     return;
                 }
                 
                 // Open settings modal
                 technicianNameBtn.addEventListener('click', function() {
-                    console.log('👤 Technician name clicked - opening full screen modal');
+                    console.log('?? Technician name clicked - opening full screen modal');
                     if (settingsModal) {
                         settingsModal.classList.remove('hidden');
                         showMainMenu();
@@ -2998,7 +2998,7 @@
                 // Navigate to Profile
                 if (profileBtn) {
                     profileBtn.addEventListener('click', function() {
-                        console.log('📝 Profile menu selected');
+                        console.log('?? Profile menu selected');
                         showProfileMenu();
                     });
                 }
@@ -3006,7 +3006,7 @@
                 // Navigate to Settings
                 if (settingsBtn) {
                     settingsBtn.addEventListener('click', function() {
-                        console.log('⚙️ Settings menu selected');
+                        console.log('?? Settings menu selected');
                         showSettingsMenu();
                     });
                 }
@@ -3014,7 +3014,7 @@
                 // Back to main from Profile
                 if (backToMainFromProfile) {
                     backToMainFromProfile.addEventListener('click', function() {
-                        console.log('⬅️ Back to main from Profile');
+                        console.log('?? Back to main from Profile');
                         showMainMenu();
                     });
                 }
@@ -3022,7 +3022,7 @@
                 // Back to main from Settings
                 if (backToMainFromSettings) {
                     backToMainFromSettings.addEventListener('click', function() {
-                        console.log('⬅️ Back to main from Settings');
+                        console.log('?? Back to main from Settings');
                         showMainMenu();
                     });
                 }
@@ -3030,7 +3030,7 @@
                 // Open Notifications submenu from Settings
                 if (openNotificationsBtn && notificationsMenu && notificationsMenuContent) {
                     openNotificationsBtn.addEventListener('click', function() {
-                        console.log('🔔 Opening Notifications submenu');
+                        console.log('?? Opening Notifications submenu');
                         // hide settings and main, show notifications
                         if (mainMenu) mainMenu.classList.add('hidden');
                         if (profileMenu) profileMenu.classList.add('hidden');
@@ -3051,7 +3051,7 @@
 
                 if (backToMainFromNotifications) {
                     backToMainFromNotifications.addEventListener('click', function() {
-                        console.log('⬅️ Back to main from Notifications');
+                        console.log('?? Back to main from Notifications');
                         showMainMenu();
                     });
                 }
@@ -3125,7 +3125,7 @@
                     });
                 });
                 
-                console.log('✅ Top navigation initialized successfully');
+                console.log('? Top navigation initialized successfully');
             };
             
             // Helper functions for top navigation
@@ -3151,7 +3151,7 @@
                 }
                 
                 // No user data found, redirect to login
-                console.log('❌ No user data found, redirecting to login...');
+                console.log('? No user data found, redirecting to login...');
                 window.location.href = '/pages/login.html';
                 return null;
             };
@@ -3180,7 +3180,7 @@
                         
                         // Execute scripts from the loaded HTML
                         const scripts = container.querySelectorAll('script');
-                        console.log('🔧 Found', scripts.length, 'script(s) in topnav component');
+                        console.log('?? Found', scripts.length, 'script(s) in topnav component');
                         scripts.forEach((oldScript, index) => {
                             const newScript = document.createElement('script');
                             if (oldScript.src) {
@@ -3190,7 +3190,7 @@
                             }
                             newScript.type = oldScript.type || 'text/javascript';
                             oldScript.parentNode.replaceChild(newScript, oldScript);
-                            console.log('🔧 Executed topnav script', index + 1);
+                            console.log('?? Executed topnav script', index + 1);
                         });
                         
                         // Initialize topnav functionality after HTML is inserted
@@ -3208,11 +3208,11 @@
             
         // Notifications System
         function initializeNotificationsSystem() {
-            console.log('🔔 Initializing Notifications System...');
+            console.log('?? Initializing Notifications System...');
             // Request notification permission
             if ('Notification' in window && Notification.permission === 'default') {
                 Notification.requestPermission().then(permission => {
-                    console.log('🔔 Notification permission:', permission);
+                    console.log('?? Notification permission:', permission);
                 });
             }
         }
@@ -3220,7 +3220,7 @@
         
         // Service Requests Modal functionality
         function initializeServiceRequestsModal() {
-            console.log('🔧 Initializing Service Requests Modal...');
+            console.log('?? Initializing Service Requests Modal...');
             
             const modal = document.getElementById('serviceRequestsModal');
             const closeBtn = document.getElementById('closeServiceRequestsModal');
@@ -3229,7 +3229,7 @@
             // Close modal functionality
             if (closeBtn) {
                 closeBtn.addEventListener('click', function() {
-                    console.log('❌ Closing Service Requests Modal');
+                    console.log('? Closing Service Requests Modal');
                     modal.classList.add('hidden');
                 });
             }
@@ -3237,7 +3237,7 @@
             // Refresh service requests
             if (refreshBtn) {
                 refreshBtn.addEventListener('click', function() {
-                    console.log('🔄 Refreshing Service Requests');
+                    console.log('?? Refreshing Service Requests');
                     loadServiceRequestsInModal();
                 });
             }
@@ -3251,25 +3251,25 @@
             
             // Make modal opening function available globally
             window.openServiceRequestsModal = function() {
-                console.log('📋 Opening Service Requests Modal');
+                console.log('?? Opening Service Requests Modal');
                 if (modal) {
                     modal.classList.remove('hidden');
                     loadServiceRequestsInModal();
                 }
             };
             
-            console.log('✅ Service Requests Modal initialized');
+            console.log('? Service Requests Modal initialized');
         }
         
         // Load service requests in the modal
         async function loadServiceRequestsInModal() {
-            console.log('🔄 Loading service requests in modal...');
+            console.log('?? Loading service requests in modal...');
             const loadingEl = document.getElementById('serviceRequestsLoading');
             const emptyEl = document.getElementById('serviceRequestsEmpty');
             const listEl = document.getElementById('serviceRequestsList');
             const countEl = document.getElementById('requestsCount');
             
-            console.log('📍 Elements found:', {
+            console.log('?? Elements found:', {
                 loadingEl: !!loadingEl,
                 emptyEl: !!emptyEl,
                 listEl: !!listEl,
@@ -3279,13 +3279,13 @@
             // Show loading state
             if (loadingEl) {
                 loadingEl.classList.remove('hidden');
-                console.log('⏳ Showing loading state');
+                console.log('? Showing loading state');
             }
             if (emptyEl) emptyEl.classList.add('hidden');
             
             try {
                 const token = localStorage.getItem('token');
-                console.log('🔑 Token exists:', !!token);
+                console.log('?? Token exists:', !!token);
                 
                 const response = await fetch('/api/technician/service-requests', {
                     headers: {
@@ -3293,32 +3293,32 @@
                     }
                 });
                 
-                console.log('📡 API Response status:', response.status, response.statusText);
+                console.log('?? API Response status:', response.status, response.statusText);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
                 
                 const requests = await response.json();
-                console.log(`📋 Loaded ${requests.length} service requests for modal`);
-                console.log('📋 Requests data:', requests);
+                console.log(`?? Loaded ${requests.length} service requests for modal`);
+                console.log('?? Requests data:', requests);
                 
                 // Hide loading
                 if (loadingEl) {
                     loadingEl.classList.add('hidden');
-                    console.log('✅ Hidden loading state');
+                    console.log('? Hidden loading state');
                 }
                 
                 // Update count
                 if (countEl) {
                     countEl.textContent = `${requests.length} ${requests.length === 1 ? 'request' : 'requests'}`;
-                    console.log('🔢 Updated count to:', countEl.textContent);
+                    console.log('?? Updated count to:', countEl.textContent);
                 }
                 
                 if (requests.length === 0) {
                     if (emptyEl) {
                         emptyEl.classList.remove('hidden');
-                        console.log('📭 Showing empty state');
+                        console.log('?? Showing empty state');
                     }
                     return;
                 }
@@ -3326,13 +3326,13 @@
                 // Render requests
                 if (listEl) {
                     const requestsHTML = requests.map(request => createServiceRequestCard(request)).join('');
-                    console.log('🎨 Generated HTML for', requests.length, 'cards');
+                    console.log('?? Generated HTML for', requests.length, 'cards');
                     listEl.innerHTML = requestsHTML;
-                    console.log('✅ Cards rendered to listEl');
+                    console.log('? Cards rendered to listEl');
                 }
                 
             } catch (error) {
-                console.error('❌ Error loading service requests:', error);
+                console.error('? Error loading service requests:', error);
                 if (loadingEl) loadingEl.classList.add('hidden');
                 if (listEl) {
                     listEl.innerHTML = `
@@ -3406,7 +3406,7 @@
         
         // Notifications System
         function initializeNotificationsSystem() {
-            console.log('🔔 Initializing Notifications System...');
+            console.log('?? Initializing Notifications System...');
             
             // Check for new service requests every 30 seconds
             setInterval(checkForNewServiceRequests, 30000);
@@ -3414,11 +3414,11 @@
             // Request notification permission
             if ('Notification' in window && Notification.permission === 'default') {
                 Notification.requestPermission().then(permission => {
-                    console.log('🔔 Notification permission:', permission);
+                    console.log('?? Notification permission:', permission);
                 });
             }
             
-            console.log('✅ Notifications System initialized');
+            console.log('? Notifications System initialized');
         }
         
         let lastRequestCount = 0;
@@ -3453,7 +3453,7 @@
                     lastRequestCount = currentCount;
                 }
             } catch (error) {
-                console.error('❌ Error checking for new service requests:', error);
+                console.error('? Error checking for new service requests:', error);
             }
         }
         
@@ -3510,13 +3510,13 @@
         
         // Global functions for service request actions
         window.viewRequestDetails = function(requestId) {
-            console.log('👁️ Viewing request details:', requestId);
+            console.log('??? Viewing request details:', requestId);
             // This would typically open a detailed view
             showNotification(`Opening details for request #${requestId}`, 'info');
         };
         
         window.acceptRequest = function(requestId) {
-            console.log('✅ Accepting request:', requestId);
+            console.log('? Accepting request:', requestId);
             // This would typically make an API call to accept the request
             showNotification(`Request #${requestId} accepted!`, 'success');
             // Refresh the modal after accepting
@@ -3604,7 +3604,7 @@
                         });
                     }
 
-                    // PC placeholder has no buttons now — detection is automatic
+                    // PC placeholder has no buttons now � detection is automatic
                 } catch (e) {
                     console.error('Error handling mobile/PC UI logic', e);
                 }
@@ -3672,24 +3672,24 @@
                     const requestsInner = document.getElementById('requests-tab-inner');
                     if (requestsInner) {
                         requestsInner.innerHTML = html;
-                        console.log('✓ Requests content loaded into inner container');
+                        console.log('? Requests content loaded into inner container');
                     } else {
-                        console.error('❌ requests-tab-inner not found');
+                        console.error('? requests-tab-inner not found');
                     }
 
                     // Load requests page JavaScript
                     const requestsScript = document.createElement('script');
                     requestsScript.src = '/pages/technician/requests.js?v=' + Date.now();
                     requestsScript.onload = () => {
-                        console.log('✓ requests.js script loaded successfully');
+                        console.log('? requests.js script loaded successfully');
                         
                         // Load completion photo handler
                         const photoScript = document.createElement('script');
                         photoScript.src = '/pages/technician/completion-photo.js?v=' + Date.now();
                         photoScript.onload = () => {
-                            console.log('✓ completion-photo.js loaded successfully');
+                            console.log('? completion-photo.js loaded successfully');
                         };
-                        photoScript.onerror = () => console.error('❌ Failed to load completion-photo.js');
+                        photoScript.onerror = () => console.error('? Failed to load completion-photo.js');
                         document.body.appendChild(photoScript);
                         
                         componentsLoaded.requestsContent = true;
@@ -3703,12 +3703,12 @@
                             checkAllComponentsLoaded();
                             
                             // Dispatch event to notify that search elements are ready
-                            console.log('🎉 Dispatching searchElementsReady event');
+                            console.log('?? Dispatching searchElementsReady event');
                             document.dispatchEvent(new CustomEvent('searchElementsReady'));
                         }, 300);
                     };
                     requestsScript.onerror = (error) => {
-                        console.error('❌ Error loading requests.js:', error);
+                        console.error('? Error loading requests.js:', error);
                         componentsLoaded.requestsContent = true; // Continue anyway
                         checkAllComponentsLoaded();
                     };
@@ -3784,28 +3784,28 @@
         
         // Function to initialize requests tab with retry mechanism
         function initializeRequestsTab() {
-            console.log('🚀 Enhanced initializeRequestsTab called');
+            console.log('?? Enhanced initializeRequestsTab called');
             let retryCount = 0;
             const maxRetries = 20; // Try for up to 10 seconds (20 * 500ms)
             
             function tryInitialize() {
                 // Check if requests.js is fully loaded
                 if (window.requestsPageLoaded && window.refreshRequestsPage && typeof window.refreshRequestsPage === 'function') {
-                    console.log('✓ Requests page fully loaded, calling refreshRequestsPage');
+                    console.log('? Requests page fully loaded, calling refreshRequestsPage');
                     try {
                         window.refreshRequestsPage();
                     } catch (error) {
                         console.error('Error calling refreshRequestsPage:', error);
                     }
                 } else if (window.refreshRequestsPage && typeof window.refreshRequestsPage === 'function') {
-                    console.log('✓ refreshRequestsPage available (without full load signal), calling it');
+                    console.log('? refreshRequestsPage available (without full load signal), calling it');
                     try {
                         window.refreshRequestsPage();
                     } catch (error) {
                         console.error('Error calling refreshRequestsPage:', error);
                     }
                 } else if (window.loadServiceRequests && typeof window.loadServiceRequests === 'function') {
-                    console.log('✓ loadServiceRequests available, calling it');
+                    console.log('? loadServiceRequests available, calling it');
                     try {
                         window.loadServiceRequests();
                     } catch (error) {
@@ -3818,7 +3818,7 @@
                         setTimeout(tryInitialize, 300); // Reduced interval for faster response
                     } else {
                         // If all retry attempts failed, try manual fallback
-                        console.warn('⚠️ Max retry attempts reached, trying manual fallback');
+                        console.warn('?? Max retry attempts reached, trying manual fallback');
                         manualRequestsInitialization();
                     }
                 }
@@ -3830,12 +3830,12 @@
         
         // Manual fallback for requests initialization
         function manualRequestsInitialization() {
-            console.log('🔧 Manual requests initialization starting');
+            console.log('?? Manual requests initialization starting');
             const requestsContent = document.getElementById('requests-content');
             const requestsContainer = document.getElementById('requests-tab-container');
             
             if (!requestsContent && !requestsContainer) {
-                console.error('❌ No requests content elements found');
+                console.error('? No requests content elements found');
                 return;
             }
             
@@ -3858,12 +3858,12 @@
             // Try to fetch data manually
             const token = localStorage.getItem('token');
             if (!token) {
-                console.error('❌ No authentication token found');
+                console.error('? No authentication token found');
                 displayNoRequestsMessage(targetElement);
                 return;
             }
             
-            console.log('🌐 Fetching service requests manually...');
+            console.log('?? Fetching service requests manually...');
             fetch('/api/technician/service-requests', {
                 headers: { 
                     'Authorization': `Bearer ${token}`,
@@ -3871,14 +3871,14 @@
                 }
             })
             .then(response => {
-                console.log(`📡 Manual fetch response status: ${response.status}`);
+                console.log(`?? Manual fetch response status: ${response.status}`);
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
                 return response.json();
             })
             .then(data => {
-                console.log('📋 Manual fetch successful:', data);
+                console.log('?? Manual fetch successful:', data);
                 if (data.requests && data.requests.length > 0) {
                     displayManualRequests(data.requests, targetElement);
                 } else {
@@ -3886,14 +3886,14 @@
                 }
             })
             .catch(error => {
-                console.error('📋 Manual fetch failed:', error);
+                console.error('?? Manual fetch failed:', error);
                 displayErrorMessage(targetElement, error);
             });
         }
         
         // Helper function to display requests manually
         function displayManualRequests(requests, targetElement) {
-            console.log(`📋 Displaying ${requests.length} service requests manually`);
+            console.log(`?? Displaying ${requests.length} service requests manually`);
             
             const requestsHtml = requests.map(request => `
                 <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-4">
@@ -3964,7 +3964,7 @@
         
         // Simple parts inventory loader
         function loadPartsInventory() {
-            console.log('🔧 loadPartsInventory called');
+            console.log('?? loadPartsInventory called');
             const loadingState = document.getElementById('partsLoadingState');
             const emptyState = document.getElementById('partsEmptyState');
             const partsGrid = document.getElementById('partsGrid');
@@ -3974,14 +3974,14 @@
             // Show loading state
             if (loadingState) {
                 loadingState.classList.remove('hidden');
-                console.log('✅ Loading state shown');
+                console.log('? Loading state shown');
             } else {
-                console.log('❌ Loading state element not found');
+                console.log('? Loading state element not found');
             }
             if (emptyState) emptyState.classList.add('hidden');
             if (partsGrid) partsGrid.classList.add('hidden');
             
-            console.log('🌐 Fetching parts from /api/parts...');
+            console.log('?? Fetching parts from /api/parts...');
             // Fetch parts from API
             fetch('/api/parts', {
                 method: 'GET',
@@ -3991,11 +3991,11 @@
                 }
             })
             .then(response => {
-                console.log('📡 Parts API response status:', response.status);
+                console.log('?? Parts API response status:', response.status);
                 return response.json();
             })
             .then(data => {
-                console.log('📦 Parts data received:', data);
+                console.log('?? Parts data received:', data);
                 if (loadingState) loadingState.classList.add('hidden');
                 
                 // Handle both direct array and wrapped response
@@ -4018,19 +4018,19 @@
                     minimum_stock: part.minimum_stock || 5
                 }));
                 
-                console.log('📋 Parts array to display:', partsArray);
+                console.log('?? Parts array to display:', partsArray);
                 
                 if (partsArray && partsArray.length > 0) {
-                    console.log('✅ Parts found, displaying...');
+                    console.log('? Parts found, displaying...');
                     displayParts(partsArray);
                     if (partsGrid) partsGrid.classList.remove('hidden');
                 } else {
-                    console.log('⚠️ No parts found or invalid data structure');
+                    console.log('?? No parts found or invalid data structure');
                     if (emptyState) emptyState.classList.remove('hidden');
                 }
             })
             .catch(error => {
-                console.error('❌ Error loading parts:', error);
+                console.error('? Error loading parts:', error);
                 if (loadingState) loadingState.classList.add('hidden');
                 if (emptyState) emptyState.classList.remove('hidden');
             });
@@ -4038,10 +4038,10 @@
         
         // Display parts in grid
         function displayParts(parts) {
-            console.log('🎨 Displaying parts:', parts);
+            console.log('?? Displaying parts:', parts);
             const partsGrid = document.getElementById('partsGrid');
             if (!partsGrid) {
-                console.error('❌ partsGrid element not found');
+                console.error('? partsGrid element not found');
                 return;
             }
             
@@ -4104,7 +4104,7 @@
                 </div>
             `).join('');
             
-            console.log('✅ Parts displayed successfully');
+            console.log('? Parts displayed successfully');
         }
         
         // Helper functions
@@ -4130,7 +4130,7 @@
         let currentPartRequest = null;
         
         function openRequestModal(partId, partName, availableQuantity, partDataJson) {
-            console.log('🔄 Opening request modal for:', partId, partName, availableQuantity);
+            console.log('?? Opening request modal for:', partId, partName, availableQuantity);
             
             if (availableQuantity <= 0) {
                 alert('This part is out of stock and cannot be requested.');
@@ -4207,7 +4207,7 @@
         }
         
         function closeRequestModal() {
-            console.log('❌ Closing request modal');
+            console.log('? Closing request modal');
             document.getElementById('partsRequestModal').classList.add('hidden');
             currentPartRequest = null;
         }
@@ -4221,8 +4221,8 @@
         
         async function submitPartRequest(event) {
             event.preventDefault();
-            console.log('📤 Submitting part request...');
-            console.log('🔍 Current part request:', currentPartRequest);
+            console.log('?? Submitting part request...');
+            console.log('?? Current part request:', currentPartRequest);
             
             if (!currentPartRequest) {
                 alert('No part selected');
@@ -4233,7 +4233,7 @@
             const priority = document.getElementById('modalPriority').value;
             const reason = document.getElementById('modalReason').value.trim();
             
-            console.log('📋 Form data:', { quantity, priority, reason });
+            console.log('?? Form data:', { quantity, priority, reason });
             
             if (!reason) {
                 alert('Please provide a reason for this request');
@@ -4252,7 +4252,7 @@
                 priority: priority
             };
             
-            console.log('📤 Sending request data:', requestData);
+            console.log('?? Sending request data:', requestData);
             
             try {
                 const response = await fetch('/api/parts-requests', {
@@ -4265,7 +4265,7 @@
                 });
                 
                 const data = await response.json();
-                console.log('📋 Request response:', data);
+                console.log('?? Request response:', data);
                 
                 if (response.ok) {
                     alert('Parts request submitted successfully! It will be reviewed by an admin.');
@@ -4275,7 +4275,7 @@
                     throw new Error(data.error || data.message || 'Unknown error occurred');
                 }
             } catch (error) {
-                console.error('❌ Error submitting request:', error);
+                console.error('? Error submitting request:', error);
                 alert('Error submitting request: ' + error.message);
             }
         }
@@ -4297,7 +4297,7 @@
             // Show inventory view
             if (viewInventoryBtn) {
                 viewInventoryBtn.addEventListener('click', function() {
-                    console.log('📦 Opening dedicated inventory page');
+                    console.log('?? Opening dedicated inventory page');
                     // Navigate to dedicated inventory page
                     window.location.href = '/client/src/pages/technician/inventory.html';
                 });
@@ -4306,7 +4306,7 @@
             // Show request view
             if (requestPartsBtn) {
                 requestPartsBtn.addEventListener('click', function() {
-                    console.log('📝 Opening parts request page');
+                    console.log('?? Opening parts request page');
                     // Navigate to dedicated parts request page
                     window.location.href = '/client/src/pages/technician/parts-request.html';
                 });
@@ -4430,12 +4430,12 @@
         window.setActiveTab = function(tabId) {
             // Prevent concurrent tab switching
             if (tabSwitchInProgress) {
-                console.log(`🚫 Tab switch in progress, ignoring call for: ${tabId}`);
+                console.log(`?? Tab switch in progress, ignoring call for: ${tabId}`);
                 return;
             }
             
             tabSwitchInProgress = true;
-            console.log(`🎯 setActiveTab called with: ${tabId}`);
+            console.log(`?? setActiveTab called with: ${tabId}`);
             
             // Hide ALL tab containers first
             const allTabContent = document.querySelectorAll('.tab-content');
@@ -4456,7 +4456,7 @@
             setTimeout(() => {
                 // Show only the selected tab
                 if (tabId === 'requests' && requestsContainer) {
-                    console.log('📋 Showing requests container only');
+                    console.log('?? Showing requests container only');
                     requestsContainer.style.display = 'flex';
                     requestsContainer.classList.remove('hidden');
                     
@@ -4465,12 +4465,12 @@
                     if (innerRequestsContent) {
                         innerRequestsContent.classList.remove('hidden');
                         innerRequestsContent.style.display = 'block';
-                        console.log('📋 Inner requests content also shown');
+                        console.log('?? Inner requests content also shown');
                     }
                     
                     // Trigger requests page load if not already loaded
                     if (window.refreshRequestsPage && typeof window.refreshRequestsPage === 'function') {
-                        console.log('🔄 Triggering refreshRequestsPage');
+                        console.log('?? Triggering refreshRequestsPage');
                         setTimeout(() => {
                             window.refreshRequestsPage();
                         }, 100);
@@ -4481,9 +4481,9 @@
                     if (activeTabContent) {
                         activeTabContent.classList.remove('hidden');
                         activeTabContent.style.display = 'block';
-                        console.log(`✓ Successfully showed ${tabId}-content`);
+                        console.log(`? Successfully showed ${tabId}-content`);
                     } else {
-                        console.error(`❌ Tab content not found: ${tabId}-content`);
+                        console.error(`? Tab content not found: ${tabId}-content`);
                         // Debug: log all available content elements
                         const availableContent = document.querySelectorAll('[id$="-content"]');
                         console.log('Available content elements:', Array.from(availableContent).map(el => el.id));
@@ -4526,36 +4526,36 @@
             
             // Store current tab in localStorage
             localStorage.setItem('activeTab', tabId);
-            console.log(`📝 Stored active tab: ${tabId}`);
+            console.log(`?? Stored active tab: ${tabId}`);
             
             // Trigger any tab-specific initialization
             switch(tabId) {
                 case 'requests':
-                    console.log('📋 Initializing requests tab (requests.html)');
+                    console.log('?? Initializing requests tab (requests.html)');
                     initializeRequestsTab();
                     break;
                 case 'parts':
-                    console.log('🔧 Initializing parts tab (parts.html)');
-                    console.log('📍 Parts content element:', document.getElementById('parts-content'));
+                    console.log('?? Initializing parts tab (parts.html)');
+                    console.log('?? Parts content element:', document.getElementById('parts-content'));
                     loadPartsInventory();
                     break;
                 case 'clients':
-                    console.log('🏢 Initializing clients tab (clients.html)');
+                    console.log('?? Initializing clients tab (clients.html)');
                     // Force reload by clearing cache
                     delete loadedComponents['clients-content'];
                     loadComponent('technician-clients-content', 'clients-content');
                     break;
                 case 'history':
-                    console.log('📚 Initializing history tab (history.html)');
+                    console.log('?? Initializing history tab (history.html)');
                     loadComponent('technician-history-content', 'history-content');
                     break;
                 case 'home':
-                    console.log('🏠 Initializing home tab (technician-home-content.html)');
+                    console.log('?? Initializing home tab (technician-home-content.html)');
                     loadComponent('technician-home-content', 'home-content');
                     break;
                 case 'profile':
                 case 'settings':
-                    console.log('⚙️ Initializing settings tab (settings.html)');
+                    console.log('?? Initializing settings tab (settings.html)');
                     loadComponent('technician-settings-content', 'profile-content');
                     break;
             }
@@ -4571,14 +4571,14 @@
             
             // Check if component is already loaded
             if (loadedComponents[containerId] && !forceReload) {
-                console.log(`✓ Component ${componentName} already loaded in ${containerId}`);
+                console.log(`? Component ${componentName} already loaded in ${containerId}`);
                 return;
             }
             
             try {
                 // Add cache-busting parameter with timestamp to force reload
                 const cacheBuster = Date.now();
-                console.log(`🔄 Loading component with cache buster: ${cacheBuster}`);
+                console.log(`?? Loading component with cache buster: ${cacheBuster}`);
                 const response = await fetch(`../../components/${componentName}.html?v=${cacheBuster}`);
                 if (!response.ok) {
                     throw new Error(`Failed to load component: ${response.status}`);
@@ -4587,7 +4587,7 @@
                 const container = document.getElementById(containerId);
                 if (container) {
                     container.innerHTML = html;
-                    console.log(`✓ Component ${componentName} loaded into ${containerId}`);
+                    console.log(`? Component ${componentName} loaded into ${containerId}`);
                     
                     // Mark as loaded
                     loadedComponents[containerId] = true;
@@ -4642,3 +4642,7 @@
     </script>
 </body>
 </html>
+
+
+
+

@@ -78,7 +78,7 @@
         <!-- Empty State -->
         <div id="schools-empty" class="hidden bg-white rounded-xl shadow-md border border-slate-200 p-8 text-center">
             <div class="w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span class="text-3xl">🏫</span>
+                <span class="text-3xl">??</span>
             </div>
             <h3 class="text-lg font-bold text-slate-800 mb-2">No Public Schools Assigned</h3>
             <p class="text-slate-600">You don't have any public schools assigned yet.</p>
@@ -132,10 +132,10 @@
                     All Printers
                 </button>
                 <button onclick="filterPrintersByStatus('serviced')" class="printer-filter-btn whitespace-nowrap px-3 py-1.5 rounded-lg font-medium text-xs transition-all bg-slate-100 text-slate-700" data-filter="serviced">
-                    ✓ Serviced
+                    ? Serviced
                 </button>
                 <button onclick="filterPrintersByStatus('not-serviced')" class="printer-filter-btn whitespace-nowrap px-3 py-1.5 rounded-lg font-medium text-xs transition-all bg-slate-100 text-slate-700" data-filter="not-serviced">
-                    ⏳ Not Serviced
+                    ? Not Serviced
                 </button>
             </div>
             
@@ -176,7 +176,7 @@
                     </div>
                     <div>
                         <h2 class="text-2xl font-bold">Submit Maintenance Service</h2>
-                        <p class="text-blue-100 text-sm">Complete service details • v2.1 Searchable Parts</p>
+                        <p class="text-blue-100 text-sm">Complete service details � v2.1 Searchable Parts</p>
                     </div>
                 </div>
                 <button onclick="closeServiceModal()" class="bg-white/20 hover:bg-white/30 p-2.5 rounded-xl transition-all">
@@ -508,7 +508,7 @@
     'use strict';
     
     // Always reinitialize to get latest code
-    console.log('📚 Voluntary services script loading (forced reload)...');
+    console.log('?? Voluntary services script loading (forced reload)...');
 
     // Store data in closure scope accessible to all functions
     let schoolsData = [];
@@ -516,65 +516,65 @@
 
     // Load assigned public schools
     window.loadAssignedSchools = async function() {
-    console.log('📚 [1/10] Loading assigned schools...');
+    console.log('?? [1/10] Loading assigned schools...');
     
     const loadingElement = document.getElementById('schools-loading');
     const emptyElement = document.getElementById('schools-empty');
     const listElement = document.getElementById('schools-list');
     
-    console.log('📚 [2/10] DOM elements found:', {
+    console.log('?? [2/10] DOM elements found:', {
         loading: !!loadingElement,
         empty: !!emptyElement,
         list: !!listElement
     });
     
     if (!loadingElement || !emptyElement || !listElement) {
-        console.error('❌ Required DOM elements not found!');
+        console.error('? Required DOM elements not found!');
         return;
     }
     
     try {
-        console.log('📚 [3/10] Getting token...');
+        console.log('?? [3/10] Getting token...');
         const token = localStorage.getItem('token');
-        console.log('🔑 [4/10] Token exists:', !!token);
+        console.log('?? [4/10] Token exists:', !!token);
         
-        console.log('🌐 [5/10] Fetching from /api/maintenance-services/assigned-schools');
+        console.log('?? [5/10] Fetching from /api/maintenance-services/assigned-schools');
         const response = await fetch('/api/maintenance-services/assigned-schools', {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
         });
 
-        console.log('📡 [6/10] Response status:', response.status);
+        console.log('?? [6/10] Response status:', response.status);
         
         if (!response.ok) {
             const errorText = await response.text();
-            console.error('❌ Response error:', errorText);
+            console.error('? Response error:', errorText);
             throw new Error(`Failed to load schools: ${response.status} - ${errorText}`);
         }
 
-        console.log('📚 [7/10] Parsing JSON response...');
+        console.log('?? [7/10] Parsing JSON response...');
         schoolsData = await response.json();
-        console.log('✅ [8/10] Schools loaded:', schoolsData);
+        console.log('? [8/10] Schools loaded:', schoolsData);
         
-        console.log('📚 [9/10] Hiding loading element...');
+        console.log('?? [9/10] Hiding loading element...');
         loadingElement.classList.add('hidden');
         
         if (schoolsData.length === 0) {
-            console.log('ℹ️ [10/10] No schools found, showing empty state');
+            console.log('?? [10/10] No schools found, showing empty state');
             emptyElement.classList.remove('hidden');
         } else {
-            console.log(`✅ [10a/10] Rendering ${schoolsData.length} schools`);
+            console.log(`? [10a/10] Rendering ${schoolsData.length} schools`);
             window.renderSchools();
-            console.log(`✅ [10b/10] Showing schools list`);
+            console.log(`? [10b/10] Showing schools list`);
             listElement.classList.remove('hidden');
-            console.log(`✅ [10c/10] DONE!`);
+            console.log(`? [10c/10] DONE!`);
         }
     } catch (error) {
-        console.error('❌ Error loading schools:', error);
+        console.error('? Error loading schools:', error);
         loadingElement.innerHTML = `
             <div class="text-center py-8 text-red-600">
-                <p>⚠️ Failed to load schools</p>
+                <p>?? Failed to load schools</p>
                 <p class="text-sm mt-2">${error.message}</p>
                 <button onclick="loadAssignedSchools()" class="mt-2 text-blue-600 hover:underline">Retry</button>
             </div>
@@ -636,7 +636,7 @@ window.renderSchools = function(schoolsToRender = null) {
                 <div class="flex items-start justify-between mb-3">
                     <div class="flex items-center gap-3 flex-1 min-w-0">
                         <div class="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center flex-shrink-0">
-                            <span class="text-2xl">🏫</span>
+                            <span class="text-2xl">??</span>
                         </div>
                         <div class="flex-1 min-w-0">
                             <h3 class="font-bold text-base text-white truncate">${school.institution_name}</h3>
@@ -779,7 +779,7 @@ window.loadSchoolPrinters = async function(institutionId, schoolName, printerCou
             modalList.innerHTML = `
                 <div class="text-center py-12 text-slate-600">
                     <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                        <span class="text-3xl">🖨️</span>
+                        <span class="text-3xl">???</span>
                     </div>
                     <p class="font-medium">No printers found for this school</p>
                 </div>
@@ -791,7 +791,7 @@ window.loadSchoolPrinters = async function(institutionId, schoolName, printerCou
         console.error('Error loading printers:', error);
         modalList.innerHTML = `
             <div class="text-center py-12 text-red-600">
-                <p class="font-medium">⚠️ Failed to load printers</p>
+                <p class="font-medium">?? Failed to load printers</p>
                 <button onclick="loadSchoolPrinters('${institutionId}', '${schoolName.replace(/'/g, "\\'")}', ${printerCount})" 
                     class="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Retry</button>
             </div>
@@ -902,7 +902,7 @@ window.renderPrinterCard = function(printer, institutionId) {
     // Service type badge
     const serviceTypeBadge = hasService && printer.service_type ? 
         `<span class="inline-block px-2 py-0.5 text-[9px] font-semibold ${printer.service_type === 'voluntary' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'} rounded-full ml-2">
-            ${printer.service_type === 'voluntary' ? '🎁 VOLUNTARY' : '📋 REGULAR'}
+            ${printer.service_type === 'voluntary' ? '?? VOLUNTARY' : '?? REGULAR'}
         </span>` : '';
     
     return `
@@ -910,13 +910,13 @@ window.renderPrinterCard = function(printer, institutionId) {
             <div class="flex items-start justify-between mb-3">
                 <div class="flex items-start space-x-3 flex-1">
                     <div class="w-12 h-12 bg-slate-100 flex items-center justify-center flex-shrink-0">
-                        <span class="text-xl">🖨️</span>
+                        <span class="text-xl">???</span>
                     </div>
                     <div class="flex-1 min-w-0">
                         <h4 class="font-bold text-slate-800 text-base truncate">${printer.brand} ${printer.model}</h4>
                         <p class="text-xs text-slate-500 font-mono mt-1">S/N: ${printer.serial_number || 'N/A'}</p>
-                        ${printer.location ? `<p class="text-xs text-slate-600 truncate mt-1">📍 ${printer.location}</p>` : ''}
-                        ${printer.department ? `<p class="text-xs text-slate-600 truncate mt-1">🏢 ${printer.department}</p>` : ''}
+                        ${printer.location ? `<p class="text-xs text-slate-600 truncate mt-1">?? ${printer.location}</p>` : ''}
+                        ${printer.department ? `<p class="text-xs text-slate-600 truncate mt-1">?? ${printer.department}</p>` : ''}
                     </div>
                 </div>
                 ${hasService ? `
@@ -936,7 +936,7 @@ window.renderPrinterCard = function(printer, institutionId) {
             ${hasService ? `
                 <div class="text-xs text-slate-600 mb-3 bg-slate-50 px-3 py-2 border-l-2 border-slate-300">
                     Last service: ${new Date(printer.last_service_date).toLocaleDateString()}
-                    ${printer.total_service_count ? ` • Total services: ${printer.total_service_count}` : ''}
+                    ${printer.total_service_count ? ` � Total services: ${printer.total_service_count}` : ''}
                 </div>
             ` : ''}
             
@@ -963,7 +963,7 @@ window.openServiceModal = async function(printerId, institutionId, brand, model,
         if (checkResponse.ok) {
             const data = await checkResponse.json();
             if (data.hasActiveRequest) {
-                alert(`⚠️ Cannot perform maintenance service.\n\nThis printer has an active service request:\n\nRequest: ${data.activeRequest.request_number}\nStatus: ${data.activeRequest.status.toUpperCase()}\n\nPlease complete the service request first.`);
+                alert(`?? Cannot perform maintenance service.\n\nThis printer has an active service request:\n\nRequest: ${data.activeRequest.request_number}\nStatus: ${data.activeRequest.status.toUpperCase()}\n\nPlease complete the service request first.`);
                 return;
             }
         }
@@ -978,7 +978,7 @@ window.openServiceModal = async function(printerId, institutionId, brand, model,
         if (maintenanceCheckResponse.ok) {
             const maintenanceData = await maintenanceCheckResponse.json();
             if (maintenanceData.hasPendingService) {
-                alert(`⚠️ Cannot Submit New Maintenance Service\n\nThis printer already has a pending maintenance service:\n\nService: ${maintenanceData.pendingService.service_number}\nStatus: ${maintenanceData.pendingService.status.replace(/_/g, ' ').toUpperCase()}\n\nPlease wait for the current service to be approved before submitting a new one.`);
+                alert(`?? Cannot Submit New Maintenance Service\n\nThis printer already has a pending maintenance service:\n\nService: ${maintenanceData.pendingService.service_number}\nStatus: ${maintenanceData.pendingService.status.replace(/_/g, ' ').toUpperCase()}\n\nPlease wait for the current service to be approved before submitting a new one.`);
                 return;
             }
         }
@@ -992,11 +992,11 @@ window.openServiceModal = async function(printerId, institutionId, brand, model,
     
     // Store the printer brand for filtering parts
     window.vsCurrentPrinterBrand = brand;
-    console.log('🖨️ Printer brand:', brand);
+    console.log('??? Printer brand:', brand);
     
     document.getElementById('modal-printer-info').innerHTML = `
         <div class="flex items-center space-x-3">
-            <span class="text-2xl">🖨️</span>
+            <span class="text-2xl">???</span>
             <div>
                 <p class="font-semibold text-slate-800">${brand} ${model}</p>
                 <p class="text-sm text-slate-600">Serial: ${serialNumber || 'N/A'}</p>
@@ -1173,7 +1173,7 @@ window.updatePartTypeFilter = function(typeSelect) {
     
     // Safety check - ensure all elements exist
     if (!searchInput || !partsGrid || !gridContainer || !noPartsMessage || !hiddenSelect || !selectedDisplay) {
-        console.error('❌ Missing required elements in part entry');
+        console.error('? Missing required elements in part entry');
         return;
     }
     
@@ -1191,18 +1191,18 @@ window.updatePartTypeFilter = function(typeSelect) {
     const consumableCategories = ['toner', 'ink', 'ink-bottle', 'drum', 'drum-cartridge', 'other-consumable', 'paper', 'cleaning-supplies'];
     const printerPartCategories = ['fuser', 'roller', 'printhead', 'transfer-belt', 'maintenance-unit', 'power-board', 'mainboard', 'maintenance-box', 'tools', 'cables', 'batteries', 'lubricants', 'replacement-parts', 'software', 'labels', 'other'];
     
-    console.log(`🔍 Filtering parts: Type=${selectedType}`);
+    console.log(`?? Filtering parts: Type=${selectedType}`);
     
     const printerBrand = window.vsCurrentPrinterBrand;
     if (!printerBrand) {
-        console.warn('⚠️ No printer brand set');
+        console.warn('?? No printer brand set');
         alert('Printer brand not available. Please try again.');
         return;
     }
     
     // Check if vsAllParts is loaded
     if (!window.vsAllParts || window.vsAllParts.length === 0) {
-        console.warn('⚠️ Parts data not loaded yet');
+        console.warn('?? Parts data not loaded yet');
         searchInput.disabled = true;
         return;
     }
@@ -1223,7 +1223,7 @@ window.updatePartTypeFilter = function(typeSelect) {
         return isUniversal || brandMatch;
     });
     
-    console.log(`📦 Found ${filteredParts.length} ${selectedType} parts for brand: ${printerBrand}`);
+    console.log(`?? Found ${filteredParts.length} ${selectedType} parts for brand: ${printerBrand}`);
     
     // Store filtered parts for search functionality
     partEntry.dataset.filteredParts = JSON.stringify(filteredParts);
@@ -1262,7 +1262,7 @@ function renderPartsCards(partEntry, parts) {
     
     partsGrid.innerHTML = parts.map(part => {
         const stockColor = part.assigned_quantity > 5 ? 'green' : part.assigned_quantity > 0 ? 'yellow' : 'red';
-        const stockIcon = part.assigned_quantity > 5 ? '✓' : part.assigned_quantity > 0 ? '⚠' : '✗';
+        const stockIcon = part.assigned_quantity > 5 ? '?' : part.assigned_quantity > 0 ? '?' : '?';
         const brandBadge = part.is_universal == 1 
             ? '<span class="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-semibold rounded">Universal</span>'
             : `<span class="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-semibold rounded">${part.brand}</span>`;
@@ -1379,20 +1379,20 @@ window.selectVSPartFromCard = function(cardElement) {
     
     // Update stock display
     const stockColor = stock > 0 ? 'green' : 'red';
-    stockDiv.innerHTML = `<span class="text-${stockColor}-600">📦 Stock: ${stock}</span>`;
+    stockDiv.innerHTML = `<span class="text-${stockColor}-600">?? Stock: ${stock}</span>`;
     
     // Hide grid container
     const gridContainer = partEntry.querySelector('.vs-parts-grid-container');
     gridContainer.classList.add('hidden');
     
-    console.log(`✅ Selected part: ${partName} (ID: ${partId}, Stock: ${stock})`);
+    console.log(`? Selected part: ${partName} (ID: ${partId}, Stock: ${stock})`);
 }
 
 // Load brands and parts data
 async function loadPartsData() {
     try {
         const token = localStorage.getItem('token');
-        console.log('🔄 Loading brands and parts...');
+        console.log('?? Loading brands and parts...');
         
         const [brandsRes, partsRes] = await Promise.all([
             fetch('/api/technician/inventory/brands', { 
@@ -1403,17 +1403,17 @@ async function loadPartsData() {
             })
         ]);
         
-        console.log('📡 Brands response:', brandsRes.status);
-        console.log('📡 Parts response:', partsRes.status);
+        console.log('?? Brands response:', brandsRes.status);
+        console.log('?? Parts response:', partsRes.status);
         
         if (brandsRes.ok && partsRes.ok) {
             vsAllBrands = await brandsRes.json();
             vsAllParts = await partsRes.json();
             window.vsAllParts = vsAllParts; // Make globally accessible
             
-            console.log('✅ Loaded brands:', vsAllBrands.length);
-            console.log('✅ Loaded parts:', vsAllParts.length);
-            console.log('🖨️ Current printer brand:', window.vsCurrentPrinterBrand);
+            console.log('? Loaded brands:', vsAllBrands.length);
+            console.log('? Loaded parts:', vsAllParts.length);
+            console.log('??? Current printer brand:', window.vsCurrentPrinterBrand);
             
             // Parts will be loaded when user selects type
             document.querySelectorAll('.vs-part-name').forEach(select => {
@@ -1421,16 +1421,16 @@ async function loadPartsData() {
                 select.disabled = true;
             });
             
-            console.log('✅ Parts data ready for filtering');
+            console.log('? Parts data ready for filtering');
         } else {
-            console.error('❌ Failed to load data:', {
+            console.error('? Failed to load data:', {
                 brands: brandsRes.status,
                 parts: partsRes.status
             });
             alert('Failed to load parts inventory. Please try again.');
         }
     } catch (error) {
-        console.error('❌ Error loading parts data:', error);
+        console.error('? Error loading parts data:', error);
         alert('Error loading parts: ' + error.message);
     }
 }
@@ -1679,7 +1679,7 @@ window.submitService = async function() {
     const description = document.getElementById('service-description').value;
     const photoInput = document.getElementById('completion-photo-input');
 
-    console.log('📋 Form values:', {
+    console.log('?? Form values:', {
         printerId,
         institutionId,
         description: description?.substring(0, 50)
@@ -1751,7 +1751,7 @@ window.submitService = async function() {
             institution_id: institutionId,
             service_description: description.trim(),
             completion_photo: completionPhotoUrl,
-            parts_used: partsUsed.length > 0 ? partsUsed : null
+            items_used: partsUsed.length > 0 ? partsUsed : null
         };
 
         const response = await fetch('/api/maintenance-services', {
@@ -1768,11 +1768,11 @@ window.submitService = async function() {
             
             // Special handling for active service request error
             if (error.activeRequest) {
-                alert(`⚠️ Cannot Submit Maintenance Service\n\nThis printer has an active service request that must be completed first:\n\nRequest: ${error.activeRequest.request_number}\nStatus: ${error.activeRequest.status.toUpperCase()}\n\n${error.error}`);
+                alert(`?? Cannot Submit Maintenance Service\n\nThis printer has an active service request that must be completed first:\n\nRequest: ${error.activeRequest.request_number}\nStatus: ${error.activeRequest.status.toUpperCase()}\n\n${error.error}`);
             } 
             // Special handling for pending maintenance service error
             else if (error.pendingService) {
-                alert(`⚠️ Cannot Submit Maintenance Service\n\nThis printer already has a pending maintenance service:\n\nService: ${error.pendingService.service_number}\nStatus: ${error.pendingService.status.replace(/_/g, ' ').toUpperCase()}\n\nPlease wait for the current service to be approved before submitting a new one.`);
+                alert(`?? Cannot Submit Maintenance Service\n\nThis printer already has a pending maintenance service:\n\nService: ${error.pendingService.service_number}\nStatus: ${error.pendingService.status.replace(/_/g, ' ').toUpperCase()}\n\nPlease wait for the current service to be approved before submitting a new one.`);
             } 
             else {
                 alert(error.error || 'Failed to submit service');
@@ -1780,7 +1780,7 @@ window.submitService = async function() {
             return;
         }
 
-        alert('✅ Service submitted successfully! Awaiting coordinator approval.');
+        alert('? Service submitted successfully! Awaiting coordinator approval.');
         closeServiceModal();
         
         // Reload the printers for this school
@@ -1794,14 +1794,17 @@ window.submitService = async function() {
 // Initialize on load
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-        console.log('📚 DOM loaded, initializing...');
+        console.log('?? DOM loaded, initializing...');
         window.loadAssignedSchools();
     });
 } else {
     // DOM is already ready
-    console.log('📚 DOM already ready, initializing immediately...');
+    console.log('?? DOM already ready, initializing immediately...');
     setTimeout(() => window.loadAssignedSchools(), 100);
 }
 
 })(); // End of IIFE
 </script>
+
+
+

@@ -495,10 +495,10 @@
             // Load available printers for this Institution Admin's institution into checkboxes
             async function loadAvailablePrinters() {
                 const user = JSON.parse(localStorage.getItem('user')) || {};
-                console.log('🔍 Loading printers for institution:', user.institution_id);
+                console.log('?? Loading printers for institution:', user.institution_id);
                 
                 if (!user.institution_id) {
-                    console.error('❌ No institution_id found in user data');
+                    console.error('? No institution_id found in user data');
                     return;
                 }
                 
@@ -506,17 +506,17 @@
                 
                 try {
                     const res = await fetch(`/api/institutions/${user.institution_id}/printers`);
-                    console.log('📡 Printer API response status:', res.status);
+                    console.log('?? Printer API response status:', res.status);
                     
                     if (!res.ok) {
                         const errorData = await res.json().catch(() => ({}));
-                        console.error('❌ API error:', errorData);
+                        console.error('? API error:', errorData);
                         container.innerHTML = `<p class="text-sm text-red-500">Failed to load printers: ${errorData.error || res.statusText}</p>`;
                         return;
                     }
                     
                     const printers = await res.json();
-                    console.log('✅ Loaded printers:', printers);
+                    console.log('? Loaded printers:', printers);
                     
                     container.innerHTML = '';
                     
@@ -548,7 +548,7 @@
                         container.appendChild(div);
                     });
                 } catch (e) {
-                    console.error('❌ Failed to load printers:', e);
+                    console.error('? Failed to load printers:', e);
                     container.innerHTML = `<p class="text-sm text-red-500">Error: ${e.message}</p>`;
                 }
             }
@@ -556,7 +556,7 @@
             // Define and call helper loaders
             // Load available printers after Institution Admin profile is loaded
             window.addEventListener('Institution AdminProfileLoaded', function(event) {
-                console.log('🎉 Institution Admin profile loaded event received:', event.detail);
+                console.log('?? Institution Admin profile loaded event received:', event.detail);
                 loadAvailablePrinters();
             });
             
@@ -564,10 +564,10 @@
             setTimeout(() => {
                 const user = JSON.parse(localStorage.getItem('user') || '{}');
                 if (user.institution_id) {
-                    console.log('✅ Profile already available, loading printers immediately');
+                    console.log('? Profile already available, loading printers immediately');
                     loadAvailablePrinters();
                 } else {
-                    console.log('⏳ Waiting for Institution AdminProfileLoaded event...');
+                    console.log('? Waiting for Institution AdminProfileLoaded event...');
                 }
             }, 100);
 
@@ -727,10 +727,10 @@
             // Populate edit printers select (reuse loadAvailablePrinters but target edit select)
             async function loadAvailablePrintersForEdit() {
                 const user = JSON.parse(localStorage.getItem('user')) || {};
-                console.log('🔍 Loading printers for edit modal, institution:', user.institution_id);
+                console.log('?? Loading printers for edit modal, institution:', user.institution_id);
                 
                 if (!user.institution_id) {
-                    console.error('❌ No institution_id found in user data');
+                    console.error('? No institution_id found in user data');
                     return;
                 }
                 
@@ -738,17 +738,17 @@
                 
                 try {
                     const res = await fetch(`/api/institutions/${user.institution_id}/printers`);
-                    console.log('📡 Edit modal printer API response status:', res.status);
+                    console.log('?? Edit modal printer API response status:', res.status);
                     
                     if (!res.ok) {
                         const errorData = await res.json().catch(() => ({}));
-                        console.error('❌ Edit modal API error:', errorData);
+                        console.error('? Edit modal API error:', errorData);
                         container.innerHTML = `<p class="text-sm text-red-500">Failed to load printers: ${errorData.error || res.statusText}</p>`;
                         return;
                     }
                     
                     const printers = await res.json();
-                    console.log('✅ Loaded printers for edit:', printers);
+                    console.log('? Loaded printers for edit:', printers);
                     
                     container.innerHTML = '';
                     
@@ -784,7 +784,7 @@
                         container.appendChild(div);
                     });
                 } catch (e) {
-                    console.error('❌ Failed to load printers for edit:', e);
+                    console.error('? Failed to load printers for edit:', e);
                     container.innerHTML = `<p class="text-sm text-red-500">Error: ${e.message}</p>`;
                 }
             }
@@ -1135,5 +1135,9 @@
     </script>
 </body>
 </html>
+
+
+
+
 
 

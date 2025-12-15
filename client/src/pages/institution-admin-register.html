@@ -233,8 +233,8 @@
                                         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent 
                                         transition-all duration-200 ease-in-out"
                                         placeholder="John"
-                                            pattern="[A-Za-z√±√ë\\. ]{2,}"
-                                        title="Only letters, spaces, √±, and . are allowed">
+                                            pattern="[A-Za-zÒ—\\. ]{2,}"
+                                        title="Only letters, spaces, Ò, and . are allowed">
                                     <p class="field-error mt-1 text-sm text-red-600 hidden"></p>
                                 </div>
 
@@ -245,8 +245,8 @@
                                         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent 
                                         transition-all duration-200 ease-in-out"
                                         placeholder="Doe"
-                                            pattern="[A-Za-z√±√ë\\. ]{2,}"
-                                        title="Only letters, spaces, √±, and . are allowed">
+                                            pattern="[A-Za-zÒ—\\. ]{2,}"
+                                        title="Only letters, spaces, Ò, and . are allowed">
                                     <p class="field-error mt-1 text-sm text-red-600 hidden"></p>
                                 </div>
 
@@ -1117,11 +1117,11 @@
 
                     // Additional validation for specific fields
                     if (field.id === 'firstName' || field.id === 'lastName') {
-                        if (!field.value.match(/^[A-Za-z√±√ë\\. ]{2,}$/)) {
+                        if (!field.value.match(/^[A-Za-zÒ—\\. ]{2,}$/)) {
                             isValid = false;
                             field.classList.add('border-red-500');
                             if (errorMessage) {
-                                errorMessage.textContent = 'Special characters are not allowed (√± and . are okay)';
+                                errorMessage.textContent = 'Special characters are not allowed (Ò and . are okay)';
                                 errorMessage.classList.remove('hidden');
                             }
                         }
@@ -1681,3 +1681,7 @@
     </script>
 </body>
 </html> 
+
+
+
+

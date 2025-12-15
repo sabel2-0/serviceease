@@ -216,10 +216,10 @@
                     </div>
                     <select id="stockFilter" class="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white text-sm font-medium">
                         <option value="">All Stock Levels</option>
-                        <option value="available">✓ Available (In Stock)</option>
-                        <option value="high">🟢 High Stock (>20)</option>
-                        <option value="medium">🟡 Medium Stock (11-20)</option>
-                        <option value="low">🟠 Low Stock (1-10)</option>
+                        <option value="available">? Available (In Stock)</option>
+                        <option value="high">?? High Stock (>20)</option>
+                        <option value="medium">?? Medium Stock (11-20)</option>
+                        <option value="low">?? Low Stock (1-10)</option>
                     </select>
                     <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                         <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
@@ -363,7 +363,7 @@
         
         // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🔧 Initializing Items Request Page');
+            console.log('?? Initializing Items Request Page');
             checkAuthentication();
             loadParts();
             setupEventListeners();
@@ -429,7 +429,7 @@
         
         // Load parts from API
         async function loadParts() {
-            console.log('📦 Loading parts...');
+            console.log('?? Loading parts...');
             showLoadingState();
             
             try {
@@ -446,7 +446,7 @@
                 }
                 
                 const data = await response.json();
-                console.log('📦 Parts data received:', data);
+                console.log('?? Parts data received:', data);
 
                 // Accept either an array (legacy) or diagnostic object { count, rows }
                 allParts = Array.isArray(data) ? data : (data.rows || data.parts || data.data || []);
@@ -460,7 +460,7 @@
                 }
                 
             } catch (error) {
-                console.error('❌ Error loading parts:', error);
+                console.error('? Error loading parts:', error);
                 showEmptyState('Failed to load parts. Please try again later.');
                 showToast('error', 'Error', 'Failed to load parts inventory');
             }
@@ -768,7 +768,7 @@
                     priority: priority
                 };
                 
-                console.log('📋 Submitting request:', requestData);
+                console.log('?? Submitting request:', requestData);
                 
                 const response = await fetch('/api/parts-requests', {
                     method: 'POST',
@@ -791,7 +791,7 @@
                 }
                 
             } catch (error) {
-                console.error('❌ Error submitting request:', error);
+                console.error('? Error submitting request:', error);
                 showToast('error', 'Submission Failed', error.message || 'Could not submit your request. Please try again.');
             } finally {
                 // Reset button state
@@ -890,3 +890,7 @@
     </script>
 </body>
 </html>
+
+
+
+

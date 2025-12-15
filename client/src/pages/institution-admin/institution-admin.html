@@ -21,7 +21,7 @@
             
             if (!isLoggedIn || !userStr || !token) {
                 // Not logged in - redirect to login
-                console.log('🔒 No auth data - redirecting to login');
+                console.log('?? No auth data - redirecting to login');
                 sessionStorage.setItem('redirecting_to_login', 'true');
                 window.location.replace('/pages/login.html');
                 return;
@@ -32,7 +32,7 @@
                 // Check if user is institution_admin
                 if (user.role !== 'institution_admin') {
                     // Wrong role - redirect to correct dashboard
-                    console.log('🔒 Wrong role - redirecting to correct dashboard');
+                    console.log('?? Wrong role - redirecting to correct dashboard');
                     const rolePaths = {
                         'admin': '/pages/admin/admin.html',
                         'operations_officer': '/pages/operations-officer/operations-officer.html',
@@ -46,7 +46,7 @@
                 }
             } catch (e) {
                 // Invalid user data - redirect to login
-                console.log('🔒 Invalid user data - redirecting to login');
+                console.log('?? Invalid user data - redirecting to login');
                 sessionStorage.setItem('redirecting_to_login', 'true');
                 window.location.replace('/pages/login.html');
                 return;
@@ -182,7 +182,7 @@
             </div>
             
             <!-- Title -->
-            <h2 class="text-2xl font-bold text-gray-900 mb-4">Account Approved! 🎉</h2>
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">Account Approved! ??</h2>
             
             <!-- Message -->
             <div class="mb-6">
@@ -224,7 +224,7 @@
             
             <!-- Welcome Note -->
             <div class="mt-6 text-sm text-gray-500">
-                <p>Welcome to ServiceEase! 🚀</p>
+                <p>Welcome to ServiceEase! ??</p>
             </div>
         </div>
     </div>
@@ -1002,6 +1002,10 @@
     </script>
 </body>
 </html>
+
+
+
+
 
 
 

@@ -426,9 +426,9 @@ document.addEventListener('DOMContentLoaded', function() {
                                     from_email: "serviceeaseph@gmail.com"
                                 }
                             );
-                            console.log('✅ Approval email sent successfully!', emailResponse);
+                            console.log('? Approval email sent successfully!', emailResponse);
                         } catch (emailError) {
-                            console.error('❌ Error sending approval email:', emailError);
+                            console.error('? Error sending approval email:', emailError);
                             console.error('Email data that was sent:', data.emailData);
                         }
                     } else {
@@ -580,7 +580,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         throw new Error(data.error || 'Failed to reject user');
                     }
                     
-                    console.log('✅ User rejected successfully, email sent automatically by server');
+                    console.log('? User rejected successfully, email sent automatically by server');
                     
                     // Show success message
                     closeModal();
@@ -670,6 +670,10 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('searchInput').addEventListener('input', filterRegistrations);
     document.getElementById('institutionFilter').addEventListener('change', filterRegistrations);
 });
+
+
+
+
 
 
 
