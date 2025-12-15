@@ -1679,7 +1679,24 @@ window.submitService = async function() {
     const description = document.getElementById('service-description').value;
     const photoInput = document.getElementById('completion-photo-input');
 
-    if (!description.trim()) {
+    console.log('📋 Form values:', {
+        printerId,
+        institutionId,
+        description: description?.substring(0, 50)
+    });
+
+    // Validate required fields
+    if (!printerId || printerId === '') {
+        alert('Printer ID is missing. Please try opening the service form again.');
+        return;
+    }
+
+    if (!institutionId || institutionId === '') {
+        alert('Institution ID is missing. Please try opening the service form again.');
+        return;
+    }
+
+    if (!description || !description.trim()) {
         alert('Please provide a service description');
         return;
     }
