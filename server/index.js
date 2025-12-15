@@ -3549,7 +3549,7 @@ app.patch('/api/users/me/service-requests/:id/approve', auth, async (req, res) =
             await db.query(
                 `UPDATE service_approvals 
                  SET approved_by = ?, reviewed_at = NOW(), status = 'approved'
-                 WHERE service_request_id = ?`,
+                 WHERE service_id = ? AND service_type = 'service_request'`,
                 [userId, requestId]
             );
         }
@@ -4761,14 +4761,14 @@ app.post('/api/service-requests/:id/complete', auth, async (req, res) => {
         
         // Create service approval record (only if one doesn't exist)
         const [existingApproval] = await db.query(
-            'SELECT id FROM service_approvals WHERE service_request_id = ?',
+            'SELECT id FROM service_approvals WHERE service_id = ? AND service_type = \'service_request\'',
             [id]
         );
         
         if (existingApproval.length === 0) {
             await db.query(
-                `INSERT INTO service_approvals (service_request_id, status, technician_notes, submitted_at)
-                 VALUES (?, 'pending_approval', ?, NOW())`,
+                `INSERT INTO service_approvals (service_id, service_type, status, technician_notes, submitted_at)
+                 VALUES (?, 'service_request', 'pending_approval', ?, NOW())`,
                 [id, resolution_notes]
             );
         } else {
@@ -4781,7 +4781,7 @@ app.post('/api/service-requests/:id/complete', auth, async (req, res) => {
                      approved_by = NULL,
                      institution_admin_notes = NULL,
                      reviewed_at = NULL
-                 WHERE service_request_id = ?`,
+                 WHERE service_id = ? AND service_type = 'service_request'`,
                 [resolution_notes, id]
             );
         }
@@ -4893,7 +4893,7 @@ app.post('/api/service-requests/:id/approve-completion', authenticateAdmin, asyn
                      approved_by = ?,
                      institution_admin_notes = ?,
                      reviewed_at = NOW()
-                 WHERE service_request_id = ? AND status = 'pending_approval'`,
+                 WHERE service_id = ? AND service_type = 'service_request' AND status = 'pending_approval'`,
                 [approvalStatus, approver_id, notes || null, id]
             );
         } else {
@@ -4903,7 +4903,7 @@ app.post('/api/service-requests/:id/approve-completion', authenticateAdmin, asyn
                  SET status = ?,
                      institution_admin_notes = ?,
                      reviewed_at = NOW()
-                 WHERE service_request_id = ? AND status = 'pending_approval'`,
+                 WHERE service_id = ? AND service_type = 'service_request' AND status = 'pending_approval'`,
                 [approvalStatus, notes || null, id]
             );
         }

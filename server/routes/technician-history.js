@@ -86,7 +86,7 @@ router.get('/service-history', authenticateTechnician, async (req, res) => {
                 FROM service_items_used spu
                 LEFT JOIN printer_items pp ON spu.item_id = pp.id
                 LEFT JOIN users u ON spu.used_by = u.id
-                WHERE spu.service_id = ?
+                WHERE spu.service_request_id = ?
                 ORDER BY spu.used_at ASC
             `, [serviceHistory[i].id]);
             
