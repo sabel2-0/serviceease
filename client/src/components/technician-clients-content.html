@@ -949,9 +949,30 @@ window.renderPrinterCard = function(printer, institutionId) {
 }
 
 // Open service submission modal
-window.openServiceModal = async function(printerId, institutionId, brand, model, serialNumber) {
+window.openServiceModal = async function(printerId, institutionCode, brand, model, serialNumber) {
     try {
         const token = localStorage.getItem('token');
+        
+        // First, get the numeric institution ID from the code
+        const instResponse = await fetch(`/api/institutions?code=${institutionCode}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        let numericInstitutionId = null;
+        if (instResponse.ok) {
+            const institutions = await instResponse.json();
+            const institution = institutions.find(i => i.institution_id === institutionCode);
+            if (institution && institution.id) {
+                numericInstitutionId = institution.id;
+            }
+        }
+        
+        if (!numericInstitutionId) {
+            alert('Could not find institution ID. Please try again.');
+            return;
+        }
         
         // Check for active service requests before opening modal
         const checkResponse = await fetch(`/api/service-requests/printer/${printerId}/active`, {
@@ -988,7 +1009,7 @@ window.openServiceModal = async function(printerId, institutionId, brand, model,
     }
     
     document.getElementById('modal-printer-id').value = printerId;
-    document.getElementById('modal-institution-id').value = institutionId;
+    document.getElementById('modal-institution-id').value = numericInstitutionId;
     
     // Store the printer brand for filtering parts
     window.vsCurrentPrinterBrand = brand;
