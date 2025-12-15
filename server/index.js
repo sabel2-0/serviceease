@@ -5967,18 +5967,14 @@ app.get('/api/admin/institution-service-calendar', authenticateAdmin, async (req
                 p.department,
                 ms.status,
                 ms.service_description,
-                ms.parts_used,
                 ms.completion_photo,
                 ms.created_at,
-                ms.approved_by_user_id,
                 u.first_name as tech_first_name,
-                u.last_name as tech_last_name,
-                CONCAT(approver.first_name, ' ', approver.last_name) as approved_by_name
+                u.last_name as tech_last_name
             FROM maintenance_services ms
             JOIN printers p ON ms.printer_id = p.id
-            JOIN institutions i ON ms.institution_id COLLATE utf8mb4_0900_ai_ci = i.institution_id
+            JOIN institutions i ON ms.institution_id = i.institution_id
             LEFT JOIN users u ON ms.technician_id = u.id
-            LEFT JOIN users approver ON ms.approved_by_user_id = approver.id
             WHERE YEAR(ms.created_at) = ?
                 AND MONTH(ms.created_at) = ?
                 AND i.type = 'public_school'
@@ -6020,11 +6016,9 @@ app.get('/api/admin/institution-service-calendar', authenticateAdmin, async (req
                 department: service.department,
                 status: service.status,
                 service_description: service.service_description,
-                parts_used: service.parts_used,
+                items_used: [], // Will be populated from service_items_used table if needed
                 completion_photo: service.completion_photo,
                 created_at: service.created_at,
-                approved_by_user_id: service.approved_by_user_id,
-                approved_by_name: service.approved_by_name,
                 technician: `${service.tech_first_name} ${service.tech_last_name}`,
                 tech_first_name: service.tech_first_name,
                 tech_last_name: service.tech_last_name
@@ -6092,18 +6086,14 @@ app.get('/api/admin/institution-service-details', authenticateAdmin, async (req,
                 p.department,
                 ms.status,
                 ms.service_description,
-                ms.parts_used,
                 ms.completion_photo,
                 ms.created_at,
-                ms.approved_by_user_id,
                 u.first_name as tech_first_name,
-                u.last_name as tech_last_name,
-                CONCAT(approver.first_name, ' ', approver.last_name) as approved_by_name
+                u.last_name as tech_last_name
             FROM maintenance_services ms
             JOIN printers p ON ms.printer_id = p.id
             LEFT JOIN users u ON ms.technician_id = u.id
-            LEFT JOIN users approver ON ms.approved_by_user_id = approver.id
-            WHERE ms.institution_id COLLATE utf8mb4_0900_ai_ci = ?
+            WHERE ms.institution_id = ?
                 AND DATE(ms.created_at) = ?
                 AND ms.status IN ('completed', 'approved')
             ORDER BY p.name
