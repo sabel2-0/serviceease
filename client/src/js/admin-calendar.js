@@ -246,7 +246,7 @@ window.showInstitutionDetail = async function(institutionId, dateStr, institutio
                             <div>
                                 <div class="font-medium text-slate-900">${printer.printer_name}</div>
                                 <div class="text-xs text-slate-600">
-                                    ?? ${printer.location || 'N/A'} • ?? ${printer.department || 'N/A'}
+                                    ?? ${printer.location || 'N/A'} ï¿½ ?? ${printer.department || 'N/A'}
                                 </div>
                                 <div class="text-xs font-semibold text-green-700 mt-1">
                                     ${printer.service_number}
@@ -274,7 +274,7 @@ window.showInstitutionDetail = async function(institutionId, dateStr, institutio
                         <div>
                             <div class="font-medium text-slate-900">${printer.printer_name}</div>
                             <div class="text-xs text-slate-600">
-                                ?? ${printer.location || 'N/A'} • ?? ${printer.department || 'N/A'}
+                                ?? ${printer.location || 'N/A'} ï¿½ ?? ${printer.department || 'N/A'}
                             </div>
                         </div>
                     </div>
@@ -310,15 +310,8 @@ window.showServiceDetail = async function(serviceId, serviceNumber) {
 
         const service = await response.json();
         
-        // Parse items_used if string
-        let partsUsed = [];
-        if (service.items_used) {
-            try {
-                partsUsed = typeof service.items_used === 'string' ? JSON.parse(service.items_used) : service.items_used;
-            } catch (e) {
-                partsUsed = [];
-            }
-        }
+        // items_used is now an array from the backend (not JSON string)
+        const partsUsed = service.items_used || [];
         
         const content = `
             <div class="space-y-6">
