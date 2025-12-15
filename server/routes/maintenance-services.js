@@ -30,9 +30,9 @@ router.get('/history', auth, async (req, res) => {
                 vs.completion_photo as completion_photo_url,
                 vs.status,
                 vs.created_at,
-                vs.approved_by_user_id,
-                vs.approved_at,
-                vs.approval_notes,
+                sa.approved_by as approved_by_user_id,
+                sa.approved_at,
+                sa.notes as approval_notes,
                 i.institution_id,
                 i.name as institution_name,
                 i.type as institution_type,
@@ -51,7 +51,8 @@ router.get('/history', auth, async (req, res) => {
             FROM maintenance_services vs
             INNER JOIN printers inv ON vs.printer_id = inv.id
             INNER JOIN institutions i ON vs.institution_id COLLATE utf8mb4_0900_ai_ci = i.institution_id
-            LEFT JOIN users approver ON vs.approved_by_user_id = approver.id
+            LEFT JOIN service_approvals sa ON sa.service_id = vs.id AND sa.service_type = 'maintenance_service'
+            LEFT JOIN users approver ON sa.approved_by = approver.id
             LEFT JOIN users institution_admin ON i.user_id = institution_admin.id
             WHERE vs.technician_id = ?
             AND vs.status IN ('completed', 'rejected')
@@ -405,8 +406,9 @@ router.get('/:id', auth, async (req, res) => {
                 ms.completion_photo,
                 ms.status,
                 ms.created_at,
-                ms.approved_by_user_id,
-                ms.approved_at,
+                sa.approved_by as approved_by_user_id,
+                sa.approved_at,
+                sa.notes as approval_notes,
                 ms.technician_id,
                 i.institution_id,
                 i.name as institution_name,
@@ -420,8 +422,9 @@ router.get('/:id', auth, async (req, res) => {
             FROM maintenance_services ms
             JOIN printers p ON ms.printer_id = p.id
             JOIN institutions i ON ms.institution_id COLLATE utf8mb4_0900_ai_ci = i.institution_id
+            LEFT JOIN service_approvals sa ON sa.service_id = ms.id AND sa.service_type = 'maintenance_service'
             LEFT JOIN users tech ON ms.technician_id = tech.id
-            LEFT JOIN users approver ON ms.approved_by_user_id = approver.id
+            LEFT JOIN users approver ON sa.approved_by = approver.id
             WHERE ms.id = ?
         `, [serviceId]);
         
@@ -799,12 +802,19 @@ router.get('/institution_admin/history', auth, async (req, res) => {
                 i.name as institution_name,
                 CONCAT(u_coord.first_name, ' ', u_coord.last_name) as institution_admin_name,
                 CONCAT(u_tech.first_name, ' ', u_tech.last_name) as technician_name,
-                u_tech.email as technician_email
+                u_tech.email as technician_email,
+                sa.approved_by,
+                sa.approved_at,
+                sa.approval_status,
+                sa.notes as approval_notes,
+                CONCAT(approver.first_name, ' ', approver.last_name) as approved_by_name
             FROM maintenance_services vs
             INNER JOIN printers inv ON vs.printer_id = inv.id
             INNER JOIN institutions i ON vs.institution_id COLLATE utf8mb4_0900_ai_ci = i.institution_id
             LEFT JOIN users u_coord ON i.user_id = u_coord.id
             INNER JOIN users u_tech ON vs.technician_id = u_tech.id
+            LEFT JOIN service_approvals sa ON sa.service_id = vs.id AND sa.service_type = 'maintenance_service'
+            LEFT JOIN users approver ON sa.approved_by = approver.id
             WHERE vs.institution_id IN (?)
             AND vs.status IN ('completed', 'rejected')
             ORDER BY vs.created_at DESC
@@ -888,15 +898,20 @@ router.patch('/institution_admin/:id/approve', auth, async (req, res) => {
         
         console.log(`📝 institution_admin approving - service will be completed immediately`);
         
-        // Update approval status and complete the service
+        // Update status and complete the service
         await db.query(
             `UPDATE maintenance_services 
              SET status = 'completed',
-                 approved_by_user_id = ?,
-                 approved_at = NOW(),
                  completed_at = NOW()
              WHERE id = ?`,
-            [institution_adminId, serviceId]
+            [serviceId]
+        );
+        
+        // Insert approval record into service_approvals table
+        await db.query(
+            `INSERT INTO service_approvals (service_id, service_type, approved_by, approved_at, approval_status, notes)
+             VALUES (?, 'maintenance_service', ?, NOW(), 'approved', ?)`,
+            [serviceId, institution_adminId, notes || null]
         );
         
         // Deduct parts from inventory after institution_admin approval
@@ -1025,11 +1040,16 @@ router.patch('/institution_admin/:id/reject', auth, async (req, res) => {
         // Update service
         await db.query(
             `UPDATE maintenance_services 
-             SET status = 'rejected',
-                 approved_by_user_id = ?,
-                 approved_at = NOW()
+             SET status = 'rejected'
              WHERE id = ?`,
-            [institution_adminId, serviceId]
+            [serviceId]
+        );
+        
+        // Insert rejection record into service_approvals table
+        await db.query(
+            `INSERT INTO service_approvals (service_id, service_type, approved_by, approved_at, approval_status, notes)
+             VALUES (?, 'maintenance_service', ?, NOW(), 'rejected', ?)`,
+            [serviceId, institution_adminId, rejectionReason]
         );
         
         // Notify technician
@@ -1128,13 +1148,20 @@ router.get('/institution_user/history', auth, async (req, res) => {
                 i.name as institution_name,
                 CONCAT(u_coord.first_name, ' ', u_coord.last_name) as institution_admin_name,
                 CONCAT(u_tech.first_name, ' ', u_tech.last_name) as technician_name,
-                u_tech.email as technician_email
+                u_tech.email as technician_email,
+                sa.approved_by,
+                sa.approved_at,
+                sa.approval_status,
+                sa.notes as approval_notes,
+                CONCAT(approver.first_name, ' ', approver.last_name) as approved_by_name
             FROM maintenance_services vs
             INNER JOIN printers inv ON vs.printer_id = inv.id
             INNER JOIN user_printer_assignments upa ON upa.printer_id = inv.id
             INNER JOIN institutions i ON vs.institution_id COLLATE utf8mb4_0900_ai_ci = i.institution_id
             LEFT JOIN users u_coord ON i.user_id = u_coord.id
             INNER JOIN users u_tech ON vs.technician_id = u_tech.id
+            LEFT JOIN service_approvals sa ON sa.service_id = vs.id AND sa.service_type = 'maintenance_service'
+            LEFT JOIN users approver ON sa.approved_by = approver.id
             WHERE upa.user_id = ?
             AND vs.technician_id != ?
             AND vs.status IN ('completed', 'rejected')
@@ -1208,11 +1235,16 @@ router.patch('/institution_user/:id/approve', auth, async (req, res) => {
         await db.query(
             `UPDATE maintenance_services 
              SET status = 'completed',
-                 approved_by_user_id = ?,
-                 approved_at = NOW(),
                  completed_at = NOW()
              WHERE id = ?`,
-            [requester_id, serviceId]
+            [serviceId]
+        );
+        
+        // Insert approval record into service_approvals table
+        await db.query(
+            `INSERT INTO service_approvals (service_id, service_type, approved_by, approved_at, approval_status, notes)
+             VALUES (?, 'maintenance_service', ?, NOW(), 'approved', ?)`,
+            [serviceId, requester_id, notes || null]
         );
         
         // Deduct parts from inventory after approval
@@ -1327,11 +1359,16 @@ router.patch('/institution_user/:id/reject', auth, async (req, res) => {
         // Update service
         await db.query(
             `UPDATE maintenance_services 
-             SET status = 'rejected',
-                 approved_by_user_id = ?,
-                 approved_at = NOW()
+             SET status = 'rejected'
              WHERE id = ?`,
-            [requester_id, serviceId]
+            [serviceId]
+        );
+        
+        // Insert rejection record into service_approvals table
+        await db.query(
+            `INSERT INTO service_approvals (service_id, service_type, approved_by, approved_at, approval_status, notes)
+             VALUES (?, 'maintenance_service', ?, NOW(), 'rejected', ?)`,
+            [serviceId, requester_id, rejectionReason]
         );
         
         // Notify technician
