@@ -167,7 +167,7 @@
                 <input 
                     type="text" 
                     id="searchInput" 
-                    placeholder="Search by part name, description, or part number..." 
+                    placeholder="Search by item name, description, or item number..." 
                     class="w-full pl-11 pr-4 py-3.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm"
                 >
             </div>
@@ -236,7 +236,7 @@
     <!-- Loading State -->
     <div id="loadingState" class="card rounded-xl p-12 text-center shadow-lg">
         <div class="inline-block w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
-        <p class="text-gray-600 font-medium text-lg">Loading available parts...</p>
+        <p class="text-gray-600 font-medium text-lg">Loading available items...</p>
         <p class="text-gray-400 text-sm mt-2">Please wait while we fetch the inventory</p>
     </div>
     
@@ -245,8 +245,8 @@
         <div class="text-gray-300 mb-6">
             <i class="fas fa-box-open text-6xl"></i>
         </div>
-        <h3 class="text-xl font-bold text-gray-900 mb-3">No Parts Found</h3>
-        <p class="text-gray-500 mb-6 max-w-md mx-auto" id="emptyMessage">No parts match your current search criteria. Try adjusting your filters or search terms.</p>
+        <h3 class="text-xl font-bold text-gray-900 mb-3">No Items Found</h3>
+        <p class="text-gray-500 mb-6 max-w-md mx-auto" id="emptyMessage">No items match your current search criteria. Try adjusting your filters or search terms.</p>
         <button onclick="location.reload()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-all font-medium shadow-md hover:shadow-lg">
             <i class="fas fa-redo mr-2"></i>Reset Filters
         </button>
@@ -264,7 +264,7 @@
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="text-xl font-bold text-gray-900">
                         <i class="fas fa-plus-circle text-blue-600 mr-2"></i>
-                        Request Part
+                        Request Item
                     </h3>
                     <button id="closeModal" class="text-gray-400 hover:text-gray-600 text-xl">
                         <i class="fas fa-times"></i>
@@ -320,7 +320,7 @@
                         <textarea 
                             id="requestReason" 
                             rows="3" 
-                            placeholder="Please describe why you need this part (e.g., for service request #123, printer maintenance, replacement of faulty component, etc.)"
+                            placeholder="Please describe why you need this item (e.g., for service request #123, printer maintenance, replacement of faulty component, etc.)"
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 resize-none"
                             required
                         ></textarea>
@@ -363,7 +363,7 @@
         
         // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🔧 Initializing Parts Request Page');
+            console.log('🔧 Initializing Items Request Page');
             checkAuthentication();
             loadParts();
             setupEventListeners();
@@ -782,7 +782,7 @@
                 const data = await response.json();
                 
                 if (response.ok) {
-                    showToast('success', 'Request Submitted', 'Your parts request has been submitted successfully and is pending approval');
+                    showToast('success', 'Request Submitted', 'Your items request has been submitted successfully and is pending approval');
                     closeModal();
                     // Optionally refresh the parts list
                     loadParts();
