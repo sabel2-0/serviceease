@@ -808,16 +808,28 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     async function loadCurrentAssignments(technicianId) {
-        const technician = allStaff.find(staff => staff.id === technicianId);
-        const assignments = technician.assignments || [];
-        const container = document.getElementById('currentAssignmentsList');
+        try {
+            const token = localStorage.getItem('token');
+            
+            // Fetch fresh assignment data directly from API
+            const response = await fetch('/api/technician-assignments', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            const allAssignments = await response.json();
+            const assignments = Array.isArray(allAssignments) 
+                ? allAssignments.filter(a => a.technician_id === technicianId)
+                : [];
+            
+            const container = document.getElementById('currentAssignmentsList');
 
-        if (assignments.length === 0) {
-            container.innerHTML = `
-                <div class="text-center py-8 text-gray-500">
-                    <i class="fas fa-inbox text-3xl mb-2"></i>
-                    <p>No client assignments yet</p>
-                    <p class="text-sm">Click "Add Assignment" to assign clients to this technician</p>
+            if (assignments.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-inbox text-3xl mb-2"></i>
+                        <p>No client assignments yet</p>
+                        <p class="text-sm">Click "Add Assignment" to assign clients to this technician</p>
                 </div>
             `;
             return;
@@ -844,6 +856,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 </button>
             </div>
         `).join('');
+        } catch (error) {
+            console.error('Error loading current assignments:', error);
+            const container = document.getElementById('currentAssignmentsList');
+            container.innerHTML = `
+                <div class="text-center py-8 text-red-500">
+                    <i class="fas fa-exclamation-circle text-3xl mb-2"></i>
+                    <p>Error loading assignments</p>
+                </div>
+            `;
+        }
     }
 
     async function loadAvailableInstitutions(technicianId) {

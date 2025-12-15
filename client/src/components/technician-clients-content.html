@@ -175,7 +175,7 @@
                         </svg>
                     </div>
                     <div>
-                        <h2 class="text-2xl font-bold">Submit Voluntary Service</h2>
+                        <h2 class="text-2xl font-bold">Submit Maintenance Service</h2>
                         <p class="text-blue-100 text-sm">Complete service details • v2.1 Searchable Parts</p>
                     </div>
                 </div>
@@ -1731,7 +1731,7 @@ window.submitService = async function() {
         
         const serviceData = {
             printer_id: parseInt(printerId),
-            institution_id: institutionId,
+            institution_id: parseInt(institutionId),
             service_description: description.trim(),
             completion_photo: completionPhotoUrl,
             parts_used: partsUsed.length > 0 ? partsUsed : null
