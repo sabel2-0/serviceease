@@ -3271,7 +3271,7 @@ app.get('/api/users/me/service-requests', auth, async (req, res) => {
                 LEFT JOIN institutions i ON sr.institution_id = i.institution_id
                 LEFT JOIN users institution_user ON sr.requested_by = institution_user.id
                 LEFT JOIN users tech ON sr.technician_id = tech.id
-                LEFT JOIN service_approvals sa ON sr.id = sa.service_request_id
+                LEFT JOIN service_approvals sa ON sr.id = sa.service_id AND sa.service_type = 'service_request'
                 LEFT JOIN users approver ON sa.approved_by = approver.id
                 WHERE sr.printer_id IN (${printerIds.map(() => '?').join(',')})
                 ORDER BY sr.created_at DESC
@@ -3293,7 +3293,7 @@ app.get('/api/users/me/service-requests', auth, async (req, res) => {
                 LEFT JOIN institutions i ON sr.institution_id = i.institution_id
                 LEFT JOIN users institution_user ON sr.requested_by = institution_user.id
                 LEFT JOIN users tech ON sr.technician_id = tech.id
-                LEFT JOIN service_approvals sa ON sr.id = sa.service_request_id
+                LEFT JOIN service_approvals sa ON sr.id = sa.service_id AND sa.service_type = 'service_request'
                 LEFT JOIN users approver ON sa.approved_by = approver.id
                 WHERE sr.institution_id = ?
                 ORDER BY sr.created_at DESC
@@ -4615,7 +4615,7 @@ app.get('/api/walk-in-service-requests', authenticateAdmin, async (req, res) => 
             FROM service_requests sr
             LEFT JOIN users creator ON sr.requested_by = creator.id
             LEFT JOIN users tech ON sr.technician_id = tech.id
-            LEFT JOIN service_approvals sa ON sr.id = sa.service_request_id
+            LEFT JOIN service_approvals sa ON sr.id = sa.service_id AND sa.service_type = 'service_request'
             LEFT JOIN users approver ON sa.approved_by = approver.id
             WHERE sr.is_walk_in = TRUE
         `;
@@ -5998,7 +5998,11 @@ app.get('/api/admin/institution-service-calendar', authenticateAdmin, async (req
             if (!calendarData[date]) {
                 calendarData[date] = {
                     total_institutions: 0,
+                    total_services: 0,
                     total_printers_serviced: 0,
+                    total_approved: 0,
+                    total_rejected: 0,
+                    unique_printers: new Set(),
                     institutions: {}
                 };
             }
@@ -6008,13 +6012,18 @@ app.get('/api/admin/institution-service-calendar', authenticateAdmin, async (req
                     institution_id: service.institution_id,
                     institution_name: service.institution_name,
                     services: [],
-                    serviced_count: 0
+                    approved_services: [],
+                    rejected_services: [],
+                    service_count: 0,
+                    approved_count: 0,
+                    rejected_count: 0,
+                    unique_printers: new Set()
                 };
                 calendarData[date].total_institutions++;
             }
             
             // Add each service (count all services, not just unique printers)
-            calendarData[date].institutions[service.institution_id].services.push({
+            const serviceData = {
                 id: service.id,
                 service_number: service.service_number,
                 printer_id: service.printer_id,
@@ -6034,14 +6043,39 @@ app.get('/api/admin/institution-service-calendar', authenticateAdmin, async (req
                 approval_status: service.approval_status,
                 approval_notes: service.institution_admin_notes,
                 approved_by_name: service.approved_by_name
-            });
-            calendarData[date].institutions[service.institution_id].serviced_count++;
-            calendarData[date].total_printers_serviced++;
+            };
+            
+            calendarData[date].institutions[service.institution_id].services.push(serviceData);
+            
+            // Track unique printers
+            calendarData[date].institutions[service.institution_id].unique_printers.add(service.printer_id);
+            calendarData[date].unique_printers.add(service.printer_id);
+            
+            // Separate by status
+            if (service.status === 'completed') {
+                calendarData[date].institutions[service.institution_id].approved_services.push(serviceData);
+                calendarData[date].institutions[service.institution_id].approved_count++;
+                calendarData[date].total_approved++;
+            } else if (service.status === 'rejected') {
+                calendarData[date].institutions[service.institution_id].rejected_services.push(serviceData);
+                calendarData[date].institutions[service.institution_id].rejected_count++;
+                calendarData[date].total_rejected++;
+            }
+            
+            calendarData[date].institutions[service.institution_id].service_count++;
+            calendarData[date].total_services++;
         });
 
-        // Convert institutions object to array for each date
+        // Convert institutions object to array and Sets to counts
         Object.keys(calendarData).forEach(date => {
-            calendarData[date].institutions = Object.values(calendarData[date].institutions);
+            calendarData[date].total_printers_serviced = calendarData[date].unique_printers.size;
+            delete calendarData[date].unique_printers; // Remove Set before JSON
+            
+            calendarData[date].institutions = Object.values(calendarData[date].institutions).map(inst => ({
+                ...inst,
+                printers_serviced: inst.unique_printers.size,
+                unique_printers: undefined // Remove Set
+            }));
         });
 
         res.json({
