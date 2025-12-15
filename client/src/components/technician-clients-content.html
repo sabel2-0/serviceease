@@ -132,10 +132,10 @@
                     All Printers
                 </button>
                 <button onclick="filterPrintersByStatus('serviced')" class="printer-filter-btn whitespace-nowrap px-3 py-1.5 rounded-lg font-medium text-xs transition-all bg-slate-100 text-slate-700" data-filter="serviced">
-                    ? Serviced
+                     Serviced
                 </button>
                 <button onclick="filterPrintersByStatus('not-serviced')" class="printer-filter-btn whitespace-nowrap px-3 py-1.5 rounded-lg font-medium text-xs transition-all bg-slate-100 text-slate-700" data-filter="not-serviced">
-                    ? Not Serviced
+                     Not Serviced
                 </button>
             </div>
             
@@ -176,7 +176,7 @@
                     </div>
                     <div>
                         <h2 class="text-2xl font-bold">Submit Maintenance Service</h2>
-                        <p class="text-blue-100 text-sm">Complete service details � v2.1 Searchable Parts</p>
+                        <p class="text-blue-100 text-sm">Complete service details v2.1 Searchable Parts</p>
                     </div>
                 </div>
                 <button onclick="closeServiceModal()" class="bg-white/20 hover:bg-white/30 p-2.5 rounded-xl transition-all">
@@ -936,7 +936,7 @@ window.renderPrinterCard = function(printer, institutionId) {
             ${hasService ? `
                 <div class="text-xs text-slate-600 mb-3 bg-slate-50 px-3 py-2 border-l-2 border-slate-300">
                     Last service: ${new Date(printer.last_service_date).toLocaleDateString()}
-                    ${printer.total_service_count ? ` � Total services: ${printer.total_service_count}` : ''}
+                    ${printer.total_service_count ? `Total services: ${printer.total_service_count}` : ''}
                 </div>
             ` : ''}
             

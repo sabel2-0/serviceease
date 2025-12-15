@@ -246,7 +246,7 @@ window.showInstitutionDetail = async function(institutionId, dateStr, institutio
                             <div>
                                 <div class="font-medium text-slate-900">${printer.printer_name}</div>
                                 <div class="text-xs text-slate-600">
-                                    ?? ${printer.location || 'N/A'} � ?? ${printer.department || 'N/A'}
+                                    ?? ${printer.location || 'N/A'}?? ${printer.department || 'N/A'}
                                 </div>
                                 <div class="text-xs font-semibold text-green-700 mt-1">
                                     ${printer.service_number}
@@ -274,7 +274,7 @@ window.showInstitutionDetail = async function(institutionId, dateStr, institutio
                         <div>
                             <div class="font-medium text-slate-900">${printer.printer_name}</div>
                             <div class="text-xs text-slate-600">
-                                ?? ${printer.location || 'N/A'} � ?? ${printer.department || 'N/A'}
+                                ?? ${printer.location || 'N/A'} ?? ${printer.department || 'N/A'}
                             </div>
                         </div>
                     </div>
