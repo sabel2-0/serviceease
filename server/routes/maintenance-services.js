@@ -407,8 +407,8 @@ router.get('/:id', auth, async (req, res) => {
                 ms.status,
                 ms.created_at,
                 sa.approved_by as approved_by_user_id,
-                sa.approved_at,
-                sa.notes as approval_notes,
+                sa.reviewed_at as approved_at,
+                sa.institution_admin_notes as approval_notes,
                 ms.technician_id,
                 i.institution_id,
                 i.name as institution_name,
@@ -421,7 +421,7 @@ router.get('/:id', auth, async (req, res) => {
                 CONCAT(approver.first_name, ' ', approver.last_name) as approved_by_name
             FROM maintenance_services ms
             JOIN printers p ON ms.printer_id = p.id
-            JOIN institutions i ON ms.institution_id COLLATE utf8mb4_0900_ai_ci = i.institution_id
+            JOIN institutions i ON ms.institution_id = i.institution_id
             LEFT JOIN service_approvals sa ON sa.service_id = ms.id AND sa.service_type = 'maintenance_service'
             LEFT JOIN users tech ON ms.technician_id = tech.id
             LEFT JOIN users approver ON sa.approved_by = approver.id
@@ -795,19 +795,12 @@ router.get('/institution_admin/history', auth, async (req, res) => {
                 i.name as institution_name,
                 CONCAT(u_coord.first_name, ' ', u_coord.last_name) as institution_admin_name,
                 CONCAT(u_tech.first_name, ' ', u_tech.last_name) as technician_name,
-                u_tech.email as technician_email,
-                sa.approved_by,
-                sa.reviewed_at,
-                sa.status as approval_status,
-                sa.institution_admin_notes as approval_notes,
-                CONCAT(approver.first_name, ' ', approver.last_name) as approved_by_name
+                u_tech.email as technician_email
             FROM maintenance_services vs
             INNER JOIN printers inv ON vs.printer_id = inv.id
             INNER JOIN institutions i ON vs.institution_id = i.institution_id
             LEFT JOIN users u_coord ON i.user_id = u_coord.id
             INNER JOIN users u_tech ON vs.technician_id = u_tech.id
-            LEFT JOIN service_approvals sa ON sa.service_id = vs.id AND sa.service_type = 'maintenance_service'
-            LEFT JOIN users approver ON sa.approved_by = approver.id
             WHERE vs.institution_id IN (?)
             AND vs.status IN ('completed', 'rejected')
             ORDER BY vs.created_at DESC
@@ -819,19 +812,24 @@ router.get('/institution_admin/history', auth, async (req, res) => {
         
         // Fetch items_used for each service from service_items_used table
         for (const service of services) {
-            const [items] = await db.query(`
-                SELECT 
-                    siu.item_id,
-                    siu.quantity_used as qty,
-                    siu.notes as unit,
-                    pi.name,
-                    pi.brand
-                FROM service_items_used siu
-                INNER JOIN printer_items pi ON siu.item_id = pi.id
-                WHERE siu.service_id = ?
-            `, [service.id]);
-            
-            service.items_used = items;
+            try {
+                const [items] = await db.query(`
+                    SELECT 
+                        siu.item_id,
+                        siu.quantity_used as qty,
+                        siu.notes as unit,
+                        pi.name,
+                        pi.brand
+                    FROM service_items_used siu
+                    INNER JOIN printer_items pi ON siu.item_id = pi.id
+                    WHERE siu.service_id = ? AND siu.service_type = 'maintenance_service'
+                `, [service.id]);
+                
+                service.items_used = items;
+            } catch (itemError) {
+                console.error(`Error fetching items for service ${service.id}:`, itemError);
+                service.items_used = []; // Set empty array on error
+            }
         }
         
         res.json({ services });

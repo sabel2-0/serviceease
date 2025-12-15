@@ -10,16 +10,16 @@ const oldPattern = `            <div class="text-xs text-gray-500 mt-1">Request 
           \${statusBadge}
         </div>
         
-        \${needsApproval ? \`
+        \${needsApproval\`
           <div class="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-3">`;
 
 const newPattern = `            <div class="text-xs text-gray-500 mt-1">Request #\${req.id}</div>
-            \${req.serial_number ? \`<div class="text-xs text-gray-400 mt-0.5">SN: \${req.serial_number}</div>\` : ''}
+            \${req.serial_number\`<div class="text-xs text-gray-400 mt-0.5">SN: \${req.serial_number}</div>\` : ''}
           </div>
           \${statusBadge}
         </div>
         
-        \${needsApproval ? \`
+        \${needsApproval\`
           <div class="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-3">`;
 
 content = content.replace(oldPattern, newPattern);
@@ -33,7 +33,7 @@ const photoPattern = `          </div>
 const newPhotoSection = `          </div>
         \` : ''}
         
-        \${req.completion_photo_url ? \`
+        \${req.completion_photo_url\`
           <div class="mb-3">
             <p class="text-xs font-medium text-gray-700 mb-2">📸 Completion Photo</p>
             <div class="rounded-lg overflow-hidden border-2 border-blue-200 shadow-sm">
@@ -45,7 +45,7 @@ const newPhotoSection = `          </div>
           </div>
         \` : ''}
         
-        \${req.technician_notes ? \`
+        \${req.technician_notes\`
           <div class="mb-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
             <p class="text-xs font-semibold text-blue-800 mb-1">🔧 Technician Notes</p>
             <p class="text-sm text-blue-900">\${req.technician_notes}</p>
