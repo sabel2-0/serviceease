@@ -27,7 +27,7 @@ router.get('/institution/:institution_id', authenticateinstitution_admin, async 
              FROM service_requests sr
              LEFT JOIN institutions i ON sr.institution_id = i.institution_id
              LEFT JOIN printers ii ON sr.printer_id = ii.id
-             LEFT JOIN service_approvals sa ON sr.id = sa.service_request_id
+             LEFT JOIN service_approvals sa ON sr.id = sa.service_id AND sa.service_type = 'service_request'
              LEFT JOIN users approver ON sa.approved_by = approver.id
              WHERE sr.institution_id = ?
              ORDER BY sr.created_at DESC`,
@@ -519,7 +519,7 @@ router.get('/:id', auth, async (req, res) => {
             FROM service_items_used spu
             JOIN printer_items pp ON spu.item_id = pp.id
             LEFT JOIN users u ON spu.used_by = u.id
-            WHERE spu.service_request_id = ?
+            WHERE spu.service_id = ?
             ORDER BY spu.used_at DESC
         `, [id]);
         

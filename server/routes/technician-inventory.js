@@ -365,7 +365,7 @@ router.get('/requests/:id', authenticateTechnician, async (req, res) => {
 router.post('/use-part', authenticateTechnician, async (req, res) => {
     try {
         const technicianId = req.user.id;
-        const { item_id, quantity_used, service_request_id, notes } = req.body;
+        const { item_id, quantity_used, service_id, notes } = req.body;
         
         // Validation
         if (!item_id || !quantity_used || quantity_used < 1) {
@@ -410,7 +410,7 @@ router.post('/use-part', authenticateTechnician, async (req, res) => {
             
             // Log the usage (you can create a parts_usage table for this)
             // For now, we'll just log it to console
-            console.log(`Technician ${technicianId} used ${quantity_used} units of part ${item_id}${service_request_id ? ` for service request ${service_request_id}` : ''}`);
+            console.log(`Technician ${technicianId} used ${quantity_used} units of part ${item_id}${service_id ? ` for service request ${service_id}` : ''}`);
             
             await db.query('COMMIT');
             
@@ -434,5 +434,6 @@ router.post('/use-part', authenticateTechnician, async (req, res) => {
 });
 
 module.exports = router;
+
 
 

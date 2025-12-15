@@ -285,7 +285,7 @@ router.get('/statistics', async (req, res) => {
                 COUNT(DISTINCT spu.item_id) as unique_parts_used,
                 COUNT(DISTINCT sr.printer_id) as unique_printers
             FROM service_requests sr
-            LEFT JOIN service_items_used spu ON sr.id = spu.service_request_id
+            LEFT JOIN service_items_used spu ON sr.id = spu.service_id
             WHERE sr.status = 'completed'
         `);
 
@@ -298,7 +298,7 @@ router.get('/statistics', async (req, res) => {
                 COUNT(*) as frequency
             FROM service_requests sr
             INNER JOIN printers ii ON sr.printer_id = ii.id
-            INNER JOIN service_items_used spu ON sr.id = spu.service_request_id
+            INNER JOIN service_items_used spu ON sr.id = spu.service_id
             INNER JOIN printer_items pp ON spu.item_id = pp.id
             WHERE sr.status = 'completed'
             GROUP BY sr.id, ii.brand, ii.model
@@ -330,6 +330,7 @@ router.get('/statistics', async (req, res) => {
 });
 
 module.exports = router;
+
 
 
 

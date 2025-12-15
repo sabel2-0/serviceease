@@ -45,7 +45,7 @@ router.get('/service-history', authenticateTechnician, async (req, res) => {
             LEFT JOIN institutions i ON sr.institution_id = i.institution_id
             LEFT JOIN users institution_user ON sr.requested_by = institution_user.id
             LEFT JOIN printers ii ON sr.printer_id = ii.id
-            LEFT JOIN service_approvals sa ON sr.id = sa.service_request_id
+            LEFT JOIN service_approvals sa ON sr.id = sa.service_id AND sa.service_type = 'service_request'
             LEFT JOIN users approver ON sa.approved_by = approver.id
             WHERE sr.technician_id = ?
             ORDER BY sr.completed_at DESC
@@ -86,7 +86,7 @@ router.get('/service-history', authenticateTechnician, async (req, res) => {
                 FROM service_items_used spu
                 LEFT JOIN printer_items pp ON spu.item_id = pp.id
                 LEFT JOIN users u ON spu.used_by = u.id
-                WHERE spu.service_request_id = ?
+                WHERE spu.service_id = ?
                 ORDER BY spu.used_at ASC
             `, [serviceHistory[i].id]);
             
@@ -210,6 +210,7 @@ router.get('/stats', authenticateTechnician, async (req, res) => {
 });
 
 module.exports = router;
+
 
 
 

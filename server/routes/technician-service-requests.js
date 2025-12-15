@@ -182,7 +182,7 @@ router.get('/service-requests/:requestId', authenticateTechnician, async (req, r
             FROM service_items_used spu
             JOIN printer_items pp ON spu.item_id = pp.id
             LEFT JOIN users u ON spu.used_by = u.id
-            WHERE spu.service_request_id = ?
+            WHERE spu.service_id = ?
             ORDER BY spu.used_at DESC
         `, [requestId]);
         
@@ -480,7 +480,7 @@ router.post('/service-requests/:requestId/complete', authenticateTechnician, asy
             
             // Delete existing parts if resubmitting (to prevent duplicates)
             await db.query(
-                'DELETE FROM service_items_used WHERE service_request_id = ?',
+                'DELETE FROM service_items_used WHERE service_id = ?',
                 [requestId]
             );
             
@@ -517,7 +517,7 @@ router.post('/service-requests/:requestId/complete', authenticateTechnician, asy
                         if (partInfo.length > 0) {
                             const brandInfo = part.brand ? ` (Brand: ${part.brand})` : '';
                             console.log('[COMPLETE] Inserting part usage:', {
-                                service_request_id: requestId,
+                                service_id: requestId,
                                 item_id: partInfo[0].id,
                                 quantity_used: part.qty,
                                 notes: `Used ${part.qty} ${part.unit || 'pieces'}${brandInfo}`,
@@ -525,7 +525,7 @@ router.post('/service-requests/:requestId/complete', authenticateTechnician, asy
                             });
                             await db.query(
                                 `INSERT INTO service_items_used 
-                                 (service_request_id, item_id, quantity_used, notes, used_by)
+                                 (service_id, item_id, quantity_used, notes, used_by)
                                  VALUES (?, ?, ?, ?, ?)`,
                                 [requestId, partInfo[0].id, part.qty, `Used ${part.qty} ${part.unit || 'pieces'}${brandInfo}`, technicianId]
                             );
@@ -539,15 +539,15 @@ router.post('/service-requests/:requestId/complete', authenticateTechnician, asy
             
             // Create or update service approval record
             const [existingApproval] = await db.query(
-                'SELECT id FROM service_approvals WHERE service_request_id = ?',
+                'SELECT id FROM service_approvals WHERE service_id = ?',
                 [requestId]
             );
             
             if (existingApproval.length === 0) {
                 await db.query(
                     `INSERT INTO service_approvals 
-                     (service_request_id, status, technician_notes, submitted_at)
-                     VALUES (?, ?, ?, NOW())`,
+                     (service_id, service_type, status, technician_notes, submitted_at)
+                     VALUES (?, 'service_request', ?, ?, NOW())`,
                     [requestId, 'pending_approval', actions]
                 );
             } else {
@@ -560,7 +560,7 @@ router.post('/service-requests/:requestId/complete', authenticateTechnician, asy
                          approved_by = NULL,
                          institution_admin_notes = NULL,
                          reviewed_at = NULL
-                     WHERE service_request_id = ?`,
+                     WHERE service_id = ?`,
                     [actions, requestId]
                 );
             }
@@ -760,6 +760,7 @@ router.post('/service-requests/:requestId/reassign', authenticateTechnician, asy
 // which returns ONLY the parts from the technician's personal inventory (not admin's central inventory)
 
 module.exports = router;
+
 
 
 

@@ -49,7 +49,7 @@ router.get('/pending', authenticateinstitution_admin, async (req, res) => {
         const [pendingApprovals] = await db.query(`
             SELECT 
                 sa.id as approval_id,
-                sa.service_request_id,
+                sa.service_id,
                 sa.status as approval_status,
                 sa.submitted_at,
                 sa.technician_notes as actions_performed,
@@ -67,16 +67,17 @@ router.get('/pending', authenticateinstitution_admin, async (req, res) => {
                     SEPARATOR ', '
                 ) as parts_used
             FROM service_approvals sa
-            JOIN service_requests sr ON sa.service_request_id = sr.id
+            JOIN service_requests sr ON sa.service_id = sr.id
             JOIN users tech ON sr.technician_id = tech.id
             JOIN institutions i ON sr.institution_id = i.institution_id
             LEFT JOIN printers ii ON sr.printer_id = ii.id
-            LEFT JOIN service_items_used spu ON sr.id = spu.service_request_id
+            LEFT JOIN service_items_used spu ON sr.id = spu.service_id
             LEFT JOIN printer_items pp ON spu.item_id = pp.id
             WHERE i.user_id = ?
                 AND sa.status = 'pending_approval'
+                AND sa.service_type = 'service_request'
                 AND sr.status = 'pending_approval'
-            GROUP BY sa.id, sa.service_request_id, sa.status, sa.submitted_at,
+            GROUP BY sa.id, sa.service_id, sa.status, sa.submitted_at,
                      sa.technician_notes, sr.description, sr.priority, ii.location, ii.department, sr.resolution_notes,
                      sr.technician_id, tech.first_name, tech.last_name, i.name
             ORDER BY sa.submitted_at DESC
@@ -100,7 +101,7 @@ router.get('/:approvalId/details', authenticateinstitution_admin, async (req, re
         const [approvalDetails] = await db.query(`
             SELECT 
                 sa.id as approval_id,
-                sa.service_request_id,
+                sa.service_id,
                 sa.status as approval_status,
                 sa.submitted_at,
                 sa.reviewed_at,
@@ -113,10 +114,10 @@ router.get('/:approvalId/details', authenticateinstitution_admin, async (req, re
                 sa.technician_notes as additional_notes,
                 sa.submitted_at as job_created_at
             FROM service_approvals sa
-            JOIN service_requests sr ON sa.service_request_id = sr.id
+            JOIN service_requests sr ON sa.service_id = sr.id
             JOIN users tech ON sr.technician_id = tech.id
             JOIN institutions i ON sr.institution_id = i.institution_id
-            WHERE sa.id = ? AND i.user_id = ?
+            WHERE sa.id = ? AND i.user_id = ? AND sa.service_type = 'service_request'
         `, [approvalId, institution_adminId]);
         
         if (approvalDetails.length === 0) {
@@ -135,9 +136,9 @@ router.get('/:approvalId/details', authenticateinstitution_admin, async (req, re
                 pp.brand
             FROM service_items_used spu
             JOIN printer_items pp ON spu.item_id = pp.id
-            WHERE spu.service_request_id = ?
+            WHERE spu.service_id = ?
             ORDER BY pp.category, pp.name
-        `, [approvalDetails[0].service_request_id]);
+        `, [approvalDetails[0].service_id]);
         
         res.json({
             approval: approvalDetails[0],
@@ -158,18 +159,18 @@ router.post('/:approvalId/approve', authenticateinstitution_admin, async (req, r
         
         // Verify the approval belongs to this institution_admin's service requests
         const [approvalCheck] = await db.query(`
-            SELECT sa.service_request_id, sr.technician_id, sa.status, sr.status as request_status
+            SELECT sa.service_id, sr.technician_id, sa.status, sr.status as request_status
             FROM service_approvals sa
-            JOIN service_requests sr ON sa.service_request_id = sr.id
+            JOIN service_requests sr ON sa.service_id = sr.id
             JOIN institutions i ON sr.institution_id = i.institution_id
-            WHERE sa.id = ? AND i.user_id = ? AND sa.status = 'pending_approval'
+            WHERE sa.id = ? AND i.user_id = ? AND sa.status = 'pending_approval' AND sa.service_type = 'service_request'
         `, [approvalId, institution_adminId]);
         
         if (approvalCheck.length === 0) {
             return res.status(404).json({ error: 'Service approval not found or already processed' });
         }
         
-        const serviceRequestId = approvalCheck[0].service_request_id;
+        const serviceRequestId = approvalCheck[0].service_id;
         const technicianId = approvalCheck[0].technician_id;
         
         // Get institution_admin information first
@@ -214,7 +215,7 @@ router.post('/:approvalId/approve', authenticateinstitution_admin, async (req, r
             const [partsToDeduct] = await db.query(`
                 SELECT spu.item_id, spu.quantity_used
                 FROM service_items_used spu
-                WHERE spu.service_request_id = ?
+                WHERE spu.service_id = ?
             `, [serviceRequestId]);
             
             for (const part of partsToDeduct) {
@@ -263,7 +264,7 @@ router.post('/:approvalId/approve', authenticateinstitution_admin, async (req, r
             
             res.json({ 
                 message: 'Service completion approved successfully',
-                service_request_id: serviceRequestId
+                service_id: serviceRequestId
             });
             
         } catch (error) {
@@ -290,18 +291,18 @@ router.post('/:approvalId/reject', authenticateinstitution_admin, async (req, re
         
         // Verify the approval belongs to this institution_admin's service requests
         const [approvalCheck] = await db.query(`
-            SELECT sa.service_request_id, sr.technician_id, sa.status
+            SELECT sa.service_id, sr.technician_id, sa.status
             FROM service_approvals sa
-            JOIN service_requests sr ON sa.service_request_id = sr.id
+            JOIN service_requests sr ON sa.service_id = sr.id
             JOIN institutions i ON sr.institution_id = i.institution_id
-            WHERE sa.id = ? AND i.user_id = ? AND sa.status = 'pending_approval'
+            WHERE sa.id = ? AND i.user_id = ? AND sa.status = 'pending_approval' AND sa.service_type = 'service_request'
         `, [approvalId, institution_adminId]);
         
         if (approvalCheck.length === 0) {
             return res.status(404).json({ error: 'Service approval not found or already processed' });
         }
         
-        const serviceRequestId = approvalCheck[0].service_request_id;
+        const serviceRequestId = approvalCheck[0].service_id;
         const technicianId = approvalCheck[0].technician_id;
         
         // Start transaction
@@ -327,7 +328,7 @@ router.post('/:approvalId/reject', authenticateinstitution_admin, async (req, re
             // Remove parts used records (they can be re-added when resubmitted)
             await db.query(`
                 DELETE FROM service_items_used 
-                WHERE service_request_id = ?
+                WHERE service_id = ?
             `, [serviceRequestId]);
             
             // Add history record
@@ -379,7 +380,7 @@ router.post('/:approvalId/reject', authenticateinstitution_admin, async (req, re
             
             res.json({ 
                 message: 'Service completion rejected',
-                service_request_id: serviceRequestId
+                service_id: serviceRequestId
             });
             
         } catch (error) {
@@ -394,6 +395,7 @@ router.post('/:approvalId/reject', authenticateinstitution_admin, async (req, re
 });
 
 module.exports = router;
+
 
 
 
