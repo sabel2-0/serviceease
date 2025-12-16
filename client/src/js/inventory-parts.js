@@ -560,10 +560,16 @@ class InventoryPartsManager {
 
     getFormData() {
         const category = document.getElementById('partCategory')?.value || '';
+        
+        // Get the selected item type from radio buttons
+        const selectedItemType = document.querySelector('input[name="itemType"]:checked')?.value;
+        const itemType = selectedItemType === 'consumable' ? 'consumable' : 'printer_part';
+        
         const formData = {
             name: document.getElementById('partName')?.value.trim() || '',
             brand: document.getElementById('partBrand')?.value.trim() || '',
             category: category,
+            item_type: itemType,
             quantity: parseInt(document.getElementById('partStock')?.value) || 0,
             is_universal: document.getElementById('partUniversal')?.checked ? 1 : 0
         };
