@@ -2722,6 +2722,10 @@ async function handleJobCompletion(e) {
                 const consumptionTypeField = entry.querySelector('.consumption-type');
                 const amountConsumedField = entry.querySelector('.consumption-amount');
                 const itemCapacityField = entry.querySelector('.consumption-item-capacity');
+                const consumptionFieldsDiv = entry.querySelector('.consumption-fields');
+                
+                // Only include consumption data if consumption fields are visible (meaning it's a consumable item)
+                const isConsumable = consumptionFieldsDiv && !consumptionFieldsDiv.classList.contains('hidden');
                 
                 const consumptionType = consumptionTypeField?.value || null;
                 const amountConsumed = amountConsumedField?.value || null;
@@ -2729,6 +2733,8 @@ async function handleJobCompletion(e) {
                 
                 console.log('Consumption data for part:', {
                     name: nameSelect.value,
+                    isConsumable,
+                    consumptionFieldsVisible: isConsumable,
                     consumptionType,
                     amountConsumed,
                     itemCapacity,
@@ -2743,11 +2749,13 @@ async function handleJobCompletion(e) {
                     unit: unitSelect.value || 'pieces'
                 };
                 
-                // Add consumption data if available
-                if (consumptionType) {
+                // Add consumption data only for consumable items with visible consumption fields
+                if (isConsumable && consumptionType) {
                     partData.consumption_type = consumptionType;
                     partData.amount_consumed = amountConsumed ? parseFloat(amountConsumed) : null;
-                    console.log('Adding consumption data to part:', partData);
+                    console.log('✅ Adding consumption data to part:', partData);
+                } else {
+                    console.log('⚠️ Not a consumable or no consumption type - skipping consumption data');
                 }
                 
                 parts.push(partData);
