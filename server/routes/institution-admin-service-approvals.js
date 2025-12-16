@@ -222,19 +222,37 @@ router.post('/:approvalId/approve', authenticateinstitution_admin, async (req, r
                 [resolutionNotes, serviceRequestId]
             );
             
-            // Deduct parts from technician inventory
+            // Deduct parts from technician inventory based on consumption type
             const [partsToDeduct] = await db.query(`
-                SELECT spu.item_id, spu.quantity_used
+                SELECT spu.item_id, spu.quantity_used, spu.consumption_type, spu.amount_consumed
                 FROM service_items_used spu
                 WHERE spu.service_id = ? AND spu.service_type = 'service_request'
             `, [serviceRequestId]);
             
             for (const part of partsToDeduct) {
-                await db.query(`
-                    UPDATE technician_inventory 
-                    SET quantity = GREATEST(0, quantity - ?)
-                    WHERE technician_id = ? AND item_id = ?
-                `, [part.quantity_used, technicianId, part.item_id]);
+                if (part.consumption_type === 'full') {
+                    // Full consumption: deduct quantity and reset remaining volume/weight
+                    await db.query(`
+                        UPDATE technician_inventory 
+                        SET quantity = GREATEST(0, quantity - ?),
+                            remaining_volume = NULL,
+                            remaining_weight = NULL,
+                            is_opened = 0
+                        WHERE technician_id = ? AND item_id = ?
+                    `, [part.quantity_used, technicianId, part.item_id]);
+                } else if (part.consumption_type === 'partial' && part.amount_consumed) {
+                    // Partial consumption: only deduct from remaining volume/weight, don't touch quantity
+                    // The remaining volume/weight was already updated during service submission
+                    // No need to deduct quantity for partial consumption
+                    console.log(`Partial consumption - quantity not deducted for item ${part.item_id}`);
+                } else {
+                    // No consumption type (old data or non-consumables): deduct quantity as before
+                    await db.query(`
+                        UPDATE technician_inventory 
+                        SET quantity = GREATEST(0, quantity - ?)
+                        WHERE technician_id = ? AND item_id = ?
+                    `, [part.quantity_used, technicianId, part.item_id]);
+                }
             }
             
             const [institutionInfo] = await db.query(`

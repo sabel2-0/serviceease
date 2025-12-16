@@ -977,11 +977,11 @@ router.patch('/institution_admin/:id/approve', auth, async (req, res) => {
         );
         
         // Deduct parts from inventory after institution_admin approval
-        // Fetch items_used from service_items_used table
+        // Fetch items_used with consumption data from service_items_used table
         const [itemsUsedRows] = await db.query(`
-            SELECT item_id, quantity_used as qty
+            SELECT item_id, quantity_used as qty, consumption_type, amount_consumed
             FROM service_items_used
-            WHERE service_id = ?
+            WHERE service_id = ? AND service_type = 'maintenance_service'
         `, [serviceId]);
         
         if (itemsUsedRows && itemsUsedRows.length > 0) {
@@ -1002,7 +1002,7 @@ router.patch('/institution_admin/:id/approve', auth, async (req, res) => {
             for (const part of itemsUsedRows) {
                 try {
                     console.log(`\n🔍 Processing item_id: ${part.item_id}`);
-                    console.log(`   Qty to deduct: ${part.qty}, Unit: ${part.unit}`);
+                    console.log(`   Qty to deduct: ${part.qty}, Consumption type: ${part.consumption_type}`);
                     
                     // Query by item_id directly
                     const [inventoryItem] = await db.query(
@@ -1020,15 +1020,40 @@ router.patch('/institution_admin/:id/approve', auth, async (req, res) => {
                         const currentQty = inventoryItem[0].quantity;
                         const deductQty = parseInt(part.qty) || 0;
                         
-                        if (currentQty >= deductQty) {
-                            const newQty = currentQty - deductQty;
-                            await db.query(
-                                'UPDATE technician_inventory SET quantity = ?, last_updated = NOW() WHERE id = ?',
-                                [newQty, inventoryItem[0].id]
-                            );
-                            console.log(`   ✅ Deducted ${deductQty} of "${inventoryItem[0].name}", new qty: ${newQty}`);
+                        // Check consumption type
+                        if (part.consumption_type === 'full') {
+                            // Full consumption: deduct quantity and reset remaining volume/weight
+                            if (currentQty >= deductQty) {
+                                const newQty = currentQty - deductQty;
+                                await db.query(
+                                    `UPDATE technician_inventory 
+                                     SET quantity = ?, 
+                                         remaining_volume = NULL,
+                                         remaining_weight = NULL,
+                                         is_opened = 0,
+                                         last_updated = NOW() 
+                                     WHERE id = ?`,
+                                    [newQty, inventoryItem[0].id]
+                                );
+                                console.log(`   ✅ Full consumption - Deducted ${deductQty} of "${inventoryItem[0].name}", new qty: ${newQty}`);
+                            } else {
+                                console.log(`   ⚠️ Insufficient stock: have ${currentQty}, need ${deductQty}`);
+                            }
+                        } else if (part.consumption_type === 'partial' && part.amount_consumed) {
+                            // Partial consumption: don't deduct quantity (already updated remaining volume/weight during submission)
+                            console.log(`   ✅ Partial consumption (${part.amount_consumed}ml/g) - Quantity not deducted`);
                         } else {
-                            console.log(`   ⚠️ Insufficient stock: have ${currentQty}, need ${deductQty}`);
+                            // No consumption type (old data or non-consumables): deduct quantity as before
+                            if (currentQty >= deductQty) {
+                                const newQty = currentQty - deductQty;
+                                await db.query(
+                                    'UPDATE technician_inventory SET quantity = ?, last_updated = NOW() WHERE id = ?',
+                                    [newQty, inventoryItem[0].id]
+                                );
+                                console.log(`   ✅ Deducted ${deductQty} of "${inventoryItem[0].name}", new qty: ${newQty}`);
+                            } else {
+                                console.log(`   ⚠️ Insufficient stock: have ${currentQty}, need ${deductQty}`);
+                            }
                         }
                     } else {
                         console.log(`   ❌ Item ID ${part.item_id} not found in technician's inventory`);
