@@ -410,7 +410,8 @@
                             <input type="hidden" id="selectedItemTypeValue" name="selectedItemTypeValue" value="">
                             
                             <!-- Step 1: Item Type Selection - Show First -->
-                            <div class="space-y-4">\n                                <div class="text-center mb-6">
+                            <div id="itemTypeSelectionSection" class="space-y-4">
+                                <div class="text-center mb-6">
                                     <h4 class="text-lg font-bold text-slate-800 mb-2">What are you adding?</h4>
                                     <p class="text-sm text-slate-600">Choose the type of item you want to add to inventory</p>
                                 </div>
@@ -717,7 +718,7 @@
         const itemDetailsSection = document.getElementById('itemDetailsSection');
         const actionButtonsSection = document.getElementById('actionButtonsSection');
         const selectedItemType = document.getElementById('selectedItemType');
-        const itemTypeSelectionSection = document.querySelector('#partForm > div:first-child');
+        const itemTypeSelectionSection = document.getElementById('itemTypeSelectionSection');
         const additionalDetailsSection = document.getElementById('additionalDetailsSection');
         
         // Additional detail fields
