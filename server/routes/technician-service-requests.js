@@ -542,48 +542,16 @@ router.post('/service-requests/:requestId/complete', authenticateTechnician, asy
                                 ]
                             );
                             
-                            // Handle partial consumption for technician inventory updates
-                            if (part.consumption_type === 'partial' && part.amount_consumed) {
-                                // Get item details AND current remaining from technician inventory
-                                const [techInventory] = await db.query(
-                                    `SELECT ti.remaining_volume, ti.remaining_weight, pi.ink_volume, pi.toner_weight
-                                     FROM technician_inventory ti
-                                     JOIN printer_items pi ON ti.item_id = pi.id
-                                     WHERE ti.technician_id = ? AND ti.item_id = ?`,
-                                    [technicianId, partInfo[0].id]
-                                );
-                                
-                                if (techInventory.length > 0) {
-                                    const item = techInventory[0];
-                                    
-                                    // Determine if it's ink or toner and get current remaining amount
-                                    const isInk = item.ink_volume && parseFloat(item.ink_volume) > 0;
-                                    const currentRemaining = isInk ? 
-                                        (item.remaining_volume || (item.ink_volume * part.qty)) : 
-                                        (item.remaining_weight || (item.toner_weight * part.qty));
-                                    
-                                    // Calculate new remaining amount after consumption
-                                    const newRemaining = parseFloat(currentRemaining) - parseFloat(part.amount_consumed);
-                                    
-                                    // Update the TECHNICIAN's inventory item remaining amount
-                                    const updateColumn = isInk ? 'remaining_volume' : 'remaining_weight';
-                                    await db.query(
-                                        `UPDATE technician_inventory 
-                                         SET ${updateColumn} = ?, is_opened = 1 
-                                         WHERE technician_id = ? AND item_id = ?`,
-                                        [newRemaining > 0 ? newRemaining : 0, technicianId, partInfo[0].id]
-                                    );
-                                    
-                                    console.log('[COMPLETE] Updated partial consumption in technician inventory:', {
-                                        technicianId: technicianId,
-                                        itemId: partInfo[0].id,
-                                        column: updateColumn,
-                                        previousRemaining: currentRemaining,
-                                        consumed: part.amount_consumed,
-                                        newRemaining: newRemaining > 0 ? newRemaining : 0
-                                    });
-                                }
-                            }
+                            // NOTE: Inventory deduction (quantity and remaining volume/weight) 
+                            // will happen ONLY when institution admin approves the service
+                            // This just records what was used for approval review
+                            
+                            console.log('[COMPLETE] Part usage recorded (inventory will be deducted upon approval):', {
+                                item_id: partInfo[0].id,
+                                quantity: part.qty,
+                                consumption_type: part.consumption_type,
+                                amount_consumed: part.amount_consumed
+                            });
                             
                             console.log('[COMPLETE] Part usage inserted successfully');
                         } else {
