@@ -1167,6 +1167,41 @@ window.openServiceModal = async function(printerId, institutionId, brand, model,
                         </select>
                     </div>
                 </div>
+                
+                <!-- Consumption Type (only for consumables with volume/weight) -->
+                <div class="vs-consumption-fields hidden">
+                    <div class="col-span-2 border-t-2 border-slate-200 pt-3 mt-2">
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">
+                            <svg class="w-3.5 h-3.5 text-orange-500 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            </svg>
+                            Consumption Type <span class="vs-consumption-capacity-display text-xs text-blue-600"></span>
+                        </label>
+                        <div class="grid grid-cols-2 gap-2 mb-3">
+                            <button type="button" data-consumption-type="full" class="vs-consumption-btn-full bg-blue-600 text-white p-3 border-2 border-blue-600 rounded-xl font-semibold text-sm hover:bg-blue-700 transition-all" onclick="window.selectVSConsumptionType('full', this)">
+                                ✓ Full (All Used)
+                            </button>
+                            <button type="button" data-consumption-type="partial" class="vs-consumption-btn-partial bg-gray-100 text-gray-700 p-3 border-2 border-slate-300 rounded-xl font-semibold text-sm hover:bg-orange-50 hover:border-orange-400 transition-all" onclick="window.selectVSConsumptionType('partial', this)">
+                                Partial (Some Used)
+                            </button>
+                        </div>
+                        <input type="hidden" class="vs-consumption-type" value="full">
+                        <input type="hidden" class="vs-consumption-item-capacity" value="">
+                        <input type="hidden" class="vs-tech-inventory-id" value="">
+                    </div>
+                    
+                    <!-- Amount Consumed Field (shown when partial is selected) -->
+                    <div class="vs-consumption-amount-input hidden col-span-2">
+                        <label class="block text-sm font-semibold text-slate-700 mb-1.5">
+                            <svg class="w-3.5 h-3.5 text-orange-500 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                            </svg>
+                            Amount Used <span class="vs-unit-label">(ml/grams)</span>
+                        </label>
+                        <input type="number" class="vs-consumption-amount w-full p-3 border-2 border-orange-300 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 font-semibold text-sm text-slate-700" 
+                               min="0.1" step="0.1" placeholder="e.g., 50">
+                    </div>
+                </div>
             </div>
         </div>
     `;
@@ -1738,32 +1773,31 @@ window.addNewPart = function() {
                         <svg class="w-3.5 h-3.5 text-orange-500 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                         </svg>
-                        Consumption Type <span class="vs-item-capacity text-xs text-blue-600"></span>
+                        Consumption Type <span class="vs-consumption-capacity-display text-xs text-blue-600"></span>
                     </label>
                     <div class="grid grid-cols-2 gap-2 mb-3">
-                        <button type="button" class="vs-consumption-full p-3 border-2 border-green-500 bg-green-50 rounded-xl font-semibold text-green-700 hover:bg-green-100 transition-all" onclick="selectVSConsumptionType(this, 'full')">
+                        <button type="button" data-consumption-type="full" class="vs-consumption-btn-full bg-blue-600 text-white p-3 border-2 border-blue-600 rounded-xl font-semibold text-sm hover:bg-blue-700 transition-all" onclick="window.selectVSConsumptionType('full', this)">
                             ✓ Full (All Used)
                         </button>
-                        <button type="button" class="vs-consumption-partial p-3 border-2 border-slate-300 bg-white rounded-xl font-semibold text-slate-600 hover:bg-orange-50 hover:border-orange-400 transition-all" onclick="selectVSConsumptionType(this, 'partial')">
+                        <button type="button" data-consumption-type="partial" class="vs-consumption-btn-partial bg-gray-100 text-gray-700 p-3 border-2 border-slate-300 rounded-xl font-semibold text-sm hover:bg-orange-50 hover:border-orange-400 transition-all" onclick="window.selectVSConsumptionType('partial', this)">
                             Partial (Some Used)
                         </button>
                     </div>
                     <input type="hidden" class="vs-consumption-type" value="full">
-                    <input type="hidden" class="vs-item-capacity-value" value="">
-                    <input type="hidden" class="vs-capacity-unit" value="">
+                    <input type="hidden" class="vs-consumption-item-capacity" value="">
+                    <input type="hidden" class="vs-tech-inventory-id" value="">
                 </div>
                 
                 <!-- Amount Consumed Field (shown when partial is selected) -->
-                <div class="vs-amount-field hidden col-span-2">
+                <div class="vs-consumption-amount-input hidden col-span-2">
                     <label class="block text-sm font-semibold text-slate-700 mb-1.5">
                         <svg class="w-3.5 h-3.5 text-orange-500 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
                         </svg>
                         Amount Used <span class="vs-unit-label">(ml/grams)</span>
                     </label>
-                    <input type="number" class="vs-amount-consumed w-full p-3 border-2 border-orange-300 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 font-semibold text-slate-700" 
+                    <input type="number" class="vs-consumption-amount w-full p-3 border-2 border-orange-300 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 font-semibold text-sm text-slate-700" 
                            min="0.1" step="0.1" placeholder="e.g., 50">
-                    <div class="text-xs text-slate-500 mt-1 vs-amount-hint"></div>
                 </div>
             </div>
         </div>
