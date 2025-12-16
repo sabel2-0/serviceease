@@ -1354,7 +1354,7 @@ function setupPartSearch(partEntry) {
 }
 
 // Select part from card (Voluntary Service)
-window.selectVSPartFromCard = function(cardElement) {
+window.selectVSPartFromCard = async function(cardElement) {
     const partEntry = cardElement.closest('.vs-part-entry');
     const partId = cardElement.dataset.partId;
     const partName = cardElement.dataset.partName;
@@ -1379,13 +1379,68 @@ window.selectVSPartFromCard = function(cardElement) {
     
     // Update stock display
     const stockColor = stock > 0 ? 'green' : 'red';
-    stockDiv.innerHTML = `<span class="text-${stockColor}-600"> Stock: ${stock}</span>`;
+    stockDiv.innerHTML = `<span class="text-${stockColor}-600">📦 Stock: ${stock}</span>`;
     
     // Hide grid container
     const gridContainer = partEntry.querySelector('.vs-parts-grid-container');
     gridContainer.classList.add('hidden');
     
-    console.log(`? Selected part: ${partName} (ID: ${partId}, Stock: ${stock})`);
+    // Check if item has volume/weight and show consumption fields
+    const part = vsAllParts.find(p => p.item_id == partId);
+    const consumptionFields = partEntry.querySelector('.vs-consumption-fields');
+    
+    if (part && (part.ink_volume || part.toner_weight)) {
+        const capacityValue = part.ink_volume || part.toner_weight;
+        const capacityUnit = part.ink_volume ? 'ml' : 'grams';
+        
+        // Store capacity info
+        partEntry.querySelector('.vs-item-capacity-value').value = capacityValue;
+        partEntry.querySelector('.vs-capacity-unit').value = capacityUnit;
+        
+        // Update capacity display
+        partEntry.querySelector('.vs-item-capacity').textContent = `(${capacityValue}${capacityUnit} per piece)`;
+        partEntry.querySelector('.vs-unit-label').textContent = `(${capacityUnit})`;
+        partEntry.querySelector('.vs-amount-hint').textContent = `Max: ${capacityValue}${capacityUnit} per piece`;
+        
+        // Set max value for amount input
+        const amountInput = partEntry.querySelector('.vs-amount-consumed');
+        const quantityInput = partEntry.querySelector('.vs-part-quantity');
+        const maxAmount = capacityValue * (parseInt(quantityInput.value) || 1);
+        amountInput.max = maxAmount;
+        amountInput.placeholder = `e.g., ${capacityValue / 2}`;
+        
+        consumptionFields.classList.remove('hidden');
+    } else {
+        consumptionFields.classList.add('hidden');
+    }
+    
+    console.log(`✅ Selected part: ${partName} (ID: ${partId}, Stock: ${stock})`);
+}
+
+// Handle consumption type selection
+window.selectVSConsumptionType = function(button, type) {
+    const partEntry = button.closest('.vs-part-entry');
+    const fullBtn = partEntry.querySelector('.vs-consumption-full');
+    const partialBtn = partEntry.querySelector('.vs-consumption-partial');
+    const amountField = partEntry.querySelector('.vs-amount-field');
+    const consumptionTypeInput = partEntry.querySelector('.vs-consumption-type');
+    
+    // Update button styles
+    if (type === 'full') {
+        fullBtn.classList.add('border-green-500', 'bg-green-50', 'text-green-700');
+        fullBtn.classList.remove('border-slate-300', 'bg-white', 'text-slate-600');
+        partialBtn.classList.remove('border-orange-500', 'bg-orange-50', 'text-orange-700');
+        partialBtn.classList.add('border-slate-300', 'bg-white', 'text-slate-600');
+        amountField.classList.add('hidden');
+    } else {
+        partialBtn.classList.add('border-orange-500', 'bg-orange-50', 'text-orange-700');
+        partialBtn.classList.remove('border-slate-300', 'bg-white', 'text-slate-600');
+        fullBtn.classList.remove('border-green-500', 'bg-green-50', 'text-green-700');
+        fullBtn.classList.add('border-slate-300', 'bg-white', 'text-slate-600');
+        amountField.classList.remove('hidden');
+    }
+    
+    consumptionTypeInput.value = type;
 }
 
 // Load brands and parts data
@@ -1553,6 +1608,42 @@ window.addNewPart = function() {
                         <option value="sheets">Sheets</option>
                         <option value="sets">Sets</option>
                     </select>
+                </div>
+            </div>
+            
+            <!-- Consumption Type (only for consumables with volume/weight) -->
+            <div class="vs-consumption-fields hidden">
+                <div class="col-span-2 border-t-2 border-slate-200 pt-3 mt-2">
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">
+                        <svg class="w-3.5 h-3.5 text-orange-500 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                        Consumption Type <span class="vs-item-capacity text-xs text-blue-600"></span>
+                    </label>
+                    <div class="grid grid-cols-2 gap-2 mb-3">
+                        <button type="button" class="vs-consumption-full p-3 border-2 border-green-500 bg-green-50 rounded-xl font-semibold text-green-700 hover:bg-green-100 transition-all" onclick="selectVSConsumptionType(this, 'full')">
+                            ✓ Full (All Used)
+                        </button>
+                        <button type="button" class="vs-consumption-partial p-3 border-2 border-slate-300 bg-white rounded-xl font-semibold text-slate-600 hover:bg-orange-50 hover:border-orange-400 transition-all" onclick="selectVSConsumptionType(this, 'partial')">
+                            Partial (Some Used)
+                        </button>
+                    </div>
+                    <input type="hidden" class="vs-consumption-type" value="full">
+                    <input type="hidden" class="vs-item-capacity-value" value="">
+                    <input type="hidden" class="vs-capacity-unit" value="">
+                </div>
+                
+                <!-- Amount Consumed Field (shown when partial is selected) -->
+                <div class="vs-amount-field hidden col-span-2">
+                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">
+                        <svg class="w-3.5 h-3.5 text-orange-500 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                        </svg>
+                        Amount Used <span class="vs-unit-label">(ml/grams)</span>
+                    </label>
+                    <input type="number" class="vs-amount-consumed w-full p-3 border-2 border-orange-300 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 font-semibold text-slate-700" 
+                           min="0.1" step="0.1" placeholder="e.g., 50">
+                    <div class="text-xs text-slate-500 mt-1 vs-amount-hint"></div>
                 </div>
             </div>
         </div>
@@ -1755,12 +1846,30 @@ window.submitService = async function() {
                 
                 // Validate item_id is a valid number
                 if (!isNaN(itemId) && itemId > 0) {
-                    partsUsed.push({
+                    const itemData = {
                         item_id: itemId,
                         qty: parseInt(quantity),
                         unit: unit
-                    });
-                    console.log(`✅ Added part: item_id=${itemId}, qty=${quantity}, unit=${unit}`);
+                    };
+                    
+                    // Add consumption data for consumables with volume/weight
+                    const consumptionType = entry.querySelector('.vs-consumption-type')?.value;
+                    const amountConsumed = entry.querySelector('.vs-amount-consumed')?.value;
+                    const capacityValue = entry.querySelector('.vs-item-capacity-value')?.value;
+                    
+                    if (consumptionType && capacityValue) {
+                        itemData.consumption_type = consumptionType;
+                        
+                        if (consumptionType === 'partial' && amountConsumed) {
+                            itemData.amount_consumed = parseFloat(amountConsumed);
+                        } else if (consumptionType === 'full') {
+                            // For full consumption, amount = capacity * quantity
+                            itemData.amount_consumed = parseFloat(capacityValue) * parseInt(quantity);
+                        }
+                    }
+                    
+                    partsUsed.push(itemData);
+                    console.log(`✅ Added part with consumption:`, itemData);
                 } else {
                     console.error('Invalid item_id for part:', partSelect.value);
                 }

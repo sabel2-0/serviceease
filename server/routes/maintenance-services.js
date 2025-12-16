@@ -71,14 +71,25 @@ router.get('/history', auth, async (req, res) => {
                         siu.item_id,
                         siu.quantity_used as qty,
                         siu.notes as unit,
+                        siu.consumption_type,
+                        siu.amount_consumed,
                         pi.name,
-                        pi.brand
+                        pi.brand,
+                        pi.ink_volume,
+                        pi.toner_weight,
+                        pi.category
                     FROM service_items_used siu
                     INNER JOIN printer_items pi ON siu.item_id = pi.id
                     WHERE siu.service_id = ? AND siu.service_type = 'maintenance_service'
                 `, [service.id]);
                 
-                service.items_used = items;
+                // Format items to show actual consumption
+                service.items_used = items.map(item => ({
+                    ...item,
+                    display_amount: item.amount_consumed 
+                        ? `${item.amount_consumed}${item.ink_volume ? 'ml' : 'grams'}`
+                        : null
+                }));
             } catch (itemError) {
                 console.error(`Error fetching items for service ${service.id}:`, itemError);
                 service.items_used = [];
@@ -625,8 +636,11 @@ router.post('/', auth, async (req, res) => {
         // Insert items into service_items_used table
         if (items_used && items_used.length > 0) {
             const itemsQuery = `
-                INSERT INTO service_items_used (service_id, service_type, item_id, quantity_used, used_by, notes)
-                VALUES (?, 'maintenance_service', ?, ?, ?, ?)
+                INSERT INTO service_items_used (
+                    service_id, service_type, item_id, quantity_used, used_by, notes,
+                    consumption_type, amount_consumed
+                )
+                VALUES (?, 'maintenance_service', ?, ?, ?, ?, ?, ?)
             `;
             
             for (const item of items_used) {
@@ -641,10 +655,44 @@ router.post('/', auth, async (req, res) => {
                     item.item_id,
                     item.qty,
                     technicianId,
-                    item.unit || null
+                    item.unit || null,
+                    item.consumption_type || 'full',
+                    item.amount_consumed || null
                 ]);
+                
+                // If partial consumption, handle inventory deduction
+                if (item.consumption_type === 'partial' && item.amount_consumed) {
+                    // Get item details
+                    const [itemDetails] = await db.query(
+                        'SELECT ink_volume, toner_weight, quantity FROM printer_items WHERE id = ?',
+                        [item.item_id]
+                    );
+                    
+                    if (itemDetails.length > 0) {
+                        const itemData = itemDetails[0];
+                        const capacity = itemData.ink_volume || itemData.toner_weight;
+                        const amountRemaining = capacity - item.amount_consumed;
+                        
+                        // Update the existing item to mark as opened with remaining amount
+                        if (itemData.ink_volume) {
+                            await db.query(
+                                `UPDATE printer_items 
+                                 SET remaining_volume = ?, is_opened = 1 
+                                 WHERE id = ?`,
+                                [amountRemaining, item.item_id]
+                            );
+                        } else {
+                            await db.query(
+                                `UPDATE printer_items 
+                                 SET remaining_weight = ?, is_opened = 1 
+                                 WHERE id = ?`,
+                                [amountRemaining, item.item_id]
+                            );
+                        }
+                    }
+                }
             }
-            console.log(`✅ Inserted ${items_used.length} items into service_items_used`);
+            console.log(`✅ Inserted ${items_used.length} items into service_items_used with consumption data`);
         }
         
         console.log('✅ Service inserted, ID:', result.insertId);
