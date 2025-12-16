@@ -2571,6 +2571,32 @@ window.selectSRConsumptionType = function(type, button) {
     const entry = button.closest('.part-entry');
     if (!entry) return;
     
+    // Check if this is a sealed item and if there's an opened bottle available
+    const partSelect = entry.querySelector('.part-name-select');
+    const selectedOption = partSelect?.options[partSelect.selectedIndex];
+    const isOpenedItem = selectedOption?.dataset.isOpenedItem === '1';
+    
+    // If trying to do partial on a sealed item, check if opened bottles exist
+    if (type === 'partial' && !isOpenedItem) {
+        // Check if there are any opened bottles of this item in availableParts
+        const itemId = selectedOption?.dataset.id;
+        const openedVersionExists = availableParts.some(p => 
+            p.id == itemId && p.is_opened_item === true
+        );
+        
+        if (openedVersionExists) {
+            // Show error message
+            showToast('⚠️ Cannot do partial consumption on sealed bottle. An opened bottle exists - please use that first!', 'error');
+            
+            // Reset to full consumption
+            const fullButton = entry.querySelector('[data-consumption-type="full"]');
+            if (fullButton) {
+                window.selectSRConsumptionType('full', fullButton);
+            }
+            return;
+        }
+    }
+    
     // Update button states - use lighter blue for better text visibility
     const buttons = entry.querySelectorAll('[data-consumption-type]');
     buttons.forEach(btn => {

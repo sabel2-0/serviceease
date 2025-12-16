@@ -263,18 +263,14 @@ router.post('/:approvalId/approve', authenticateinstitution_admin, async (req, r
                     // Deduct from remaining volume
                     const newRemaining = Math.max(0, currentRemaining - amountToConsume);
                     
-                    // Only deduct quantity if we've exhausted an opened bottle or consuming from sealed
-                    let newQty = item.quantity;
-                    if (currentRemaining > 0) {
-                        // There was an opened bottle
-                        if (newRemaining <= 0) {
-                            // Opened bottle is now empty, deduct quantity
-                            newQty = Math.max(0, item.quantity - 1);
-                        }
-                        // else: still has remaining in opened bottle, don't deduct quantity
+                    // Calculate quantity based on remaining volume
+                    // quantity = how many full bottles are represented by the remaining volume
+                    // Use ceil to round up (if 350ml remaining with 100ml bottles = 4 bottles)
+                    let newQty;
+                    if (newRemaining > 0) {
+                        newQty = Math.ceil(newRemaining / capacityPerPiece);
                     } else {
-                        // No opened bottle (all sealed), deduct quantity
-                        newQty = Math.max(0, item.quantity - part.quantity_used);
+                        newQty = 0;
                     }
                     
                     // Update inventory
@@ -293,7 +289,7 @@ router.post('/:approvalId/approve', authenticateinstitution_admin, async (req, r
                         part.item_id
                     ]);
                     
-                    console.log(`✅ ${part.consumption_type} consumption: ${amountToConsume}${isInk ? 'ml' : 'g'} consumed, remaining ${currentRemaining} → ${newRemaining}${isInk ? 'ml' : 'g'}, quantity ${item.quantity} → ${newQty}${newQty !== item.quantity ? ' (bottle emptied)' : ' (opened bottle still has remaining)'}`);
+                    console.log(`✅ ${part.consumption_type} consumption: ${amountToConsume}${isInk ? 'ml' : 'g'} consumed, remaining ${currentRemaining} → ${newRemaining}${isInk ? 'ml' : 'g'}, quantity ${item.quantity} → ${newQty}`);
                     
                 } else {
                     // No consumption type (old data or non-consumables): deduct quantity as before
