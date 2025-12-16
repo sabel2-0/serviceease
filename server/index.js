@@ -3573,7 +3573,7 @@ app.patch('/api/users/me/service-requests/:id/approve', auth, async (req, res) =
                      FROM service_items_used spu
                      JOIN printer_items pp ON spu.item_id = pp.id
                      JOIN technician_inventory ti ON ti.technician_id = spu.used_by AND ti.item_id = spu.item_id
-                     WHERE spu.service_request_id = ?`,
+                     WHERE spu.service_id = ? AND spu.service_type = 'service_request'`,
                     [requestId]
                 );
                 
@@ -4447,7 +4447,7 @@ app.get('/api/service-requests/:id', async (req, res) => {
             FROM service_items_used spu
             LEFT JOIN printer_items pp ON spu.item_id = pp.id
             LEFT JOIN users u ON spu.used_by = u.id
-            WHERE spu.service_request_id = ?
+            WHERE spu.service_id = ? AND spu.service_type = 'service_request'
             ORDER BY spu.used_at ASC
         `, [id]);
         
@@ -4935,7 +4935,7 @@ app.post('/api/service-requests/:id/approve-completion', authenticateAdmin, asyn
                     `SELECT spu.*, pp.name as part_name, pp.brand as part_brand
                      FROM service_items_used spu
                      JOIN printer_items pp ON spu.item_id = pp.id
-                     WHERE spu.service_request_id = ?`,
+                     WHERE spu.service_id = ? AND spu.service_type = 'service_request'`,
                     [id]
                 );
                 
@@ -5079,7 +5079,7 @@ app.get('/api/service-parts-used/:requestId', auth, async (req, res) => {
         const [parts] = await db.query(
             `SELECT 
                 spu.id,
-                spu.service_request_id,
+                spu.service_id,
                 spu.quantity_used as quantity,
                 spu.notes,
                 spu.used_by,
@@ -5092,7 +5092,7 @@ app.get('/api/service-parts-used/:requestId', auth, async (req, res) => {
              FROM service_items_used spu
              LEFT JOIN printer_items pp ON spu.item_id = pp.id
              LEFT JOIN users u ON spu.used_by = u.id
-             WHERE spu.service_request_id = ? 
+             WHERE spu.service_id = ? AND spu.service_type = 'service_request'
              ORDER BY spu.used_at ASC`,
             [requestId]
         );
@@ -5911,7 +5911,7 @@ app.get('/api/admin/technician-progress/:technicianId', authenticateAdmin, async
                     pp.category
                 FROM service_items_used spu
                 JOIN printer_items pp ON spu.item_id = pp.id
-                WHERE spu.service_request_id = ?`,
+                WHERE spu.service_id = ? AND spu.service_type = 'service_request'`,
                 [request.id]
             );
             request.parts_used = parts; // Return as array, not JSON string
