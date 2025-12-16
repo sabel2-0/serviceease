@@ -31,7 +31,7 @@ router.get('/history', auth, async (req, res) => {
                 vs.status,
                 vs.created_at,
                 sa.approved_by as approved_by_user_id,
-                sa.approved_at,
+                sa.reviewed_at as approved_at,
                 sa.institution_admin_notes as approval_notes,
                 i.institution_id,
                 i.name as institution_name,
