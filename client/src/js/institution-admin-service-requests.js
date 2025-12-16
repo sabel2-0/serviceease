@@ -845,7 +845,7 @@ function createRequestCard(request) {
                                     ${printerInfo.name || printerInfo.model || 'Unknown Printer'}
                                 </h3>
                                 <p class="text-sm text-gray-700 truncate">
-                                    ${printerInfo.brand && printerInfo.model ? `${printerInfo.brand} ${printerInfo.model} � ` : ''}<span class="text-gray-600">Serial: ${printerInfo.serial_number}</span>
+                                    ${printerInfo.brand && printerInfo.model ? `${printerInfo.brand} ${printerInfo.model}` : ''}<span class="text-gray-600">Serial: ${printerInfo.serial_number}</span>
                                 </p>
                             </div>
                         </div>
@@ -1681,11 +1681,11 @@ async function viewApprovalDetails(requestId) {
         // Parse items used - handle both detailed and basic data
         let partsUsedDisplay = '';
         if (partsUsed.length > 0) {
-            partsUsedDisplay = partsUsed.map(part => `<li class="text-sm text-gray-600">� ${part.part_name} (${part.quantity_used} ${part.unit})</li>`).join('');
+            partsUsedDisplay = partsUsed.map(part => `<li class="text-sm text-gray-600">${part.part_name} (${part.quantity_used} ${part.unit})</li>`).join('');
         } else if (approval.items_used) {
-            partsUsedDisplay = approval.items_used.split(', ').map(part => `<li class="text-sm text-gray-600">� ${part}</li>`).join('');
+            partsUsedDisplay = approval.items_used.split(', ').map(part => `<li class="text-sm text-gray-600">${part}</li>`).join('');
         } else {
-            partsUsedDisplay = '<li class="text-sm text-gray-500">� No items used</li>';
+            partsUsedDisplay = '<li class="text-sm text-gray-500">No items used</li>';
         }
         
         const approvalModalContent = document.getElementById('approvalModalContent');
