@@ -2719,9 +2719,22 @@ async function handleJobCompletion(e) {
                 }
                 
                 // Get consumption data if available
-                const consumptionType = entry.querySelector('.consumption-type')?.value || 'full';
-                const amountConsumed = entry.querySelector('.consumption-amount')?.value || null;
-                const itemCapacity = entry.querySelector('.consumption-item-capacity')?.value || null;
+                const consumptionTypeField = entry.querySelector('.consumption-type');
+                const amountConsumedField = entry.querySelector('.consumption-amount');
+                const itemCapacityField = entry.querySelector('.consumption-item-capacity');
+                
+                const consumptionType = consumptionTypeField?.value || null;
+                const amountConsumed = amountConsumedField?.value || null;
+                const itemCapacity = itemCapacityField?.value || null;
+                
+                console.log('Consumption data for part:', {
+                    name: nameSelect.value,
+                    consumptionType,
+                    amountConsumed,
+                    itemCapacity,
+                    hasConsumptionType: !!consumptionType,
+                    hasAmount: !!amountConsumed
+                });
                 
                 const partData = {
                     name: nameSelect.value,
@@ -2730,10 +2743,11 @@ async function handleJobCompletion(e) {
                     unit: unitSelect.value || 'pieces'
                 };
                 
-                // Add consumption data if item has capacity (ink/toner)
-                if (itemCapacity && parseFloat(itemCapacity) > 0) {
+                // Add consumption data if available
+                if (consumptionType) {
                     partData.consumption_type = consumptionType;
                     partData.amount_consumed = amountConsumed ? parseFloat(amountConsumed) : null;
+                    console.log('Adding consumption data to part:', partData);
                 }
                 
                 parts.push(partData);
