@@ -65,19 +65,24 @@ router.get('/history', auth, async (req, res) => {
         
         // Fetch items_used for each service from service_items_used table
         for (const service of services) {
-            const [items] = await db.query(`
-                SELECT 
-                    siu.item_id,
-                    siu.quantity_used as qty,
-                    siu.notes as unit,
-                    pi.name,
-                    pi.brand
-                FROM service_items_used siu
-                INNER JOIN printer_items pi ON siu.item_id = pi.id
-                WHERE siu.service_id = ? AND siu.service_type = 'maintenance_service'
-            `, [service.id]);
-            
-            service.items_used = items;
+            try {
+                const [items] = await db.query(`
+                    SELECT 
+                        siu.item_id,
+                        siu.quantity_used as qty,
+                        siu.notes as unit,
+                        pi.name,
+                        pi.brand
+                    FROM service_items_used siu
+                    INNER JOIN printer_items pi ON siu.item_id = pi.id
+                    WHERE siu.service_id = ? AND siu.service_type = 'maintenance_service'
+                `, [service.id]);
+                
+                service.items_used = items;
+            } catch (itemError) {
+                console.error(`Error fetching items for service ${service.id}:`, itemError);
+                service.items_used = [];
+            }
         }
         
         console.log(`📤 Returning ${services.length} maintenance services`);
