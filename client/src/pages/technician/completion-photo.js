@@ -113,14 +113,33 @@
                         const selectedOption = nameSelect.options[nameSelect.selectedIndex];
                         const brand = brandSelect ? brandSelect.value : (selectedOption?.dataset.brand || '');
                         
-                        parts.push({ 
+                        // Get consumption data if available
+                        const consumptionTypeField = entry.querySelector('.consumption-type');
+                        const amountConsumedField = entry.querySelector('.consumption-amount');
+                        const consumptionFieldsDiv = entry.querySelector('.consumption-fields');
+                        
+                        // Only include consumption data if consumption fields are visible (meaning it's a consumable item)
+                        const isConsumable = consumptionFieldsDiv && !consumptionFieldsDiv.classList.contains('hidden');
+                        
+                        const partData = {
                             name: nameSelect.value,
                             brand: brand,
                             qty: parseInt(quantityInput?.value || 1),
                             unit: unitSelect?.value || 'pieces'
-                        });
+                        };
+                        
+                        // Add consumption data only for consumable items with visible consumption fields
+                        if (isConsumable && consumptionTypeField?.value) {
+                            partData.consumption_type = consumptionTypeField.value;
+                            partData.amount_consumed = amountConsumedField?.value ? parseFloat(amountConsumedField.value) : null;
+                            console.log('✅ [completion-photo.js] Adding consumption data:', partData);
+                        }
+                        
+                        parts.push(partData);
                     }
                 });
+                
+                console.log('📦 [completion-photo.js] Parts collected:', parts);
                 
                 // Get current request ID from selectedRequest (set when modal opens)
                 let requestId = null;
