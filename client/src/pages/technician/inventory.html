@@ -265,6 +265,14 @@
                             <div class="w-32 text-sm font-semibold text-gray-600"><i class="fas fa-flask text-cyan-500 mr-1"></i>Ink Volume:</div>
                             <div id="modalInkVolume" class="flex-1 text-sm text-gray-900 bg-gray-50 px-3 py-1 rounded">N/A</div>
                         </div>
+                        <div id="modalTonerWeightSection" class="flex items-start hidden">
+                            <div class="w-32 text-sm font-semibold text-gray-600"><i class="fas fa-weight text-purple-500 mr-1"></i>Toner Weight:</div>
+                            <div id="modalTonerWeight" class="flex-1 text-sm text-gray-900 bg-gray-50 px-3 py-1 rounded">N/A</div>
+                        </div>
+                        <div id="modalRemainingSection" class="flex items-start hidden">
+                            <div class="w-32 text-sm font-semibold text-orange-600"><i class="fas fa-box-open text-orange-500 mr-1"></i>Remaining:</div>
+                            <div id="modalRemaining" class="flex-1 text-sm font-bold text-orange-700 bg-orange-50 px-3 py-2 rounded border border-orange-200">N/A</div>
+                        </div>
                         <div id="modalUniversalSection" class="flex items-start hidden">
                             <span class="inline-flex items-center px-3 py-1 rounded-lg text-sm font-medium bg-purple-100 text-purple-800">
                                 <i class="fas fa-globe mr-1"></i>Universal - Compatible with all brands
@@ -590,10 +598,31 @@
             // Handle ink volume
             const inkVolumeSection = document.getElementById('modalInkVolumeSection');
             if (part.ink_volume && parseFloat(part.ink_volume) > 0) {
-                document.getElementById('modalInkVolume').textContent = `${parseFloat(part.ink_volume)} ml`;
+                document.getElementById('modalInkVolume').textContent = `${parseFloat(part.ink_volume)} ml capacity`;
                 inkVolumeSection.classList.remove('hidden');
             } else {
                 inkVolumeSection.classList.add('hidden');
+            }
+            
+            // Handle toner weight
+            const tonerWeightSection = document.getElementById('modalTonerWeightSection');
+            if (part.toner_weight && parseFloat(part.toner_weight) > 0) {
+                document.getElementById('modalTonerWeight').textContent = `${parseFloat(part.toner_weight)} grams capacity`;
+                tonerWeightSection.classList.remove('hidden');
+            } else {
+                tonerWeightSection.classList.add('hidden');
+            }
+            
+            // Handle remaining amount for opened items
+            const remainingSection = document.getElementById('modalRemainingSection');
+            if (part.is_opened && (part.remaining_volume || part.remaining_weight)) {
+                const remainingAmount = part.remaining_volume 
+                    ? `${parseFloat(part.remaining_volume)} ml remaining` 
+                    : `${parseFloat(part.remaining_weight)} grams remaining`;
+                document.getElementById('modalRemaining').textContent = remainingAmount;
+                remainingSection.classList.remove('hidden');
+            } else {
+                remainingSection.classList.add('hidden');
             }
             
             // Handle universal badge
