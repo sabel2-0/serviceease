@@ -155,6 +155,7 @@
                                     <th class="text-left px-4 py-3 text-sm font-semibold text-slate-700">Brand</th>
                                     <th class="text-left px-4 py-3 text-sm font-semibold text-slate-700">Category</th>
                                     <th class="text-center px-4 py-3 text-sm font-semibold text-slate-700">Quantity</th>
+                                    <th class="text-center px-4 py-3 text-sm font-semibold text-slate-700">Remaining (ml/g)</th>
                                     <th class="text-center px-4 py-3 text-sm font-semibold text-slate-700">Universal</th>
                                     <th class="text-left px-4 py-3 text-sm font-semibold text-slate-700">Assigned By</th>
                                     <th class="text-left px-4 py-3 text-sm font-semibold text-slate-700">Assigned Date</th>
@@ -411,10 +412,17 @@
                         day: 'numeric' 
                     });
 
+                    // Calculate remaining info
+                    const hasVolume = item.remaining_volume !== null && item.remaining_volume !== undefined;
+                    const hasWeight = item.remaining_weight !== null && item.remaining_weight !== undefined;
+                    const totalCapacity = item.ink_volume || item.toner_weight || 0;
+                    const currentRemaining = hasVolume ? parseFloat(item.remaining_volume) : (hasWeight ? parseFloat(item.remaining_weight) : 0);
+                    const percentage = totalCapacity > 0 ? Math.round((currentRemaining / totalCapacity) * 100) : 0;
+                    
                     row.innerHTML = `
                         <td class="px-4 py-3">
                             <div class="font-medium text-slate-800">${item.part_name}</div>
-                            ${item.color ? `<div class="text-xs text-slate-500">${item.color}</div>` : ''}
+                            ${item.color ? `<div class="text-xs text-slate-500"><i class="fas fa-circle text-${item.color === 'black' ? 'slate-700' : item.color}-500"></i> ${item.color}</div>` : ''}
                         </td>
                         <td class="px-4 py-3 text-slate-600">${item.brand || '-'}</td>
                         <td class="px-4 py-3">
@@ -422,12 +430,33 @@
                         </td>
                         <td class="px-4 py-3 text-center">
                             <div class="font-semibold text-slate-800">${item.quantity} ${item.unit || 'pcs'}</div>
-                            ${item.is_opened && (item.remaining_volume || item.remaining_weight) 
-                                ? `<div class="text-xs text-orange-600 mt-1">
-                                     <i class="fas fa-box-open"></i> 
-                                     Opened: ${item.remaining_volume ? item.remaining_volume + 'ml' : item.remaining_weight + 'grams'} left
-                                   </div>` 
-                                : ''}
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            ${(hasVolume || hasWeight) ? `
+                                <div class="flex flex-col items-center gap-1">
+                                    <div class="font-semibold ${item.is_opened ? 'text-orange-600' : 'text-green-600'}">
+                                        ${currentRemaining}${hasVolume ? 'ml' : 'g'}
+                                    </div>
+                                    ${item.is_opened ? `
+                                        <div class="flex items-center gap-1">
+                                            <div class="w-20 h-2 bg-slate-200 rounded-full overflow-hidden">
+                                                <div class="h-full ${
+                                                    percentage > 60 ? 'bg-green-500' : 
+                                                    percentage > 30 ? 'bg-orange-500' : 'bg-red-500'
+                                                }" style="width: ${percentage}%"></div>
+                                            </div>
+                                            <span class="text-xs text-slate-500">${percentage}%</span>
+                                        </div>
+                                        <div class="text-xs text-orange-600">
+                                            <i class="fas fa-box-open"></i> Opened
+                                        </div>
+                                    ` : `
+                                        <div class="text-xs text-green-600">
+                                            <i class="fas fa-box"></i> Sealed
+                                        </div>
+                                    `}
+                                </div>
+                            ` : `<span class="text-slate-400 text-sm">-</span>`}
                         </td>
                         <td class="px-4 py-3 text-center">
                             ${item.is_universal 
