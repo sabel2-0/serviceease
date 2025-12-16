@@ -2298,6 +2298,29 @@ function setupPartEntryHandlers(entry) {
         if (selectedOption.value) {
             const stock = parseInt(selectedOption.dataset.stock);
             validateQuantity(this, stock, availabilityText);
+            
+            // Recalculate consumption amount if consumption fields are visible
+            const consumptionFields = entry.querySelector('.consumption-fields');
+            const consumptionType = entry.querySelector('.consumption-type');
+            if (consumptionFields && !consumptionFields.classList.contains('hidden')) {
+                const capacity = parseFloat(entry.querySelector('.consumption-item-capacity')?.value || 0);
+                const amountField = entry.querySelector('.consumption-amount');
+                const qty = parseInt(this.value) || 1;
+                
+                if (consumptionType && consumptionType.value === 'full') {
+                    // Full consumption: quantity × capacity
+                    if (amountField && capacity > 0) {
+                        amountField.value = qty * capacity;
+                    }
+                } else if (consumptionType && consumptionType.value === 'partial') {
+                    // Partial consumption: quantity × (capacity / 2)
+                    if (amountField && capacity > 0) {
+                        const totalPartial = qty * (capacity / 2);
+                        amountField.value = totalPartial;
+                        amountField.placeholder = `e.g., ${totalPartial}`;
+                    }
+                }
+            }
         }
         updatePartsSummary();
     });
@@ -2534,7 +2557,7 @@ window.selectSRConsumptionType = function(type, button) {
     // Show/hide amount input and handle calculations
     if (type === 'full') {
         amountInput.classList.add('hidden');
-        // Auto-calculate full consumption
+        // Auto-calculate full consumption: quantity × capacity per piece
         if (qtyInput && capacity > 0) {
             const qty = parseInt(qtyInput.value) || 0;
             const calculatedAmount = qty * capacity;
@@ -2544,11 +2567,13 @@ window.selectSRConsumptionType = function(type, button) {
         }
     } else {
         amountInput.classList.remove('hidden');
-        // Auto-calculate half capacity for partial consumption
-        const halfCapacity = capacity / 2;
+        // Auto-calculate half capacity for partial consumption: quantity × (capacity / 2)
+        const qty = qtyInput ? (parseInt(qtyInput.value) || 1) : 1;
+        const halfCapacityPerPiece = capacity / 2;
+        const totalPartialAmount = qty * halfCapacityPerPiece;
         if (amountField) {
-            amountField.value = halfCapacity;
-            amountField.placeholder = `e.g., ${halfCapacity}`;
+            amountField.value = totalPartialAmount;
+            amountField.placeholder = `e.g., ${totalPartialAmount}`;
         }
     }
 };
