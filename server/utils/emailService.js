@@ -24,7 +24,12 @@ async function sendBrevoEmail(to, toName, subject, htmlContent) {
  * Send password reset email
  */
 async function sendPasswordResetEmail(to, resetToken, firstName) {
-    const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/pages/reset-password.html?token=${resetToken}`;
+    const resetPath = `/pages/reset-password.html?token=${resetToken}`;
+    const frontendUrl = process.env.FRONTEND_URL;
+    if (!frontendUrl) {
+        console.warn('⚠️ FRONTEND_URL is not set; password reset emails will contain a path-only link. Set FRONTEND_URL in your environment for full links.');
+    }
+    const resetLink = frontendUrl ? `${frontendUrl.replace(/\/$/, '')}${resetPath}` : resetPath;
     
     try {
         const htmlContent = `
@@ -131,7 +136,12 @@ async function sendinstitution_userVerificationEmail(to, verificationCode, first
  */
 async function sendinstitution_userApprovedEmail(to, firstName, printerCount) {
     try {
-        const loginLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/pages/login.html`;
+        const loginPath = '/pages/login.html';
+        const frontendUrl = process.env.FRONTEND_URL;
+        if (!frontendUrl) {
+            console.warn('⚠️ FRONTEND_URL is not set; approval emails will contain a path-only link. Set FRONTEND_URL in your environment for full links.');
+        }
+        const loginLink = frontendUrl ? `${frontendUrl.replace(/\/$/, '')}${loginPath}` : loginPath;
         
         const htmlContent = `
             <!DOCTYPE html>
