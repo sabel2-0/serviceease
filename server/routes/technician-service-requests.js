@@ -520,15 +520,61 @@ router.post('/service-requests/:requestId/complete', authenticateTechnician, asy
                                 service_id: requestId,
                                 item_id: partInfo[0].id,
                                 quantity_used: part.qty,
+                                consumption_type: part.consumption_type || null,
+                                amount_consumed: part.amount_consumed || null,
                                 notes: `Used ${part.qty} ${part.unit || 'pieces'}${brandInfo}`,
                                 used_by: technicianId
                             });
+                            
+                            // Insert service item usage
                             await db.query(
                                 `INSERT INTO service_items_used 
-                                 (service_id, service_type, item_id, quantity_used, notes, used_by)
-                                 VALUES (?, 'service_request', ?, ?, ?, ?)`,
-                                [requestId, partInfo[0].id, part.qty, `Used ${part.qty} ${part.unit || 'pieces'}${brandInfo}`, technicianId]
+                                 (service_id, service_type, item_id, quantity_used, consumption_type, amount_consumed, notes, used_by)
+                                 VALUES (?, 'service_request', ?, ?, ?, ?, ?, ?)`,
+                                [
+                                    requestId, 
+                                    partInfo[0].id, 
+                                    part.qty, 
+                                    part.consumption_type || null,
+                                    part.amount_consumed || null,
+                                    `Used ${part.qty} ${part.unit || 'pieces'}${brandInfo}`, 
+                                    technicianId
+                                ]
                             );
+                            
+                            // Handle partial consumption for inventory updates
+                            if (part.consumption_type === 'partial' && part.amount_consumed) {
+                                // Get item details to determine if it's ink or toner
+                                const [itemDetails] = await db.query(
+                                    'SELECT ink_volume, toner_weight FROM printer_items WHERE id = ?',
+                                    [partInfo[0].id]
+                                );
+                                
+                                if (itemDetails.length > 0) {
+                                    const item = itemDetails[0];
+                                    const capacity = item.ink_volume || item.toner_weight;
+                                    
+                                    if (capacity && parseFloat(capacity) > 0) {
+                                        const remaining = parseFloat(capacity) - parseFloat(part.amount_consumed);
+                                        
+                                        // Update the item's remaining amount and mark as opened
+                                        const updateColumn = item.ink_volume ? 'remaining_volume' : 'remaining_weight';
+                                        await db.query(
+                                            `UPDATE printer_items 
+                                             SET ${updateColumn} = ?, is_opened = 1 
+                                             WHERE id = ?`,
+                                            [remaining, partInfo[0].id]
+                                        );
+                                        
+                                        console.log('[COMPLETE] Updated partial consumption:', {
+                                            itemId: partInfo[0].id,
+                                            column: updateColumn,
+                                            remaining: remaining
+                                        });
+                                    }
+                                }
+                            }
+                            
                             console.log('[COMPLETE] Part usage inserted successfully');
                         } else {
                             console.log('[COMPLETE] Part not found in database:', part.name, part.brand);

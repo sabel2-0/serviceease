@@ -1724,6 +1724,7 @@ function updatePartsForType(typeSelector, selectedType) {
         const card = document.createElement('div');
         card.className = 'part-card p-3 bg-white border-2 border-slate-200 rounded-lg hover:border-purple-400 hover:shadow-md transition-all cursor-pointer';
         card.dataset.id = part.id;
+        card.dataset.itemId = part.id;  // Add itemId for consumption tracking
         card.dataset.name = part.name;
         card.dataset.stock = part.stock;
         card.dataset.unit = part.unit || 'pieces';
@@ -1784,6 +1785,7 @@ function selectPartFromCard(partEntry, card) {
     const option = document.createElement('option');
     option.value = card.dataset.name;
     option.dataset.id = card.dataset.id;
+    option.dataset.itemId = card.dataset.itemId;  // Add itemId for consumption tracking
     option.dataset.stock = card.dataset.stock;
     option.dataset.unit = card.dataset.unit;
     option.dataset.category = card.dataset.category;
@@ -1812,6 +1814,11 @@ function selectPartFromCard(partEntry, card) {
     
     // Trigger change event for existing handlers
     partSelect.dispatchEvent(new Event('change'));
+    
+    // Fetch item details and show consumption fields if applicable
+    if (window.selectSRPartFromCard) {
+        window.selectSRPartFromCard(partSelect);
+    }
     
     // Setup clear button
     const clearBtn = selectedPartDisplay.querySelector('.clear-part-btn');
@@ -2464,6 +2471,106 @@ function isSignatureEmpty() {
     return imageData.data.every(pixel => pixel === 0);
 }
 
+// Consumption type selection handler for service requests
+window.selectSRConsumptionType = function(type, button) {
+    // Get the parent entry
+    const entry = button.closest('.part-entry');
+    if (!entry) return;
+    
+    // Update button states
+    const buttons = entry.querySelectorAll('[data-consumption-type]');
+    buttons.forEach(btn => {
+        btn.classList.remove('bg-blue-600', 'text-white');
+        btn.classList.add('bg-gray-100', 'text-gray-700');
+    });
+    button.classList.remove('bg-gray-100', 'text-gray-700');
+    button.classList.add('bg-blue-600', 'text-white');
+    
+    // Get elements
+    const qtyInput = entry.querySelector('.part-quantity');
+    const amountInput = entry.querySelector('.consumption-amount-input');
+    const capacity = parseFloat(entry.querySelector('.consumption-item-capacity')?.value || 0);
+    
+    // Show/hide amount input and handle calculations
+    if (type === 'full') {
+        amountInput.classList.add('hidden');
+        // Auto-calculate full consumption
+        if (qtyInput && capacity > 0) {
+            const qty = parseInt(qtyInput.value) || 0;
+            const calculatedAmount = qty * capacity;
+            const amountField = entry.querySelector('.consumption-amount');
+            if (amountField) {
+                amountField.value = calculatedAmount;
+            }
+        }
+    } else {
+        amountInput.classList.remove('hidden');
+        // Clear the amount so user must input
+        const amountField = entry.querySelector('.consumption-amount');
+        if (amountField) {
+            amountField.value = '';
+        }
+    }
+};
+
+// Part selection handler - fetch capacity and show consumption fields if applicable
+window.selectSRPartFromCard = async function(selectElement) {
+    const entry = selectElement.closest('.part-entry');
+    if (!entry) return;
+    
+    const selectedOption = selectElement.options[selectElement.selectedIndex];
+    const itemId = selectedOption.dataset.itemId;
+    const consumptionFields = entry.querySelector('.consumption-fields');
+    const capacityField = entry.querySelector('.consumption-item-capacity');
+    const capacityDisplay = entry.querySelector('.consumption-capacity-display');
+    const consumptionType = entry.querySelector('.consumption-type');
+    
+    if (!itemId || !consumptionFields) return;
+    
+    try {
+        // Fetch item details
+        const response = await fetch(`/api/admin/parts/${itemId}`, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+        
+        if (!response.ok) throw new Error('Failed to fetch item details');
+        
+        const item = await response.json();
+        
+        // Check if item has volume or weight (consumable)
+        const hasVolume = item.ink_volume && parseFloat(item.ink_volume) > 0;
+        const hasWeight = item.toner_weight && parseFloat(item.toner_weight) > 0;
+        
+        if (hasVolume || hasWeight) {
+            const capacity = hasVolume ? parseFloat(item.ink_volume) : parseFloat(item.toner_weight);
+            const unit = hasVolume ? 'ml' : 'grams';
+            
+            // Set capacity data
+            if (capacityField) capacityField.value = capacity;
+            if (capacityDisplay) capacityDisplay.textContent = `${capacity}${unit} per piece`;
+            if (consumptionType) consumptionType.value = 'full';
+            
+            // Show consumption fields
+            consumptionFields.classList.remove('hidden');
+            
+            // Reset to "Full" consumption by default
+            const fullButton = entry.querySelector('[data-consumption-type="full"]');
+            if (fullButton) {
+                window.selectSRConsumptionType('full', fullButton);
+            }
+        } else {
+            // Hide consumption fields for non-consumables
+            consumptionFields.classList.add('hidden');
+            if (capacityField) capacityField.value = '';
+            if (consumptionType) consumptionType.value = '';
+        }
+    } catch (error) {
+        console.error('Error fetching item details:', error);
+    }
+};
+
 async function handleJobCompletion(e) {
     e.preventDefault();
     
@@ -2521,12 +2628,25 @@ async function handleJobCompletion(e) {
                     break;
                 }
                 
-                parts.push({
+                // Get consumption data if available
+                const consumptionType = entry.querySelector('.consumption-type')?.value || 'full';
+                const amountConsumed = entry.querySelector('.consumption-amount')?.value || null;
+                const itemCapacity = entry.querySelector('.consumption-item-capacity')?.value || null;
+                
+                const partData = {
                     name: nameSelect.value,
                     brand: brand,
                     qty: requestedQty,
                     unit: unitSelect.value || 'pieces'
-                });
+                };
+                
+                // Add consumption data if item has capacity (ink/toner)
+                if (itemCapacity && parseFloat(itemCapacity) > 0) {
+                    partData.consumption_type = consumptionType;
+                    partData.amount_consumed = amountConsumed ? parseFloat(amountConsumed) : null;
+                }
+                
+                parts.push(partData);
             }
         }
         

@@ -503,6 +503,8 @@ router.get('/:id', auth, async (req, res) => {
             SELECT 
                 spu.id,
                 spu.quantity_used,
+                spu.consumption_type,
+                spu.amount_consumed,
                 spu.notes as part_notes,
                 spu.used_at,
                 pp.name as part_name,
@@ -511,11 +513,19 @@ router.get('/:id', auth, async (req, res) => {
                 pp.color,
                 pp.page_yield,
                 pp.ink_volume,
+                pp.toner_weight,
                 pp.is_universal,
                 pp.unit,
                 CONCAT(u.first_name, ' ', u.last_name) as used_by_name,
                 u.first_name as used_by_first_name,
-                u.last_name as used_by_last_name
+                u.last_name as used_by_last_name,
+                CASE
+                    WHEN spu.consumption_type = 'partial' AND spu.amount_consumed IS NOT NULL THEN
+                        CONCAT(spu.amount_consumed, IF(pp.ink_volume IS NOT NULL, 'ml', 'grams'))
+                    WHEN spu.consumption_type = 'full' AND spu.amount_consumed IS NOT NULL THEN
+                        CONCAT(spu.amount_consumed, IF(pp.ink_volume IS NOT NULL, 'ml', 'grams'))
+                    ELSE NULL
+                END as display_amount
             FROM service_items_used spu
             JOIN printer_items pp ON spu.item_id = pp.id
             LEFT JOIN users u ON spu.used_by = u.id

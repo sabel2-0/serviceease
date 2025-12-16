@@ -129,11 +129,22 @@ router.get('/:approvalId/details', authenticateinstitution_admin, async (req, re
             SELECT 
                 spu.id,
                 spu.quantity_used,
+                spu.consumption_type,
+                spu.amount_consumed,
                 pp.unit,
+                pp.ink_volume,
+                pp.toner_weight,
                 spu.used_at as created_at,
                 pp.name as part_name,
                 pp.category,
-                pp.brand
+                pp.brand,
+                CASE
+                    WHEN spu.consumption_type = 'partial' AND spu.amount_consumed IS NOT NULL THEN
+                        CONCAT(spu.amount_consumed, IF(pp.ink_volume IS NOT NULL, 'ml', 'grams'))
+                    WHEN spu.consumption_type = 'full' AND spu.amount_consumed IS NOT NULL THEN
+                        CONCAT(spu.amount_consumed, IF(pp.ink_volume IS NOT NULL, 'ml', 'grams'))
+                    ELSE NULL
+                END as display_amount
             FROM service_items_used spu
             JOIN printer_items pp ON spu.item_id = pp.id
             WHERE spu.service_id = ? AND spu.service_type = 'service_request'
