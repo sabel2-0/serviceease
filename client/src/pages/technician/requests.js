@@ -1742,20 +1742,22 @@ function updatePartsForType(typeSelector, selectedType) {
         const universalBadge = part.is_universal == 1 ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">?? Universal</span>' : '';
         const brandBadge = part.brand ? `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700">${part.brand}</span>` : '';
         
-        // Show consumption status for opened items
+        // Show consumption status for total remaining (not individual bottles)
         let consumptionBadge = '';
-        if (part.is_opened == 1) {
-            if (part.remaining_volume && parseFloat(part.remaining_volume) > 0) {
-                const totalVolume = part.ink_volume || 0;
-                const remaining = parseFloat(part.remaining_volume);
-                const percentage = totalVolume > 0 ? Math.round((remaining / totalVolume) * 100) : 0;
-                consumptionBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-700">?? Opened: ${remaining}ml (${percentage}%)</span>`;
-            } else if (part.remaining_weight && parseFloat(part.remaining_weight) > 0) {
-                const totalWeight = part.toner_weight || 0;
-                const remaining = parseFloat(part.remaining_weight);
-                const percentage = totalWeight > 0 ? Math.round((remaining / totalWeight) * 100) : 0;
-                consumptionBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-700">?? Opened: ${remaining}g (${percentage}%)</span>`;
-            }
+        const hasRemainingVolume = part.remaining_volume && parseFloat(part.remaining_volume) > 0;
+        const hasRemainingWeight = part.remaining_weight && parseFloat(part.remaining_weight) > 0;
+        
+        if (hasRemainingVolume || hasRemainingWeight) {
+            const totalVolume = part.ink_volume ? parseFloat(part.ink_volume) * part.stock : 0;
+            const totalWeight = part.toner_weight ? parseFloat(part.toner_weight) * part.stock : 0;
+            const totalCapacity = totalVolume || totalWeight;
+            const remaining = hasRemainingVolume ? parseFloat(part.remaining_volume) : parseFloat(part.remaining_weight);
+            const percentage = totalCapacity > 0 ? Math.round((remaining / totalCapacity) * 100) : 0;
+            const unit = hasRemainingVolume ? 'ml' : 'g';
+            
+            consumptionBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">
+                <i class="fas fa-tint mr-1"></i> ${remaining}${unit} remaining (${percentage}%)
+            </span>`;
         }
         
         // Color badge for ink/toner
@@ -1838,7 +1840,15 @@ function selectPartFromCard(partEntry, card) {
     const selectedPartName = selectedPartDisplay.querySelector('.selected-part-name');
     const selectedPartInfo = selectedPartDisplay.querySelector('.selected-part-info');
     selectedPartName.textContent = card.dataset.name;
-    selectedPartInfo.textContent = `${card.dataset.brand || 'Universal'} ? ${card.dataset.stock} ${card.dataset.unit} available`;
+    
+    // Build info text with color if available
+    let infoText = `${card.dataset.brand || 'Universal'}`;
+    if (card.dataset.color) {
+        infoText += ` • ${card.dataset.color}`;
+    }
+    infoText += ` • ${card.dataset.stock} ${card.dataset.unit} available`;
+    
+    selectedPartInfo.textContent = infoText;
     selectedPartDisplay.classList.remove('hidden');
     
     // Hide grid and search
@@ -2618,30 +2628,27 @@ window.selectSRPartFromCard = async function(selectElement) {
     console.log('Consumption check:', { hasVolume, hasWeight, inkVolume, tonerWeight, isOpened });
     
     if (hasVolume || hasWeight) {
-        // Use remaining volume/weight if item is opened, otherwise use full capacity
-        let capacity, unit;
-        if (isOpened) {
-            if (hasVolume && remainingVolume && parseFloat(remainingVolume) > 0) {
-                capacity = parseFloat(remainingVolume);
-                unit = 'ml';
-            } else if (hasWeight && remainingWeight && parseFloat(remainingWeight) > 0) {
-                capacity = parseFloat(remainingWeight);
-                unit = 'grams';
-            } else {
-                // Fallback to full capacity if no remaining data
-                capacity = hasVolume ? parseFloat(inkVolume) : parseFloat(tonerWeight);
-                unit = hasVolume ? 'ml' : 'grams';
-            }
-        } else {
-            capacity = hasVolume ? parseFloat(inkVolume) : parseFloat(tonerWeight);
-            unit = hasVolume ? 'ml' : 'grams';
-        }
+        // Always use the base capacity (ink_volume or toner_weight) per piece
+        // Full = 100ml per piece, Partial = 50ml per piece
+        // Don't use remaining amounts as capacity - that's confusing
+        const capacity = hasVolume ? parseFloat(inkVolume) : parseFloat(tonerWeight);
+        const unit = hasVolume ? 'ml' : 'grams';
         
-        console.log('Showing consumption fields with capacity:', capacity, unit, isOpened ? '(opened item)' : '(new item)');
+        // Show total remaining info if available
+        const totalRemaining = hasVolume ? 
+            (remainingVolume ? parseFloat(remainingVolume) : 0) : 
+            (remainingWeight ? parseFloat(remainingWeight) : 0);
+        
+        console.log('Showing consumption fields with capacity:', capacity, unit, 'Total remaining:', totalRemaining);
         
         // Set capacity data
         if (capacityField) capacityField.value = capacity;
-        if (capacityDisplay) capacityDisplay.textContent = `${capacity}${unit} per piece${isOpened ? ' (remaining)' : ''}`;
+        if (capacityDisplay) {
+            capacityDisplay.textContent = `${capacity}${unit} per piece`;
+            if (totalRemaining > 0) {
+                capacityDisplay.textContent += ` (${totalRemaining}${unit} total remaining)`;
+            }
+        }
         if (consumptionType) consumptionType.value = 'full';
         
         // Show consumption fields
