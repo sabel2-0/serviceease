@@ -32,7 +32,7 @@ router.get('/history', auth, async (req, res) => {
                 vs.created_at,
                 sa.approved_by as approved_by_user_id,
                 sa.approved_at,
-                sa.notes as approval_notes,
+                sa.institution_admin_notes as approval_notes,
                 i.institution_id,
                 i.name as institution_name,
                 i.type as institution_type,
@@ -1143,7 +1143,7 @@ router.get('/institution_user/history', auth, async (req, res) => {
                 sa.approved_by,
                 sa.approved_at,
                 sa.approval_status,
-                sa.notes as approval_notes,
+                sa.institution_admin_notes as approval_notes,
                 CONCAT(approver.first_name, ' ', approver.last_name) as approved_by_name
             FROM maintenance_services vs
             INNER JOIN printers inv ON vs.printer_id = inv.id
