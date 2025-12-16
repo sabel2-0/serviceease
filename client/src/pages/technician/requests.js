@@ -2530,7 +2530,17 @@ window.selectSRPartFromCard = async function(selectElement) {
     const capacityDisplay = entry.querySelector('.consumption-capacity-display');
     const consumptionType = entry.querySelector('.consumption-type');
     
-    if (!consumptionFields) return;
+    console.log('selectSRPartFromCard called', {
+        hasConsumptionFields: !!consumptionFields,
+        inkVolume: selectedOption.dataset.inkVolume,
+        tonerWeight: selectedOption.dataset.tonerWeight,
+        color: selectedOption.dataset.color
+    });
+    
+    if (!consumptionFields) {
+        console.warn('No consumption fields found in entry');
+        return;
+    }
     
     // Get item details from the option dataset
     const inkVolume = selectedOption.dataset.inkVolume;
@@ -2540,9 +2550,13 @@ window.selectSRPartFromCard = async function(selectElement) {
     const hasVolume = inkVolume && parseFloat(inkVolume) > 0;
     const hasWeight = tonerWeight && parseFloat(tonerWeight) > 0;
     
+    console.log('Consumption check:', { hasVolume, hasWeight, inkVolume, tonerWeight });
+    
     if (hasVolume || hasWeight) {
         const capacity = hasVolume ? parseFloat(inkVolume) : parseFloat(tonerWeight);
         const unit = hasVolume ? 'ml' : 'grams';
+        
+        console.log('Showing consumption fields with capacity:', capacity, unit);
         
         // Set capacity data
         if (capacityField) capacityField.value = capacity;
@@ -2558,6 +2572,7 @@ window.selectSRPartFromCard = async function(selectElement) {
             window.selectSRConsumptionType('full', fullButton);
         }
     } else {
+        console.log('Hiding consumption fields - not a consumable');
         // Hide consumption fields for non-consumables
         consumptionFields.classList.add('hidden');
         if (capacityField) capacityField.value = '';

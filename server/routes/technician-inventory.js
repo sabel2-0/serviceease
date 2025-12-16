@@ -79,6 +79,7 @@ router.get('/parts', authenticateTechnician, async (req, res) => {
                 pp.name,
                 pp.brand,
                 pp.category,
+                pp.color,
                 pp.unit,
                 pp.ink_volume,
                 pp.toner_weight,
