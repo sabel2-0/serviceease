@@ -542,7 +542,7 @@ router.post('/service-requests/:requestId/complete', authenticateTechnician, asy
                                 ]
                             );
                             
-                            // Handle partial consumption for inventory updates
+                            // Handle partial consumption for technician inventory updates
                             if (part.consumption_type === 'partial' && part.amount_consumed) {
                                 // Get item details to determine if it's ink or toner
                                 const [itemDetails] = await db.query(
@@ -557,16 +557,17 @@ router.post('/service-requests/:requestId/complete', authenticateTechnician, asy
                                     if (capacity && parseFloat(capacity) > 0) {
                                         const remaining = parseFloat(capacity) - parseFloat(part.amount_consumed);
                                         
-                                        // Update the item's remaining amount and mark as opened
+                                        // Update the TECHNICIAN's inventory item remaining amount
                                         const updateColumn = item.ink_volume ? 'remaining_volume' : 'remaining_weight';
                                         await db.query(
-                                            `UPDATE printer_items 
+                                            `UPDATE technician_inventory 
                                              SET ${updateColumn} = ?, is_opened = 1 
-                                             WHERE id = ?`,
-                                            [remaining, partInfo[0].id]
+                                             WHERE technician_id = ? AND item_id = ?`,
+                                            [remaining, technicianId, partInfo[0].id]
                                         );
                                         
-                                        console.log('[COMPLETE] Updated partial consumption:', {
+                                        console.log('[COMPLETE] Updated partial consumption in technician inventory:', {
+                                            technicianId: technicianId,
                                             itemId: partInfo[0].id,
                                             column: updateColumn,
                                             remaining: remaining

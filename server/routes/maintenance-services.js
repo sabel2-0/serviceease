@@ -660,11 +660,11 @@ router.post('/', auth, async (req, res) => {
                     item.amount_consumed || null
                 ]);
                 
-                // If partial consumption, handle inventory deduction
+                // If partial consumption, handle technician inventory deduction
                 if (item.consumption_type === 'partial' && item.amount_consumed) {
-                    // Get item details
+                    // Get item details to determine capacity
                     const [itemDetails] = await db.query(
-                        'SELECT ink_volume, toner_weight, quantity FROM printer_items WHERE id = ?',
+                        'SELECT ink_volume, toner_weight FROM printer_items WHERE id = ?',
                         [item.item_id]
                     );
                     
@@ -673,20 +673,20 @@ router.post('/', auth, async (req, res) => {
                         const capacity = itemData.ink_volume || itemData.toner_weight;
                         const amountRemaining = capacity - item.amount_consumed;
                         
-                        // Update the existing item to mark as opened with remaining amount
+                        // Update the TECHNICIAN's inventory item to mark as opened with remaining amount
                         if (itemData.ink_volume) {
                             await db.query(
-                                `UPDATE printer_items 
+                                `UPDATE technician_inventory 
                                  SET remaining_volume = ?, is_opened = 1 
-                                 WHERE id = ?`,
-                                [amountRemaining, item.item_id]
+                                 WHERE technician_id = ? AND item_id = ?`,
+                                [amountRemaining, technicianId, item.item_id]
                             );
                         } else {
                             await db.query(
-                                `UPDATE printer_items 
+                                `UPDATE technician_inventory 
                                  SET remaining_weight = ?, is_opened = 1 
-                                 WHERE id = ?`,
-                                [amountRemaining, item.item_id]
+                                 WHERE technician_id = ? AND item_id = ?`,
+                                [amountRemaining, technicianId, item.item_id]
                             );
                         }
                     }
