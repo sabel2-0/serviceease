@@ -73,7 +73,7 @@ router.get('/parts', authenticateTechnician, async (req, res) => {
     try {
         const technicianId = req.user.id;
         
-        // Query to get all inventory items (both opened and sealed)
+        // Query to get all inventory items
         const [rows] = await db.query(`
             SELECT 
                 pp.id,
@@ -94,59 +94,68 @@ router.get('/parts', authenticateTechnician, async (req, res) => {
             FROM technician_inventory ti
             JOIN printer_items pp ON ti.item_id = pp.id
             WHERE ti.technician_id = ? AND ti.quantity > 0
-            ORDER BY pp.name ASC, ti.is_opened DESC
+            ORDER BY pp.name ASC
         `, [technicianId]);
         
-        // Group items: separate opened items from sealed items
+        // Process items: if opened with remaining volume, show opened bottle separately
         const processedItems = [];
-        const itemGroups = {};
         
         rows.forEach(row => {
-            const key = `${row.id}_${row.brand}_${row.name}`;
+            const hasVolume = row.ink_volume && parseFloat(row.ink_volume) > 0;
+            const hasWeight = row.toner_weight && parseFloat(row.toner_weight) > 0;
+            const isConsumable = hasVolume || hasWeight;
             
-            if (!itemGroups[key]) {
-                itemGroups[key] = {
-                    sealed: [],
-                    opened: []
-                };
+            if (!isConsumable) {
+                // Non-consumable items - show as is
+                processedItems.push(row);
+                return;
             }
             
-            if (row.is_opened === 1) {
-                itemGroups[key].opened.push(row);
-            } else {
-                itemGroups[key].sealed.push(row);
-            }
-        });
-        
-        // Process each item group
-        Object.values(itemGroups).forEach(group => {
-            // Add opened items first (show individually with remaining amount)
-            group.opened.forEach(openedItem => {
-                const hasVolume = openedItem.ink_volume && parseFloat(openedItem.ink_volume) > 0;
-                const hasWeight = openedItem.toner_weight && parseFloat(openedItem.toner_weight) > 0;
-                const remaining = hasVolume ? openedItem.remaining_volume : openedItem.remaining_weight;
-                const unit = hasVolume ? 'ml' : 'g';
+            const capacity = hasVolume ? parseFloat(row.ink_volume) : parseFloat(row.toner_weight);
+            const remaining = hasVolume ? 
+                (row.remaining_volume ? parseFloat(row.remaining_volume) : 0) : 
+                (row.remaining_weight ? parseFloat(row.remaining_weight) : 0);
+            const unit = hasVolume ? 'ml' : 'g';
+            
+            // Check if there's an opened bottle (remaining volume < total capacity)
+            const totalCapacity = capacity * row.stock;
+            const hasOpenedBottle = row.is_opened === 1 && remaining > 0 && remaining < totalCapacity;
+            
+            if (hasOpenedBottle) {
+                // Calculate: 1 opened bottle + remaining sealed bottles
+                const openedBottleRemaining = remaining % capacity || capacity;
+                const sealedCount = Math.floor(remaining / capacity);
                 
+                // Add opened bottle first (to be used first)
                 processedItems.push({
-                    ...openedItem,
-                    display_name: `${openedItem.name} (${remaining}${unit} remaining)`,
+                    ...row,
+                    display_name: `${row.name} (${openedBottleRemaining.toFixed(0)}${unit} remaining - opened)`,
                     is_opened_item: true,
-                    stock: 1, // Show as 1 piece for opened items
-                    tech_inventory_id: openedItem.tech_inventory_id
+                    stock: 1,
+                    remaining_volume: hasVolume ? openedBottleRemaining : null,
+                    remaining_weight: hasWeight ? openedBottleRemaining : null,
+                    tech_inventory_id: row.tech_inventory_id
                 });
-            });
-            
-            // Add sealed items (grouped, show total quantity)
-            if (group.sealed.length > 0) {
-                const sealedItem = group.sealed[0];
-                const totalSealed = group.sealed.reduce((sum, item) => sum + item.stock, 0);
                 
+                // Add sealed bottles if any remain
+                if (sealedCount > 0) {
+                    processedItems.push({
+                        ...row,
+                        display_name: row.name,
+                        is_opened_item: false,
+                        stock: sealedCount,
+                        remaining_volume: null,
+                        remaining_weight: null,
+                        is_opened: 0,
+                        tech_inventory_id: row.tech_inventory_id
+                    });
+                }
+            } else {
+                // All sealed or all empty - show as normal
                 processedItems.push({
-                    ...sealedItem,
-                    display_name: sealedItem.name,
-                    is_opened_item: false,
-                    stock: totalSealed,
-                    tech_inventory_id: sealedItem.tech_inventory_id
+                    ...row,
+                    display_name: row.name,
+                    is_opened_item: false
                 });
             }
         });

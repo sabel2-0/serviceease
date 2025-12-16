@@ -1719,7 +1719,7 @@ function updatePartsForType(typeSelector, selectedType) {
     searchInput.placeholder = `Search ${partsForType.length} available parts...`;
     partsGridContainer.classList.add('hidden');
     
-    // Render part cards
+    // Render part cards (both opened and sealed items will show as separate cards)
     partsForType.forEach(part => {
         const card = document.createElement('div');
         const isOpenedItem = part.is_opened_item === true;
@@ -1727,9 +1727,13 @@ function updatePartsForType(typeSelector, selectedType) {
         // Use display_name if available, otherwise fall back to name
         const displayName = part.display_name || part.name;
         
-        card.className = 'part-card p-3 bg-white border-2 border-slate-200 rounded-lg hover:border-purple-400 hover:shadow-md transition-all cursor-pointer';
+        // Style opened items more prominently
+        card.className = 'part-card p-3 bg-white border-2 rounded-lg hover:border-purple-400 hover:shadow-md transition-all cursor-pointer';
         if (isOpenedItem) {
-            card.className += ' border-l-4 border-l-orange-400'; // Visual indicator for opened items
+            // Make opened items stand out with orange border and slight background
+            card.className = 'part-card p-3 bg-orange-50 border-2 border-orange-400 rounded-lg hover:border-orange-500 hover:shadow-lg transition-all cursor-pointer';
+        } else {
+            card.className += ' border-slate-200';
         }
         
         card.dataset.id = part.id;
@@ -1753,14 +1757,14 @@ function updatePartsForType(typeSelector, selectedType) {
         const universalBadge = part.is_universal == 1 ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">🌐 Universal</span>' : '';
         const brandBadge = part.brand ? `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700">${part.brand}</span>` : '';
         
-        // Status badge for opened items
+        // Status badge for opened items - make it very prominent
         let statusBadge = '';
         if (isOpenedItem) {
             const hasVolume = part.ink_volume && parseFloat(part.ink_volume) > 0;
             const remaining = hasVolume ? part.remaining_volume : part.remaining_weight;
             const unit = hasVolume ? 'ml' : 'g';
-            statusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-700">
-                <i class="fas fa-box-open mr-1"></i> Opened - ${remaining}${unit} left
+            statusBadge = `<span class="inline-flex items-center px-2 py-1 rounded text-xs font-bold bg-orange-500 text-white">
+                <i class="fas fa-box-open mr-1"></i> OPENED - ${remaining}${unit} LEFT
             </span>`;
         } else {
             statusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
@@ -1771,10 +1775,14 @@ function updatePartsForType(typeSelector, selectedType) {
         // Color badge for ink/toner
         const colorBadge = part.color ? `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">${part.color}</span>` : '';
         
+        // Priority indicator for opened items
+        const priorityIndicator = isOpenedItem ? '<div class="text-xs font-bold text-orange-600 mb-1">⚠️ USE THIS FIRST</div>' : '';
+        
         card.innerHTML = `
             <div class="flex items-start justify-between gap-2">
                 <div class="flex-1 min-w-0">
-                    <div class="font-semibold text-slate-800 text-sm mb-1 truncate">${displayName}</div>
+                    ${priorityIndicator}
+                    <div class="font-semibold ${isOpenedItem ? 'text-orange-800' : 'text-slate-800'} text-sm mb-1 truncate">${displayName}</div>
                     <div class="flex flex-wrap gap-1 mb-2">
                         ${brandBadge}
                         ${colorBadge}
@@ -1785,11 +1793,11 @@ function updatePartsForType(typeSelector, selectedType) {
                         <svg class="w-3 h-3 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
                         </svg>
-                        ${isOpenedItem ? '1 piece (opened)' : `${part.stock} ${part.unit || 'pieces'} available`}
+                        ${isOpenedItem ? 'Continue using this bottle' : `${part.stock} ${part.unit || 'pieces'} available`}
                     </div>
                 </div>
                 <div class="flex-shrink-0">
-                    <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-5 h-5 ${isOpenedItem ? 'text-orange-500' : 'text-purple-400'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                     </svg>
                 </div>
@@ -1851,12 +1859,22 @@ function selectPartFromCard(partEntry, card) {
     const selectedPartInfo = selectedPartDisplay.querySelector('.selected-part-info');
     selectedPartName.textContent = card.dataset.name;
     
-    // Build info text with color if available
+    // Build info text with color and opened status if available
     let infoText = `${card.dataset.brand || 'Universal'}`;
     if (card.dataset.color) {
         infoText += ` • ${card.dataset.color}`;
     }
-    infoText += ` • ${card.dataset.stock} ${card.dataset.unit} available`;
+    
+    // If this is an opened item, show remaining volume prominently
+    const isOpenedItem = card.dataset.isOpenedItem === '1';
+    if (isOpenedItem) {
+        const hasVolume = card.dataset.inkVolume && parseFloat(card.dataset.inkVolume) > 0;
+        const remaining = hasVolume ? card.dataset.remainingVolume : card.dataset.remainingWeight;
+        const unit = hasVolume ? 'ml' : 'g';
+        infoText += ` • 🔓 ${remaining}${unit} remaining (opened)`;
+    } else {
+        infoText += ` • ${card.dataset.stock} ${card.dataset.unit} available`;
+    }
     
     selectedPartInfo.textContent = infoText;
     selectedPartDisplay.classList.remove('hidden');

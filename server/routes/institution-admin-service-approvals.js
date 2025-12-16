@@ -230,86 +230,70 @@ router.post('/:approvalId/approve', authenticateinstitution_admin, async (req, r
             `, [serviceRequestId]);
             
             for (const part of partsToDeduct) {
-                if (part.consumption_type === 'full') {
-                    // Full consumption: deduct both quantity AND amount from remaining volume/weight
-                    // Get current inventory to calculate new remaining
-                    const [techInventory] = await db.query(`
-                        SELECT ti.quantity, ti.remaining_volume, ti.remaining_weight, pi.ink_volume, pi.toner_weight
-                        FROM technician_inventory ti
-                        JOIN printer_items pi ON ti.item_id = pi.id
-                        WHERE ti.technician_id = ? AND ti.item_id = ?
-                    `, [technicianId, part.item_id]);
+                // Get current inventory state first
+                const [techInventory] = await db.query(`
+                    SELECT ti.quantity, ti.remaining_volume, ti.remaining_weight, ti.is_opened,
+                           pi.ink_volume, pi.toner_weight
+                    FROM technician_inventory ti
+                    JOIN printer_items pi ON ti.item_id = pi.id
+                    WHERE ti.technician_id = ? AND ti.item_id = ?
+                `, [technicianId, part.item_id]);
+                
+                if (techInventory.length === 0) continue;
+                
+                const item = techInventory[0];
+                const isInk = item.ink_volume && parseFloat(item.ink_volume) > 0;
+                const capacityPerPiece = isInk ? parseFloat(item.ink_volume) : parseFloat(item.toner_weight || 0);
+                
+                // Check if this is a consumable item (has consumption_type)
+                if (part.consumption_type && (part.consumption_type === 'full' || part.consumption_type === 'partial')) {
+                    // Get current remaining
+                    const currentRemaining = isInk ? 
+                        (item.remaining_volume ? parseFloat(item.remaining_volume) : 0) : 
+                        (item.remaining_weight ? parseFloat(item.remaining_weight) : 0);
                     
-                    if (techInventory.length > 0) {
-                        const item = techInventory[0];
-                        const newQty = Math.max(0, item.quantity - part.quantity_used);
-                        
-                        // Determine if it's ink or toner
-                        const isInk = item.ink_volume && parseFloat(item.ink_volume) > 0;
-                        const capacityPerPiece = isInk ? parseFloat(item.ink_volume) : parseFloat(item.toner_weight || 0);
-                        
-                        // Calculate amount consumed in full consumption (quantity × capacity per piece)
-                        const amountConsumed = part.quantity_used * capacityPerPiece;
-                        
-                        // Get current remaining
-                        const currentRemaining = isInk ? 
-                            (item.remaining_volume || 0) : 
-                            (item.remaining_weight || 0);
-                        
-                        // Calculate new remaining after deduction
-                        const newRemaining = Math.max(0, parseFloat(currentRemaining) - amountConsumed);
-                        
-                        // Update inventory
-                        const updateColumn = isInk ? 'remaining_volume' : 'remaining_weight';
-                        await db.query(`
-                            UPDATE technician_inventory 
-                            SET quantity = ?,
-                                ${updateColumn} = ?,
-                                is_opened = ?
-                            WHERE technician_id = ? AND item_id = ?
-                        `, [
-                            newQty,
-                            newRemaining > 0 ? newRemaining : null,
-                            newRemaining > 0 ? 1 : 0,
-                            technicianId,
-                            part.item_id
-                        ]);
-                        
-                        console.log(`✅ Full consumption: ${amountConsumed}${isInk ? 'ml' : 'g'} consumed, quantity ${item.quantity} → ${newQty}, remaining ${currentRemaining} → ${newRemaining}${isInk ? 'ml' : 'g'}`);
+                    // Calculate amount to consume
+                    let amountToConsume;
+                    if (part.consumption_type === 'full') {
+                        amountToConsume = part.quantity_used * capacityPerPiece;
+                    } else {
+                        amountToConsume = parseFloat(part.amount_consumed);
                     }
                     
-                } else if (part.consumption_type === 'partial' && part.amount_consumed) {
-                    // Partial consumption: update remaining volume/weight, mark as opened, DON'T deduct quantity
-                    // Get current remaining from technician inventory and item capacity
-                    const [techInventory] = await db.query(`
-                        SELECT ti.remaining_volume, ti.remaining_weight, pi.ink_volume, pi.toner_weight
-                        FROM technician_inventory ti
-                        JOIN printer_items pi ON ti.item_id = pi.id
-                        WHERE ti.technician_id = ? AND ti.item_id = ?
-                    `, [technicianId, part.item_id]);
+                    // Deduct from remaining volume
+                    const newRemaining = Math.max(0, currentRemaining - amountToConsume);
                     
-                    if (techInventory.length > 0) {
-                        const item = techInventory[0];
-                        
-                        // Determine if it's ink or toner and get current remaining amount
-                        const isInk = item.ink_volume && parseFloat(item.ink_volume) > 0;
-                        const currentRemaining = isInk ? 
-                            (item.remaining_volume || 0) : 
-                            (item.remaining_weight || 0);
-                        
-                        // Calculate new remaining amount after consumption
-                        const newRemaining = parseFloat(currentRemaining) - parseFloat(part.amount_consumed);
-                        
-                        // Update the TECHNICIAN's inventory item remaining amount
-                        const updateColumn = isInk ? 'remaining_volume' : 'remaining_weight';
-                        await db.query(`
-                            UPDATE technician_inventory 
-                            SET ${updateColumn} = ?, is_opened = 1 
-                            WHERE technician_id = ? AND item_id = ?
-                        `, [newRemaining > 0 ? newRemaining : 0, technicianId, part.item_id]);
-                        
-                        console.log(`✅ Partial consumption: ${part.amount_consumed}${isInk ? 'ml' : 'g'} consumed, remaining ${newRemaining > 0 ? newRemaining : 0}${isInk ? 'ml' : 'g'} (quantity not deducted)`);
+                    // Only deduct quantity if we've exhausted an opened bottle or consuming from sealed
+                    let newQty = item.quantity;
+                    if (currentRemaining > 0) {
+                        // There was an opened bottle
+                        if (newRemaining <= 0) {
+                            // Opened bottle is now empty, deduct quantity
+                            newQty = Math.max(0, item.quantity - 1);
+                        }
+                        // else: still has remaining in opened bottle, don't deduct quantity
+                    } else {
+                        // No opened bottle (all sealed), deduct quantity
+                        newQty = Math.max(0, item.quantity - part.quantity_used);
                     }
+                    
+                    // Update inventory
+                    const updateColumn = isInk ? 'remaining_volume' : 'remaining_weight';
+                    await db.query(`
+                        UPDATE technician_inventory 
+                        SET quantity = ?,
+                            ${updateColumn} = ?,
+                            is_opened = ?
+                        WHERE technician_id = ? AND item_id = ?
+                    `, [
+                        newQty,
+                        newRemaining > 0 ? newRemaining : null,
+                        newRemaining > 0 && newQty > 0 ? 1 : 0,
+                        technicianId,
+                        part.item_id
+                    ]);
+                    
+                    console.log(`✅ ${part.consumption_type} consumption: ${amountToConsume}${isInk ? 'ml' : 'g'} consumed, remaining ${currentRemaining} → ${newRemaining}${isInk ? 'ml' : 'g'}, quantity ${item.quantity} → ${newQty}${newQty !== item.quantity ? ' (bottle emptied)' : ' (opened bottle still has remaining)'}`);
                     
                 } else {
                     // No consumption type (old data or non-consumables): deduct quantity as before
