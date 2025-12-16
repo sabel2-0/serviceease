@@ -1462,12 +1462,13 @@ window.selectVSPartFromCard = async function(cardElement) {
     const gridContainer = partEntry.querySelector('.vs-parts-grid-container');
     gridContainer.classList.add('hidden');
     
-    // Check if item has volume/weight and show consumption fields
+    // Check if item has volume/weight tracking capability and show consumption fields
     const consumptionFields = partEntry.querySelector('.vs-consumption-fields');
     
-    if (capacity && (remainingVolume || remainingWeight)) {
+    // Show consumption fields if item has capacity (ink_volume or toner_weight)
+    if (consumptionFields && capacity && parseFloat(capacity) > 0) {
         const capacityValue = parseFloat(capacity);
-        const capacityUnit = remainingVolume ? 'ml' : 'grams';
+        const capacityUnit = remainingVolume !== '' ? 'ml' : 'grams';
         
         // Store capacity info
         const capacityField = partEntry.querySelector('.vs-consumption-item-capacity');
@@ -1514,7 +1515,7 @@ window.selectVSPartFromCard = async function(cardElement) {
                 window.selectVSConsumptionType('partial', partialButton);
             }
         }
-    } else {
+    } else if (consumptionFields) {
         consumptionFields.classList.add('hidden');
     }
     
