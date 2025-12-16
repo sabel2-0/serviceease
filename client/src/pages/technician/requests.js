@@ -1734,10 +1734,32 @@ function updatePartsForType(typeSelector, selectedType) {
         card.dataset.inkVolume = part.ink_volume || '';
         card.dataset.tonerWeight = part.toner_weight || '';
         card.dataset.color = part.color || '';
+        card.dataset.remainingVolume = part.remaining_volume || '';
+        card.dataset.remainingWeight = part.remaining_weight || '';
+        card.dataset.isOpened = part.is_opened || 0;
         
         const stockColor = part.stock > 10 ? 'text-green-600' : part.stock > 0 ? 'text-orange-600' : 'text-red-600';
         const universalBadge = part.is_universal == 1 ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">?? Universal</span>' : '';
         const brandBadge = part.brand ? `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700">${part.brand}</span>` : '';
+        
+        // Show consumption status for opened items
+        let consumptionBadge = '';
+        if (part.is_opened == 1) {
+            if (part.remaining_volume && parseFloat(part.remaining_volume) > 0) {
+                const totalVolume = part.ink_volume || 0;
+                const remaining = parseFloat(part.remaining_volume);
+                const percentage = totalVolume > 0 ? Math.round((remaining / totalVolume) * 100) : 0;
+                consumptionBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-700">?? Opened: ${remaining}ml (${percentage}%)</span>`;
+            } else if (part.remaining_weight && parseFloat(part.remaining_weight) > 0) {
+                const totalWeight = part.toner_weight || 0;
+                const remaining = parseFloat(part.remaining_weight);
+                const percentage = totalWeight > 0 ? Math.round((remaining / totalWeight) * 100) : 0;
+                consumptionBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-700">?? Opened: ${remaining}g (${percentage}%)</span>`;
+            }
+        }
+        
+        // Color badge for ink/toner
+        const colorBadge = part.color ? `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">${part.color}</span>` : '';
         
         card.innerHTML = `
             <div class="flex items-start justify-between gap-2">
@@ -1745,7 +1767,9 @@ function updatePartsForType(typeSelector, selectedType) {
                     <div class="font-semibold text-slate-800 text-sm mb-1 truncate">${part.name}</div>
                     <div class="flex flex-wrap gap-1 mb-2">
                         ${brandBadge}
+                        ${colorBadge}
                         ${universalBadge}
+                        ${consumptionBadge}
                     </div>
                     <div class="text-xs ${stockColor} font-medium">
                         <svg class="w-3 h-3 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1796,6 +1820,9 @@ function selectPartFromCard(partEntry, card) {
     option.dataset.inkVolume = card.dataset.inkVolume;
     option.dataset.tonerWeight = card.dataset.tonerWeight;
     option.dataset.color = card.dataset.color;
+    option.dataset.remainingVolume = card.dataset.remainingVolume;
+    option.dataset.remainingWeight = card.dataset.remainingWeight;
+    option.dataset.isOpened = card.dataset.isOpened;
     option.selected = true;
     partSelect.appendChild(option);
     
@@ -2483,19 +2510,26 @@ window.selectSRConsumptionType = function(type, button) {
     const entry = button.closest('.part-entry');
     if (!entry) return;
     
-    // Update button states
+    // Update button states - use lighter blue for better text visibility
     const buttons = entry.querySelectorAll('[data-consumption-type]');
     buttons.forEach(btn => {
-        btn.classList.remove('bg-blue-600', 'text-white');
+        btn.classList.remove('bg-blue-600', 'text-white', 'bg-blue-500');
         btn.classList.add('bg-gray-100', 'text-gray-700');
     });
     button.classList.remove('bg-gray-100', 'text-gray-700');
-    button.classList.add('bg-blue-600', 'text-white');
+    button.classList.add('bg-blue-500', 'text-white');
     
     // Get elements
     const qtyInput = entry.querySelector('.part-quantity');
     const amountInput = entry.querySelector('.consumption-amount-input');
     const capacity = parseFloat(entry.querySelector('.consumption-item-capacity')?.value || 0);
+    const amountField = entry.querySelector('.consumption-amount');
+    const consumptionTypeField = entry.querySelector('.consumption-type');
+    
+    // Set consumption type
+    if (consumptionTypeField) {
+        consumptionTypeField.value = type;
+    }
     
     // Show/hide amount input and handle calculations
     if (type === 'full') {
@@ -2504,17 +2538,17 @@ window.selectSRConsumptionType = function(type, button) {
         if (qtyInput && capacity > 0) {
             const qty = parseInt(qtyInput.value) || 0;
             const calculatedAmount = qty * capacity;
-            const amountField = entry.querySelector('.consumption-amount');
             if (amountField) {
                 amountField.value = calculatedAmount;
             }
         }
     } else {
         amountInput.classList.remove('hidden');
-        // Clear the amount so user must input
-        const amountField = entry.querySelector('.consumption-amount');
+        // Auto-calculate half capacity for partial consumption
+        const halfCapacity = capacity / 2;
         if (amountField) {
-            amountField.value = '';
+            amountField.value = halfCapacity;
+            amountField.placeholder = `e.g., ${halfCapacity}`;
         }
     }
 };
@@ -2534,7 +2568,10 @@ window.selectSRPartFromCard = async function(selectElement) {
         hasConsumptionFields: !!consumptionFields,
         inkVolume: selectedOption.dataset.inkVolume,
         tonerWeight: selectedOption.dataset.tonerWeight,
-        color: selectedOption.dataset.color
+        color: selectedOption.dataset.color,
+        remainingVolume: selectedOption.dataset.remainingVolume,
+        remainingWeight: selectedOption.dataset.remainingWeight,
+        isOpened: selectedOption.dataset.isOpened
     });
     
     if (!consumptionFields) {
@@ -2545,22 +2582,41 @@ window.selectSRPartFromCard = async function(selectElement) {
     // Get item details from the option dataset
     const inkVolume = selectedOption.dataset.inkVolume;
     const tonerWeight = selectedOption.dataset.tonerWeight;
+    const remainingVolume = selectedOption.dataset.remainingVolume;
+    const remainingWeight = selectedOption.dataset.remainingWeight;
+    const isOpened = selectedOption.dataset.isOpened == '1';
     
     // Check if item has volume or weight (consumable)
     const hasVolume = inkVolume && parseFloat(inkVolume) > 0;
     const hasWeight = tonerWeight && parseFloat(tonerWeight) > 0;
     
-    console.log('Consumption check:', { hasVolume, hasWeight, inkVolume, tonerWeight });
+    console.log('Consumption check:', { hasVolume, hasWeight, inkVolume, tonerWeight, isOpened });
     
     if (hasVolume || hasWeight) {
-        const capacity = hasVolume ? parseFloat(inkVolume) : parseFloat(tonerWeight);
-        const unit = hasVolume ? 'ml' : 'grams';
+        // Use remaining volume/weight if item is opened, otherwise use full capacity
+        let capacity, unit;
+        if (isOpened) {
+            if (hasVolume && remainingVolume && parseFloat(remainingVolume) > 0) {
+                capacity = parseFloat(remainingVolume);
+                unit = 'ml';
+            } else if (hasWeight && remainingWeight && parseFloat(remainingWeight) > 0) {
+                capacity = parseFloat(remainingWeight);
+                unit = 'grams';
+            } else {
+                // Fallback to full capacity if no remaining data
+                capacity = hasVolume ? parseFloat(inkVolume) : parseFloat(tonerWeight);
+                unit = hasVolume ? 'ml' : 'grams';
+            }
+        } else {
+            capacity = hasVolume ? parseFloat(inkVolume) : parseFloat(tonerWeight);
+            unit = hasVolume ? 'ml' : 'grams';
+        }
         
-        console.log('Showing consumption fields with capacity:', capacity, unit);
+        console.log('Showing consumption fields with capacity:', capacity, unit, isOpened ? '(opened item)' : '(new item)');
         
         // Set capacity data
         if (capacityField) capacityField.value = capacity;
-        if (capacityDisplay) capacityDisplay.textContent = `${capacity}${unit} per piece`;
+        if (capacityDisplay) capacityDisplay.textContent = `${capacity}${unit} per piece${isOpened ? ' (remaining)' : ''}`;
         if (consumptionType) consumptionType.value = 'full';
         
         // Show consumption fields
