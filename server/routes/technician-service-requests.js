@@ -544,35 +544,44 @@ router.post('/service-requests/:requestId/complete', authenticateTechnician, asy
                             
                             // Handle partial consumption for technician inventory updates
                             if (part.consumption_type === 'partial' && part.amount_consumed) {
-                                // Get item details to determine if it's ink or toner
-                                const [itemDetails] = await db.query(
-                                    'SELECT ink_volume, toner_weight FROM printer_items WHERE id = ?',
-                                    [partInfo[0].id]
+                                // Get item details AND current remaining from technician inventory
+                                const [techInventory] = await db.query(
+                                    `SELECT ti.remaining_volume, ti.remaining_weight, pi.ink_volume, pi.toner_weight
+                                     FROM technician_inventory ti
+                                     JOIN printer_items pi ON ti.item_id = pi.id
+                                     WHERE ti.technician_id = ? AND ti.item_id = ?`,
+                                    [technicianId, partInfo[0].id]
                                 );
                                 
-                                if (itemDetails.length > 0) {
-                                    const item = itemDetails[0];
-                                    const capacity = item.ink_volume || item.toner_weight;
+                                if (techInventory.length > 0) {
+                                    const item = techInventory[0];
                                     
-                                    if (capacity && parseFloat(capacity) > 0) {
-                                        const remaining = parseFloat(capacity) - parseFloat(part.amount_consumed);
-                                        
-                                        // Update the TECHNICIAN's inventory item remaining amount
-                                        const updateColumn = item.ink_volume ? 'remaining_volume' : 'remaining_weight';
-                                        await db.query(
-                                            `UPDATE technician_inventory 
-                                             SET ${updateColumn} = ?, is_opened = 1 
-                                             WHERE technician_id = ? AND item_id = ?`,
-                                            [remaining, technicianId, partInfo[0].id]
-                                        );
-                                        
-                                        console.log('[COMPLETE] Updated partial consumption in technician inventory:', {
-                                            technicianId: technicianId,
-                                            itemId: partInfo[0].id,
-                                            column: updateColumn,
-                                            remaining: remaining
-                                        });
-                                    }
+                                    // Determine if it's ink or toner and get current remaining amount
+                                    const isInk = item.ink_volume && parseFloat(item.ink_volume) > 0;
+                                    const currentRemaining = isInk ? 
+                                        (item.remaining_volume || (item.ink_volume * part.qty)) : 
+                                        (item.remaining_weight || (item.toner_weight * part.qty));
+                                    
+                                    // Calculate new remaining amount after consumption
+                                    const newRemaining = parseFloat(currentRemaining) - parseFloat(part.amount_consumed);
+                                    
+                                    // Update the TECHNICIAN's inventory item remaining amount
+                                    const updateColumn = isInk ? 'remaining_volume' : 'remaining_weight';
+                                    await db.query(
+                                        `UPDATE technician_inventory 
+                                         SET ${updateColumn} = ?, is_opened = 1 
+                                         WHERE technician_id = ? AND item_id = ?`,
+                                        [newRemaining > 0 ? newRemaining : 0, technicianId, partInfo[0].id]
+                                    );
+                                    
+                                    console.log('[COMPLETE] Updated partial consumption in technician inventory:', {
+                                        technicianId: technicianId,
+                                        itemId: partInfo[0].id,
+                                        column: updateColumn,
+                                        previousRemaining: currentRemaining,
+                                        consumed: part.amount_consumed,
+                                        newRemaining: newRemaining > 0 ? newRemaining : 0
+                                    });
                                 }
                             }
                             

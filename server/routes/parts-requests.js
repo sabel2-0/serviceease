@@ -336,9 +336,9 @@ router.patch('/:id', async (req, res) => {
             
             // If approved, add to technician inventory and deduct from main inventory
             if (status === 'approved') {
-                // First, check and deduct from main inventory
+                // First, check and deduct from main inventory, also get item details for capacity
                 const [inventoryCheck] = await db.query(
-                    'SELECT quantity FROM printer_items WHERE id = ?',
+                    'SELECT quantity, ink_volume, toner_weight FROM printer_items WHERE id = ?',
                     [currentRequest.item_id]
                 );
                 
@@ -348,6 +348,12 @@ router.patch('/:id', async (req, res) => {
                 if (inventoryCheck.length === 0 || inventoryCheck[0].quantity < currentRequest.quantity_requested) {
                     throw new Error('Insufficient inventory to approve request');
                 }
+                
+                const itemData = inventoryCheck[0];
+                
+                // Calculate total remaining volume/weight based on quantity
+                const totalRemainingVolume = itemData.ink_volume ? itemData.ink_volume * currentRequest.quantity_requested : null;
+                const totalRemainingWeight = itemData.toner_weight ? itemData.toner_weight * currentRequest.quantity_requested : null;
                 
                 // Deduct from main inventory
                 await db.query(
@@ -362,20 +368,43 @@ router.patch('/:id', async (req, res) => {
                 );
                 
                 if (existingTechInventory.length > 0) {
-                    // Update existing entry
+                    // Update existing entry - add to remaining volume/weight
+                    const existingRemVolume = existingTechInventory[0].remaining_volume || 0;
+                    const existingRemWeight = existingTechInventory[0].remaining_weight || 0;
+                    
                     await db.query(
-                        'UPDATE technician_inventory SET quantity = quantity + ?, last_updated = CURRENT_TIMESTAMP WHERE technician_id = ? AND item_id = ?',
-                        [currentRequest.quantity_requested, currentRequest.technician_id, currentRequest.item_id]
+                        `UPDATE technician_inventory 
+                         SET quantity = quantity + ?, 
+                             remaining_volume = ?, 
+                             remaining_weight = ?, 
+                             last_updated = CURRENT_TIMESTAMP 
+                         WHERE technician_id = ? AND item_id = ?`,
+                        [
+                            currentRequest.quantity_requested, 
+                            totalRemainingVolume ? existingRemVolume + totalRemainingVolume : existingRemVolume,
+                            totalRemainingWeight ? existingRemWeight + totalRemainingWeight : existingRemWeight,
+                            currentRequest.technician_id, 
+                            currentRequest.item_id
+                        ]
                     );
                 } else {
-                    // Create new entry
+                    // Create new entry with initial remaining volume/weight
                     await db.query(
-                        'INSERT INTO technician_inventory (technician_id, item_id, quantity, assigned_by, assigned_at, last_updated) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)',
-                        [currentRequest.technician_id, currentRequest.item_id, currentRequest.quantity_requested, user.id]
+                        `INSERT INTO technician_inventory 
+                         (technician_id, item_id, quantity, remaining_volume, remaining_weight, is_opened, assigned_by, assigned_at, last_updated) 
+                         VALUES (?, ?, ?, ?, ?, 0, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+                        [
+                            currentRequest.technician_id, 
+                            currentRequest.item_id, 
+                            currentRequest.quantity_requested, 
+                            totalRemainingVolume,
+                            totalRemainingWeight,
+                            user.id
+                        ]
                     );
                 }
                 
-                console.log(`Added ${currentRequest.quantity_requested} units of part ${currentRequest.item_id} to technician ${currentRequest.technician_id} inventory`);
+                console.log(`Added ${currentRequest.quantity_requested} units of part ${currentRequest.item_id} to technician ${currentRequest.technician_id} inventory (Volume: ${totalRemainingVolume}ml, Weight: ${totalRemainingWeight}g)`);
             }
             
             await db.query('COMMIT');

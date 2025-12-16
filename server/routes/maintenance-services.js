@@ -662,33 +662,51 @@ router.post('/', auth, async (req, res) => {
                 
                 // If partial consumption, handle technician inventory deduction
                 if (item.consumption_type === 'partial' && item.amount_consumed) {
-                    // Get item details to determine capacity
-                    const [itemDetails] = await db.query(
-                        'SELECT ink_volume, toner_weight FROM printer_items WHERE id = ?',
-                        [item.item_id]
+                    // Get item details AND current remaining from technician inventory
+                    const [techInventory] = await db.query(
+                        `SELECT ti.remaining_volume, ti.remaining_weight, pi.ink_volume, pi.toner_weight, ti.quantity
+                         FROM technician_inventory ti
+                         JOIN printer_items pi ON ti.item_id = pi.id
+                         WHERE ti.technician_id = ? AND ti.item_id = ?`,
+                        [technicianId, item.item_id]
                     );
                     
-                    if (itemDetails.length > 0) {
-                        const itemData = itemDetails[0];
-                        const capacity = itemData.ink_volume || itemData.toner_weight;
-                        const amountRemaining = capacity - item.amount_consumed;
+                    if (techInventory.length > 0) {
+                        const itemData = techInventory[0];
                         
-                        // Update the TECHNICIAN's inventory item to mark as opened with remaining amount
-                        if (itemData.ink_volume) {
+                        // Determine if it's ink or toner and get current remaining amount
+                        const isInk = itemData.ink_volume && parseFloat(itemData.ink_volume) > 0;
+                        const currentRemaining = isInk ? 
+                            (itemData.remaining_volume || (itemData.ink_volume * itemData.quantity)) : 
+                            (itemData.remaining_weight || (itemData.toner_weight * itemData.quantity));
+                        
+                        // Calculate new remaining amount after consumption
+                        const newRemaining = parseFloat(currentRemaining) - parseFloat(item.amount_consumed);
+                        
+                        // Update the TECHNICIAN's inventory item to mark as opened with new remaining amount
+                        if (isInk) {
                             await db.query(
                                 `UPDATE technician_inventory 
                                  SET remaining_volume = ?, is_opened = 1 
                                  WHERE technician_id = ? AND item_id = ?`,
-                                [amountRemaining, technicianId, item.item_id]
+                                [newRemaining > 0 ? newRemaining : 0, technicianId, item.item_id]
                             );
                         } else {
                             await db.query(
                                 `UPDATE technician_inventory 
                                  SET remaining_weight = ?, is_opened = 1 
                                  WHERE technician_id = ? AND item_id = ?`,
-                                [amountRemaining, technicianId, item.item_id]
+                                [newRemaining > 0 ? newRemaining : 0, technicianId, item.item_id]
                             );
                         }
+                        
+                        console.log('Partial consumption updated:', {
+                            technicianId,
+                            itemId: item.item_id,
+                            previousRemaining: currentRemaining,
+                            consumed: item.amount_consumed,
+                            newRemaining: newRemaining > 0 ? newRemaining : 0
+                        });
                     }
                 }
             }
