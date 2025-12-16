@@ -73,6 +73,7 @@ router.get('/parts', authenticateTechnician, async (req, res) => {
     try {
         const technicianId = req.user.id;
         
+        // Query to get all inventory items (both opened and sealed)
         const [rows] = await db.query(`
             SELECT 
                 pp.id,
@@ -93,11 +94,65 @@ router.get('/parts', authenticateTechnician, async (req, res) => {
             FROM technician_inventory ti
             JOIN printer_items pp ON ti.item_id = pp.id
             WHERE ti.technician_id = ? AND ti.quantity > 0
-            ORDER BY pp.name ASC
+            ORDER BY pp.name ASC, ti.is_opened DESC
         `, [technicianId]);
         
-        console.log(`[GET /api/technician/parts] Loaded ${rows.length} parts for technician ${technicianId}`);
-        res.json(rows);
+        // Group items: separate opened items from sealed items
+        const processedItems = [];
+        const itemGroups = {};
+        
+        rows.forEach(row => {
+            const key = `${row.id}_${row.brand}_${row.name}`;
+            
+            if (!itemGroups[key]) {
+                itemGroups[key] = {
+                    sealed: [],
+                    opened: []
+                };
+            }
+            
+            if (row.is_opened === 1) {
+                itemGroups[key].opened.push(row);
+            } else {
+                itemGroups[key].sealed.push(row);
+            }
+        });
+        
+        // Process each item group
+        Object.values(itemGroups).forEach(group => {
+            // Add opened items first (show individually with remaining amount)
+            group.opened.forEach(openedItem => {
+                const hasVolume = openedItem.ink_volume && parseFloat(openedItem.ink_volume) > 0;
+                const hasWeight = openedItem.toner_weight && parseFloat(openedItem.toner_weight) > 0;
+                const remaining = hasVolume ? openedItem.remaining_volume : openedItem.remaining_weight;
+                const unit = hasVolume ? 'ml' : 'g';
+                
+                processedItems.push({
+                    ...openedItem,
+                    display_name: `${openedItem.name} (${remaining}${unit} remaining)`,
+                    is_opened_item: true,
+                    stock: 1, // Show as 1 piece for opened items
+                    tech_inventory_id: openedItem.tech_inventory_id
+                });
+            });
+            
+            // Add sealed items (grouped, show total quantity)
+            if (group.sealed.length > 0) {
+                const sealedItem = group.sealed[0];
+                const totalSealed = group.sealed.reduce((sum, item) => sum + item.stock, 0);
+                
+                processedItems.push({
+                    ...sealedItem,
+                    display_name: sealedItem.name,
+                    is_opened_item: false,
+                    stock: totalSealed,
+                    tech_inventory_id: sealedItem.tech_inventory_id
+                });
+            }
+        });
+        
+        console.log(`[GET /api/technician/parts] Loaded ${processedItems.length} items (${rows.length} total rows) for technician ${technicianId}`);
+        res.json(processedItems);
         
     } catch (error) {
         console.error('Error fetching technician parts:', error);

@@ -1722,9 +1722,19 @@ function updatePartsForType(typeSelector, selectedType) {
     // Render part cards
     partsForType.forEach(part => {
         const card = document.createElement('div');
+        const isOpenedItem = part.is_opened_item === true;
+        
+        // Use display_name if available, otherwise fall back to name
+        const displayName = part.display_name || part.name;
+        
         card.className = 'part-card p-3 bg-white border-2 border-slate-200 rounded-lg hover:border-purple-400 hover:shadow-md transition-all cursor-pointer';
+        if (isOpenedItem) {
+            card.className += ' border-l-4 border-l-orange-400'; // Visual indicator for opened items
+        }
+        
         card.dataset.id = part.id;
         card.dataset.itemId = part.id;  // Add itemId for consumption tracking
+        card.dataset.techInventoryId = part.tech_inventory_id; // Individual inventory row ID
         card.dataset.name = part.name;
         card.dataset.stock = part.stock;
         card.dataset.unit = part.unit || 'pieces';
@@ -1737,26 +1747,24 @@ function updatePartsForType(typeSelector, selectedType) {
         card.dataset.remainingVolume = part.remaining_volume || '';
         card.dataset.remainingWeight = part.remaining_weight || '';
         card.dataset.isOpened = part.is_opened || 0;
+        card.dataset.isOpenedItem = isOpenedItem ? '1' : '0';
         
         const stockColor = part.stock > 10 ? 'text-green-600' : part.stock > 0 ? 'text-orange-600' : 'text-red-600';
-        const universalBadge = part.is_universal == 1 ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">?? Universal</span>' : '';
+        const universalBadge = part.is_universal == 1 ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">🌐 Universal</span>' : '';
         const brandBadge = part.brand ? `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700">${part.brand}</span>` : '';
         
-        // Show consumption status for total remaining (not individual bottles)
-        let consumptionBadge = '';
-        const hasRemainingVolume = part.remaining_volume && parseFloat(part.remaining_volume) > 0;
-        const hasRemainingWeight = part.remaining_weight && parseFloat(part.remaining_weight) > 0;
-        
-        if (hasRemainingVolume || hasRemainingWeight) {
-            const totalVolume = part.ink_volume ? parseFloat(part.ink_volume) * part.stock : 0;
-            const totalWeight = part.toner_weight ? parseFloat(part.toner_weight) * part.stock : 0;
-            const totalCapacity = totalVolume || totalWeight;
-            const remaining = hasRemainingVolume ? parseFloat(part.remaining_volume) : parseFloat(part.remaining_weight);
-            const percentage = totalCapacity > 0 ? Math.round((remaining / totalCapacity) * 100) : 0;
-            const unit = hasRemainingVolume ? 'ml' : 'g';
-            
-            consumptionBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">
-                <i class="fas fa-tint mr-1"></i> ${remaining}${unit} remaining (${percentage}%)
+        // Status badge for opened items
+        let statusBadge = '';
+        if (isOpenedItem) {
+            const hasVolume = part.ink_volume && parseFloat(part.ink_volume) > 0;
+            const remaining = hasVolume ? part.remaining_volume : part.remaining_weight;
+            const unit = hasVolume ? 'ml' : 'g';
+            statusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-700">
+                <i class="fas fa-box-open mr-1"></i> Opened - ${remaining}${unit} left
+            </span>`;
+        } else {
+            statusBadge = `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
+                <i class="fas fa-box mr-1"></i> Sealed
             </span>`;
         }
         
@@ -1766,18 +1774,18 @@ function updatePartsForType(typeSelector, selectedType) {
         card.innerHTML = `
             <div class="flex items-start justify-between gap-2">
                 <div class="flex-1 min-w-0">
-                    <div class="font-semibold text-slate-800 text-sm mb-1 truncate">${part.name}</div>
+                    <div class="font-semibold text-slate-800 text-sm mb-1 truncate">${displayName}</div>
                     <div class="flex flex-wrap gap-1 mb-2">
                         ${brandBadge}
                         ${colorBadge}
                         ${universalBadge}
-                        ${consumptionBadge}
+                        ${statusBadge}
                     </div>
                     <div class="text-xs ${stockColor} font-medium">
                         <svg class="w-3 h-3 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
                         </svg>
-                        ${part.stock} ${part.unit || 'pieces'} available
+                        ${isOpenedItem ? '1 piece (opened)' : `${part.stock} ${part.unit || 'pieces'} available`}
                     </div>
                 </div>
                 <div class="flex-shrink-0">
@@ -1815,6 +1823,7 @@ function selectPartFromCard(partEntry, card) {
     option.value = card.dataset.name;
     option.dataset.id = card.dataset.id;
     option.dataset.itemId = card.dataset.itemId;  // Add itemId for consumption tracking
+    option.dataset.techInventoryId = card.dataset.techInventoryId;  // Specific inventory row ID
     option.dataset.stock = card.dataset.stock;
     option.dataset.unit = card.dataset.unit;
     option.dataset.category = card.dataset.category;
@@ -1825,6 +1834,7 @@ function selectPartFromCard(partEntry, card) {
     option.dataset.remainingVolume = card.dataset.remainingVolume;
     option.dataset.remainingWeight = card.dataset.remainingWeight;
     option.dataset.isOpened = card.dataset.isOpened;
+    option.dataset.isOpenedItem = card.dataset.isOpenedItem;  // Whether this is an opened item
     option.selected = true;
     partSelect.appendChild(option);
     

@@ -125,7 +125,8 @@
                             name: nameSelect.value,
                             brand: brand,
                             qty: parseInt(quantityInput?.value || 1),
-                            unit: unitSelect?.value || 'pieces'
+                            unit: unitSelect?.value || 'pieces',
+                            tech_inventory_id: selectedOption?.dataset.techInventoryId || null
                         };
                         
                         // Add consumption data only for consumable items with visible consumption fields
