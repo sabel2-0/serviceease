@@ -72,7 +72,6 @@ router.post('/', async (req, res) => {
             is_universal,
             page_yield,
             ink_volume,
-            ink_cartridge_volume,
             toner_weight,
             color
         } = req.body;
@@ -94,10 +93,9 @@ router.post('/', async (req, res) => {
                 is_universal,
                 page_yield,
                 ink_volume,
-                ink_cartridge_volume,
                 toner_weight,
                 color
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 name,
                 brand || null,
@@ -107,7 +105,6 @@ router.post('/', async (req, res) => {
                 is_universal ? 1 : 0,
                 page_yield ? parseInt(page_yield) : null,
                 ink_volume ? parseFloat(ink_volume) : null,
-                ink_cartridge_volume ? parseFloat(ink_cartridge_volume) : null,
                 toner_weight ? parseFloat(toner_weight) : null,
                 color || null
             ]
@@ -139,12 +136,11 @@ router.put('/:id', async (req, res) => {
             is_universal,
             page_yield,
             ink_volume,
-            ink_cartridge_volume,
             toner_weight,
             color
         } = req.body;
 
-        if (!name && !brand && !category && !item_type && quantity === undefined && unit === undefined && minimum_stock === undefined && status === undefined && is_universal === undefined && page_yield === undefined && ink_volume === undefined && ink_cartridge_volume === undefined && toner_weight === undefined && color === undefined) {
+        if (!name && !brand && !category && !item_type && quantity === undefined && unit === undefined && minimum_stock === undefined && status === undefined && is_universal === undefined && page_yield === undefined && ink_volume === undefined && toner_weight === undefined && color === undefined) {
             return res.status(400).json({ error: 'At least one field to update is required' });
         }
 
@@ -162,7 +158,6 @@ router.put('/:id', async (req, res) => {
         if (is_universal !== undefined) { updateFields.push('is_universal = ?'); values.push(is_universal); }
         if (page_yield !== undefined) { updateFields.push('page_yield = ?'); values.push(page_yield ? parseInt(page_yield) : null); }
         if (ink_volume !== undefined) { updateFields.push('ink_volume = ?'); values.push(ink_volume ? parseFloat(ink_volume) : null); }
-        if (ink_cartridge_volume !== undefined) { updateFields.push('ink_cartridge_volume = ?'); values.push(ink_cartridge_volume ? parseFloat(ink_cartridge_volume) : null); }
         if (toner_weight !== undefined) { updateFields.push('toner_weight = ?'); values.push(toner_weight ? parseFloat(toner_weight) : null); }
         if (color !== undefined) { updateFields.push('color = ?'); values.push(color); }
 

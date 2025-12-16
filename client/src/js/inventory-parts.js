@@ -586,19 +586,11 @@ class InventoryPartsManager {
             }
         }
 
-        // Add ink volume for ink bottles
-        if (category === 'ink-bottle') {
+        // Add ink volume for both ink bottles and ink cartridges
+        if (category === 'ink-bottle' || category === 'ink') {
             const inkVolume = document.getElementById('inkVolume')?.value;
             if (inkVolume && parseFloat(inkVolume) > 0) {
                 formData.ink_volume = parseFloat(inkVolume);
-            }
-        }
-
-        // Add ink cartridge volume for ink cartridges
-        if (category === 'ink') {
-            const inkCartridgeVolume = document.getElementById('inkCartridgeVolume')?.value;
-            if (inkCartridgeVolume && parseFloat(inkCartridgeVolume) > 0) {
-                formData.ink_cartridge_volume = parseFloat(inkCartridgeVolume);
             }
         }
 

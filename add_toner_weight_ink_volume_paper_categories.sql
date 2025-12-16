@@ -1,10 +1,11 @@
 -- ===================================================================
--- ADD TONER WEIGHT, INK CARTRIDGE VOLUME, AND PAPER CATEGORIES
+-- ADD TONER WEIGHT AND PAPER CATEGORIES
 -- ===================================================================
 -- This migration adds:
 -- 1. toner_weight column for toner cartridges (in grams)
--- 2. ink_cartridge_volume column for ink cartridges (in ml)
--- 3. A4 and A3 paper categories
+-- 2. A4 and A3 paper categories
+-- Note: ink_volume column already exists and will be used for BOTH
+--       ink bottles AND ink cartridges (category distinguishes them)
 -- ===================================================================
 
 -- Step 1: Add toner_weight column
@@ -12,12 +13,7 @@ ALTER TABLE printer_items
 ADD COLUMN toner_weight DECIMAL(10,2) DEFAULT NULL COMMENT 'Weight of toner in grams for toner cartridges'
 AFTER ink_volume;
 
--- Step 2: Add ink_cartridge_volume column
-ALTER TABLE printer_items 
-ADD COLUMN ink_cartridge_volume DECIMAL(10,2) DEFAULT NULL COMMENT 'Volume of ink in milliliters for ink cartridges'
-AFTER toner_weight;
-
--- Step 3: Modify category enum to include A4 and A3 paper
+-- Step 2: Modify category enum to include A4 and A3 paper
 ALTER TABLE printer_items 
 MODIFY COLUMN category ENUM(
     'toner',
