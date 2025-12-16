@@ -1465,58 +1465,73 @@ window.selectVSPartFromCard = async function(cardElement) {
     // Check if item has volume/weight tracking capability and show consumption fields
     const consumptionFields = partEntry.querySelector('.vs-consumption-fields');
     
+    console.log('🔍 Consumption check:', {
+        hasConsumptionFields: !!consumptionFields,
+        capacity: capacity,
+        capacityType: typeof capacity,
+        parsedCapacity: parseFloat(capacity),
+        capacityCheck: !!(capacity && parseFloat(capacity) > 0),
+        remainingVolume: remainingVolume,
+        remainingWeight: remainingWeight,
+        isOpened: isOpened
+    });
+    
     // Show consumption fields if item has capacity (ink_volume or toner_weight)
-    if (consumptionFields && capacity && parseFloat(capacity) > 0) {
-        const capacityValue = parseFloat(capacity);
-        const capacityUnit = remainingVolume !== '' ? 'ml' : 'grams';
+    if (consumptionFields) {
+        const hasCapacity = capacity && capacity !== '' && capacity !== 'null' && parseFloat(capacity) > 0;
         
-        // Store capacity info
-        const capacityField = partEntry.querySelector('.vs-consumption-item-capacity');
-        if (capacityField) {
-            capacityField.value = capacityValue;
-        }
-        
-        // Update capacity display
-        const capacityDisplay = partEntry.querySelector('.vs-consumption-capacity-display');
-        if (capacityDisplay) {
-            capacityDisplay.textContent = `(${capacityValue}${capacityUnit} per piece)`;
-        }
-        
-        // Update unit label
-        const unitLabel = partEntry.querySelector('.vs-unit-label');
-        if (unitLabel) {
-            unitLabel.textContent = `(${capacityUnit})`;
-        }
-        
-        // Set max value for amount input
-        const amountInput = partEntry.querySelector('.vs-consumption-amount');
-        const quantityInput = partEntry.querySelector('.vs-part-quantity');
-        if (amountInput && quantityInput) {
-            const maxAmount = capacityValue * (parseInt(quantityInput.value) || 1);
-            amountInput.max = maxAmount;
-            amountInput.placeholder = `e.g., ${capacityValue / 2}`;
-        }
-        
-        consumptionFields.classList.remove('hidden');
-        
-        // Auto-default opened items to partial consumption
-        if (isOpened) {
-            const fullButton = partEntry.querySelector('.vs-consumption-btn-full');
-            const partialButton = partEntry.querySelector('.vs-consumption-btn-partial');
+        if (hasCapacity) {
+            const capacityValue = parseFloat(capacity);
+            const capacityUnit = remainingVolume !== '' && remainingVolume !== null ? 'ml' : 'grams';
             
-            // Disable full button for opened items
-            if (fullButton) {
-                fullButton.disabled = true;
-                fullButton.classList.add('opacity-50', 'cursor-not-allowed');
+            // Store capacity info
+            const capacityField = partEntry.querySelector('.vs-consumption-item-capacity');
+            if (capacityField) {
+                capacityField.value = capacityValue;
             }
             
-            // Auto-select partial
-            if (partialButton) {
-                window.selectVSConsumptionType('partial', partialButton);
+            // Update capacity display
+            const capacityDisplay = partEntry.querySelector('.vs-consumption-capacity-display');
+            if (capacityDisplay) {
+                capacityDisplay.textContent = `(${capacityValue}${capacityUnit} per piece)`;
             }
+            
+            // Update unit label
+            const unitLabel = partEntry.querySelector('.vs-unit-label');
+            if (unitLabel) {
+                unitLabel.textContent = `(${capacityUnit})`;
+            }
+            
+            // Set max value for amount input
+            const amountInput = partEntry.querySelector('.vs-consumption-amount');
+            const quantityInput = partEntry.querySelector('.vs-part-quantity');
+            if (amountInput && quantityInput) {
+                const maxAmount = capacityValue * (parseInt(quantityInput.value) || 1);
+                amountInput.max = maxAmount;
+                amountInput.placeholder = `e.g., ${capacityValue / 2}`;
+            }
+            
+            consumptionFields.classList.remove('hidden');
+            
+            // Auto-default opened items to partial consumption
+            if (isOpened) {
+                const fullButton = partEntry.querySelector('.vs-consumption-btn-full');
+                const partialButton = partEntry.querySelector('.vs-consumption-btn-partial');
+                
+                // Disable full button for opened items
+                if (fullButton) {
+                    fullButton.disabled = true;
+                    fullButton.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+                
+                // Auto-select partial
+                if (partialButton) {
+                    window.selectVSConsumptionType('partial', partialButton);
+                }
+            }
+        } else {
+            consumptionFields.classList.add('hidden');
         }
-    } else if (consumptionFields) {
-        consumptionFields.classList.add('hidden');
     }
     
     console.log(`✅ Selected part: ${partName} (ID: ${partId}, Stock: ${stock}, TechInventoryId: ${techInventoryId})`);
@@ -1988,10 +2003,22 @@ window.submitService = async function() {
                     const consumptionFields = entry.querySelector('.vs-consumption-fields');
                     const techInventoryId = entry.querySelector('.vs-tech-inventory-id')?.value;
                     
+                    console.log('🔍 Checking consumption fields:', {
+                        hasConsumptionFields: !!consumptionFields,
+                        isHidden: consumptionFields?.classList.contains('hidden'),
+                        techInventoryId: techInventoryId
+                    });
+                    
                     if (consumptionFields && !consumptionFields.classList.contains('hidden')) {
                         const consumptionType = entry.querySelector('.vs-consumption-type')?.value;
                         const amountConsumed = entry.querySelector('.vs-consumption-amount')?.value;
                         const capacityValue = entry.querySelector('.vs-consumption-item-capacity')?.value;
+                        
+                        console.log('🔍 Consumption field values:', {
+                            consumptionType,
+                            amountConsumed,
+                            capacityValue
+                        });
                         
                         if (consumptionType && capacityValue) {
                             itemData.consumption_type = consumptionType;
