@@ -1731,6 +1731,9 @@ function updatePartsForType(typeSelector, selectedType) {
         card.dataset.category = part.category;
         card.dataset.brand = part.brand || '';
         card.dataset.isUniversal = part.is_universal || 0;
+        card.dataset.inkVolume = part.ink_volume || '';
+        card.dataset.tonerWeight = part.toner_weight || '';
+        card.dataset.color = part.color || '';
         
         const stockColor = part.stock > 10 ? 'text-green-600' : part.stock > 0 ? 'text-orange-600' : 'text-red-600';
         const universalBadge = part.is_universal == 1 ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">?? Universal</span>' : '';
@@ -1790,6 +1793,9 @@ function selectPartFromCard(partEntry, card) {
     option.dataset.unit = card.dataset.unit;
     option.dataset.category = card.dataset.category;
     option.dataset.brand = card.dataset.brand;
+    option.dataset.inkVolume = card.dataset.inkVolume;
+    option.dataset.tonerWeight = card.dataset.tonerWeight;
+    option.dataset.color = card.dataset.color;
     option.selected = true;
     partSelect.appendChild(option);
     
@@ -2519,55 +2525,43 @@ window.selectSRPartFromCard = async function(selectElement) {
     if (!entry) return;
     
     const selectedOption = selectElement.options[selectElement.selectedIndex];
-    const itemId = selectedOption.dataset.itemId;
     const consumptionFields = entry.querySelector('.consumption-fields');
     const capacityField = entry.querySelector('.consumption-item-capacity');
     const capacityDisplay = entry.querySelector('.consumption-capacity-display');
     const consumptionType = entry.querySelector('.consumption-type');
     
-    if (!itemId || !consumptionFields) return;
+    if (!consumptionFields) return;
     
-    try {
-        // Fetch item details
-        const response = await fetch(`/api/admin/parts/${itemId}`, {
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
-        });
+    // Get item details from the option dataset
+    const inkVolume = selectedOption.dataset.inkVolume;
+    const tonerWeight = selectedOption.dataset.tonerWeight;
+    
+    // Check if item has volume or weight (consumable)
+    const hasVolume = inkVolume && parseFloat(inkVolume) > 0;
+    const hasWeight = tonerWeight && parseFloat(tonerWeight) > 0;
+    
+    if (hasVolume || hasWeight) {
+        const capacity = hasVolume ? parseFloat(inkVolume) : parseFloat(tonerWeight);
+        const unit = hasVolume ? 'ml' : 'grams';
         
-        if (!response.ok) throw new Error('Failed to fetch item details');
+        // Set capacity data
+        if (capacityField) capacityField.value = capacity;
+        if (capacityDisplay) capacityDisplay.textContent = `${capacity}${unit} per piece`;
+        if (consumptionType) consumptionType.value = 'full';
         
-        const item = await response.json();
+        // Show consumption fields
+        consumptionFields.classList.remove('hidden');
         
-        // Check if item has volume or weight (consumable)
-        const hasVolume = item.ink_volume && parseFloat(item.ink_volume) > 0;
-        const hasWeight = item.toner_weight && parseFloat(item.toner_weight) > 0;
-        
-        if (hasVolume || hasWeight) {
-            const capacity = hasVolume ? parseFloat(item.ink_volume) : parseFloat(item.toner_weight);
-            const unit = hasVolume ? 'ml' : 'grams';
-            
-            // Set capacity data
-            if (capacityField) capacityField.value = capacity;
-            if (capacityDisplay) capacityDisplay.textContent = `${capacity}${unit} per piece`;
-            if (consumptionType) consumptionType.value = 'full';
-            
-            // Show consumption fields
-            consumptionFields.classList.remove('hidden');
-            
-            // Reset to "Full" consumption by default
-            const fullButton = entry.querySelector('[data-consumption-type="full"]');
-            if (fullButton) {
-                window.selectSRConsumptionType('full', fullButton);
-            }
-        } else {
-            // Hide consumption fields for non-consumables
-            consumptionFields.classList.add('hidden');
-            if (capacityField) capacityField.value = '';
-            if (consumptionType) consumptionType.value = '';
+        // Reset to "Full" consumption by default
+        const fullButton = entry.querySelector('[data-consumption-type="full"]');
+        if (fullButton) {
+            window.selectSRConsumptionType('full', fullButton);
         }
-    } catch (error) {
-        console.error('Error fetching item details:', error);
+    } else {
+        // Hide consumption fields for non-consumables
+        consumptionFields.classList.add('hidden');
+        if (capacityField) capacityField.value = '';
+        if (consumptionType) consumptionType.value = '';
     }
 };
 
