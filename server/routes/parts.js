@@ -67,10 +67,13 @@ router.post('/', async (req, res) => {
             name,
             brand,
             category,
+            item_type,
             quantity,
             is_universal,
             page_yield,
             ink_volume,
+            ink_cartridge_volume,
+            toner_weight,
             color
         } = req.body;
 
@@ -86,20 +89,26 @@ router.post('/', async (req, res) => {
                 name,
                 brand,
                 category,
+                item_type,
                 quantity,
                 is_universal,
                 page_yield,
                 ink_volume,
+                ink_cartridge_volume,
+                toner_weight,
                 color
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 name,
                 brand || null,
                 category,
+                item_type || 'printer_part',
                 parseInt(quantity) || 0,
                 is_universal ? 1 : 0,
                 page_yield ? parseInt(page_yield) : null,
                 ink_volume ? parseFloat(ink_volume) : null,
+                ink_cartridge_volume ? parseFloat(ink_cartridge_volume) : null,
+                toner_weight ? parseFloat(toner_weight) : null,
                 color || null
             ]
         );
@@ -122,6 +131,7 @@ router.put('/:id', async (req, res) => {
             name,
             brand,
             category,
+            item_type,
             quantity,
             unit,
             minimum_stock,
@@ -129,10 +139,12 @@ router.put('/:id', async (req, res) => {
             is_universal,
             page_yield,
             ink_volume,
+            ink_cartridge_volume,
+            toner_weight,
             color
         } = req.body;
 
-        if (!name && !brand && !category && quantity === undefined && unit === undefined && minimum_stock === undefined && status === undefined && is_universal === undefined && page_yield === undefined && ink_volume === undefined && color === undefined) {
+        if (!name && !brand && !category && !item_type && quantity === undefined && unit === undefined && minimum_stock === undefined && status === undefined && is_universal === undefined && page_yield === undefined && ink_volume === undefined && ink_cartridge_volume === undefined && toner_weight === undefined && color === undefined) {
             return res.status(400).json({ error: 'At least one field to update is required' });
         }
 
@@ -142,6 +154,7 @@ router.put('/:id', async (req, res) => {
         if (name !== undefined) { updateFields.push('name = ?'); values.push(name); }
         if (brand !== undefined) { updateFields.push('brand = ?'); values.push(brand); }
         if (category !== undefined) { updateFields.push('category = ?'); values.push(category); }
+        if (item_type !== undefined) { updateFields.push('item_type = ?'); values.push(item_type); }
         if (quantity !== undefined) { updateFields.push('quantity = ?'); values.push(quantity); }
         if (unit !== undefined) { updateFields.push('unit = ?'); values.push(unit); }
         if (minimum_stock !== undefined) { updateFields.push('minimum_stock = ?'); values.push(minimum_stock); }
@@ -149,6 +162,8 @@ router.put('/:id', async (req, res) => {
         if (is_universal !== undefined) { updateFields.push('is_universal = ?'); values.push(is_universal); }
         if (page_yield !== undefined) { updateFields.push('page_yield = ?'); values.push(page_yield ? parseInt(page_yield) : null); }
         if (ink_volume !== undefined) { updateFields.push('ink_volume = ?'); values.push(ink_volume ? parseFloat(ink_volume) : null); }
+        if (ink_cartridge_volume !== undefined) { updateFields.push('ink_cartridge_volume = ?'); values.push(ink_cartridge_volume ? parseFloat(ink_cartridge_volume) : null); }
+        if (toner_weight !== undefined) { updateFields.push('toner_weight = ?'); values.push(toner_weight ? parseFloat(toner_weight) : null); }
         if (color !== undefined) { updateFields.push('color = ?'); values.push(color); }
 
         values.push(id);

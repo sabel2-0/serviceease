@@ -406,9 +406,11 @@
                         </div>
                         
                         <form id="partForm" class="p-6 space-y-6 min-h-[500px] max-h-[75vh] overflow-y-auto pb-8">
+                            <!-- Hidden field to store selected item type -->
+                            <input type="hidden" id="selectedItemTypeValue" name="selectedItemTypeValue" value="">
+                            
                             <!-- Step 1: Item Type Selection - Show First -->
-                            <div class="space-y-4">
-                                <div class="text-center mb-6">
+                            <div class="space-y-4">\n                                <div class="text-center mb-6">
                                     <h4 class="text-lg font-bold text-slate-800 mb-2">What are you adding?</h4>
                                     <p class="text-sm text-slate-600">Choose the type of item you want to add to inventory</p>
                                 </div>
@@ -498,6 +500,8 @@
                                                 <option value="toner" data-type="consumable">Toner Cartridge</option>
                                                 <option value="drum-cartridge" data-type="consumable">Drum Cartridge</option>
                                                 <option value="maintenance-box" data-type="consumable">Maintenance Box / Waste Ink Pad</option>
+                                                <option value="paper-a4" data-type="consumable">Paper A4</option>
+                                                <option value="paper-a3" data-type="consumable">Paper A3</option>
                                                 <option value="other-consumable" data-type="consumable">Other Consumable</option>
                                             </select>
                                             <div class="absolute right-3 top-12 pointer-events-none">
@@ -634,6 +638,44 @@
                                                     </div>
                                                 </div>
                                                 
+                                                <!-- Volume for Ink Cartridges -->
+                                                <div id="inkCartridgeVolumeField" class="hidden">
+                                                    <label class="flex items-center text-sm font-semibold text-slate-700 mb-2">
+                                                        <div class="w-6 h-6 bg-gradient-to-br from-cyan-100 to-blue-100 rounded mr-2">
+                                                            <i class="fas fa-tint text-cyan-600 text-xs mt-1 ml-1"></i>
+                                                        </div>
+                                                        <span>Ink Volume</span>
+                                                    </label>
+                                                    <div class="relative">
+                                                        <input type="number" id="inkCartridgeVolume" name="inkCartridgeVolume" min="1" max="200" step="0.1"
+                                                            placeholder="e.g., 12"
+                                                            class="w-full px-3 py-3 rounded-lg border-2 border-slate-200 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/20 transition-all duration-200 bg-white placeholder-slate-400 pr-10 text-sm">
+                                                        <div class="absolute right-3 top-3 text-slate-400 text-xs">
+                                                            ml
+                                                        </div>
+                                                        <div class="text-xs text-slate-500 mt-1 ml-1">Typical range: 5-50ml</div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- Weight for Toner Cartridges -->
+                                                <div id="tonerWeightField" class="hidden">
+                                                    <label class="flex items-center text-sm font-semibold text-slate-700 mb-2">
+                                                        <div class="w-6 h-6 bg-gradient-to-br from-gray-100 to-slate-100 rounded mr-2">
+                                                            <i class="fas fa-weight text-slate-600 text-xs mt-1 ml-1"></i>
+                                                        </div>
+                                                        <span>Toner Weight</span>
+                                                    </label>
+                                                    <div class="relative">
+                                                        <input type="number" id="tonerWeight" name="tonerWeight" min="10" max="5000" step="1"
+                                                            placeholder="e.g., 1000"
+                                                            class="w-full px-3 py-3 rounded-lg border-2 border-slate-200 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-500/20 transition-all duration-200 bg-white placeholder-slate-400 pr-12 text-sm">
+                                                        <div class="absolute right-3 top-3 text-slate-400 text-xs">
+                                                            grams
+                                                        </div>
+                                                        <div class="text-xs text-slate-500 mt-1 ml-1">Typical range: 50-3000g</div>
+                                                    </div>
+                                                </div>
+                                                
                                                 <!-- Page Yield for Cartridges -->
                                                 <div id="pageYieldField" class="hidden">
                                                     <label class="flex items-center text-sm font-semibold text-slate-700 mb-2">
@@ -700,6 +742,8 @@
         // Additional detail fields
         const colorField = document.getElementById('colorField');
         const volumeField = document.getElementById('volumeField');
+        const inkCartridgeVolumeField = document.getElementById('inkCartridgeVolumeField');
+        const tonerWeightField = document.getElementById('tonerWeightField');
         const pageYieldField = document.getElementById('pageYieldField');
         const mainFormFields = document.getElementById('mainFormFields');
         
@@ -762,6 +806,8 @@
             // Hide all additional fields first
             colorField.classList.add('hidden');
             volumeField.classList.add('hidden');
+            inkCartridgeVolumeField.classList.add('hidden');
+            tonerWeightField.classList.add('hidden');
             pageYieldField.classList.add('hidden');
             
             let showSection = false;
@@ -775,12 +821,14 @@
                     
                 case 'ink':
                     colorField.classList.remove('hidden');
+                    inkCartridgeVolumeField.classList.remove('hidden');
                     pageYieldField.classList.remove('hidden');
                     showSection = true;
                     break;
                     
                 case 'toner':
                     colorField.classList.remove('hidden');
+                    tonerWeightField.classList.remove('hidden');
                     pageYieldField.classList.remove('hidden');
                     showSection = true;
                     break;
@@ -788,6 +836,12 @@
                 case 'drum-cartridge':
                     pageYieldField.classList.remove('hidden');
                     showSection = true;
+                    break;
+                    
+                case 'paper-a4':
+                case 'paper-a3':
+                    // No additional fields needed for paper
+                    showSection = false;
                     break;
                     
                 default:
@@ -816,6 +870,13 @@
         
         function updateCategoryOptions() {
             const selectedValue = document.querySelector('input[name="itemType"]:checked')?.value;
+            
+            // Store the selected type in hidden field
+            const hiddenField = document.getElementById('selectedItemTypeValue');
+            if (hiddenField) {
+                hiddenField.value = selectedValue || '';
+            }
+            console.log('Item type selected:', selectedValue, '- Stored in hidden field');
             
             if (selectedValue === 'part') {
                 filterCategories('part');

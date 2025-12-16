@@ -561,9 +561,12 @@ class InventoryPartsManager {
     getFormData() {
         const category = document.getElementById('partCategory')?.value || '';
         
-        // Get the selected item type from radio buttons
-        const selectedItemType = document.querySelector('input[name="itemType"]:checked')?.value;
+        // Get the selected item type from hidden field (more reliable than checking radio buttons when hidden)
+        const selectedItemType = document.getElementById('selectedItemTypeValue')?.value || 
+                                 document.querySelector('input[name="itemType"]:checked')?.value;
+        console.log('Selected item type from hidden field:', selectedItemType);
         const itemType = selectedItemType === 'consumable' ? 'consumable' : 'printer_part';
+        console.log('Final item_type being sent:', itemType);
         
         const formData = {
             name: document.getElementById('partName')?.value.trim() || '',
@@ -588,6 +591,22 @@ class InventoryPartsManager {
             const inkVolume = document.getElementById('inkVolume')?.value;
             if (inkVolume && parseFloat(inkVolume) > 0) {
                 formData.ink_volume = parseFloat(inkVolume);
+            }
+        }
+
+        // Add ink cartridge volume for ink cartridges
+        if (category === 'ink') {
+            const inkCartridgeVolume = document.getElementById('inkCartridgeVolume')?.value;
+            if (inkCartridgeVolume && parseFloat(inkCartridgeVolume) > 0) {
+                formData.ink_cartridge_volume = parseFloat(inkCartridgeVolume);
+            }
+        }
+
+        // Add toner weight for toner cartridges
+        if (category === 'toner') {
+            const tonerWeight = document.getElementById('tonerWeight')?.value;
+            if (tonerWeight && parseFloat(tonerWeight) > 0) {
+                formData.toner_weight = parseFloat(tonerWeight);
             }
         }
 
