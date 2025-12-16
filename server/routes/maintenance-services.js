@@ -984,20 +984,51 @@ router.patch('/institution_admin/:id/approve', auth, async (req, res) => {
                         
                         // Check consumption type
                         if (part.consumption_type === 'full') {
-                            // Full consumption: deduct quantity and reset remaining volume/weight
-                            if (currentQty >= deductQty) {
+                            // Full consumption: deduct both quantity AND amount from remaining volume/weight
+                            // Get current inventory to calculate new remaining
+                            const [techInv] = await db.query(`
+                                SELECT ti.remaining_volume, ti.remaining_weight, pi.ink_volume, pi.toner_weight
+                                FROM technician_inventory ti
+                                JOIN printer_items pi ON ti.item_id = pi.id
+                                WHERE ti.id = ?
+                            `, [inventoryItem[0].id]);
+                            
+                            if (techInv.length > 0 && currentQty >= deductQty) {
+                                const item = techInv[0];
                                 const newQty = currentQty - deductQty;
+                                
+                                // Determine if it's ink or toner
+                                const isInk = item.ink_volume && parseFloat(item.ink_volume) > 0;
+                                const capacityPerPiece = isInk ? parseFloat(item.ink_volume) : parseFloat(item.toner_weight || 0);
+                                
+                                // Calculate amount consumed in full consumption (quantity × capacity per piece)
+                                const amountConsumed = deductQty * capacityPerPiece;
+                                
+                                // Get current remaining
+                                const currentRemaining = isInk ? 
+                                    (item.remaining_volume || 0) : 
+                                    (item.remaining_weight || 0);
+                                
+                                // Calculate new remaining after deduction
+                                const newRemaining = Math.max(0, parseFloat(currentRemaining) - amountConsumed);
+                                
+                                // Update inventory
+                                const updateColumn = isInk ? 'remaining_volume' : 'remaining_weight';
                                 await db.query(
                                     `UPDATE technician_inventory 
                                      SET quantity = ?, 
-                                         remaining_volume = NULL,
-                                         remaining_weight = NULL,
-                                         is_opened = 0,
+                                         ${updateColumn} = ?,
+                                         is_opened = ?,
                                          last_updated = NOW() 
                                      WHERE id = ?`,
-                                    [newQty, inventoryItem[0].id]
+                                    [
+                                        newQty,
+                                        newRemaining > 0 ? newRemaining : null,
+                                        newRemaining > 0 ? 1 : 0,
+                                        inventoryItem[0].id
+                                    ]
                                 );
-                                console.log(`   ✅ Full consumption - Deducted ${deductQty} of "${inventoryItem[0].name}", new qty: ${newQty}`);
+                                console.log(`   ✅ Full consumption: ${amountConsumed}${isInk ? 'ml' : 'g'} consumed, quantity ${currentQty} → ${newQty}, remaining ${currentRemaining} → ${newRemaining}${isInk ? 'ml' : 'g'}`);
                             } else {
                                 console.log(`   ⚠️ Insufficient stock: have ${currentQty}, need ${deductQty}`);
                             }
