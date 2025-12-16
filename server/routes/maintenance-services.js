@@ -1341,56 +1341,109 @@ router.patch('/institution_user/:id/approve', auth, async (req, res) => {
         // Deduct parts from inventory after approval
         // Fetch items_used from service_items_used table
         const [itemsUsedRows] = await db.query(`
-            SELECT item_id, quantity_used as qty
+            SELECT item_id, quantity_used as qty, consumption_type, amount_consumed
             FROM service_items_used
-            WHERE service_id = ?
+            WHERE service_id = ? AND service_type = 'maintenance_service'
         `, [serviceId]);
         
         if (itemsUsedRows && itemsUsedRows.length > 0) {
-            console.log('?? Deducting parts from inventory after institution_user approval...');
-            console.log('?? Parts to deduct:', JSON.stringify(itemsUsedRows, null, 2));
-            console.log('?? Technician ID:', service[0].technician_id);
+            console.log('[INVENTORY DEDUCTION] Deducting parts from inventory after institution_user approval...');
+            console.log('[INVENTORY DEDUCTION] Parts to deduct:', JSON.stringify(itemsUsedRows, null, 2));
+            console.log('[INVENTORY DEDUCTION] Technician ID:', service[0].technician_id);
             
             for (const part of itemsUsedRows) {
                 try {
-                    console.log(`\n?? Processing item_id: ${part.item_id}`);
-                    console.log(`   Qty to deduct: ${part.qty}, Unit: ${part.unit}`);
+                    console.log(`\n[INVENTORY DEDUCTION] Processing item_id: ${part.item_id}`);
+                    console.log(`   Qty to deduct: ${part.qty}, Consumption type: ${part.consumption_type}`);
                     
-                    // Query by item_id directly
-                    const [inventoryItem] = await db.query(
-                        `SELECT ti.id, ti.quantity, pp.name, pp.brand
-                         FROM technician_inventory ti
-                         INNER JOIN printer_items pp ON ti.item_id = pp.id
-                         WHERE ti.technician_id = ? AND ti.item_id = ?
-                         LIMIT 1`,
+                    // Get current inventory state with volume/weight tracking
+                    const [techInventory] = await db.query(`
+                        SELECT ti.id, ti.quantity, ti.remaining_volume, ti.remaining_weight, ti.is_opened,
+                               pp.name, pp.brand, pp.ink_volume, pp.toner_weight
+                        FROM technician_inventory ti
+                        INNER JOIN printer_items pp ON ti.item_id = pp.id
+                        WHERE ti.technician_id = ? AND ti.item_id = ?
+                        LIMIT 1`,
                         [service[0].technician_id, part.item_id]
                     );
                     
-                    console.log(`Query result: ${inventoryItem.length > 0 ? 'FOUND' : 'NOT FOUND'}`);
-                    if (inventoryItem.length > 0) {
-                        console.log(`Found inventory: ID=${inventoryItem[0].id}, Part="${inventoryItem[0].name}", Current Qty=${inventoryItem[0].quantity}`);
-                        const currentQty = inventoryItem[0].quantity;
-                        const deductQty = parseInt(part.qty) || 0;
+                    console.log(`Query result: ${techInventory.length > 0 ? 'FOUND' : 'NOT FOUND'}`);
+                    
+                    if (techInventory.length > 0) {
+                        const item = techInventory[0];
+                        const isInk = item.ink_volume && parseFloat(item.ink_volume) > 0;
+                        const capacityPerPiece = isInk ? parseFloat(item.ink_volume) : parseFloat(item.toner_weight || 0);
                         
-                        if (currentQty >= deductQty) {
-                            const newQty = currentQty - deductQty;
-                            await db.query(
-                                'UPDATE technician_inventory SET quantity = ?, last_updated = NOW() WHERE id = ?',
-                                [newQty, inventoryItem[0].id]
+                        // Check if this is a consumable item with consumption tracking
+                        if (part.consumption_type && (part.consumption_type === 'full' || part.consumption_type === 'partial')) {
+                            // Get current remaining volume/weight
+                            const currentRemaining = isInk ? 
+                                (item.remaining_volume ? parseFloat(item.remaining_volume) : 0) : 
+                                (item.remaining_weight ? parseFloat(item.remaining_weight) : 0);
+                            
+                            // Calculate amount to consume
+                            let amountToConsume;
+                            if (part.consumption_type === 'full') {
+                                amountToConsume = parseInt(part.qty) * capacityPerPiece;
+                            } else {
+                                amountToConsume = parseFloat(part.amount_consumed);
+                            }
+                            
+                            // Deduct from remaining volume/weight
+                            const newRemaining = Math.max(0, currentRemaining - amountToConsume);
+                            
+                            // Calculate new quantity based on remaining volume
+                            let newQty;
+                            if (newRemaining > 0) {
+                                newQty = Math.ceil(newRemaining / capacityPerPiece);
+                            } else {
+                                newQty = 0;
+                            }
+                            
+                            // Update inventory with volume/weight tracking
+                            const updateColumn = isInk ? 'remaining_volume' : 'remaining_weight';
+                            await db.query(`
+                                UPDATE technician_inventory 
+                                SET quantity = ?,
+                                    ${updateColumn} = ?,
+                                    is_opened = ?,
+                                    last_updated = NOW()
+                                WHERE id = ?`,
+                                [
+                                    newQty,
+                                    newRemaining > 0 ? newRemaining : null,
+                                    newRemaining > 0 && newQty > 0 ? 1 : 0,
+                                    item.id
+                                ]
                             );
-                            console.log(`   ? Deducted ${deductQty} of "${inventoryItem[0].name}", new qty: ${newQty}`);
+                            
+                            console.log(`[INVENTORY DEDUCTION] ✅ ${part.consumption_type} consumption: ${amountToConsume}${isInk ? 'ml' : 'g'} consumed, remaining ${currentRemaining} → ${newRemaining}${isInk ? 'ml' : 'g'}, quantity ${item.quantity} → ${newQty}`);
+                            
                         } else {
-                            console.log(`   ?? Insufficient stock: have ${currentQty}, need ${deductQty}`);
+                            // No consumption type (old data or non-consumables): deduct quantity as before
+                            const currentQty = item.quantity;
+                            const deductQty = parseInt(part.qty) || 0;
+                            
+                            if (currentQty >= deductQty) {
+                                const newQty = currentQty - deductQty;
+                                await db.query(
+                                    'UPDATE technician_inventory SET quantity = ?, last_updated = NOW() WHERE id = ?',
+                                    [newQty, item.id]
+                                );
+                                console.log(`[INVENTORY DEDUCTION] ✅ Deducted ${deductQty} of "${item.name}", new qty: ${newQty}`);
+                            } else {
+                                console.log(`[INVENTORY WARNING] ⚠️ Insufficient stock: have ${currentQty}, need ${deductQty}`);
+                            }
                         }
                     } else {
-                        console.log(`   ? Item ID ${part.item_id} not found in technician's inventory`);
+                        console.log(`[INVENTORY WARNING] ⚠️ Item ID ${part.item_id} not found in technician's inventory`);
                     }
                 } catch (partError) {
-                    console.error(`? Error deducting part:`, partError);
+                    console.error(`[INVENTORY ERROR] ❌ Error deducting part:`, partError);
                 }
             }
         } else {
-            console.log('?? No parts to deduct (items_used is null/empty)');
+            console.log('[INVENTORY DEDUCTION] No parts to deduct (items_used is null/empty)');
         }
         
         // Notify technician

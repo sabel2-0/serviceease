@@ -1522,25 +1522,25 @@ window.selectVSPartFromCard = async function(cardElement) {
 }
 
 // Handle consumption type selection
-window.selectVSConsumptionType = function(button, type) {
+window.selectVSConsumptionType = function(type, button) {
     const partEntry = button.closest('.vs-part-entry');
-    const fullBtn = partEntry.querySelector('.vs-consumption-full');
-    const partialBtn = partEntry.querySelector('.vs-consumption-partial');
-    const amountField = partEntry.querySelector('.vs-amount-field');
+    const fullBtn = partEntry.querySelector('.vs-consumption-btn-full');
+    const partialBtn = partEntry.querySelector('.vs-consumption-btn-partial');
+    const amountField = partEntry.querySelector('.vs-consumption-amount-input');
     const consumptionTypeInput = partEntry.querySelector('.vs-consumption-type');
     
     // Update button styles
     if (type === 'full') {
-        fullBtn.classList.add('border-green-500', 'bg-green-50', 'text-green-700');
-        fullBtn.classList.remove('border-slate-300', 'bg-white', 'text-slate-600');
-        partialBtn.classList.remove('border-orange-500', 'bg-orange-50', 'text-orange-700');
-        partialBtn.classList.add('border-slate-300', 'bg-white', 'text-slate-600');
+        fullBtn.classList.add('bg-blue-600', 'text-white', 'border-blue-600');
+        fullBtn.classList.remove('bg-gray-100', 'text-gray-700', 'border-slate-300');
+        partialBtn.classList.remove('bg-orange-50', 'text-orange-700', 'border-orange-400');
+        partialBtn.classList.add('bg-gray-100', 'text-gray-700', 'border-slate-300');
         amountField.classList.add('hidden');
     } else {
-        partialBtn.classList.add('border-orange-500', 'bg-orange-50', 'text-orange-700');
-        partialBtn.classList.remove('border-slate-300', 'bg-white', 'text-slate-600');
-        fullBtn.classList.remove('border-green-500', 'bg-green-50', 'text-green-700');
-        fullBtn.classList.add('border-slate-300', 'bg-white', 'text-slate-600');
+        partialBtn.classList.add('bg-orange-50', 'text-orange-700', 'border-orange-400');
+        partialBtn.classList.remove('bg-gray-100', 'text-gray-700', 'border-slate-300');
+        fullBtn.classList.remove('bg-blue-600', 'text-white', 'border-blue-600');
+        fullBtn.classList.add('bg-gray-100', 'text-gray-700', 'border-slate-300');
         amountField.classList.remove('hidden');
     }
     
