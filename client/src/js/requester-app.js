@@ -107,17 +107,17 @@ function setupNotifications() {
   
   // Load notification JS module if not already loaded
   if (!window.institution_userNotifications) {
-    console.log('??? [institution_user] Loading notification module...');
+    console.log('ÔøΩ??? [institution_user] Loading notification module...');
     const script = document.createElement('script');
     script.src = '/js/requester-notifications.js';
-    script.onload = () => console.log('??? [institution_user] Notification module loaded');
-    script.onerror = () => console.error('??? [institution_user] Failed to load notification module');
+    script.onload = () => console.log('ÔøΩ??? [institution_user] Notification module loaded');
+    script.onerror = () => console.error('ÔøΩ??? [institution_user] Failed to load notification module');
     document.head.appendChild(script);
   }
   
   notificationBtn.addEventListener('click', function(e) {
     e.stopPropagation();
-    console.log('??? [institution_user] Notification button clicked');
+    console.log('ÔøΩ??? [institution_user] Notification button clicked');
     
     // Open modal
     notificationModal.classList.remove('hidden');
@@ -125,7 +125,7 @@ function setupNotifications() {
     
     if (!notificationsLoaded) {
       // First time - load the HTML
-      console.log('??? [institution_user] Loading notifications component...');
+      console.log('ÔøΩ??? [institution_user] Loading notifications component...');
       fetch('/components/requester-notifications.html')
         .then(res => res.text())
         .then(html => {
@@ -135,20 +135,20 @@ function setupNotifications() {
           // Initialize notifications module
           setTimeout(() => {
             if (window.institution_userNotifications) {
-              console.log('??? [institution_user] Initializing institution_userNotifications module...');
+              console.log('ÔøΩ??? [institution_user] Initializing institution_userNotifications module...');
               window.institution_userNotifications.init();
             } else {
-              console.error('??? [institution_user] institution_userNotifications module not loaded!');
+              console.error('ÔøΩ??? [institution_user] institution_userNotifications module not loaded!');
             }
           }, 100);
         })
         .catch(err => {
-          console.error('??? [institution_user] Failed to load notifications component', err);
+          console.error('ÔøΩ??? [institution_user] Failed to load notifications component', err);
           notificationModalContent.innerHTML = '<div class="p-4 text-center text-gray-500">Unable to load notifications.</div>';
         });
     } else {
       // Already loaded - just refresh the data
-      console.log('??? [institution_user] Refreshing notifications...');
+      console.log('ÔøΩ??? [institution_user] Refreshing notifications...');
       if (window.institution_userNotifications) {
         window.institution_userNotifications.refresh();
       }
@@ -292,7 +292,7 @@ function displayHomePrinters(printers) {
   if (!printers || printers.length === 0) {
     container.innerHTML = `
       <div class="p-6 text-center">
-        <div class="text-4xl mb-2">??®Ô∏è</div>
+        <div class="text-4xl mb-2">ÔøΩ??ÔøΩÔ∏è</div>
         <div class="text-gray-500 text-sm">No printers assigned yet</div>
         <p class="text-xs text-gray-400 mt-1">Contact your coordinator to assign a printer</p>
       </div>
@@ -347,7 +347,7 @@ function displayRecentRequests(requests) {
   if (!requests || requests.length === 0) {
     container.innerHTML = `
       <div class="p-6 text-center">
-        <div class="text-4xl mb-2">??ù</div>
+        <div class="text-4xl mb-2">ÔøΩ??ÔøΩ</div>
         <div class="text-gray-500 text-sm">No service requests yet</div>
         <button onclick="navigateTo('request')" class="mt-3 text-blue-600 text-sm hover:underline">Create your first request</button>
       </div>
@@ -505,7 +505,7 @@ function displayHistoryRequests(requests) {
         ${needsApproval ? `
           <div class="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-3">
             <p class="text-sm text-orange-800 font-medium mb-2">
-              ‚?†Ô∏è Work completed - Please review and approve
+              ÔøΩ?ÔøΩÔ∏è Work completed - Please review and approve
             </p>
             ${technicianName ? `<p class="text-xs text-orange-700">Technician: ${technicianName}</p>` : ''}
           </div>
@@ -786,7 +786,7 @@ async function handleApproval(approved) {
     const data = await response.json();
     
     if (response.ok) {
-      alert(approved ? '‚?? Service request approved!' : '‚ù? Service request rejected. Technician will be notified.');
+      alert(approved ? 'ÔøΩ?? Service request approved!' : 'ÔøΩ? Service request rejected. Technician will be notified.');
       closeApprovalModal();
       // Reload the history page
       await initHistoryPage();
@@ -798,8 +798,8 @@ async function handleApproval(approved) {
     alert('Failed to process approval');
   } finally {
     // Re-enable buttons
-    if (approveBtn) { approveBtn.disabled = false; approveBtn.textContent = '‚?? Approve'; }
-    if (rejectBtn) { rejectBtn.disabled = false; rejectBtn.textContent = '‚ù? Reject'; }
+    if (approveBtn) { approveBtn.disabled = false; approveBtn.textContent = 'ÔøΩ?? Approve'; }
+    if (rejectBtn) { rejectBtn.disabled = false; rejectBtn.textContent = 'ÔøΩ? Reject'; }
   }
 }
 
@@ -918,7 +918,7 @@ function displayVoluntaryServices() {
         </button>
         ${service.institution_user_approval_status === 'pending' ? `
           <button onclick="approveVoluntaryService(${service.id})" class="flex-1 px-3 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition">
-            ‚?? Approve
+            ÔøΩ?? Approve
           </button>
         ` : ''}
       </div>
@@ -1023,8 +1023,9 @@ function viewVoluntaryDetails(serviceId) {
   const partsUsed = service.items_used || [];
   const partsHtml = partsUsed.length > 0 ? partsUsed.map(p => `
     <div class="bg-gray-50 rounded p-2 text-sm">
-      <div class="font-medium">${p.name}</div>
-      <div class="text-xs text-gray-600">Qty: ${p.qty} ${p.unit || 'pcs'} | Brand: ${p.brand || 'N/A'}</div>
+      <div class="font-medium">${p.name || p.part_name}</div>
+      <div class="text-xs text-gray-600">Qty: ${p.qty || p.quantity_used} ${p.unit || 'pcs'} | Brand: ${p.brand || 'N/A'}</div>
+      ${p.display_amount ? `<div class="text-xs text-blue-600 font-semibold mt-1"><i class="fas fa-flask"></i> ${p.display_amount}</div>` : ''}
     </div>
   `).join('') : '<p class="text-sm text-gray-500">No items used</p>';
   
@@ -1121,7 +1122,7 @@ async function approveVoluntaryService(serviceId) {
     });
     
     if (response.ok) {
-      alert('‚?? Service approved successfully!');
+      alert('ÔøΩ?? Service approved successfully!');
       closeVoluntaryModal();
       await loadVoluntaryServices();
     } else {

@@ -1458,6 +1458,7 @@ async function viewRequestDetails(requestId) {
                             <div class="flex-1">
                                 <span class="text-xs font-semibold text-teal-900">${part.part_name}</span>
                                 ${part.brand ? `<span class="text-xs text-teal-700 ml-1">(${part.brand})</span>` : ''}
+                                ${part.display_amount ? `<div class="text-xs text-teal-600 mt-0.5"><i class="fas fa-flask"></i> ${part.display_amount}</div>` : ''}
                             </div>
                             <div class="text-right">
                                 <span class="text-xs font-bold text-teal-800">${part.quantity_used} ${part.unit || 'pcs'}</span>

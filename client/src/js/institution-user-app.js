@@ -1354,8 +1354,9 @@ function viewMaintenanceDetails(serviceId) {
   const partsUsed = service.items_used || [];
   const partsHtml = partsUsed.length > 0 ? partsUsed.map(p => `
     <div class="bg-gray-50 rounded p-2 text-sm">
-      <div class="font-medium">${p.name}</div>
-      <div class="text-xs text-gray-600">Qty: ${p.qty} ${p.unit || 'pcs'} | Brand: ${p.brand || 'N/A'}</div>
+      <div class="font-medium">${p.name || p.part_name}</div>
+      <div class="text-xs text-gray-600">Qty: ${p.qty || p.quantity_used} ${p.unit || 'pcs'} | Brand: ${p.brand || 'N/A'}</div>
+      ${p.display_amount ? `<div class="text-xs text-blue-600 font-semibold mt-1"><i class="fas fa-flask"></i> ${p.display_amount}</div>` : ''}
     </div>
   `).join('') : '<p class="text-sm text-gray-500">No items used</p>';
   

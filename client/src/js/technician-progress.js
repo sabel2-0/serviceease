@@ -301,6 +301,7 @@ function renderRequestsList(requests, filter = 'all') {
                                             <span class="font-medium text-slate-700">${escapeHtml(part.part_name)}</span>
                                             ${part.brand ? `<span class="text-xs text-slate-500">Brand: ${escapeHtml(part.brand)}</span>` : ''}
                                             ${part.category ? `<span class="text-xs text-slate-500">Category: ${escapeHtml(part.category)}</span>` : ''}
+                                            ${part.display_amount ? `<span class="text-xs text-blue-600 font-semibold"><i class="fas fa-flask"></i> ${escapeHtml(part.display_amount)}</span>` : ''}
                                         </div>
                                         <span class="text-slate-600 font-semibold">Qty: ${part.quantity_used} ${part.unit || 'pcs'}</span>
                                     </div>

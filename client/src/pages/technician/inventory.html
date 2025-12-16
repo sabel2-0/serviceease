@@ -502,7 +502,9 @@
                             ${part.brand ? `<p class="text-xs text-gray-500"><i class="fas fa-building text-blue-500 mr-1"></i>Brand: ${part.brand}</p>` : ''}
                             ${part.color ? `<p class="text-xs text-gray-500"><i class="fas fa-palette text-pink-500 mr-1"></i>Color: ${part.color.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</p>` : ''}
                             ${part.page_yield ? `<p class="text-xs text-gray-500"><i class="fas fa-file-alt text-orange-500 mr-1"></i>~${parseInt(part.page_yield).toLocaleString()} pages</p>` : ''}
-                            ${part.ink_volume ? `<p class="text-xs text-gray-500"><i class="fas fa-flask text-cyan-500 mr-1"></i>${parseFloat(part.ink_volume)} ml</p>` : ''}
+                            ${part.ink_volume ? `<p class="text-xs text-gray-500"><i class="fas fa-flask text-cyan-500 mr-1"></i>${parseFloat(part.ink_volume)} ml capacity</p>` : ''}
+                            ${part.toner_weight ? `<p class="text-xs text-gray-500"><i class="fas fa-weight text-purple-500 mr-1"></i>${parseFloat(part.toner_weight)} grams capacity</p>` : ''}
+                            ${part.is_opened && (part.remaining_volume || part.remaining_weight) ? `<p class="text-xs text-orange-600 font-semibold"><i class="fas fa-box-open mr-1"></i>Opened: ${part.remaining_volume ? part.remaining_volume + 'ml' : part.remaining_weight + 'grams'} left</p>` : ''}
                             ${part.is_universal ? `<span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-800 mt-1"><i class="fas fa-globe mr-1"></i>Universal</span>` : ''}
                         </div>
                     </div>
