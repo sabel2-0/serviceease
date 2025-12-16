@@ -2653,6 +2653,9 @@ window.selectSRPartFromCard = async function(selectElement) {
     const capacityDisplay = entry.querySelector('.consumption-capacity-display');
     const consumptionType = entry.querySelector('.consumption-type');
     
+    // Check if this is an opened item
+    const isOpenedItem = selectedOption.dataset.isOpenedItem === '1';
+    
     console.log('selectSRPartFromCard called', {
         hasConsumptionFields: !!consumptionFields,
         inkVolume: selectedOption.dataset.inkVolume,
@@ -2660,7 +2663,8 @@ window.selectSRPartFromCard = async function(selectElement) {
         color: selectedOption.dataset.color,
         remainingVolume: selectedOption.dataset.remainingVolume,
         remainingWeight: selectedOption.dataset.remainingWeight,
-        isOpened: selectedOption.dataset.isOpened
+        isOpened: selectedOption.dataset.isOpened,
+        isOpenedItem: isOpenedItem
     });
     
     if (!consumptionFields) {
@@ -2679,7 +2683,7 @@ window.selectSRPartFromCard = async function(selectElement) {
     const hasVolume = inkVolume && parseFloat(inkVolume) > 0;
     const hasWeight = tonerWeight && parseFloat(tonerWeight) > 0;
     
-    console.log('Consumption check:', { hasVolume, hasWeight, inkVolume, tonerWeight, isOpened });
+    console.log('Consumption check:', { hasVolume, hasWeight, inkVolume, tonerWeight, isOpened, isOpenedItem });
     
     if (hasVolume || hasWeight) {
         // Always use the base capacity (ink_volume or toner_weight) per piece
@@ -2703,15 +2707,48 @@ window.selectSRPartFromCard = async function(selectElement) {
                 capacityDisplay.textContent += ` (${totalRemaining}${unit} total remaining)`;
             }
         }
-        if (consumptionType) consumptionType.value = 'full';
         
         // Show consumption fields
         consumptionFields.classList.remove('hidden');
         
-        // Reset to "Full" consumption by default
+        // Get consumption buttons
         const fullButton = entry.querySelector('[data-consumption-type="full"]');
-        if (fullButton) {
-            window.selectSRConsumptionType('full', fullButton);
+        const partialButton = entry.querySelector('[data-consumption-type="partial"]');
+        
+        if (isOpenedItem) {
+            // For opened bottles: default to partial, disable full
+            if (consumptionType) consumptionType.value = 'partial';
+            
+            // Disable full button
+            if (fullButton) {
+                fullButton.disabled = true;
+                fullButton.classList.add('opacity-50', 'cursor-not-allowed');
+                fullButton.title = 'Cannot do full consumption on an opened bottle';
+            }
+            
+            // Select partial button
+            if (partialButton) {
+                window.selectSRConsumptionType('partial', partialButton);
+            }
+            
+            console.log('✅ Opened bottle selected - defaulted to partial, full disabled');
+        } else {
+            // For sealed bottles: default to full, enable both
+            if (consumptionType) consumptionType.value = 'full';
+            
+            // Enable full button
+            if (fullButton) {
+                fullButton.disabled = false;
+                fullButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                fullButton.title = '';
+            }
+            
+            // Select full button
+            if (fullButton) {
+                window.selectSRConsumptionType('full', fullButton);
+            }
+            
+            console.log('✅ Sealed bottle selected - defaulted to full, both enabled');
         }
     } else {
         console.log('Hiding consumption fields - not a consumable');
