@@ -1146,7 +1146,7 @@ router.get('/institution_user/history', auth, async (req, res) => {
                 CONCAT(u_tech.first_name, ' ', u_tech.last_name) as technician_name,
                 u_tech.email as technician_email,
                 sa.approved_by,
-                sa.approved_at,
+                sa.reviewed_at as approved_at,
                 sa.status as approval_status,
                 sa.institution_admin_notes as approval_notes,
                 CONCAT(approver.first_name, ' ', approver.last_name) as approved_by_name
