@@ -1,16 +1,37 @@
 const mysql = require('mysql2');
 require('dotenv').config();
 
-const pool = mysql.createPool({
-    host: process.env.DB_HOST || 'localhost',
-    port: process.env.DB_PORT || 3306,
+// Resolve DB config so we can log exactly what's being used
+const resolvedDbConfig = {
+    host: process.env.DB_HOST || 'turntable.proxy.rlwy.net',
+    port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306,
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD,  // No fallback - must be in .env
-    database: process.env.DB_NAME || 'serviceease',
+    database: process.env.DB_NAME || 'railway',
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
+};
+
+// If a full DATABASE_URL is present (e.g. from Railway), show it (don't expose secrets in logs in production)
+if (process.env.DATABASE_URL) {
+    try {
+        const url = new URL(process.env.DATABASE_URL);
+        const urlDbName = url.pathname ? url.pathname.replace(/^\//, '') : '';
+        console.log('DATABASE_URL detected. Parsed DB name:', urlDbName);
+    } catch (e) {
+        console.log('DATABASE_URL present but failed to parse.');
+    }
+}
+
+console.log('Resolved DB config:', {
+    host: resolvedDbConfig.host,
+    port: resolvedDbConfig.port,
+    user: resolvedDbConfig.user,
+    database: resolvedDbConfig.database
 });
+
+const pool = mysql.createPool(resolvedDbConfig);
 
 // Convert pool to use promises
 const promisePool = pool.promise();
@@ -52,9 +73,9 @@ pool.getConnection((err, connection) => {
     if (err) {
         console.error('Database connection failed:', err);
         console.error('Connection details:', {
-            host: process.env.DB_HOST || 'localhost',
+            host: process.env.DB_HOST || 'turntable.proxy.rlwy.net',
             user: process.env.DB_USER || 'root',
-            database: process.env.DB_NAME || 'serviceease'
+            database: process.env.DB_NAME || 'railway'
         });
     } else {
         connection.query('SELECT DATABASE() AS db_name', (qErr, results) => {
