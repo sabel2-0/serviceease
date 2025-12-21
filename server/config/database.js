@@ -57,7 +57,16 @@ pool.getConnection((err, connection) => {
             database: process.env.DB_NAME || 'serviceease'
         });
     } else {
-        connection.release();
+        connection.query('SELECT DATABASE() AS db_name', (qErr, results) => {
+            if (qErr) {
+                console.error('Connected but failed to get database name:', qErr);
+            } else if (results && results[0] && results[0].db_name) {
+                console.log(`Connected to database: ${results[0].db_name}`);
+            } else {
+                console.log('Connected to database (name not returned).');
+            }
+            connection.release();
+        });
     }
 });
 
