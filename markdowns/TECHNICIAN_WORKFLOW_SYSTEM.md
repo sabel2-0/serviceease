@@ -174,7 +174,7 @@ mysql -u root -p serviceease < server/config/sample_technician_data.sql
 
 ## Key Features Demonstrated
 
-### 🎯 Real-World Workflow
+###  Real-World Workflow
 - Matches actual technician field service operations
 - Proper documentation and accountability
 - Client acknowledgment requirements

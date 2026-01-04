@@ -47,7 +47,7 @@ const newPhotoSection = `          </div>
         
         \${req.technician_notes\`
           <div class="mb-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <p class="text-xs font-semibold text-blue-800 mb-1">🔧 Technician Notes</p>
+            <p class="text-xs font-semibold text-blue-800 mb-1"> Technician Notes</p>
             <p class="text-sm text-blue-900">\${req.technician_notes}</p>
           </div>
         \` : ''}
@@ -57,4 +57,4 @@ const newPhotoSection = `          </div>
 content = content.replace(photoPattern, newPhotoSection);
 
 fs.writeFileSync(filePath, content, 'utf8');
-console.log('✅ Added completion photo, printer serial number, and technician notes to institution user history view');
+console.log(' Added completion photo, printer serial number, and technician notes to institution user history view');

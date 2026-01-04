@@ -35,15 +35,15 @@ async function loadCalendarData() {
 
         const token = localStorage.getItem('token');
         const url = `/api/admin/institution-service-calendar?year=${currentYear}&month=${currentMonth}`;
-        console.log('?? Loading calendar data:', url);
+        console.log('Loading calendar data:', url);
         
         const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
-        console.log('?? Response status:', response.status);
+        console.log('Response status:', response.status);
 
         if (response.ok) {
             const data = await response.json();
-            console.log('? Calendar data received:', data);
-            console.log('?? Calendar entries:', Object.keys(data.calendar_data || {}).length);
+            console.log('Calendar data received:', data);
+            console.log('Calendar entries:', Object.keys(data.calendar_data || {}).length);
             calendarData = data.calendar_data || {};
             renderCalendar();
         } else {
@@ -65,7 +65,7 @@ function updateMonthYearDisplay() {
 }
 
 function renderCalendar() {
-    console.log('?? Rendering calendar with data:', calendarData);
+    console.log(' Rendering calendar with data:', calendarData);
     const grid = document.getElementById('calendarGrid');
     grid.innerHTML = '';
     
@@ -87,7 +87,7 @@ function renderCalendar() {
     const firstDay = new Date(currentYear, currentMonth - 1, 1).getDay();
     const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
     
-    console.log('?? Rendering', daysInMonth, 'days for', currentYear + '-' + currentMonth);
+    console.log(' Rendering', daysInMonth, 'days for', currentYear + '-' + currentMonth);
 
     // Empty cells before first day
     for (let i = 0; i < firstDay; i++) {
@@ -102,8 +102,8 @@ function renderCalendar() {
         const dayData = calendarData[dateStr];
         
         if (day === 1) {
-            console.log('?? Sample dateStr:', dateStr, 'dayData:', dayData);
-            console.log('?? All calendar data keys:', Object.keys(calendarData));
+            console.log(' Sample dateStr:', dateStr, 'dayData:', dayData);
+            console.log(' All calendar data keys:', Object.keys(calendarData));
         }
         
         const dayCell = document.createElement('div');
@@ -123,11 +123,11 @@ function renderCalendar() {
                 <div class="font-semibold text-slate-900 mb-2">${day}</div>
                 <div class="space-y-1">
                     <div class="text-xs">
-                        <span class="font-medium text-blue-700">?? ${dayData.total_institutions}</span>
+                        <span class="font-medium text-blue-700"> ${dayData.total_institutions}</span>
                         <span class="text-slate-600"> school${dayData.total_institutions > 1 ? 's' : ''}</span>
                     </div>
                     <div class="text-xs">
-                        <span class="font-medium text-green-700">??? ${dayData.total_printers_serviced}</span>
+                        <span class="font-medium text-green-700">? ${dayData.total_printers_serviced}</span>
                         <span class="text-slate-600"> serviced</span>
                     </div>
                 </div>
@@ -159,7 +159,8 @@ function showEmptyCalendar() {
 
 function showDayDetail(dateStr, dayData) {
     const modal = document.getElementById('dayDetailModal');
-    const date = new Date(dateStr);
+    // Parse date string in local timezone by adding time component
+    const date = new Date(dateStr + 'T00:00:00');
     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
                        'July', 'August', 'September', 'October', 'November', 'December'];
     
@@ -202,7 +203,8 @@ window.closeDayDetailModal = function() {
 
 window.showInstitutionDetail = async function(institutionId, dateStr, institutionName) {
     try {
-        const date = new Date(dateStr);
+        // Parse date string in local timezone by adding time component
+        const date = new Date(dateStr + 'T00:00:00');
         const year = date.getFullYear();
         const month = date.getMonth() + 1;
         const day = date.getDate();
@@ -237,29 +239,42 @@ window.showInstitutionDetail = async function(institutionId, dateStr, institutio
         // Render serviced printers
         const servicedList = document.getElementById('servicedPrintersList');
         if (data.serviced_printers.length > 0) {
-            servicedList.innerHTML = data.serviced_printers.map(printer => `
-                <div class="bg-green-50 border border-green-200 rounded-lg p-3 cursor-pointer hover:bg-green-100 transition-colors"
-                     onclick="showServiceDetail(${printer.id}, '${printer.service_number}')">
+            servicedList.innerHTML = data.serviced_printers.map(printer => {
+                const isRejected = printer.status === 'rejected';
+                const isMaintenance = printer.service_type === 'maintenance_service';
+                const bgColor = isRejected ? 'bg-red-50 border-red-200 hover:bg-red-100' : 'bg-green-50 border-green-200 hover:bg-green-100';
+                const iconColor = isRejected ? 'text-red-600' : 'text-green-600';
+                const statusBadgeColor = isRejected ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800';
+                const statusText = isRejected ? 'REJECTED' : 'COMPLETED';
+                const typeBadgeColor = isMaintenance ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800';
+                const typeText = isMaintenance ? 'Maintenance' : 'Service Request';
+                
+                return `
+                <div class="${bgColor} border rounded-lg p-3 cursor-pointer transition-colors"
+                     onclick="showServiceDetail(${printer.id}, '${printer.service_number}', '${printer.service_type || 'maintenance_service'}')">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-3">
-                            <i class="fas fa-print text-green-600"></i>
+                            <i class="fas fa-print ${iconColor}"></i>
                             <div>
                                 <div class="font-medium text-slate-900">${printer.printer_name}</div>
                                 <div class="text-xs text-slate-600">
-                                    ?? ${printer.location || 'N/A'}?? ${printer.department || 'N/A'}
+                                     ${printer.location || 'N/A'} ${printer.department || 'N/A'}
                                 </div>
-                                <div class="text-xs font-semibold text-green-700 mt-1">
+                                <div class="text-xs font-semibold ${isRejected ? 'text-red-700' : 'text-green-700'} mt-1">
                                     ${printer.service_number}
                                 </div>
                             </div>
                         </div>
                         <div class="text-right">
+                            <span class="inline-block px-2 py-1 rounded text-xs font-semibold mb-1 ${statusBadgeColor}">${statusText}</span>
+                            <span class="inline-block px-2 py-1 rounded text-xs font-semibold mb-1 ${typeBadgeColor}">${typeText}</span>
                             <div class="text-xs text-slate-600">Technician:</div>
                             <div class="text-sm font-medium text-slate-900">${printer.tech_first_name} ${printer.tech_last_name}</div>
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
         } else {
             servicedList.innerHTML = '<p class="text-sm text-slate-500 text-center py-4">No printers serviced on this date</p>';
         }
@@ -274,7 +289,7 @@ window.showInstitutionDetail = async function(institutionId, dateStr, institutio
                         <div>
                             <div class="font-medium text-slate-900">${printer.printer_name}</div>
                             <div class="text-xs text-slate-600">
-                                ?? ${printer.location || 'N/A'} ?? ${printer.department || 'N/A'}
+                                 ${printer.location || 'N/A'}  ${printer.department || 'N/A'}
                             </div>
                         </div>
                     </div>
@@ -297,10 +312,16 @@ window.closeInstitutionDetailModal = function() {
     document.getElementById('dayDetailModal').classList.remove('hidden');
 };
 
-window.showServiceDetail = async function(serviceId, serviceNumber) {
+window.showServiceDetail = async function(serviceId, serviceNumber, serviceType = 'maintenance_service') {
     try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`/api/maintenance-services/${serviceId}`, {
+        
+        // Determine the correct API endpoint based on service type
+        const endpoint = serviceType === 'service_request' 
+            ? `/api/service-requests/${serviceId}`
+            : `/api/maintenance-services/${serviceId}`;
+            
+        const response = await fetch(endpoint, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -322,37 +343,37 @@ window.showServiceDetail = async function(serviceId, serviceNumber) {
 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <div class="text-sm text-slate-600 font-medium mb-2">?? Institution</div>
+                        <div class="text-sm text-slate-600 font-medium mb-2"> Institution</div>
                         <div class="font-semibold text-slate-900">${service.institution_name || 'N/A'}</div>
                     </div>
                     <div>
-                        <div class="text-sm text-slate-600 font-medium mb-2">??? Printer</div>
+                        <div class="text-sm text-slate-600 font-medium mb-2">? Printer</div>
                         <div class="font-semibold text-slate-900">${service.printer_name || 'N/A'}</div>
                     </div>
                     <div>
-                        <div class="text-sm text-slate-600 font-medium mb-2">?? Location</div>
+                        <div class="text-sm text-slate-600 font-medium mb-2"> Location</div>
                         <div class="text-slate-900">${service.location || 'N/A'}</div>
                     </div>
                     <div>
-                        <div class="text-sm text-slate-600 font-medium mb-2">?? Department</div>
+                        <div class="text-sm text-slate-600 font-medium mb-2"> Department</div>
                         <div class="text-slate-900">${service.department || 'N/A'}</div>
                     </div>
                 </div>
 
                 <div class="bg-slate-50 rounded-lg p-4">
-                    <div class="text-sm text-slate-600 font-medium mb-2">????? Technician</div>
+                    <div class="text-sm text-slate-600 font-medium mb-2">? Technician</div>
                     <div class="font-semibold text-slate-900">${service.technician_name || 'N/A'}</div>
                     <div class="text-xs text-slate-600 mt-1">Submitted: ${new Date(service.created_at).toLocaleString()}</div>
                 </div>
 
                 <div>
-                    <div class="text-sm text-slate-600 font-medium mb-2">?? Service Description</div>
+                    <div class="text-sm text-slate-600 font-medium mb-2"> Service Description</div>
                     <div class="bg-slate-50 rounded-lg p-3 text-slate-900">${service.service_description || 'No description provided'}</div>
                 </div>
 
                 ${partsUsed.length > 0 ? `
                     <div>
-                        <div class="text-sm text-slate-600 font-medium mb-2">?? Items Used</div>
+                        <div class="text-sm text-slate-600 font-medium mb-2"> Items Used</div>
                         <div class="space-y-2">
                             ${partsUsed.map(part => `
                                 <div class="bg-amber-50 border border-amber-200 rounded-lg p-3">
@@ -369,7 +390,7 @@ window.showServiceDetail = async function(serviceId, serviceNumber) {
 
                 ${service.completion_photo ? `
                     <div>
-                        <div class="text-sm text-slate-600 font-medium mb-2">?? Completion Photo</div>
+                        <div class="text-sm text-slate-600 font-medium mb-2"> Completion Photo</div>
                         <img src="${service.completion_photo}" alt="Completion" class="w-full rounded-lg border border-slate-200">
                     </div>
                 ` : ''}

@@ -314,7 +314,7 @@ router.put('/service-requests/:requestId/status', authenticateTechnician, async 
                                 console.error('Failed to create notification for admin:', admin.id, notifError);
                             }
                         }
-                        console.log('✅ Notifications sent to admins/operations officers about walk-in service progress');
+                        console.log(' Notifications sent to admins/operations officers about walk-in service progress');
                     } else {
                         // For regular requests, notify institution_admin
                         if (requestDetails[0].institution_admin_id) {
@@ -328,7 +328,7 @@ router.put('/service-requests/:requestId/status', authenticateTechnician, async 
                                 reference_id: requestId,
                                 priority: 'medium'
                             });
-                            console.log('✅ Notification sent to institution_admin about service progress');
+                            console.log(' Notification sent to institution_admin about service progress');
                         }
                     }
                     
@@ -347,7 +347,7 @@ router.put('/service-requests/:requestId/status', authenticateTechnician, async 
                     }
                 }
             } catch (notifError) {
-                console.error('❌ Failed to send progress notification:', notifError);
+                console.error(' Failed to send progress notification:', notifError);
             }
         }
         
@@ -625,7 +625,7 @@ router.post('/service-requests/:requestId/complete', authenticateTechnician, asy
                                 priority: 'high'
                             });
                         }
-                        console.log('✅ Notification sent to admins/operations officers for walk-in approval');
+                        console.log(' Notification sent to admins/operations officers for walk-in approval');
                     } else {
                         // Send notification ONLY to institution_admin for approval
                         // institution_user will be notified after institution_admin approves
@@ -640,12 +640,12 @@ router.post('/service-requests/:requestId/complete', authenticateTechnician, asy
                                 reference_id: requestId,
                                 priority: 'high'
                             });
-                            console.log('✅ Notification sent to institution_admin for approval');
+                            console.log(' Notification sent to institution_admin for approval');
                         }
                     }
                 }
             } catch (notifError) {
-                console.error('❌ Failed to send completion notifications:', notifError);
+                console.error(' Failed to send completion notifications:', notifError);
             }
             
             // Commit the transaction

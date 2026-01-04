@@ -1336,37 +1336,37 @@ async function viewRequestDetails(requestId) {
         
         const requestModalContent = document.getElementById('requestModalContent');
         requestModalContent.innerHTML = `
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 max-h-[80vh] overflow-y-auto">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-2">
                 <!-- Left Column -->
-                <div class="space-y-3">
+                <div class="space-y-2">
                 <!-- Status Banner -->
-                <div class="bg-gradient-to-r ${getStatusGradientBanner(request.status)} rounded-lg p-3 text-white">
+                <div class="bg-gradient-to-r ${getStatusGradientBanner(request.status)} rounded-lg p-2 text-white">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center space-x-2">
-                            <div class="bg-white/20 rounded-full p-2">
-                                <i class="${getStatusIcon(request.status)} text-lg"></i>
+                            <div class="bg-white/20 rounded-full p-1.5">
+                                <i class="${getStatusIcon(request.status)} text-sm"></i>
                             </div>
                             <div>
                                 <p class="text-xs font-medium opacity-90">Status</p>
-                                <p class="text-base font-bold capitalize">${request.status.replace('_', ' ')}</p>
+                                <p class="text-sm font-bold capitalize">${request.status.replace('_', ' ')}</p>
                             </div>
                         </div>
                         <div class="text-right">
                             <p class="text-xs font-medium opacity-90">ID</p>
-                            <p class="text-base font-bold">#${request.id}</p>
+                            <p class="text-sm font-bold">#${request.id}</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Info Cards Grid -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
                     <!-- Printer Card -->
-                    <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-3 border border-purple-200">
-                        <div class="flex items-center mb-2">
-                            <div class="bg-purple-600 rounded-lg p-1.5 mr-2">
+                    <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-2 border border-purple-200">
+                        <div class="flex items-center mb-1">
+                            <div class="bg-purple-600 rounded p-1 mr-1.5">
                                 <i class="fas fa-print text-white text-xs"></i>
                             </div>
-                            <h4 class="text-sm font-bold text-purple-900">Printer</h4>
+                            <h4 class="text-xs font-bold text-purple-900">Printer</h4>
                         </div>
                         <div class="space-y-1 text-xs">
                             <div class="flex justify-between">
@@ -1389,14 +1389,14 @@ async function viewRequestDetails(requestId) {
                     </div>
 
                     <!-- Service Details Card -->
-                    <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
-                        <div class="flex items-center mb-2">
-                            <div class="bg-blue-600 rounded-lg p-2 mr-2">
-                                <i class="fas fa-tools text-white text-sm"></i>
+                    <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-2 border border-blue-200">
+                        <div class="flex items-center mb-1">
+                            <div class="bg-blue-600 rounded p-1 mr-1.5">
+                                <i class="fas fa-tools text-white text-xs"></i>
                             </div>
-                            <h4 class="text-base font-bold text-blue-900">Service Details</h4>
+                            <h4 class="text-xs font-bold text-blue-900">Service Details</h4>
                         </div>
-                        <div class="space-y-1.5 text-sm">
+                        <div class="space-y-1 text-xs">
                             <div class="flex justify-between">
                                 <span class="text-blue-700 font-medium">Priority:</span>
                                 <span class="font-semibold ${getPriorityColor(request.priority)}">${request.priority.toUpperCase()}</span>
@@ -1407,141 +1407,160 @@ async function viewRequestDetails(requestId) {
                                 <span class="text-blue-900 font-semibold">${request.technician_name}</span>
                             </div>
                             ` : ''}
-                            <div class="flex justify-between">
-                                <span class="text-blue-700 font-medium">Created:</span>
-                                <span class="text-blue-900">${new Date(request.created_at).toLocaleDateString()}</span>
-                            </div>
-                            ${request.started_at ? `
-                            <div class="flex justify-between">
-                                <span class="text-blue-700 font-medium">Started:</span>
-                                <span class="text-green-600 font-semibold">${new Date(request.started_at).toLocaleDateString()}</span>
-                            </div>
-                            ` : ''}
-                            ${request.completed_at ? `
-                            <div class="flex justify-between">
-                                <span class="text-blue-700 font-medium">Completed:</span>
-                                <span class="text-green-600 font-semibold">${new Date(request.completed_at).toLocaleDateString()}</span>
-                            </div>
-                            ` : ''}
                         </div>
                     </div>
                 </div>
 
                 <!-- Issue Description -->
-                <div class="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-3 border border-orange-200">
-                    <div class="flex items-center mb-2">
-                        <div class="bg-orange-600 rounded-lg p-1.5 mr-2">
+                <div class="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-2 border border-orange-200">
+                    <div class="flex items-center mb-1">
+                        <div class="bg-orange-600 rounded p-1 mr-1.5">
                             <i class="fas fa-exclamation-circle text-white text-xs"></i>
                         </div>
-                        <h4 class="text-sm font-bold text-orange-900">Issue</h4>
+                        <h4 class="text-xs font-bold text-orange-900">Issue</h4>
                     </div>
-                    <div class="bg-white/60 rounded-lg p-2 text-gray-800 text-xs leading-relaxed">
+                    <div class="bg-white/60 rounded p-1.5 text-gray-800 text-xs leading-snug">
                         ${request.description}
+                    </div>
+                </div>
+
+                <!-- Timeline -->
+                <div class="bg-gray-50 rounded-lg p-2 border border-gray-200">
+                    <div class="flex items-center mb-1">
+                        <div class="bg-gray-700 rounded p-1 mr-1.5">
+                            <i class="fas fa-clock text-white text-xs"></i>
+                        </div>
+                        <h4 class="text-xs font-bold text-gray-900">Timeline</h4>
+                    </div>
+                    <div class="space-y-1">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0 w-2 h-2 rounded-full bg-blue-500 mt-1.5"></div>
+                            <div class="ml-3 flex-1">
+                                <div class="text-xs">
+                                    <span class="font-semibold text-gray-900">Request Created</span>
+                                    <div class="text-gray-500 mt-0.5">${new Date(request.created_at).toLocaleString()}</div>
+                                </div>
+                            </div>
+                        </div>
+                        ${request.started_at ? `
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0 w-2 h-2 rounded-full bg-yellow-500 mt-1.5"></div>
+                            <div class="ml-3 flex-1">
+                                <div class="text-xs">
+                                    <span class="font-semibold text-gray-900">Service Started</span>
+                                    <div class="text-gray-500 mt-0.5">${new Date(request.started_at).toLocaleString()}</div>
+                                </div>
+                            </div>
+                        </div>
+                        ` : ''}
+                        ${request.completed_at ? `
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0 w-2 h-2 rounded-full bg-green-500 mt-1.5"></div>
+                            <div class="ml-3 flex-1">
+                                <div class="text-xs">
+                                    <span class="font-semibold text-gray-900">Service Completed</span>
+                                    <div class="text-gray-500 mt-0.5">${new Date(request.completed_at).toLocaleString()}</div>
+                                    ${approverName ? `<div class="text-gray-600 mt-1">Approved by ${approverRole} - ${approverName}</div>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                        ` : ''}
                     </div>
                 </div>
                 </div>
 
                 <!-- Right Column -->
-                <div class="space-y-3">
+                <div class="space-y-2">
                 <!-- Items Used (if any) -->
                 ${request.items_used && request.items_used.length > 0 ? `
-                <div class="bg-gradient-to-br from-teal-50 to-teal-100 rounded-lg p-3 border border-teal-200">
-                    <div class="flex items-center mb-2">
-                        <div class="bg-teal-600 rounded-lg p-1.5 mr-2">
+                <div class="bg-gradient-to-br from-teal-50 to-teal-100 rounded-lg p-2 border border-teal-200">
+                    <div class="flex items-center mb-1">
+                        <div class="bg-teal-600 rounded p-1 mr-1.5">
                             <i class="fas fa-toolbox text-white text-xs"></i>
                         </div>
-                        <h4 class="text-sm font-bold text-teal-900">Items Used</h4>
+                        <h4 class="text-xs font-bold text-teal-900">Items Used</h4>
                     </div>
                     <div class="space-y-1">
                         ${request.items_used.map(part => `
-                        <div class="bg-white/60 rounded p-2 flex justify-between items-center">
-                            <div class="flex-1">
-                                <span class="text-xs font-semibold text-teal-900">${part.part_name}</span>
-                                ${part.brand ? `<span class="text-xs text-teal-700 ml-1">(${part.brand})</span>` : ''}
-                                ${part.display_amount ? `<div class="text-xs text-teal-600 mt-0.5"><i class="fas fa-flask"></i> ${part.display_amount}</div>` : ''}
-                            </div>
-                            <div class="text-right">
+                        <div class="bg-white/60 rounded p-1.5">
+                            <div class="flex justify-between items-center">
+                                <div class="flex-1">
+                                    <span class="text-xs font-semibold text-teal-900">${part.part_name}</span>
+                                    ${part.color ? `<span class="text-xs text-gray-500 ml-1">(${part.color})</span>` : ''}
+                                    ${part.brand ? `<span class="text-xs text-teal-600 ml-1">• ${part.brand}</span>` : ''}
+                                </div>
                                 <span class="text-xs font-bold text-teal-800">${part.quantity_used} ${part.unit || 'pcs'}</span>
                             </div>
+                            ${part.display_amount ? `<div class="text-xs text-blue-600 font-medium">→ ${part.display_amount} ${part.consumption_type ? '(' + (part.consumption_type === 'partial' ? 'Partial' : 'Full') + ')' : ''}</div>` : ''}
                         </div>
                         `).join('')}
                     </div>
                 </div>
                 ` : ''}
 
+                <!-- Actions Performed by Technician -->
+                ${request.technician_notes ? `
+                <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-2 border border-blue-200">
+                    <div class="flex items-center mb-1">
+                        <div class="bg-blue-600 rounded p-1 mr-1.5">
+                            <i class="fas fa-clipboard-check text-white text-xs"></i>
+                        </div>
+                        <h4 class="text-xs font-bold text-blue-900">Actions Performed</h4>
+                    </div>
+                    <div class="bg-white/60 rounded p-1.5 text-xs text-blue-900 leading-snug">
+                        ${request.technician_notes}
+                    </div>
+                </div>
+                ` : ''}
+
+                <!-- Completion Photo -->
+                ${request.completion_photo_url ? `
+                <div class="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-lg p-2 border border-indigo-200">
+                    <div class="flex items-center mb-1">
+                        <div class="bg-indigo-600 rounded p-1 mr-1.5">
+                            <i class="fas fa-camera text-white text-xs"></i>
+                        </div>
+                        <h4 class="text-xs font-bold text-indigo-900">Completion Photo</h4>
+                    </div>
+                    <div class="bg-white/60 rounded p-1.5">
+                        <img src="${request.completion_photo_url}" 
+                             alt="Completion photo" 
+                             class="w-full h-auto max-h-32 object-cover rounded border border-indigo-300 cursor-pointer hover:opacity-90"
+                             onclick="window.open('${request.completion_photo_url}', '_blank')">
+                        <div class="text-center text-xs text-indigo-700">
+                            <i class="fas fa-expand-alt mr-1"></i>Click to view full size
+                        </div>
+                    </div>
+                </div>
+                ` : ''}
+
                 <!-- Approver Information (if approved) -->
                 ${(request.status === 'completed' && (approverName || request.approver_first_name)) ? `
-                <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border-2 border-green-300">
-                    <div class="flex items-center mb-3">
-                        <div class="bg-green-600 rounded-lg p-2 mr-2">
-                            <i class="fas fa-user-check text-white text-base"></i>
+                <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-2 border border-green-300">
+                    <div class="flex items-center mb-1">
+                        <div class="bg-green-600 rounded p-1 mr-1.5">
+                            <i class="fas fa-user-check text-white text-xs"></i>
                         </div>
-                        <h4 class="text-base font-bold text-green-900">? Approval Information</h4>
+                        <h4 class="text-xs font-bold text-green-900">Approval Information</h4>
                     </div>
-                    <div class="bg-white/80 rounded-lg p-3 text-sm space-y-2">
+                    <div class="bg-white/80 rounded p-1.5 text-xs">
                         ${approverName ? `
                         <div class="flex justify-between items-center">
-                            <span class="text-green-700 font-semibold">Approved By:</span>
-                            <span class="text-green-900 font-bold">${approverName}</span>
+                            <span class="text-green-700">Approved By:</span>
+                            <span class="text-green-900 font-semibold">${approverName}</span>
                         </div>
                         <div class="flex justify-between items-center">
-                            <span class="text-green-700 font-semibold">Role:</span>
-                            <span class="text-green-900 font-bold">${approverRole || 'Staff'}</span>
+                            <span class="text-green-700">Role:</span>
+                            <span class="text-green-900 font-semibold">${approverRole || 'Staff'}</span>
                         </div>
                         ` : `
-                        <div class="text-yellow-800 font-medium text-sm">
+                        <div class="text-yellow-800 text-xs">
                             <i class="fas fa-info-circle mr-1"></i>Approver information not available
                         </div>
                         `}
                     </div>
                 </div>
                 ` : ''}
-
-                <!-- Timeline -->
-                <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                    <div class="flex items-center mb-2">
-                        <div class="bg-gray-700 rounded-lg p-1.5 mr-2">
-                            <i class="fas fa-clock text-white text-xs"></i>
-                        </div>
-                        <h4 class="text-sm font-bold text-gray-900">Timeline</h4>
-                    </div>
-                    <div class="space-y-2">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0 w-3 h-3 rounded-full bg-blue-500"></div>
-                            <div class="ml-4 flex-1">
-                                <div class="flex justify-between">
-                                    <span class="text-sm font-medium text-gray-900">Request Created</span>
-                                    <span class="text-sm text-gray-500">${new Date(request.created_at).toLocaleString()}</span>
-                                </div>
-                            </div>
-                        </div>
-                        ${request.started_at ? `
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0 w-3 h-3 rounded-full bg-yellow-500"></div>
-                            <div class="ml-4 flex-1">
-                                <div class="flex justify-between">
-                                    <span class="text-sm font-medium text-gray-900">Service Started</span>
-                                    <span class="text-sm text-gray-500">${new Date(request.started_at).toLocaleString()}</span>
-                                </div>
-                            </div>
-                        </div>
-                        ` : ''}
-                        ${request.completed_at ? `
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0 w-3 h-3 rounded-full bg-green-500"></div>
-                            <div class="ml-4 flex-1">
-                                <div class="flex justify-between">
-                                    <span class="text-sm font-medium text-gray-900">Service Completed</span>
-                                    <span class="text-sm text-gray-500">${new Date(request.completed_at).toLocaleString()}</span>
-                                </div>
-                                ${approverName ? `
-                                <p class="text-xs text-gray-600 mt-1">Approved by ${approverRole} - ${approverName}</p>
-                                ` : ''}
-                            </div>
-                        </div>
-                        ` : ''}
-                    </div>
-                </div>
                 </div>
             </div>
         `;
@@ -1682,7 +1701,12 @@ async function viewApprovalDetails(requestId) {
         // Parse items used - handle both detailed and basic data
         let partsUsedDisplay = '';
         if (partsUsed.length > 0) {
-            partsUsedDisplay = partsUsed.map(part => `<li class="text-sm text-gray-600">${part.part_name} (${part.quantity_used} ${part.unit})</li>`).join('');
+            partsUsedDisplay = partsUsed.map(part => `
+                <li class="text-sm text-gray-700 py-1">
+                    <div class="font-medium">${part.part_name}${part.color ? ` <span class="text-xs text-gray-500">(${part.color})</span>` : ''} (${part.quantity_used} ${part.unit})</div>
+                    ${part.display_amount ? `<div class="text-xs text-blue-600 font-semibold mt-0.5 ml-2">→ ${part.display_amount} ${part.consumption_type ? '(' + (part.consumption_type === 'partial' ? 'Partial Use' : 'Full Consumption') + ')' : ''}</div>` : ''}
+                </li>
+            `).join('');
         } else if (approval.items_used) {
             partsUsedDisplay = approval.items_used.split(', ').map(part => `<li class="text-sm text-gray-600">${part}</li>`).join('');
         } else {
@@ -1719,6 +1743,18 @@ async function viewApprovalDetails(requestId) {
                     </div>
                 </div>
 
+                <!-- Actions Performed by Technician -->
+                ${approval.actions_performed || approval.technician_notes ? `
+                <div>
+                    <h4 class="text-sm font-semibold text-blue-900 mb-1 flex items-center">
+                        <i class="fas fa-clipboard-check mr-2 text-blue-500"></i>Actions Performed
+                    </h4>
+                    <div class="bg-blue-50 p-3 rounded-lg border border-blue-200 text-xs text-blue-900">
+                        ${approval.actions_performed || approval.technician_notes}
+                    </div>
+                </div>
+                ` : ''}
+
                 <!-- Technician & Resolution - Combined and Compact -->
                 <div class="bg-green-50 rounded-lg p-3 border border-green-200">
                     <h4 class="text-sm font-semibold text-green-900 mb-2 flex items-center">
@@ -1728,32 +1764,30 @@ async function viewApprovalDetails(requestId) {
                         <p><span class="font-medium">Technician:</span> ${approval.technician_first_name} ${approval.technician_last_name}</p>
                         <p><span class="font-medium">Submitted:</span> ${submittedTime.toLocaleDateString()} at ${submittedTime.toLocaleTimeString()}</p>
                     </div>
-                    ${(approvalDetails.approver_first_name && approvalDetails.approver_last_name) || (approvalDetails.resolution_notes || approval.actions_performed) ? `
+                    ${approvalDetails.approver_first_name && approvalDetails.approver_last_name ? `
                     <div class="bg-white p-2 rounded border border-green-200 text-xs text-gray-700">
-                        ${approvalDetails.approver_first_name && approvalDetails.approver_last_name ? `
                         <p class="font-semibold text-green-800 mb-1">
-                            ? Approved by: <span class="capitalize">${approvalDetails.approver_role || 'Staff'}</span> - ${approvalDetails.approver_first_name} ${approvalDetails.approver_last_name}
+                            ✓ Approved by: <span class="capitalize">${approvalDetails.approver_role || 'Staff'}</span> - ${approvalDetails.approver_first_name} ${approvalDetails.approver_last_name}
                         </p>
-                        ` : ''}
-                        ${approvalDetails.resolution_notes || approval.actions_performed ? `
-                        <p class="font-medium text-green-800 mb-1">Resolution:</p>
-                        <p>${approvalDetails.resolution_notes || approval.actions_performed || 'No notes provided'}</p>
+                        ${approvalDetails.resolution_notes ? `
+                        <p class="font-medium text-green-800 mb-1">Approval Notes:</p>
+                        <p>${approvalDetails.resolution_notes}</p>
                         ` : ''}
                     </div>
                     ` : ''}
                 </div>
 
                 <!-- Completion Photo -->
-                ${approvalDetails.completion_photo_url || approval.completion_photo_url ? `
+                ${request.completion_photo_url || approvalDetails.completion_photo_url || approval.completion_photo_url ? `
                 <div>
                     <h4 class="text-sm font-semibold text-gray-900 mb-2 flex items-center">
                         <i class="fas fa-camera mr-2 text-blue-500"></i>Completion Photo
                     </h4>
                     <div class="bg-white rounded-lg border-2 border-blue-200 overflow-hidden shadow-sm">
-                        <img src="${approvalDetails.completion_photo_url || approval.completion_photo_url}" 
+                        <img src="${request.completion_photo_url || approvalDetails.completion_photo_url || approval.completion_photo_url}" 
                              alt="Service completion photo" 
                              class="w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
-                             onclick="window.open('${approvalDetails.completion_photo_url || approval.completion_photo_url}', '_blank')">
+                             onclick="window.open('${request.completion_photo_url || approvalDetails.completion_photo_url || approval.completion_photo_url}', '_blank')">
                         <div class="p-2 bg-blue-50 text-xs text-blue-700 text-center">
                             <i class="fas fa-expand-alt mr-1"></i>Click to view full size
                         </div>
@@ -1776,8 +1810,8 @@ async function viewApprovalDetails(requestId) {
                 <!-- Approval Actions Guide - Compact -->
                 <div class="bg-yellow-50 rounded-lg p-3 border border-yellow-200">
                     <div class="text-xs text-yellow-800 space-y-1">
-                        <p><strong>? Approve:</strong> Parts will be deducted from technician inventory</p>
-                        <p><strong>? Reject:</strong> Request returns to technician; parts usage cleared</p>
+                        <p><strong> Approve:</strong> Parts will be deducted from technician inventory</p>
+                        <p><strong> Reject:</strong> Request returns to technician; parts usage cleared</p>
                     </div>
                 </div>
             </div>

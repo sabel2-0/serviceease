@@ -89,14 +89,14 @@ async function populateTestData() {
         const [institutions] = await db.query('SELECT institution_id FROM institutions LIMIT 5');
 
         if (users.length === 0 || techs.length === 0 || institutions.length === 0) {
-            console.log('⚠️  Need users, technicians, and institutions in database first!');
+            console.log('  Need users, technicians, and institutions in database first!');
             return;
         }
 
-        console.log(`✅ Found ${users.length} institution_users, ${techs.length} technicians, ${institutions.length} institutions\n`);
+        console.log(` Found ${users.length} institution_users, ${techs.length} technicians, ${institutions.length} institutions\n`);
 
         // Step 1: Create printer inventory items if they don't exist
-        console.log('📝 Creating printer inventory items...');
+        console.log(' Creating printer inventory items...');
         const printerInventoryIds = [];
 
         for (const printerSet of printerData) {
@@ -128,10 +128,10 @@ async function populateTestData() {
             }
         }
 
-        console.log(`✅ Created/verified ${printerInventoryIds.length} printer inventory items\n`);
+        console.log(` Created/verified ${printerInventoryIds.length} printer inventory items\n`);
 
         // Step 2: Create printer parts if they don't exist
-        console.log('📝 Creating printer parts inventory...');
+        console.log(' Creating printer parts inventory...');
         const partIds = new Map();
 
         for (const printerSet of printerData) {
@@ -169,10 +169,10 @@ async function populateTestData() {
             }
         }
 
-        console.log(`✅ Created/verified ${partIds.size} printer parts\n`);
+        console.log(` Created/verified ${partIds.size} printer parts\n`);
 
         // Step 3: Create service requests with realistic patterns
-        console.log('📝 Creating service requests with parts usage patterns...');
+        console.log(' Creating service requests with parts usage patterns...');
         
         const numRequests = 200; // Create 200 service requests for good ARM analysis
         let createdRequests = 0;
@@ -249,7 +249,7 @@ async function populateTestData() {
             }
         }
 
-        console.log(`\n✅ Successfully created ${createdRequests} service requests with parts usage!\n`);
+        console.log(`\n Successfully created ${createdRequests} service requests with parts usage!\n`);
 
         // Show statistics
         const [stats] = await db.query(`
@@ -269,11 +269,11 @@ async function populateTestData() {
         console.log(`   Unique Parts: ${stats[0].unique_parts}`);
         console.log(`   Unique Printers: ${stats[0].unique_printers}`);
 
-        console.log('\n✅ Test data population completed successfully!');
+        console.log('\n Test data population completed successfully!');
         process.exit(0);
 
     } catch (error) {
-        console.error('❌ Error populating test data:', error);
+        console.error(' Error populating test data:', error);
         process.exit(1);
     }
 }

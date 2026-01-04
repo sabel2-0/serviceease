@@ -14,19 +14,19 @@ async function addMoreCanonData() {
         );
 
         if (printers.length === 0) {
-            console.log('❌ Canon Laser Pro 213 not found!');
+            console.log(' Canon Laser Pro 213 not found!');
             return;
         }
 
         const printer = printers[0];
-        console.log(`✅ Found printer: ${printer.brand} ${printer.model} (ID: ${printer.id})\n`);
+        console.log(` Found printer: ${printer.brand} ${printer.model} (ID: ${printer.id})\n`);
 
         // Get Canon parts
         const [parts] = await db.query(
             'SELECT id, name FROM printer_items WHERE brand = "Canon"'
         );
 
-        console.log(`✅ Found ${parts.length} Canon parts\n`);
+        console.log(` Found ${parts.length} Canon parts\n`);
 
         // Get users
         const [users] = await db.query('SELECT id FROM users WHERE role = "institution_user" LIMIT 5');
@@ -115,10 +115,10 @@ async function addMoreCanonData() {
                 }
             }
 
-            console.log(`✅ Created request ${i + 1}/15: ${requestNumber}`);
+            console.log(` Created request ${i + 1}/15: ${requestNumber}`);
         }
 
-        console.log('\n✅ Successfully added 15 more service requests for Canon Laser Pro 213!');
+        console.log('\n Successfully added 15 more service requests for Canon Laser Pro 213!');
         
         // Show updated statistics
         const [stats] = await db.query(`
@@ -137,7 +137,7 @@ async function addMoreCanonData() {
         process.exit(0);
 
     } catch (error) {
-        console.error('❌ Error adding test data:', error);
+        console.error(' Error adding test data:', error);
         process.exit(1);
     }
 }

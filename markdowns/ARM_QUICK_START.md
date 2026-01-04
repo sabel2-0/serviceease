@@ -12,13 +12,13 @@ pip install pandas mlxtend mysql-connector-python
 cd server
 node scripts/populate_arm_test_data.js
 ```
-✅ Creates 200 service requests with realistic part usage patterns
+ Creates 200 service requests with realistic part usage patterns
 
 ### Step 3: Start Server
 ```bash
 node index.js
 ```
-✅ Server starts at http://localhost:3000
+ Server starts at http://localhost:3000
 
 ### Step 4: Test in UI
 1. Login as technician
@@ -28,7 +28,7 @@ node index.js
 
 ---
 
-## 🎯 What It Does
+##  What It Does
 
 **Predicts which parts technicians need** based on:
 - Printer model history
@@ -44,7 +44,7 @@ node index.js
 ### Example Display:
 ```
 1. IF Canon Separation Pad → THEN Canon Feed Roller
-   ✅ 100% confidence | 🚀 1.57× likely
+    100% confidence | 🚀 1.57× likely
 ```
 
 **Means**: 
@@ -59,7 +59,7 @@ node index.js
 
 ---
 
-## 🔧 Testing ARM Analysis
+##  Testing ARM Analysis
 
 ### Test Specific Printer:
 ```bash
@@ -149,7 +149,7 @@ GET /api/arm/statistics
 
 ---
 
-## 📝 Key Files
+##  Key Files
 
 | File | Purpose |
 |------|---------|
@@ -160,7 +160,7 @@ GET /api/arm/statistics
 
 ---
 
-## ✅ Verification Checklist
+##  Verification Checklist
 
 - [ ] Python dependencies installed
 - [ ] Test data populated (200+ requests)
@@ -202,7 +202,7 @@ GET /api/arm/statistics
 2. **Views printer model** → HP LaserJet Pro M404n
 3. **Checks Service Insights** → Sees recommendations
 4. **Brings suggested parts** → Pickup Roller + Toner
-5. **Completes service** → No return trip needed! ✅
+5. **Completes service** → No return trip needed! 
 
 ---
 
@@ -214,6 +214,6 @@ GET /api/arm/statistics
 
 ---
 
-**Status**: ✅ **FULLY IMPLEMENTED & TESTED**
+**Status**:  **FULLY IMPLEMENTED & TESTED**
 
 **Last Updated**: October 20, 2025

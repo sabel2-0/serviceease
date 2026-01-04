@@ -138,209 +138,194 @@
         select:focus {
             outline: none;
         }
+        
+        /* BOTTOM NAVIGATION SPACING - Corporate standard */
+        :root {
+            --bottom-nav-height: 75px;
+            --bottom-nav-buffer: 8px;
+            --bottom-nav-total: calc(var(--bottom-nav-height) + var(--bottom-nav-buffer) + env(safe-area-inset-bottom, 0px));
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding-bottom: var(--bottom-nav-total) !important;
+            }
+        }
     </style>
 </head>
-<body class="p-4">
+<body class="p-4 bg-gray-50">
     <!-- Header -->
-    <div class="bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-600 rounded-xl shadow-lg p-6 mb-6">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div class="flex-1">
-                <h1 class="text-2xl md:text-3xl font-bold text-white mb-2">
-                    <i class="fas fa-shopping-cart mr-2"></i>Request Items & Supplies
-                </h1>
-                <p class="text-blue-100 text-sm md:text-base">Search and request items for your service tasks</p>
+    <div class="flex items-center justify-between mb-5">
+        <div class="flex items-center gap-3">
+            <div class="w-11 h-11 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
+                <i class="fas fa-plus text-white"></i>
             </div>
-            <button onclick="history.back()" class="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white px-5 py-2.5 rounded-lg transition-all duration-200 font-medium border border-white/30 hover:border-white/50 shadow-md">
-                <i class="fas fa-arrow-left mr-2"></i>Back
-            </button>
+            <div>
+                <h1 class="text-lg font-bold text-gray-800">Request Items</h1>
+                <p class="text-sm text-gray-500">Submit a new request</p>
+            </div>
         </div>
+        <button onclick="history.back()" class="p-2.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
     </div>
     
-    <!-- Search and Filters -->
-    <div class="card rounded-xl p-5 mb-6 shadow-lg border-2 border-gray-100">
-        <div class="space-y-4">
-            <!-- Search Bar -->
-            <div class="relative">
-                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <i class="fas fa-search text-gray-400"></i>
-                </div>
-                <input 
-                    type="text" 
-                    id="searchInput" 
-                    placeholder="Search by item name, description, or item number..." 
-                    class="w-full pl-11 pr-4 py-3.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm"
-                >
-            </div>
-            
-            <!-- Filter Buttons -->
-            <div class="flex flex-wrap gap-2">
-                <button class="filter-chip active px-4 py-2 rounded-lg font-medium text-sm transition-all shadow-sm hover:shadow-md" data-filter="all">
-                    <i class="fas fa-th mr-1.5"></i>All Items
-                </button>
-                <button class="filter-chip px-4 py-2 rounded-lg font-medium text-sm transition-all shadow-sm hover:shadow-md" data-filter="consumable">
-                    <i class="fas fa-tint mr-1.5"></i>Consumables
-                </button>
-                <button class="filter-chip px-4 py-2 rounded-lg font-medium text-sm transition-all shadow-sm hover:shadow-md" data-filter="printer_part">
-                    <i class="fas fa-cogs mr-1.5"></i>Printer Parts
-                </button>
-            </div>
-            
-            <!-- Filters -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                <div class="relative">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i class="fas fa-tag text-gray-400 text-sm"></i>
-                    </div>
-                    <select id="categoryFilter" class="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white text-sm font-medium">
-                        <option value="">All Categories</option>
-                        <option value="toner">Toner Cartridges</option>
-                        <option value="ink">Ink Cartridges</option>
-                        <option value="ink-bottle">Ink Bottles</option>
-                        <option value="drum">Drum Units</option>
-                        <option value="drum-cartridge">Drum Cartridges</option>
-                        <option value="fuser">Fuser Assembly</option>
-                        <option value="roller">Rollers</option>
-                        <option value="paper">Paper</option>
-                        <option value="cleaning-supplies">Cleaning Supplies</option>
-                        <option value="tools">Tools</option>
-                        <option value="other">Other</option>
-                    </select>
-                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                        <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
-                    </div>
-                </div>
-                
-                <div class="relative">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i class="fas fa-warehouse text-gray-400 text-sm"></i>
-                    </div>
-                    <select id="stockFilter" class="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white text-sm font-medium">
-                        <option value="">All Stock Levels</option>
-                        <option value="available">? Available (In Stock)</option>
-                        <option value="high">?? High Stock (>20)</option>
-                        <option value="medium">?? Medium Stock (11-20)</option>
-                        <option value="low">?? Low Stock (1-10)</option>
-                    </select>
-                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                        <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
-                    </div>
-                </div>
-                
-                <button id="refreshBtn" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-5 py-3 rounded-lg transition-all font-semibold shadow-md hover:shadow-lg transform hover:scale-[1.02] text-sm">
-                    <i class="fas fa-sync-alt mr-2"></i>Refresh
-                </button>
-            </div>
-        </div>
+    <!-- Search -->
+    <div class="relative mb-4">
+        <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+        <input 
+            type="text" 
+            id="searchInput" 
+            placeholder="Search items..." 
+            class="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        >
+    </div>
+    
+    <!-- Filter Chips -->
+    <div class="flex gap-2 mb-4 overflow-x-auto pb-1">
+        <button class="filter-chip active px-4 py-2 rounded-xl font-medium text-sm whitespace-nowrap" data-filter="all">
+            All Items
+        </button>
+        <button class="filter-chip px-4 py-2 rounded-xl font-medium text-sm whitespace-nowrap" data-filter="consumable">
+            Consumables
+        </button>
+        <button class="filter-chip px-4 py-2 rounded-xl font-medium text-sm whitespace-nowrap" data-filter="printer_part">
+            Parts
+        </button>
+    </div>
+    
+    <!-- Filters Row -->
+    <div class="flex gap-2 mb-5">
+        <select id="categoryFilter" class="flex-1 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-600 focus:ring-2 focus:ring-blue-500">
+            <option value="">All Categories</option>
+            <option value="toner">Toner</option>
+            <option value="ink">Ink</option>
+            <option value="ink-bottle">Ink Bottle</option>
+            <option value="drum">Drum</option>
+            <option value="drum-cartridge">Drum Cartridge</option>
+            <option value="fuser">Fuser</option>
+            <option value="roller">Roller</option>
+            <option value="maintenance-unit">Maintenance</option>
+            <option value="other">Other</option>
+        </select>
+        <select id="stockFilter" class="flex-1 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-600 focus:ring-2 focus:ring-blue-500">
+            <option value="">All Stock</option>
+            <option value="available">Available</option>
+            <option value="low">Low Stock</option>
+        </select>
+        <button id="refreshBtn" class="p-2.5 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors">
+            <i class="fas fa-sync-alt"></i>
+        </button>
     </div>
     
     <!-- Loading State -->
-    <div id="loadingState" class="card rounded-xl p-12 text-center shadow-lg">
-        <div class="inline-block w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
-        <p class="text-gray-600 font-medium text-lg">Loading available items...</p>
-        <p class="text-gray-400 text-sm mt-2">Please wait while we fetch the inventory</p>
+    <div id="loadingState" class="text-center py-12">
+        <div class="inline-flex items-center space-x-1.5">
+            <div class="w-2.5 h-2.5 bg-blue-500 rounded-full animate-bounce" style="animation-delay: 0s;"></div>
+            <div class="w-2.5 h-2.5 bg-blue-400 rounded-full animate-bounce" style="animation-delay: 0.1s;"></div>
+            <div class="w-2.5 h-2.5 bg-blue-300 rounded-full animate-bounce" style="animation-delay: 0.2s;"></div>
+        </div>
+        <p class="mt-3 text-gray-500">Loading items...</p>
     </div>
     
     <!-- Empty State -->
-    <div id="emptyState" class="hidden card rounded-xl p-12 text-center shadow-lg border-2 border-dashed border-gray-300">
-        <div class="text-gray-300 mb-6">
-            <i class="fas fa-box-open text-6xl"></i>
+    <div id="emptyState" class="hidden bg-white rounded-2xl border border-gray-100 p-8 text-center">
+        <div class="text-gray-300 mb-4">
+            <i class="fas fa-box-open text-4xl"></i>
         </div>
-        <h3 class="text-xl font-bold text-gray-900 mb-3">No Items Found</h3>
-        <p class="text-gray-500 mb-6 max-w-md mx-auto" id="emptyMessage">No items match your current search criteria. Try adjusting your filters or search terms.</p>
-        <button onclick="location.reload()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-all font-medium shadow-md hover:shadow-lg">
-            <i class="fas fa-redo mr-2"></i>Reset Filters
+        <h3 class="text-base font-semibold text-gray-700 mb-2">No Items Found</h3>
+        <p class="text-sm text-gray-500 mb-4" id="emptyMessage">Try adjusting your search.</p>
+        <button onclick="location.reload()" class="bg-blue-500 hover:bg-blue-600 text-white px-5 py-2.5 rounded-xl transition-colors font-medium">
+            Reset Filters
         </button>
     </div>
     
     <!-- Parts Grid -->
-    <div id="partsGrid" class="hidden grid gap-4 sm:gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div id="partsGrid" class="hidden space-y-3">
         <!-- Parts will be loaded here -->
     </div>
     
     <!-- Request Modal -->
-    <div id="requestModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <div class="p-6">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-xl font-bold text-gray-900">
-                        <i class="fas fa-plus-circle text-blue-600 mr-2"></i>
-                        Request Item
-                    </h3>
-                    <button id="closeModal" class="text-gray-400 hover:text-gray-600 text-xl">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                
-                <div id="selectedPartInfo" class="mb-6">
+    <div id="requestModal" class="hidden fixed inset-0 flex items-end sm:items-center justify-center z-50">
+        <div class="absolute inset-0 bg-black/50" onclick="closeModal()"></div>
+        <div class="relative bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-sm max-h-[85vh] overflow-y-auto z-10">
+            <!-- Modal Header -->
+            <div class="sticky top-0 bg-white border-b border-gray-100 px-5 py-4 flex items-center justify-between">
+                <h3 class="text-lg font-bold text-gray-800">Request Item</h3>
+                <button id="closeModal" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="p-5">
+                <div id="selectedPartInfo" class="mb-5">
                     <!-- Selected part info will be shown here -->
                 </div>
                 
                 <form id="requestForm" class="space-y-4">
+                    <!-- Quantity -->
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-hashtag mr-1"></i>
-                            Quantity Needed
-                        </label>
-                        <div class="quantity-control">
-                            <button type="button" id="decreaseQty" class="quantity-btn">
-                                <i class="fas fa-minus text-sm"></i>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
+                        <div class="flex items-center gap-3">
+                            <button type="button" id="decreaseQty" class="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
+                                <i class="fas fa-minus text-gray-500 text-sm"></i>
                             </button>
                             <input 
                                 type="number" 
                                 id="requestQuantity" 
                                 value="1" 
                                 min="1" 
-                                class="w-20 text-center py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                class="w-16 text-center py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 text-lg font-semibold"
                             >
-                            <button type="button" id="increaseQty" class="quantity-btn">
-                                <i class="fas fa-plus text-sm"></i>
+                            <button type="button" id="increaseQty" class="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
+                                <i class="fas fa-plus text-gray-500 text-sm"></i>
                             </button>
-                            <span id="maxQuantityInfo" class="text-sm text-gray-500 ml-2"></span>
+                            <span id="maxQuantityInfo" class="text-sm text-gray-400"></span>
                         </div>
                     </div>
                     
+                    <!-- Priority -->
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-flag mr-1"></i>
-                            Priority Level
-                        </label>
-                        <select id="requestPriority" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                            <option value="low">Low - Can wait a few days</option>
-                            <option value="medium" selected>Medium - Needed within 24-48 hours</option>
-                            <option value="high">High - Needed within 24 hours</option>
-                            <option value="urgent">Urgent - Needed immediately</option>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+                        <select id="requestPriority" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 text-sm">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                            <option value="urgent">Urgent</option>
                         </select>
                     </div>
                     
+                    <!-- Reason -->
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-comment mr-1"></i>
-                            Reason for Request <span class="text-red-500">*</span>
-                        </label>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Reason <span class="text-red-500">*</span></label>
                         <textarea 
                             id="requestReason" 
-                            rows="3" 
-                            placeholder="Please describe why you need this item (e.g., for service request #123, printer maintenance, replacement of faulty component, etc.)"
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 resize-none"
+                            rows="2" 
+                            placeholder="Why do you need this item?"
+                            class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 resize-none text-sm"
                             required
                         ></textarea>
-                        <p class="text-xs text-gray-500 mt-1">Minimum 10 characters required</p>
                     </div>
                     
-                    <div class="flex gap-3 pt-4">
+                    <!-- Buttons -->
+                    <div class="flex gap-3 pt-2">
                         <button 
                             type="button" 
                             id="cancelRequest" 
-                            class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-4 rounded-lg transition-colors font-medium"
+                            class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl transition-colors font-medium"
                         >
                             Cancel
                         </button>
                         <button 
                             type="submit" 
                             id="submitRequest" 
-                            class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg transition-colors font-medium"
+                            class="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-xl transition-colors font-medium"
                         >
-                            <span id="submitBtnText">Submit Request</span>
+                            <span id="submitBtnText">Submit</span>
                             <div id="submitBtnSpinner" class="hidden loading-spinner mx-auto"></div>
                         </button>
                     </div>
@@ -363,7 +348,7 @@
         
         // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('?? Initializing Items Request Page');
+            console.log(' Initializing Items Request Page');
             checkAuthentication();
             loadParts();
             setupEventListeners();
@@ -429,7 +414,7 @@
         
         // Load parts from API
         async function loadParts() {
-            console.log('?? Loading parts...');
+            console.log(' Loading parts...');
             showLoadingState();
             
             try {
@@ -446,7 +431,7 @@
                 }
                 
                 const data = await response.json();
-                console.log('?? Parts data received:', data);
+                console.log(' Parts data received:', data);
 
                 // Accept either an array (legacy) or diagnostic object { count, rows }
                 allParts = Array.isArray(data) ? data : (data.rows || data.parts || data.data || []);
@@ -486,9 +471,12 @@
                     part.brand?.toLowerCase().includes(search);
                 
                 // Type filter (consumable vs printer part)
+                // Check item_type field OR category to determine type
+                const consumableCategories = ['ink', 'ink-bottle', 'toner', 'drum', 'drum-cartridge', 'fuser', 'roller', 'printhead', 'maintenance-unit', 'maintenance-box'];
+                const isConsumableItem = part.item_type === 'consumable' || consumableCategories.includes(part.category);
                 const matchesType = currentFilter === 'all' || 
-                    (currentFilter === 'consumable' && isConsumable(part.category)) ||
-                    (currentFilter === 'printer_part' && !isConsumable(part.category));
+                    (currentFilter === 'consumable' && isConsumableItem) ||
+                    (currentFilter === 'printer_part' && !isConsumableItem);
                 
                 // Category filter
                 const matchesCategory = !category || part.category === category;
@@ -633,64 +621,40 @@
         function openRequestModal(part) {
             selectedPart = part;
             
-            // Populate part info with enhanced details
+            // Populate part info - minimalist design
             const partInfo = document.getElementById('selectedPartInfo');
             let detailsHtml = `
-                <div class="bg-blue-50 rounded-lg p-4">
-                    <h4 class="font-semibold text-blue-900 mb-3">${part.name}</h4>
-                    <div class="text-sm space-y-2">`;
+                <div class="bg-gray-50 rounded-xl p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="font-bold text-gray-800">${part.name}</h4>
+                        <span class="text-xs px-2 py-1 rounded-full ${part.quantity > 10 ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}">${part.quantity > 10 ? 'In Stock' : 'Low Stock'}</span>
+                    </div>
+                    <div class="flex flex-wrap gap-2 text-xs">`;
             
             if (part.brand) {
-                detailsHtml += `
-                        <div class="flex justify-between">
-                            <span class="text-blue-600"><i class="fas fa-building mr-2"></i>Brand:</span>
-                            <span class="text-blue-900 font-medium">${part.brand}</span>
-                        </div>`;
+                detailsHtml += `<span class="px-2 py-1 bg-white border border-gray-200 rounded-lg text-gray-600">${part.brand}</span>`;
             }
             
-            detailsHtml += `
-                        <div class="flex justify-between">
-                            <span class="text-blue-600"><i class="fas fa-tag mr-2"></i>Category:</span>
-                            <span class="text-blue-900 font-medium capitalize">${part.category ? part.category.replace(/-/g, ' ') : 'Unknown'}</span>
-                        </div>`;
+            if (part.category) {
+                detailsHtml += `<span class="px-2 py-1 bg-white border border-gray-200 rounded-lg text-gray-600 capitalize">${part.category.replace(/-/g, ' ')}</span>`;
+            }
             
             if (part.color) {
-                detailsHtml += `
-                        <div class="flex justify-between">
-                            <span class="text-blue-600"><i class="fas fa-palette mr-2"></i>Color:</span>
-                            <span class="text-blue-900 font-medium capitalize">${part.color.replace(/-/g, ' ')}</span>
-                        </div>`;
-            }
-            
-            if (part.page_yield) {
-                detailsHtml += `
-                        <div class="flex justify-between">
-                            <span class="text-blue-600"><i class="fas fa-file-alt mr-2"></i>Page Yield:</span>
-                            <span class="text-blue-900 font-medium">~${parseInt(part.page_yield).toLocaleString()} pages</span>
-                        </div>`;
+                detailsHtml += `<span class="px-2 py-1 bg-white border border-gray-200 rounded-lg text-gray-600 capitalize">${part.color}</span>`;
             }
             
             if (part.ink_volume) {
-                detailsHtml += `
-                        <div class="flex justify-between">
-                            <span class="text-blue-600"><i class="fas fa-flask mr-2"></i>Volume:</span>
-                            <span class="text-blue-900 font-medium">${parseFloat(part.ink_volume)} ml</span>
-                        </div>`;
+                detailsHtml += `<span class="px-2 py-1 bg-white border border-gray-200 rounded-lg text-gray-600">${parseFloat(part.ink_volume)} ml</span>`;
             }
             
-            if (part.is_universal) {
-                detailsHtml += `
-                        <div class="flex items-center text-purple-700 bg-purple-100 rounded px-2 py-1">
-                            <i class="fas fa-globe mr-2"></i>
-                            <span class="text-xs font-medium">Universal - Compatible with all brands</span>
-                        </div>`;
+            if (part.page_yield) {
+                detailsHtml += `<span class="px-2 py-1 bg-white border border-gray-200 rounded-lg text-gray-600">~${parseInt(part.page_yield).toLocaleString()} pages</span>`;
             }
             
-            detailsHtml += `
-                        <div class="flex justify-between pt-2 border-t border-blue-200">
-                            <span class="text-blue-600"><i class="fas fa-warehouse mr-2"></i>Available:</span>
-                            <span class="text-blue-900 font-bold">${part.quantity} ${part.unit || 'pieces'}</span>
-                        </div>
+            detailsHtml += `</div>
+                    <div class="mt-3 pt-3 border-t border-gray-200 flex items-center justify-between">
+                        <span class="text-sm text-gray-500">Available</span>
+                        <span class="text-lg font-bold text-blue-600">${part.quantity} <span class="text-sm font-normal text-gray-500">${part.unit || 'pcs'}</span></span>
                     </div>
                 </div>
             `;
@@ -768,7 +732,7 @@
                     priority: priority
                 };
                 
-                console.log('?? Submitting request:', requestData);
+                console.log(' Submitting request:', requestData);
                 
                 const response = await fetch('/api/parts-requests', {
                     method: 'POST',

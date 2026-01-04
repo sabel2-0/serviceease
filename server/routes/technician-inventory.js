@@ -39,6 +39,7 @@ router.get('/inventory', authenticateTechnician, async (req, res) => {
                 pp.name,
                 pp.brand,
                 pp.category,
+                pp.item_type,
                 pp.color,
                 pp.page_yield,
                 pp.ink_volume,
@@ -122,18 +123,18 @@ router.get('/parts', authenticateTechnician, async (req, res) => {
             const hasOpenedBottle = row.is_opened === 1 && remaining > 0 && remaining < totalCapacity;
             
             if (hasOpenedBottle) {
-                // Calculate: 1 opened bottle + remaining sealed bottles
-                const openedBottleRemaining = remaining % capacity || capacity;
-                const sealedCount = Math.floor(remaining / capacity);
+                // For opened bottles: show opened bottle separately from sealed ones
+                // If quantity is 3 and one is opened, we have: 1 opened + 2 sealed
+                const sealedCount = row.stock - 1; // All bottles minus the opened one
                 
                 // Add opened bottle first (to be used first)
                 processedItems.push({
                     ...row,
-                    display_name: `${row.name} (${openedBottleRemaining.toFixed(0)}${unit} remaining - opened)`,
+                    display_name: `${row.name} (${remaining.toFixed(0)}${unit} remaining - opened)`,
                     is_opened_item: true,
                     stock: 1,
-                    remaining_volume: hasVolume ? openedBottleRemaining : null,
-                    remaining_weight: hasWeight ? openedBottleRemaining : null,
+                    remaining_volume: hasVolume ? remaining : null,
+                    remaining_weight: hasWeight ? remaining : null,
                     tech_inventory_id: row.tech_inventory_id
                 });
                 

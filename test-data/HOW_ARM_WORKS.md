@@ -1,4 +1,4 @@
-# 🤖 How Association Rule Mining Works in ServiceEase
+#  How Association Rule Mining Works in ServiceEase
 
 ## 📚 What is it? (Explain Like I'm 10)
 
@@ -76,7 +76,7 @@ id | name              | brand
 
 ---
 
-## 🔍 How It Works Step-by-Step
+##  How It Works Step-by-Step
 
 ### **Step 1: Collect the Shopping Baskets** 🛒
 
@@ -133,10 +133,10 @@ We set a **threshold** called **"minimum support"** = 60%
 This means: "Only show me parts that appear in at least 60% of repairs"
 
 **Parts that pass:**
-- ✅ Pickup Roller (80%)
-- ✅ Separation Pad (60%)
-- ✅ Toner (80%)
-- ❌ Drum Unit (20%) - TOO RARE!
+-  Pickup Roller (80%)
+-  Separation Pad (60%)
+-  Toner (80%)
+-  Drum Unit (20%) - TOO RARE!
 
 ---
 
@@ -157,12 +157,12 @@ Now we look for **pairs** and **groups** of parts that appear together often.
 ```
 
 With minimum support = 60%, these combinations pass:
-- ✅ [Pickup Roller + Separation Pad] (60%)
-- ✅ [Pickup Roller + Toner] (60%)
+-  [Pickup Roller + Separation Pad] (60%)
+-  [Pickup Roller + Toner] (60%)
 
 ---
 
-### **Step 4: Create Rules** 📝
+### **Step 4: Create Rules** 
 
 Now we create **IF-THEN rules**:
 
@@ -273,9 +273,9 @@ Rule: IF Pickup Roller → THEN Separation Pad
 - **Lift = 87.5% / 75% = 1.17**
 
 **What it means:**
-- **Lift > 1.0** = Using Part A makes Part B MORE LIKELY! ✅ Good rule!
+- **Lift > 1.0** = Using Part A makes Part B MORE LIKELY!  Good rule!
 - **Lift = 1.0** = No relationship, just random
-- **Lift < 1.0** = Using Part A makes Part B LESS LIKELY! ❌ Bad rule!
+- **Lift < 1.0** = Using Part A makes Part B LESS LIKELY!  Bad rule!
 
 **Better Example:**
 ```
@@ -283,7 +283,7 @@ Rule: IF Pickup Roller → THEN Toner
 ```
 - Confidence = 75%
 - Toner appears generally in 30% of repairs
-- **Lift = 75% / 30% = 2.5** 🎉
+- **Lift = 75% / 30% = 2.5** 
 
 This is GREAT! Using Pickup Roller makes Toner **2.5x more likely** than random chance!
 
@@ -418,7 +418,7 @@ Rule 3: IF [Toner] → THEN [Drum Unit]
 
 ---
 
-## 🎯 How Technicians See It
+##  How Technicians See It
 
 When Carlo Tech opens service request SR-2025-0001 for HP LaserJet Pro M404n, the system:
 
@@ -427,20 +427,20 @@ When Carlo Tech opens service request SR-2025-0001 for HP LaserJet Pro M404n, th
 3. **Shows a simple list:**
 
 ```
-🎯 Smart Part Recommendations
+ Smart Part Recommendations
 
 Based on 55 similar repairs for HP LaserJet Pro M404n:
 
-📦 1. HP Pickup Roller
+ 1. HP Pickup Roller
    ⚡ High Priority - Used in most similar repairs
 
-📦 2. HP Separation Pad  
+ 2. HP Separation Pad  
    ⚡ High Priority - Used in most similar repairs
 
-📦 3. HP Toner CF259A
+ 3. HP Toner CF259A
    🔄 Frequently paired with other parts
 
-📦 4. HP Drum Unit
+ 4. HP Drum Unit
    🔄 Frequently paired with other parts
 ```
 
@@ -461,7 +461,7 @@ Based on 55 similar repairs for HP LaserJet Pro M404n:
 6. **Show the best ones** - Only display rules that are strong and useful
 7. **Help technicians** - Give them a smart shopping list before they even start!
 
-**The Result:** Technicians can grab all the needed parts in ONE TRIP instead of running back and forth to the parts room! 🎉
+**The Result:** Technicians can grab all the needed parts in ONE TRIP instead of running back and forth to the parts room! 
 
 ---
 

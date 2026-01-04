@@ -104,7 +104,7 @@ router.get('/profile', authenticateAdmin, async (req, res) => {
         console.log('Database query result:', rows);
         
         if (rows.length === 0) {
-            console.log('❌ No user found with ID:', req.user.id);
+            console.log(' No user found with ID:', req.user.id);
             return res.status(404).json({ error: 'User not found' });
         }
         
@@ -196,7 +196,7 @@ router.post('/request-password-change', authenticateAdmin, async (req, res) => {
             `;
             
             await brevoApiInstance.sendTransacEmail(sendSmtpEmail);
-            console.log(`✅ Verification code sent to ${user.email} via Brevo`);
+            console.log(` Verification code sent to ${user.email} via Brevo`);
         } catch (emailError) {
             console.error('Error sending verification email:', emailError);
             return res.status(500).json({ error: 'Failed to send verification code' });
@@ -287,7 +287,7 @@ router.put('/password', authenticateAdmin, async (req, res) => {
         console.log('Verification code received:', verificationCode);
 
         if (!currentPassword || !newPassword || !confirmPassword || !verificationCode) {
-            console.log('❌ Missing fields:', {
+            console.log(' Missing fields:', {
                 currentPassword: !!currentPassword,
                 newPassword: !!newPassword,
                 confirmPassword: !!confirmPassword,
@@ -311,7 +311,7 @@ router.put('/password', authenticateAdmin, async (req, res) => {
         );
         
         if (tokenRows.length === 0) {
-            console.log('❌ No verification code found in database for user:', req.user.id);
+            console.log(' No verification code found in database for user:', req.user.id);
             return res.status(400).json({ error: 'Invalid verification code' });
         }
         
@@ -320,7 +320,7 @@ router.put('/password', authenticateAdmin, async (req, res) => {
         
         // Check if code has expired
         if (new Date() > new Date(tokenData.expires_at)) {
-            console.log('❌ Verification code expired');
+            console.log(' Verification code expired');
             await db.query('DELETE FROM verification_tokens WHERE id = ?', [tokenData.id]);
             return res.status(400).json({ error: 'Verification code has expired. Please request a new one.' });
         }
@@ -380,7 +380,7 @@ router.put('/password', authenticateAdmin, async (req, res) => {
             `;
             
             await brevoApiInstance.sendTransacEmail(sendSmtpEmail);
-            console.log(`✅ Password change confirmation email sent to ${user.email} via Brevo`);
+            console.log(` Password change confirmation email sent to ${user.email} via Brevo`);
         } catch (emailError) {
             console.error('Error sending password change email:', emailError);
             // Don't fail the request if email fails, password is already changed

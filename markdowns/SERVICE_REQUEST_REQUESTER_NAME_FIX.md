@@ -4,7 +4,7 @@
 
 ## Issues Fixed
 
-### 1. ✅ Service Requests Showing Wrong Name
+### 1.  Service Requests Showing Wrong Name
 **Problem:** Institution User's service request history was showing the technician's name ("Razor Axe") instead of The institution_user's name.
 
 **Root Cause:** Frontend was displaying `technician_first_name` and `technician_last_name` instead of The institution_user's name.
@@ -32,7 +32,7 @@ const requesterName = req.requester_first_name && req.requester_last_name
 
 ---
 
-### 2. ✅ Requester Seeing Other Users' Service Requests
+### 2.  Requester Seeing Other Users' Service Requests
 **Problem:** Institution User was seeing service requests made by coordinator (Request #137 made by user 65 was showing for user 66).
 
 **Root Cause:** Backend query was filtering by `inventory_item_id` (all requests for that printer) instead of filtering by `requested_by_user_id` (only requests made by that specific user).
@@ -56,7 +56,7 @@ Now only shows requests created by the logged-in user.
 
 ---
 
-### 3. ✅ Backend Returns Requester Name
+### 3.  Backend Returns Requester Name
 **Problem:** Backend wasn't selecting and returning The institution_user's name in the response.
 
 **Files Changed:**
@@ -80,7 +80,7 @@ Now the API returns both requester and technician information.
 
 ---
 
-### 4. ✅ Removed Redundant coordinator_id Column
+### 4.  Removed Redundant coordinator_id Column
 **Problem:** The `service_requests` table had both `coordinator_id` and `requested_by_user_id` columns, which was redundant and confusing.
 
 **Files Changed:**
@@ -98,7 +98,7 @@ service_requests (
     id,
     request_number,
     institution_id,
-    requested_by_user_id,  -- ✅ Single source of truth for who created the request
+    requested_by_user_id,  --  Single source of truth for who created the request
     assigned_technician_id,
     priority,
     status,
@@ -113,7 +113,7 @@ service_requests (
 
 ---
 
-### 5. ✅ Top Navigation Already Shows User Name
+### 5.  Top Navigation Already Shows User Name
 **Status:** Already working correctly!
 
 The institution_user topnav component already displays the logged-in user's name:
@@ -126,16 +126,16 @@ The institution_user topnav component already displays the logged-in user's name
 ## Testing Verification
 
 ### Test Scenario 1: Requester Creates Service Request
-✅ **Expected:** Request shows requester's name (e.g., "Tera Mitena")
-✅ **Expected:** Only that requester sees their own requests
+ **Expected:** Request shows requester's name (e.g., "Tera Mitena")
+ **Expected:** Only that requester sees their own requests
 
 ### Test Scenario 2: Coordinator Creates Service Request
-✅ **Expected:** Request shows coordinator's name (e.g., "Razor Axe")
-✅ **Expected:** Institution Admin's requests don't appear in requester's history
+ **Expected:** Request shows coordinator's name (e.g., "Razor Axe")
+ **Expected:** Institution Admin's requests don't appear in requester's history
 
 ### Test Scenario 3: Multiple Users Same Printer
-✅ **Expected:** Each user only sees their own requests
-✅ **Expected:** No cross-contamination of service request histories
+ **Expected:** Each user only sees their own requests
+ **Expected:** No cross-contamination of service request histories
 
 ---
 
@@ -156,9 +156,9 @@ status: completed
 ```
 
 ### Frontend Display for User 66 (Tera)
-- **Shows:** Only Request #138 ✅
-- **Name Displayed:** "Tera Mitena" ✅
-- **Doesn't Show:** Request #137 ✅
+- **Shows:** Only Request #138 
+- **Name Displayed:** "Tera Mitena" 
+- **Doesn't Show:** Request #137 
 
 ---
 
@@ -191,7 +191,7 @@ status: completed
 ---
 
 ## Status
-✅ **COMPLETE** - All issues resolved
+ **COMPLETE** - All issues resolved
 - Institution User sees only their own service requests
 - Correct requester name is displayed
 - Redundant coordinator_id column removed

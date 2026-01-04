@@ -69,9 +69,9 @@ All notifications include try-catch blocks to ensure that notification failures 
 try {
     // Create notification
     await createNotification({...});
-    console.log('✅ Notification sent');
+    console.log(' Notification sent');
 } catch (notifError) {
-    console.error('❌ Failed to send notification:', notifError);
+    console.error(' Failed to send notification:', notifError);
 }
 ```
 
@@ -125,13 +125,13 @@ Requesters can view these notifications through:
 ## Deployment Notes
 
 ### Server Restart Required
-✅ Yes - Changes made to server-side routes
+ Yes - Changes made to server-side routes
 
 ### Database Changes
-❌ No - Uses existing `notifications` table structure
+ No - Uses existing `notifications` table structure
 
 ### Configuration
-✅ All notification features are enabled by default
+ All notification features are enabled by default
 
 ---
 
@@ -147,7 +147,7 @@ Requesters can view these notifications through:
 
 ---
 
-**Status:** ✅ **IMPLEMENTED AND READY FOR TESTING**
+**Status:**  **IMPLEMENTED AND READY FOR TESTING**
 
 **Date:** October 18, 2025
 **Author:** GitHub Copilot

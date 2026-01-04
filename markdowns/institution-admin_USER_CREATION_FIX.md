@@ -11,8 +11,8 @@ The query was trying to access `users.institution_id` and `users.institution_nam
 ## Root Cause
 The code was using the OLD architecture where users had `institution_id` and `institution_name` columns. However, the system was reverted to the ORIGINAL architecture where:
 
-- ✅ **`institutions.user_id`** → Points to The institution_admin who owns that institution
-- ❌ **`users.institution_id`** → Does NOT exist (was removed)
+-  **`institutions.user_id`** → Points to The institution_admin who owns that institution
+-  **`users.institution_id`** → Does NOT exist (was removed)
 
 ## Architecture (Correct)
 ```
@@ -33,28 +33,28 @@ Institution (institutions.institution_id = "INST-017")
 
 **Before:**
 ```javascript
-// ❌ Trying to query non-existent columns
+//  Trying to query non-existent columns
 const [coordRows] = await db.query(
     'SELECT institution_id, institution_name FROM users WHERE id = ?', 
     [coordinatorId]
 );
 let coordinatorInstitutionId = coordRows && coordRows[0] ? coordRows[0].institution_id : null;
 
-// ❌ Trying to INSERT into non-existent column
+//  Trying to INSERT into non-existent column
 INSERT INTO users (..., institution_id, ...)
 VALUES (..., ?, ...)
 ```
 
 **After:**
 ```javascript
-// ✅ Query institutions table where user_id = coordinator
+//  Query institutions table where user_id = coordinator
 const [institutionRows] = await db.query(
     'SELECT institution_id, name FROM institutions WHERE user_id = ?', 
     [coordinatorId]
 );
 let coordinatorInstitutionId = institutionRows[0]?.institution_id;
 
-// ✅ Don't include institution_id in users INSERT
+//  Don't include institution_id in users INSERT
 INSERT INTO users (first_name, last_name, email, password, role, ...)
 VALUES (?, ?, ?, ?, ?, ...)
 // Institution association handled via user_printer_assignments.institution_id
@@ -64,26 +64,26 @@ VALUES (?, ?, ?, ?, ?, ...)
 
 **Before:**
 ```javascript
-// ❌ Trying to query non-existent columns
+//  Trying to query non-existent columns
 const [coordRows] = await db.query(
     'SELECT institution_id, institution_name FROM users WHERE id = ?',
     [coordinatorId]
 );
 
-// ❌ Filtering by non-existent column
+//  Filtering by non-existent column
 SELECT ... FROM users u
 WHERE u.institution_id = ?
 ```
 
 **After:**
 ```javascript
-// ✅ Query institutions table
+//  Query institutions table
 const [institutionRows] = await db.query(
     'SELECT institution_id, name FROM institutions WHERE user_id = ?', 
     [coordinatorId]
 );
 
-// ✅ Filter by institution_id in user_printer_assignments
+//  Filter by institution_id in user_printer_assignments
 SELECT ... 
 FROM user_printer_assignments upa
 JOIN users u ON upa.user_id = u.id
@@ -94,7 +94,7 @@ WHERE upa.institution_id = ?
 
 **Before:**
 ```javascript
-// ❌ Trying to SELECT non-existent columns
+//  Trying to SELECT non-existent columns
 SELECT 
     u.institution_name as institution,
     u.institution_type,
@@ -105,7 +105,7 @@ WHERE u.institution_name LIKE ?
 
 **After:**
 ```javascript
-// ✅ JOIN with institutions table
+//  JOIN with institutions table
 SELECT 
     COALESCE(i.name, '') as institution,
     COALESCE(i.type, '') as institution_type,
@@ -119,14 +119,14 @@ WHERE i.name LIKE ?
 
 **Before:**
 ```javascript
-// ❌ Trying to SELECT non-existent columns
+//  Trying to SELECT non-existent columns
 SELECT id, first_name, last_name, email, role, institution_id, institution_name, department 
 FROM users WHERE id = ?
 ```
 
 **After:**
 ```javascript
-// ✅ Only select columns that exist
+//  Only select columns that exist
 SELECT id, first_name, last_name, email, role 
 FROM users WHERE id = ?
 ```
@@ -185,9 +185,9 @@ FROM users WHERE id = ?
 
 ## Testing
 The institution_admin user creation should now work without SQL errors:
-- ✅ POST `/api/coordinators/:id/users` - Create new institution_user user
-- ✅ GET `/api/coordinators/:id/users` - View users in coordinator's institution
-- ✅ GET `/api/coordinators/pending` - Admin view pending coordinator approvals
+-  POST `/api/coordinators/:id/users` - Create new institution_user user
+-  GET `/api/coordinators/:id/users` - View users in coordinator's institution
+-  GET `/api/coordinators/pending` - Admin view pending coordinator approvals
 
 ## Date Fixed
 October 16, 2025

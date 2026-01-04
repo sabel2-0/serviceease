@@ -249,89 +249,83 @@
 
     <!-- New Service Request Modal -->
     <div id="newRequestModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
-        <div class="absolute inset-0 bg-black/60"></div>
-        <div class="relative bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 ease-in-out scale-100">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-semibold text-gray-800">Submit New Service Request</h3>
+        <div class="absolute inset-0 bg-gray-900 bg-opacity-90" onclick="document.getElementById('newRequestModal').classList.add('hidden')"></div>
+        <div class="relative bg-white rounded-xl shadow-xl w-full max-w-xl mx-4 max-h-[85vh] overflow-y-auto z-10">
+            <div class="sticky top-0 bg-white px-5 py-3 border-b flex items-center justify-between">
+                <h3 class="text-base font-semibold text-gray-900">New Service Request</h3>
+                <button onclick="document.getElementById('newRequestModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
             </div>
-            <div class="p-6">
-                <form id="newRequestForm">
-                    <div class="mb-6">
-                        <h4 class="text-md font-medium text-gray-800 mb-3">Printer Information</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <div>
-                                <label for="servicePrinterSelect" class="block text-sm font-medium text-gray-700 mb-2">Select Printer</label>
-                                <select id="servicePrinterSelect" class="w-full px-4 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 transition-colors" required>
-                                    <option value="">Choose a printer</option>
-                                </select>
-                                <p class="text-xs text-gray-500 mt-1">Only printers assigned to your institution will be shown</p>
-                            </div>
-                            <div>
-                                <label for="printerLocation" class="block text-sm font-medium text-gray-700 mb-2">
-                                    Location <span id="locationRequired" class="text-red-600 hidden">*</span>
-                                </label>
-                                <input type="text" id="printerLocation" class="w-full px-4 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 transition-colors" placeholder="e.g., Building A, 2nd Floor, Room 201">
-                                <p class="text-xs text-gray-500 mt-1" id="locationHint">Will be auto-filled if printer has a saved location</p>
-                            </div>
+            <div class="p-5">
+                <form id="newRequestForm" class="space-y-4">
+                    <!-- Printer Selection -->
+                    <div>
+                        <label for="servicePrinterSelect" class="block text-sm font-medium text-gray-700 mb-1">Printer</label>
+                        <select id="servicePrinterSelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                            <option value="">Select a printer</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Location & Department -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label for="printerLocation" class="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                            <input type="text" id="printerLocation" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Room/Building">
                         </div>
-                        
-                        <div class="mb-4">
-                            <label for="printerDepartment" class="block text-sm font-medium text-gray-700 mb-2">
-                                Department/Office <span id="departmentRequired" class="text-red-600 hidden">*</span>
-                            </label>
-                            <input type="text" id="printerDepartment" class="w-full px-4 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 transition-colors" placeholder="e.g., IT Department, HR Office, Principal's Office">
-                            <p class="text-xs text-gray-500 mt-1" id="departmentHint">Will be auto-filled if printer has a saved department</p>
+                        <div>
+                            <label for="printerDepartment" class="block text-sm font-medium text-gray-700 mb-1">Department</label>
+                            <input type="text" id="printerDepartment" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Department">
                         </div>
                     </div>
                     
-                    <div class="mb-6">
-                        <h4 class="text-md font-medium text-gray-800 mb-3">Service Details</h4>
-
-                        <div class="mb-4">
-                            <label for="priority" class="block text-sm font-medium text-gray-700 mb-2">Priority</label>
-                            <select id="priority" class="w-full px-4 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 transition-colors" required>
-                                <option value="low">Low</option>
-                                <option value="medium" selected>Medium</option>
-                                <option value="high">High</option>
-                                <option value="urgent">Urgent</option>
-                            </select>
-                        </div>
-                        
-                        <div class="mb-4">
-                            <label for="issueDescription" class="block text-sm font-medium text-gray-700 mb-2">Issue Description</label>
-                            <textarea id="issueDescription" class="w-full px-4 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500 transition-colors h-32" placeholder="Please describe the issue in detail..." required></textarea>
-                            <p class="text-xs text-gray-500 mt-1">Include any relevant details about the problem</p>
-                        </div>
+                    <!-- Priority -->
+                    <div>
+                        <label for="priority" class="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                        <select id="priority" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                            <option value="urgent">Urgent</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Description -->
+                    <div>
+                        <label for="issueDescription" class="block text-sm font-medium text-gray-700 mb-1">Issue Description</label>
+                        <textarea id="issueDescription" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-24 resize-none" placeholder="Describe the issue..." required></textarea>
                     </div>
                 </form>
             </div>
-            <div class="px-6 py-4 border-t bg-gray-50 flex justify-end gap-3">
-                <button id="submitNewRequest" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors transform hover:scale-105">
-                    Submit Request
-                </button>
-                <button id="cancelNewRequest" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300 transition-colors">
+            <div class="sticky bottom-0 bg-gray-50 px-5 py-3 border-t flex justify-end gap-2">
+                <button id="cancelNewRequest" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
                     Cancel
+                </button>
+                <button id="submitNewRequest" class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    Submit Request
                 </button>
             </div>
         </div>
     </div>
 
     <!-- Service Request Detail Modal -->
-    <div id="requestModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
-        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="requestModalBackdrop"></div>
-        <div class="relative bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[85vh] overflow-y-auto transform transition-all duration-300 ease-in-out m-4">
-            <div class="px-4 py-3 border-b flex justify-between items-center sticky top-0 bg-white z-10 shadow-sm">
-                <h3 class="text-lg font-bold text-gray-800">Service Request Details</h3>
-                <button id="closeRequestModal" class="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100">
-                    <i class="fas fa-times text-lg"></i>
+    <div id="requestModal" class="fixed inset-0 z-50 flex items-center justify-center hidden p-4">
+        <div class="absolute inset-0 bg-gray-900 bg-opacity-90" id="requestModalBackdrop"></div>
+        <div class="relative bg-white rounded-lg shadow-2xl w-full max-w-4xl max-h-[80vh] flex flex-col transform transition-all duration-300 ease-in-out z-10">
+            <div class="px-4 py-2.5 border-b flex justify-between items-center bg-white z-10 shadow-sm flex-shrink-0">
+                <h3 class="text-base font-bold text-gray-800">Service Request Details</h3>
+                <button id="closeRequestModal" class="text-gray-400 hover:text-gray-600 transition-colors p-1.5 rounded-full hover:bg-gray-100">
+                    <i class="fas fa-times text-base"></i>
                 </button>
             </div>
-            <div id="requestModalContent" class="p-4">
+            <div id="requestModalContent" class="p-3 overflow-y-auto flex-1">
                 <!-- Request details will be loaded here -->
             </div>
-            <div class="px-4 py-3 border-t bg-gray-50 flex justify-end gap-3 sticky bottom-0 shadow-sm">
-                <button id="closeModalBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors font-medium text-sm">
-                    <i class="fas fa-times mr-2"></i>Close
+            <div class="px-4 py-2.5 border-t bg-gray-50 flex justify-end gap-3 shadow-sm flex-shrink-0">
+                <button id="closeModalBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg transition-colors font-medium text-sm">
+                    <i class="fas fa-times mr-1.5"></i>Close
                 </button>
             </div>
         </div>
@@ -339,8 +333,8 @@
 
     <!-- Service Approval Modal -->
     <div id="approvalModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
-        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
-        <div class="relative bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[85vh] overflow-hidden transform transition-all duration-300 ease-in-out">
+        <div class="absolute inset-0 bg-gray-900 bg-opacity-90"></div>
+        <div class="relative bg-white rounded-lg shadow-2xl w-full max-w-3xl max-h-[85vh] overflow-hidden transform transition-all duration-300 ease-in-out z-10">
             <div class="px-6 py-4 border-b flex justify-between items-center bg-white">
                 <h3 class="text-lg font-semibold text-gray-800 flex items-center">
                     <i class="fas fa-check-circle mr-2 text-orange-600"></i>
@@ -371,8 +365,8 @@
 
     <!-- Approval Action Modal (for adding notes) -->
     <div id="approvalActionModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
-        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
-        <div class="relative bg-white rounded-lg shadow-xl w-full max-w-md transform transition-all duration-300 ease-in-out">
+        <div class="absolute inset-0 bg-gray-900 bg-opacity-90"></div>
+        <div class="relative bg-white rounded-lg shadow-2xl w-full max-w-md transform transition-all duration-300 ease-in-out z-10">
             <div class="px-6 py-4 border-b flex justify-between items-center">
                 <h3 id="approvalActionTitle" class="text-lg font-semibold text-gray-800">Approve Service</h3>
                 <button id="closeApprovalActionModal" class="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100">
@@ -499,7 +493,7 @@
                         }
 
                         // Check for pending maintenance service BEFORE submitting
-                        console.log('?? [FRONTEND CHECK] Checking for pending maintenance on printer_id:', printerId);
+                        console.log('[FRONTEND CHECK] Checking for pending maintenance on printer_id:', printerId);
                         try {
                             const pendingCheckRes = await fetch(`/api/maintenance-services/printer/${printerId}/pending`, {
                                 headers: {
@@ -507,19 +501,19 @@
                                 }
                             });
                             
-                            console.log('?? [FRONTEND CHECK] Response status:', pendingCheckRes.status);
+                            console.log('[FRONTEND CHECK] Response status:', pendingCheckRes.status);
                             
                             if (!pendingCheckRes.ok) {
                                 console.error('? [FRONTEND CHECK] Failed to check pending maintenance:', pendingCheckRes.status);
                                 // Continue anyway
                             } else {
                                 const pendingData = await pendingCheckRes.json();
-                                console.log('?? [FRONTEND CHECK] Pending check data:', pendingData);
+                                console.log(' [FRONTEND CHECK] Pending check data:', pendingData);
                                 
                                 if (pendingData.hasPendingService) {
                                     const pending = pendingData.pendingService;
                                     console.log('? [FRONTEND CHECK] BLOCKING submission - pending maintenance found:', pending.service_number);
-                                    alert(`?? Cannot Submit Service Request\n\nThis printer has a pending maintenance service:\n\nService: ${pending.service_number}\nStatus: ${pending.status.replace(/_/g, ' ').toUpperCase()}\n\nPlease approve or reject the maintenance service before submitting a new service request.`);
+                                    alert(` Cannot Submit Service Request\n\nThis printer has a pending maintenance service:\n\nService: ${pending.service_number}\nStatus: ${pending.status.replace(/_/g, ' ').toUpperCase()}\n\nPlease approve or reject the maintenance service before submitting a new service request.`);
                                     return;
                                 }
                                 console.log('? [FRONTEND CHECK] No pending maintenance, proceeding with submission');
@@ -608,7 +602,7 @@
                                     
                                     // Show alert for pending maintenance service
                                     const pendingMaint = responseData.pendingMaintenance;
-                                    alert(`?? Cannot Submit Service Request\n\nThis printer has a pending maintenance service:\n\nService: ${pendingMaint.service_number}\nStatus: ${pendingMaint.status.replace(/_/g, ' ').toUpperCase()}\n\nPlease wait for the maintenance service to be approved before submitting a new service request.`);
+                                    alert(` Cannot Submit Service Request\n\nThis printer has a pending maintenance service:\n\nService: ${pendingMaint.service_number}\nStatus: ${pendingMaint.status.replace(/_/g, ' ').toUpperCase()}\n\nPlease wait for the maintenance service to be approved before submitting a new service request.`);
                                 } else {
                                     showNotification('Error', responseData.error || responseData.message || 'Failed to submit request', 'error');
                                 }

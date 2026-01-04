@@ -14,10 +14,10 @@ When technicians created parts requests, no notifications were appearing in the 
 - `'system'`
 
 **Missing Values**:
-- `'parts_request'` ❌
-- `'parts_approved'` ❌
-- `'parts_denied'` ❌
-- `'info'`, `'success'`, `'warning'`, `'error'` ❌
+- `'parts_request'` 
+- `'parts_approved'` 
+- `'parts_denied'` 
+- `'info'`, `'success'`, `'warning'`, `'error'` 
 
 **Result**: Database rejected any notification inserts with `type = 'parts_request'`
 

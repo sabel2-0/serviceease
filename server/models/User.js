@@ -207,7 +207,7 @@ class User {
         }
     }
 
-    static async approveUser(userId) {
+    static async approveUser(userId, approvedBy = null) {
         try {
             // First, get the photo paths/URLs to delete from Cloudinary
             const [photos] = await db.query(
@@ -217,8 +217,8 @@ class User {
 
             // Update the user's approval status and email verification status
             await db.query(
-                'UPDATE users SET approval_status = ?, is_email_verified = ? WHERE id = ?',
-                ['approved', true, userId]
+                'UPDATE users SET approval_status = ?, is_email_verified = ?, approved_by = ?, approved_at = NOW() WHERE id = ?',
+                ['approved', true, approvedBy, userId]
             );
 
             // Try to associate the approved institution_admin with the institution they selected during registration.

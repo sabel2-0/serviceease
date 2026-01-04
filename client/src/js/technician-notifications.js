@@ -220,7 +220,7 @@ window.TechnicianNotifications = {
             items.push({
                 id: `parts-${p.id}`,
                 title: `Items Request ${p.status ? p.status.replace('_', ' ') : ''}`,
-                message: `${p.quantity_requested} x ${p.part_name || p.item_id} — ${p.reason || ''}`,
+                message: `${p.quantity_requested} x ${p.part_name || p.item_id} ${p.reason || ''}`,
                 type: `parts_${p.status || 'pending'}`,
                 created_at: p.created_at,
                 reference_id: p.id,
@@ -233,7 +233,7 @@ window.TechnicianNotifications = {
             items.push({
                 id: `req-${r.id}`,
                 title: `Service Request Assigned`,
-                message: `${r.request_number || '#' + r.id} — ${r.description || r.issue || ''}`,
+                message: `${r.request_number || '#' + r.id} ${r.description || r.issue || ''}`,
                 type: 'service_request',
                 created_at: r.created_at || r.assigned_at || r.updated_at,
                 reference_id: r.id,
@@ -355,6 +355,54 @@ window.TechnicianNotifications = {
 };
 
 console.log('[NOTIF-JS] Module ready, use window.TechnicianNotifications.init() to start');
+
+// Update notification badge with count
+function updateNotificationBadge(count) {
+    const badge = document.getElementById('notificationBadge');
+    if (badge) {
+        if (count > 0) {
+            badge.textContent = count > 99 ? '99+' : count;
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
+    }
+}
+
+// Fetch notification count and update badge
+async function fetchAndUpdateBadge() {
+    try {
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+        if (!token) return;
+        
+        const resp = await fetch('/api/notifications?limit=50', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (resp.ok) {
+            const data = await resp.json();
+            // Count unread notifications
+            const unreadCount = Array.isArray(data) ? data.filter(n => !n.is_read).length : 0;
+            updateNotificationBadge(unreadCount);
+        }
+    } catch (err) {
+        console.error('[NOTIF-JS] Error fetching notification count:', err);
+    }
+}
+
+// Export for global access
+window.updateNotificationBadge = updateNotificationBadge;
+window.fetchAndUpdateBadge = fetchAndUpdateBadge;
+
+// Auto-fetch badge count on script load
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', fetchAndUpdateBadge);
+} else {
+    fetchAndUpdateBadge();
+}
+
+// Refresh badge every 30 seconds
+setInterval(fetchAndUpdateBadge, 30000);
 
 
 

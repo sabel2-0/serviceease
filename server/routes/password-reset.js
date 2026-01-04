@@ -34,6 +34,15 @@ router.post('/forgot-password', async (req, res) => {
         
         const user = users[0];
         
+        // Block admin accounts from using forgot password
+        if (user.role === 'admin') {
+            console.log('🚫 Admin account attempted password reset:', email);
+            // Return generic message to not reveal account type
+            return res.json({ 
+                message: 'If an account with that email exists, a password reset link has been sent.' 
+            });
+        }
+        
         // Generate reset token
         const resetToken = crypto.randomBytes(32).toString('hex');
         const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
@@ -48,14 +57,14 @@ router.post('/forgot-password', async (req, res) => {
         // Send email
         await sendPasswordResetEmail(user.email, resetToken, user.first_name);
         
-        console.log('✅ Password reset email sent to:', email);
+        console.log(' Password reset email sent to:', email);
         
         res.json({ 
             message: 'If an account with that email exists, a password reset link has been sent.' 
         });
         
     } catch (error) {
-        console.error('❌ Password reset request error:', error);
+        console.error(' Password reset request error:', error);
         res.status(500).json({ error: 'Failed to process password reset request' });
     }
 });
@@ -92,7 +101,7 @@ router.get('/verify-reset-token/:token', async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Token verification error:', error);
+        console.error(' Token verification error:', error);
         res.status(500).json({ error: 'Failed to verify token' });
     }
 });
@@ -148,12 +157,12 @@ router.post('/reset-password', async (req, res) => {
             [tokenRecord.id]
         );
         
-        console.log('✅ Password reset successfully for user:', tokenRecord.user_id);
+        console.log(' Password reset successfully for user:', tokenRecord.user_id);
         
         res.json({ message: 'Password has been reset successfully' });
         
     } catch (error) {
-        console.error('❌ Password reset error:', error);
+        console.error(' Password reset error:', error);
         res.status(500).json({ error: 'Failed to reset password' });
     }
 });

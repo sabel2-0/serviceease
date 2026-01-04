@@ -49,9 +49,9 @@ router.post('/send-code', async (req, res) => {
         try {
             await sendinstitution_userVerificationEmail(email, code, 'User');
             emailSent = true;
-            console.log('✅ Verification code sent to:', email);
+            console.log(' Verification code sent to:', email);
         } catch (emailErr) {
-            console.error('⚠️ Failed to send verification email:', emailErr);
+            console.error(' Failed to send verification email:', emailErr);
         }
 
         res.json({ message: 'Verification code sent to your email', email_sent: emailSent });
@@ -59,7 +59,7 @@ router.post('/send-code', async (req, res) => {
     } catch (error) {
         // NOTE: temporarily include error details in the response to aid debugging of production 500s.
         // Remove or gate this before long-term production use.
-        console.error('❌ Send code error:', error);
+        console.error(' Send code error:', error);
         const resp = { error: 'Failed to send verification code', details: error.message, stack: error.stack };
         res.status(500).json(resp);
     }
@@ -88,7 +88,7 @@ router.post('/verify-code', async (req, res) => {
             if (pv && pv.code === code && pv.expires_at > Date.now()) {
                 // Accept and remove
                 pendingVerification.delete(email);
-                console.log('✅ Email verified via in-memory fallback:', email);
+                console.log(' Email verified via in-memory fallback:', email);
                 return res.json({ message: 'Email verified successfully (transient)', verified: true });
             }
 
@@ -98,11 +98,11 @@ router.post('/verify-code', async (req, res) => {
         // Mark as used
         await db.query('DELETE FROM verification_tokens WHERE id = ?', [tokens[0].id]);
 
-        console.log('✅ Email verified:', email);
+        console.log(' Email verified:', email);
         res.json({ message: 'Email verified successfully', verified: true });
         
     } catch (error) {
-        console.error('❌ Verify code error:', error);
+        console.error(' Verify code error:', error);
         res.status(500).json({ error: 'Failed to verify code' });
     }
 });
@@ -119,7 +119,7 @@ router.post('/validate-printers', async (req, res) => {
             return res.status(400).json({ error: 'Institution ID and printers array required' });
         }
         
-        console.log('🔍 Validating printers for institution:', institution_id);
+        console.log(' Validating printers for institution:', institution_id);
         
         const validated = [];
         const notFound = [];
@@ -162,11 +162,11 @@ router.post('/validate-printers', async (req, res) => {
             }
         }
         
-        console.log(`✅ Validated ${validated.length}/${printers.length} printers`);
+        console.log(` Validated ${validated.length}/${printers.length} printers`);
         res.json({ validated, notFound, allValid: notFound.length === 0 });
         
     } catch (error) {
-        console.error('❌ Printer validation error:', error);
+        console.error(' Printer validation error:', error);
         res.status(500).json({ error: 'Failed to validate printers' });
     }
 });
@@ -185,7 +185,7 @@ router.post('/submit', (req, res) => {
 
     mw(req, res, async (multerErr) => {
         if (multerErr) {
-            console.error('❌ Multer error on submit:', multerErr);
+            console.error(' Multer error on submit:', multerErr);
             return res.status(400).json({ error: 'Invalid file upload', details: multerErr.message });
         }
 
@@ -202,25 +202,25 @@ router.post('/submit', (req, res) => {
                     email_verified // Must be true from frontend
                 } = req.body;
         
-                console.log('📝 institution_user registration submission:', { first_name, last_name, email, institution_id });
+                console.log(' institution_user registration submission:', { first_name, last_name, email, institution_id });
         
                 // Validate required fields
                 if (!first_name || !last_name || !email || !password || !institution_id || !printer_serial_numbers) {
-                    console.error('❌ Missing required fields:', { first_name, last_name, email, password, institution_id, printer_serial_numbers });
+                    console.error(' Missing required fields:', { first_name, last_name, email, password, institution_id, printer_serial_numbers });
                     return res.status(400).json({ error: 'All fields are required' });
                 }
         
                 // Ensure email was verified
                 if (email_verified !== 'true') {
-                    console.error('❌ Email not verified:', { email_verified });
+                    console.error(' Email not verified:', { email_verified });
                     return res.status(400).json({ error: 'Please verify your email first' });
                 }
         
                 // Check if email already exists
                 const [existingUsers] = await db.query('SELECT id FROM users WHERE email = ?', [email]);
-                console.log('🔍 Checking if email exists:', email, 'Result:', existingUsers);
+                console.log(' Checking if email exists:', email, 'Result:', existingUsers);
                 if (existingUsers.length > 0) {
-                    console.error('❌ Email already registered:', email);
+                    console.error(' Email already registered:', email);
                     return res.status(400).json({ error: 'Email already registered' });
                 }
         
@@ -229,11 +229,11 @@ router.post('/submit', (req, res) => {
                 try {
                     printers = JSON.parse(printer_serial_numbers);
                 } catch (e) {
-                    console.error('❌ Invalid printer data format:', printer_serial_numbers, 'Error:', e);
+                    console.error(' Invalid printer data format:', printer_serial_numbers, 'Error:', e);
                     return res.status(400).json({ error: 'Invalid printer data format' });
                 }
         
-                console.log('🔍 Parsed printers:', printers);
+                console.log(' Parsed printers:', printers);
         
                 // Validate printers exist in institution
                 const validated = [];
@@ -248,7 +248,7 @@ router.post('/submit', (req, res) => {
                         [institution_id, printer.serial_number, `%${printer.brand}%`]
                     );
                     
-                    console.log('🔍 Validating printer:', printer, 'Matches:', matches);
+                    console.log(' Validating printer:', printer, 'Matches:', matches);
         
                     if (matches.length > 0) {
                         validated.push(matches[0].id);
@@ -256,15 +256,15 @@ router.post('/submit', (req, res) => {
                 }
         
                 if (validated.length === 0) {
-                    console.error('❌ No matching printers found in institution inventory:', { institution_id, printers });
+                    console.error(' No matching printers found in institution inventory:', { institution_id, printers });
                     return res.status(400).json({ error: 'No matching printers found in institution inventory' });
                 }
         
-        console.log('✅ Validated printers:', validated);
+        console.log(' Validated printers:', validated);
 
         // Hash password
         const password_hash = await bcrypt.hash(password, 10);
-        console.log('🔒 Password hashed successfully');
+        console.log(' Password hashed successfully');
 
         // Insert user directly into users table (pending institution_admin approval)
         const [result] = await db.query(
@@ -276,7 +276,7 @@ router.post('/submit', (req, res) => {
         );
 
         const newUserId = result.insertId;
-        console.log('✅ User inserted into database:', { newUserId });                // Upload ID photos to Cloudinary and save to temp_user_photos
+        console.log(' User inserted into database:', { newUserId });                // Upload ID photos to Cloudinary and save to temp_user_photos
                 let front_id_photo = null;
                 let back_id_photo = null;
                 let selfie_photo = null;
@@ -291,7 +291,7 @@ router.post('/submit', (req, res) => {
                             uploadStream.end(req.files.id_front[0].buffer);
                         });
                         front_id_photo = uploadResult.secure_url;
-                        console.log('✅ ID front photo uploaded:', front_id_photo);
+                        console.log(' ID front photo uploaded:', front_id_photo);
                     }
         
                     if (req.files.id_back) {
@@ -303,7 +303,7 @@ router.post('/submit', (req, res) => {
                             uploadStream.end(req.files.id_back[0].buffer);
                         });
                         back_id_photo = uploadResult.secure_url;
-                        console.log('✅ ID back photo uploaded:', back_id_photo);
+                        console.log(' ID back photo uploaded:', back_id_photo);
                     }
         
                     if (req.files.selfie) {
@@ -315,7 +315,7 @@ router.post('/submit', (req, res) => {
                             uploadStream.end(req.files.selfie[0].buffer);
                         });
                         selfie_photo = uploadResult.secure_url;
-                        console.log('✅ Selfie photo uploaded:', selfie_photo);
+                        console.log(' Selfie photo uploaded:', selfie_photo);
                     }
         
                     await db.query(
@@ -328,7 +328,7 @@ router.post('/submit', (req, res) => {
                         [newUserId, front_id_photo, back_id_photo, selfie_photo]
                     );
         
-                    console.log('✅ Photos saved to temp_user_photos for user:', newUserId);
+                    console.log(' Photos saved to temp_user_photos for user:', newUserId);
                 }
         
                 // Assign printers to user
@@ -340,7 +340,7 @@ router.post('/submit', (req, res) => {
                     );
                 }
         
-                console.log('✅ Printers assigned to user:', { userId: newUserId, printers: validated });
+                console.log(' Printers assigned to user:', { userId: newUserId, printers: validated });
         
                 // Create notification for institution_admin
                 const [institution_admins] = await db.query(
@@ -348,7 +348,7 @@ router.post('/submit', (req, res) => {
                     [institution_id]
                 );
         
-                console.log('🔍 institution_admins found for institution:', institution_admins);
+                console.log(' institution_admins found for institution:', institution_admins);
         
                 if (institution_admins.length > 0 && institution_admins[0].user_id) {
                     await db.query(
@@ -361,7 +361,7 @@ router.post('/submit', (req, res) => {
                         ]
                     );
         
-                    console.log('✅ Notification created for institution_admin:', institution_admins[0].user_id);
+                    console.log(' Notification created for institution_admin:', institution_admins[0].user_id);
                 }
         
                 res.json({
@@ -370,7 +370,7 @@ router.post('/submit', (req, res) => {
                 });
         
             } catch (error) {
-                console.error('❌ institution_user registration error:', error);
+                console.error(' institution_user registration error:', error);
                 const resp = { error: 'Failed to submit registration', details: error.message, stack: error.stack };
                 res.status(500).json(resp);
             }
@@ -398,7 +398,7 @@ router.get('/pending', auth, async (req, res) => {
         
         const institutionIds = institutions.map(i => i.institution_id);
         
-        console.log('🔍 institution_admin institutions:', institutionIds);
+        console.log(' institution_admin institutions:', institutionIds);
         
         // Get pending institution_users from users table with photos from temp_user_photos
         // Institution info is retrieved via user_printer_assignments JOIN
@@ -434,12 +434,12 @@ router.get('/pending', auth, async (req, res) => {
             [institutionIds]
         );
         
-        console.log('✅ Found pending institution_users:', institution_users.length);
+        console.log(' Found pending institution_users:', institution_users.length);
         
         res.json(institution_users);
         
     } catch (error) {
-        console.error('❌ Error fetching pending registrations:', error);
+        console.error(' Error fetching pending registrations:', error);
         res.status(500).json({ error: 'Failed to fetch registrations' });
     }
 });
@@ -500,13 +500,13 @@ router.post('/:id/approve', auth, async (req, res) => {
             try {
                 await sendinstitution_userApprovedEmail(user.email, user.first_name || 'User', printerCount);
             } catch (e) {
-                console.error('❌ Failed to send approval email:', e);
+                console.error(' Failed to send approval email:', e);
             }
         }
-        console.log('✅ institution_user approved and photos deleted, user ID:', id);
+        console.log(' institution_user approved and photos deleted, user ID:', id);
         res.json({ message: 'Registration approved successfully' });
     } catch (error) {
-        console.error('❌ Approval error:', error);
+        console.error(' Approval error:', error);
         res.status(500).json({ error: 'Failed to approve registration' });
     }
 });
@@ -582,13 +582,13 @@ router.post('/:id/reject', auth, async (req, res) => {
             try {
                 await sendinstitution_userRejectedEmail(user.email, user.first_name || 'User', notes || '');
             } catch (e) {
-                console.error('❌ Failed to send rejection email:', e);
+                console.error(' Failed to send rejection email:', e);
             }
         }
-        console.log('✅ institution_user rejected and deleted, user ID:', id);
+        console.log(' institution_user rejected and deleted, user ID:', id);
         res.json({ message: 'Registration rejected and removed' });
     } catch (error) {
-        console.error('❌ Rejection error:', error);
+        console.error(' Rejection error:', error);
         res.status(500).json({ error: 'Failed to reject registration' });
     }
 });
@@ -600,15 +600,25 @@ router.post('/:id/reject', auth, async (req, res) => {
 router.get('/history', auth, async (req, res) => {
     try {
         const institution_adminId = req.user.id;
+        console.log('[History] Fetching history for institution_admin:', institution_adminId);
+        
         // Get institution_admin's institutions
         const [institutions] = await db.query(
             'SELECT institution_id FROM institutions WHERE user_id = ?',
             [institution_adminId]
         );
+        
         if (institutions.length === 0) {
+            console.log('[History] No institutions found for institution_admin');
             return res.json([]);
         }
+        
         const institutionIds = institutions.map(i => i.institution_id);
+        console.log('[History] Institution IDs:', institutionIds);
+        
+        // Build placeholders for IN clause
+        const placeholders = institutionIds.map(() => '?').join(', ');
+        
         // Get approved/rejected institution_users for these institutions
         const [history] = await db.query(
             `SELECT 
@@ -622,14 +632,16 @@ router.get('/history', auth, async (req, res) => {
             LEFT JOIN institutions i ON upa.institution_id = i.institution_id
             WHERE u.role = 'institution_user'
             AND u.approval_status IN ('approved', 'rejected')
-            AND upa.institution_id IN (?)
+            AND upa.institution_id IN (${placeholders})
             GROUP BY u.id
             ORDER BY u.updated_at DESC`,
-            [institutionIds]
+            institutionIds
         );
+        
+        console.log('[History] Found', history.length, 'history records');
         res.json(history);
     } catch (error) {
-        console.error('❌ Error fetching institution_user registration history:', error);
+        console.error('[History] Error fetching institution_user registration history:', error);
         res.status(500).json({ error: 'Failed to fetch registration history' });
     }
 });

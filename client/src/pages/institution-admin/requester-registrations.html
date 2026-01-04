@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>institution_user Registrations | ServiceEase</title>
+    <title>Institution user Registrations | ServiceEase</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="../../js/auth.js" defer></script>
@@ -64,8 +64,8 @@
 
         <!-- Page Title -->
         <div class="mb-6">
-            <h1 class="text-3xl font-light text-gray-900">institution_user Registrations</h1>
-            <p class="text-gray-600 mt-1">Review and approve institution_user registration requests</p>
+            <h1 class="text-3xl font-light text-gray-900">Institution User Registrations</h1>
+            <p class="text-gray-600 mt-1">Review and approve institution user registration requests</p>
         </div>
 
         <!-- Tabs -->
@@ -125,8 +125,9 @@
     </div>
 
     <!-- Rejection Modal -->
-    <div id="rejectModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+    <div id="rejectModal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-gray-900 bg-opacity-90"></div>
+        <div class="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6 z-10">
             <h3 class="text-xl font-medium text-gray-900 mb-4">Reject Registration</h3>
             <p class="text-sm text-gray-600 mb-4">Please provide a reason for rejection:</p>
             <textarea id="rejectionNotes" rows="4" 
@@ -235,7 +236,7 @@
                 
                 const data = await response.json();
                 
-                console.log('?? Pending registrations response:', data);
+                console.log('Pending registrations response:', data);
                 
                 if (response.ok) {
                     loading.classList.add('hidden');
@@ -284,12 +285,16 @@
                 });
                 
                 const data = await response.json();
+                console.log('History response:', data);
                 
                 if (response.ok) {
                     loading.classList.add('hidden');
                     
-                    if (data.registrations && data.registrations.length > 0) {
-                        data.registrations.forEach(reg => {
+                    // API returns array directly, not wrapped in { registrations: [] }
+                    const registrations = Array.isArray(data) ? data : (data.registrations || []);
+                    
+                    if (registrations.length > 0) {
+                        registrations.forEach(reg => {
                             list.appendChild(createHistoryCard(reg));
                         });
                     } else {
@@ -388,41 +393,40 @@
             const card = document.createElement('div');
             card.className = 'registration-card bg-white rounded-lg border border-gray-200 p-6';
             
-            const printers = JSON.parse(reg.printer_serial_numbers || '[]');
-            const statusColor = reg.status === 'approved' ? 'green' : 'red';
+            // Handle status - API returns approval_status
+            const status = reg.approval_status || reg.status || 'unknown';
+            const statusColor = status === 'approved' ? 'green' : 'red';
+            const statusText = status.charAt(0).toUpperCase() + status.slice(1);
+            
+            // Handle dates
+            const createdAt = reg.created_at ? new Date(reg.created_at).toLocaleString() : 'N/A';
+            const reviewedAt = reg.approved_at || reg.updated_at;
+            const reviewedAtFormatted = reviewedAt ? new Date(reviewedAt).toLocaleString() : 'N/A';
+            
+            // Handle institution names
+            const institutionNames = reg.institution_names || reg.institution_id || 'N/A';
             
             card.innerHTML = `
                 <div class="flex justify-between items-start mb-4">
                     <div>
-                        <h3 class="text-lg font-medium text-gray-900">${reg.first_name} ${reg.last_name}</h3>
-                        <p class="text-sm text-gray-600">${reg.email}</p>
+                        <h3 class="text-lg font-medium text-gray-900">${reg.first_name || ''} ${reg.last_name || ''}</h3>
+                        <p class="text-sm text-gray-600">${reg.email || ''}</p>
                         <p class="text-xs text-gray-500 mt-1">
-                            Submitted: ${new Date(reg.created_at).toLocaleString()}<br>
-                            Reviewed: ${new Date(reg.institution-admin_reviewed_at).toLocaleString()}
+                            Submitted: ${createdAt}<br>
+                            Reviewed: ${reviewedAtFormatted}
                         </p>
                     </div>
                     <span class="px-3 py-1 text-xs font-medium rounded-full bg-${statusColor}-100 text-${statusColor}-800">
-                        ${reg.status.charAt(0).toUpperCase() + reg.status.slice(1)}
+                        ${statusText}
                     </span>
                 </div>
                 
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div>
                         <p class="text-sm text-gray-500">Institution</p>
-                        <p class="text-sm font-medium text-gray-900">${reg.institution_id}</p>
-                    </div>
-                    <div>
-                        <p class="text-sm text-gray-500">Printers</p>
-                        <p class="text-sm font-medium text-gray-900">${printers.length} printer(s)</p>
+                        <p class="text-sm font-medium text-gray-900">${institutionNames}</p>
                     </div>
                 </div>
-                
-                ${reg.institution-admin_notes ? `
-                    <div class="bg-gray-50 p-3 rounded mb-4">
-                        <p class="text-sm text-gray-500">institution-admin Notes:</p>
-                        <p class="text-sm text-gray-700 mt-1">${reg.institution-admin_notes}</p>
-                    </div>
-                ` : ''}
             `;
             
             return card;

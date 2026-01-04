@@ -1,7 +1,41 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
-const { auth, authenticateinstitution_admin } = require('../middleware/auth');
+const { auth, authenticateinstitution_admin, authenticateAdmin } = require('../middleware/auth');
+
+// Get approval history for institution_admin registrations (admin only)
+router.get('/approval-history', authenticateAdmin, async (req, res) => {
+    try {
+        const [users] = await db.query(`
+            SELECT 
+                u.id,
+                u.first_name,
+                u.last_name,
+                u.email,
+                u.role,
+                u.approval_status,
+                u.approved_at,
+                u.approved_by,
+                u.created_at,
+                u.approved_at as reviewed_at,
+                CONCAT(approver.first_name, ' ', approver.last_name) as approved_by_name,
+                approver.role as approved_by_role,
+                i.name as institution_name,
+                i.type as institution_type
+            FROM users u
+            LEFT JOIN users approver ON u.approved_by = approver.id
+            LEFT JOIN institutions i ON i.user_id = u.id
+            WHERE u.role = 'institution_admin'
+            AND u.approval_status IN ('approved', 'rejected')
+            ORDER BY u.approved_at DESC
+        `);
+        
+        res.json(users);
+    } catch (error) {
+        console.error('Error fetching approval history:', error);
+        res.status(500).json({ error: 'Failed to fetch approval history' });
+    }
+});
 
 // Get all approved users for institution_admin's institution(s)
 router.get('/:id/users', authenticateinstitution_admin, async (req, res) => {
@@ -49,7 +83,7 @@ router.get('/:id/users', authenticateinstitution_admin, async (req, res) => {
         );
         res.json(users);
     } catch (error) {
-        console.error('❌ Error fetching approved users:', error);
+        console.error(' Error fetching approved users:', error);
         res.status(500).json({ error: 'Failed to fetch users' });
     }
 });

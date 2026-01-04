@@ -1,6 +1,6 @@
 # Parts Request Notification - Quick Test Guide
 
-## ✅ Setup Complete!
+##  Setup Complete!
 
 All necessary database and UI changes have been applied. The system is now ready to show parts request notifications to admins.
 
@@ -25,14 +25,14 @@ All necessary database and UI changes have been applied. The system is now ready
 - You should see:
   - New notification count in the stats
   - **"Parts Requests"** tab in the filter navigation
-  - Orange box icon (📦) for parts requests
+  - Orange box icon () for parts requests
 
 **Click the "Parts Requests" tab to filter and view only parts-related notifications**
 
 ### 3. What You'll See
 
 #### Parts Request Notification:
-- **Icon**: Orange box (📦)
+- **Icon**: Orange box ()
 - **Title**: "New Parts Request"
 - **Message**: "[Technician Name] has requested [X] units of [Part Name]"
 - **Actions**: Mark as read button
@@ -44,23 +44,23 @@ Technicians will see notifications with:
 
 ## Current System Status
 
-### ✅ Database Schema
+###  Database Schema
 - `notifications.type` enum includes: `parts_request`, `parts_approved`, `parts_denied`
 - New columns added: `user_id`, `sender_id`, `reference_type`, `reference_id`
 - Legacy columns retained for backward compatibility
 
-### ✅ Backend Code
+###  Backend Code
 - `server/routes/parts-requests.js` - Creates admin notifications on new parts requests
 - `server/routes/notifications.js` - Handles both new and legacy schema
 
-### ✅ Frontend UI
+###  Frontend UI
 - Admin notifications page has "Parts Requests" filter tab
 - Icons and colors configured for parts notifications:
   - `parts_request` → Orange box
   - `parts_approved` → Green check
   - `parts_denied` → Red X
 
-### ✅ Server Running
+###  Server Running
 Server is running at: `http://localhost:3000`
 Notification schema detection: All columns detected ✓
 
@@ -100,11 +100,11 @@ This will:
 ## Admin Notification Policy
 
 Remember: **Admin notifications are ONLY created for:**
-1. ✅ Coordinator registrations
-2. ✅ Technician parts requests
+1.  Coordinator registrations
+2.  Technician parts requests
 
 **NOT for:**
-- ❌ Service requests (only notify assigned technicians)
+-  Service requests (only notify assigned technicians)
 
 ## Need More Help?
 
@@ -114,6 +114,6 @@ Check the complete documentation:
 
 ---
 
-**Status**: ✅ Ready to test!  
+**Status**:  Ready to test!  
 **Server**: Running at http://localhost:3000  
 **Date**: October 17, 2025

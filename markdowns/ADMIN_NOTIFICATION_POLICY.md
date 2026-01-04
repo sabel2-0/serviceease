@@ -5,7 +5,7 @@ This document outlines which events trigger admin notifications in the ServiceEa
 
 ## Admin Notifications Are Created For:
 
-### 1. ✅ Coordinator Registrations
+### 1.  Coordinator Registrations
 - **Location**: `server/models/User.js` (lines 95-128)
 - **Trigger**: When a new coordinator registers
 - **Notification Type**: `coordinator_registration`
@@ -15,7 +15,7 @@ This document outlines which events trigger admin notifications in the ServiceEa
   - Sent to all admins (user_id = null or related_user_id = userId)
   - Includes institution details in related_data JSON
 
-### 2. ✅ Technician Parts Requests
+### 2.  Technician Parts Requests
 - **Location**: `server/routes/parts-requests.js` (lines 218-228)
 - **Trigger**: When a technician creates a new parts request
 - **Notification Type**: `parts_request`
@@ -28,7 +28,7 @@ This document outlines which events trigger admin notifications in the ServiceEa
 
 ## Admin Notifications Are NOT Created For:
 
-### ❌ Service Requests
+###  Service Requests
 - **Location**: `server/routes/service-requests.js` (lines 220-245, 265-285)
 - **Policy**: Service requests do NOT trigger admin notifications
 - **Behavior**:

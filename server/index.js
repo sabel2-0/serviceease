@@ -865,7 +865,7 @@ app.post('/api/approve-user/:userId', authenticateAdmin, async (req, res) => {
             return res.status(404).json({ error: 'User not found' });
         }
         
-        await User.approveUser(userId);
+        await User.approveUser(userId, req.user.id);
         
         // Log audit action
         await logAuditAction(
@@ -3440,6 +3440,14 @@ app.post('/api/service-requests', auth, async (req, res) => {
                 userId
             ]
         );
+        
+        // Record initial history entry for new service request
+        await db.query(
+            `INSERT INTO service_request_history (request_id, previous_status, new_status, changed_by, notes, created_at)
+             VALUES (?, 'new', 'pending', ?, ?, NOW())`,
+            [result.insertId, userId, 'Service request created']
+        );
+        console.log(`[HISTORY] Created initial history for service request ${result.insertId}`);
 
         // Get available technicians to notify
         const [technicians] = await db.query(
@@ -3585,13 +3593,15 @@ app.patch('/api/users/me/service-requests/:id/approve', auth, async (req, res) =
                     try {
                         const technicianId = part.used_by;
                         
-                        // Get current inventory state with volume/weight tracking
+                        // Get current inventory state with volume/weight tracking - prioritize opened items
                         const [techInventory] = await db.query(`
-                            SELECT ti.quantity, ti.remaining_volume, ti.remaining_weight, ti.is_opened,
+                            SELECT ti.id, ti.quantity, ti.remaining_volume, ti.remaining_weight, ti.is_opened,
                                    pi.ink_volume, pi.toner_weight
                             FROM technician_inventory ti
                             JOIN printer_items pi ON ti.item_id = pi.id
                             WHERE ti.technician_id = ? AND ti.item_id = ?
+                            ORDER BY ti.is_opened DESC, ti.id ASC
+                            LIMIT 1
                         `, [technicianId, part.item_id]);
                         
                         if (techInventory.length === 0) {
@@ -3605,48 +3615,76 @@ app.patch('/api/users/me/service-requests/:id/approve', auth, async (req, res) =
                         
                         // Check if this is a consumable item with consumption tracking
                         if (part.consumption_type && (part.consumption_type === 'full' || part.consumption_type === 'partial')) {
-                            // Get current remaining volume/weight
-                            const currentRemaining = isInk ? 
-                                (item.remaining_volume ? parseFloat(item.remaining_volume) : 0) : 
-                                (item.remaining_weight ? parseFloat(item.remaining_weight) : 0);
+                            let currentQty = item.quantity;
+                            // Get current remaining volume/weight (tracks the opened bottle)
+                            let currentRemaining = isInk ? 
+                                (item.remaining_volume ? parseFloat(item.remaining_volume) : null) : 
+                                (item.remaining_weight ? parseFloat(item.remaining_weight) : null);
                             
-                            // Calculate amount to consume
-                            let amountToConsume;
+                            let newRemaining = currentRemaining;
+                            let newQty = currentQty;
+                            
                             if (part.consumption_type === 'full') {
-                                amountToConsume = part.quantity_used * capacityPerPiece;
+                                // FULL consumption - use a sealed bottle from stock
+                                // Do NOT touch the currently opened bottle
+                                if (newQty > 0) {
+                                    newQty--; // Deduct one sealed bottle
+                                    console.log(`[INVENTORY]  Full consumption: using 1 sealed bottle. Qty: ${currentQty} → ${newQty}`);
+                                } else {
+                                    console.warn(`[INVENTORY] ⚠️ No sealed bottles available for full consumption`);
+                                }
+                                // newRemaining stays the same - opened bottle is untouched
                             } else {
-                                amountToConsume = parseFloat(part.amount_consumed);
+                                // PARTIAL consumption - use from the opened bottle
+                                const amountToConsume = parseFloat(part.amount_consumed);
+                                
+                                // If no item is currently opened, open one first
+                                if (currentRemaining === null && currentQty > 0) {
+                                    newRemaining = capacityPerPiece;
+                                    console.log(`[INVENTORY]  Opening first ${isInk ? 'ink' : 'toner'} - set to ${newRemaining}${isInk ? 'ml' : 'g'}`);
+                                }
+                                
+                                // Deduct from currently opened item
+                                newRemaining = newRemaining - amountToConsume;
+                                
+                                // Handle consuming multiple items or depleting current one
+                                while (newRemaining <= 0 && newQty > 0) {
+                                    // Current item is depleted
+                                    newQty--;
+                                    if (newRemaining < 0 && newQty > 0) {
+                                        // Need to open next item
+                                        newRemaining = capacityPerPiece + newRemaining;
+                                        console.log(`[INVENTORY]  Item depleted, opening next. Remaining: ${newRemaining}${isInk ? 'ml' : 'g'}, Qty: ${newQty}`);
+                                    } else {
+                                        // Exactly depleted or no more items
+                                        newRemaining = 0;
+                                        break;
+                                    }
+                                }
+                                console.log(`[INVENTORY]  Partial consumption: ${amountToConsume}${isInk ? 'ml' : 'g'} consumed, remaining: ${currentRemaining} → ${newRemaining}`);
                             }
                             
-                            // Deduct from remaining volume/weight
-                            const newRemaining = Math.max(0, currentRemaining - amountToConsume);
-                            
-                            // Calculate new quantity based on remaining volume
-                            let newQty;
-                            if (newRemaining > 0) {
-                                newQty = Math.ceil(newRemaining / capacityPerPiece);
-                            } else {
-                                newQty = 0;
-                            }
-                            
-                            // Update inventory with volume/weight tracking
+                            // Update inventory with volume/weight tracking using specific row ID
                             const updateColumn = isInk ? 'remaining_volume' : 'remaining_weight';
+                            // When remaining is 0 or less, reset to null and is_opened = 0
+                            const finalRemaining = newRemaining > 0 ? newRemaining : null;
+                            const finalIsOpened = newRemaining > 0 ? 1 : 0;
+                            
                             await db.query(`
                                 UPDATE technician_inventory 
                                 SET quantity = ?,
                                     ${updateColumn} = ?,
                                     is_opened = ?,
                                     last_updated = NOW()
-                                WHERE technician_id = ? AND item_id = ?
+                                WHERE id = ?
                             `, [
                                 newQty,
-                                newRemaining > 0 ? newRemaining : null,
-                                newRemaining > 0 && newQty > 0 ? 1 : 0,
-                                technicianId,
-                                part.item_id
+                                finalRemaining,
+                                finalIsOpened,
+                                item.id
                             ]);
                             
-                            console.log(`[INVENTORY DEDUCTION] ✅ ${part.consumption_type} consumption: ${amountToConsume}${isInk ? 'ml' : 'g'} consumed, remaining ${currentRemaining} → ${newRemaining}${isInk ? 'ml' : 'g'}, quantity ${item.quantity} → ${newQty}`);
+                            console.log(`[INVENTORY DEDUCTION] ✅ ${part.consumption_type} consumption complete. Quantity: ${item.quantity} → ${newQty}, Remaining: ${currentRemaining} → ${finalRemaining || 'null'}`);
                             
                         } else {
                             // No consumption type (old data or non-consumables): deduct quantity as before
@@ -3656,8 +3694,8 @@ app.patch('/api/users/me/service-requests/:id/approve', auth, async (req, res) =
                             await db.query(`
                                 UPDATE technician_inventory 
                                 SET quantity = ?, last_updated = NOW()
-                                WHERE technician_id = ? AND item_id = ?
-                            `, [newQty, technicianId, part.item_id]);
+                                WHERE id = ?
+                            `, [newQty, item.id]);
                             
                             console.log(`[INVENTORY DEDUCTION] ✅ Deducted ${part.quantity_used}x ${part.part_name} from technician's inventory. Old: ${currentQty}, New: ${newQty}`);
                         }
@@ -3855,6 +3893,24 @@ app.post('/api/institutions', authenticateAdmin, async (req, res) => {
             return res.status(400).json({ error: 'Invalid institution type' });
         }
         
+        // Check for duplicate institution (same name, case-insensitive)
+        const [existingInstitutions] = await db.query(
+            'SELECT institution_id, name, type FROM institutions WHERE LOWER(name) = LOWER(?)',
+            [name.trim()]
+        );
+        
+        if (existingInstitutions.length > 0) {
+            console.log('Duplicate institution found:', existingInstitutions[0]);
+            return res.status(409).json({ 
+                error: 'An institution with this name already exists',
+                existing: {
+                    institution_id: existingInstitutions[0].institution_id,
+                    name: existingInstitutions[0].name,
+                    type: existingInstitutions[0].type
+                }
+            });
+        }
+        
         // Generate institution_id
         console.log('Querying for max institution_id...');
         const [maxIdRows] = await db.query(
@@ -3920,6 +3976,23 @@ app.put('/api/institutions/:id', authenticateAdmin, async (req, res) => {
         
         if (existing.length === 0) {
             return res.status(404).json({ error: 'Institution not found' });
+        }
+        
+        // Check for duplicate institution name (excluding current institution)
+        const [duplicates] = await db.query(
+            'SELECT institution_id, name, type FROM institutions WHERE LOWER(name) = LOWER(?) AND institution_id != ?',
+            [name.trim(), institution_id]
+        );
+        
+        if (duplicates.length > 0) {
+            return res.status(409).json({ 
+                error: 'An institution with this name already exists',
+                existing: {
+                    institution_id: duplicates[0].institution_id,
+                    name: duplicates[0].name,
+                    type: duplicates[0].type
+                }
+            });
         }
         
         // Update the institution
@@ -4430,6 +4503,7 @@ app.get('/api/institutions/:institutionId/service-requests', async (req, res) =>
                 sr.started_at,
                 sr.completed_at,
                 sr.resolution_notes,
+                sr.completion_photo_url,
                 ii.name as equipment_name,
                 ii.brand,
                 ii.model,
@@ -4437,16 +4511,71 @@ app.get('/api/institutions/:institutionId/service-requests', async (req, res) =>
                 CONCAT(ii.name, ' (', ii.brand, ' ', ii.model, ' SN:', ii.serial_number, ')') as printer_full_details,
                 tech.first_name as technician_first_name,
                 tech.last_name as technician_last_name,
-                CONCAT(tech.first_name, ' ', tech.last_name) as technician_name
+                CONCAT(tech.first_name, ' ', tech.last_name) as technician_name,
+                sa.technician_notes
             FROM service_requests sr
             LEFT JOIN printers ii ON sr.printer_id = ii.id
             LEFT JOIN users tech ON sr.technician_id = tech.id
+            LEFT JOIN service_approvals sa ON sr.id = sa.service_id AND sa.service_type = 'service_request'
             WHERE sr.institution_id = ?
             ORDER BY sr.created_at DESC
         `, [institutionId]);
+        
+        // Fetch items used and approver info for each service request
+        for (const request of rows) {
+            const [itemsUsed] = await db.query(`
+                SELECT 
+                    spu.id,
+                    pp.name as part_name,
+                    spu.quantity_used,
+                    pp.brand,
+                    pp.color,
+                    pp.unit,
+                    pp.category,
+                    spu.consumption_type,
+                    spu.amount_consumed,
+                    CASE 
+                        WHEN spu.consumption_type = 'partial' AND spu.amount_consumed IS NOT NULL 
+                        THEN CONCAT(spu.amount_consumed, CASE WHEN pp.ink_volume > 0 THEN 'ml' ELSE 'g' END)
+                        WHEN spu.consumption_type = 'full' AND spu.amount_consumed IS NOT NULL 
+                        THEN CONCAT(spu.amount_consumed, CASE WHEN pp.ink_volume > 0 THEN 'ml' ELSE 'g' END)
+                        ELSE NULL 
+                    END as display_amount
+                FROM service_items_used spu
+                JOIN printer_items pp ON spu.item_id = pp.id
+                WHERE spu.service_id = ? AND spu.service_type = 'service_request'
+            `, [request.id]);
+            request.items_used = itemsUsed;
+            
+            // Get approver info from history if status is completed
+            if (request.status === 'completed') {
+                const [approvalHistory] = await db.query(`
+                    SELECT 
+                        u.first_name as approver_first_name,
+                        u.last_name as approver_last_name,
+                        u.role as approver_role,
+                        srh.created_at as approved_at,
+                        srh.notes as approval_notes
+                    FROM service_request_history srh
+                    LEFT JOIN users u ON srh.changed_by = u.id
+                    WHERE srh.request_id = ? 
+                    AND srh.new_status = 'completed' 
+                    AND srh.previous_status = 'pending_approval'
+                    ORDER BY srh.created_at DESC
+                    LIMIT 1
+                `, [request.id]);
+                
+                if (approvalHistory.length > 0) {
+                    request.approver_first_name = approvalHistory[0].approver_first_name;
+                    request.approver_last_name = approvalHistory[0].approver_last_name;
+                    request.approver_role = approvalHistory[0].approver_role;
+                    request.approved_at = approvalHistory[0].approved_at;
+                    request.approval_notes = approvalHistory[0].approval_notes;
+                }
+            }
+        }
+        
         console.log(`[DEBUG] Found ${rows.length} service requests for institutionId:`, institutionId);
-        console.log('[DEBUG] First row data:', rows[0]);
-        console.log('[DEBUG] started_at field value:', rows[0]?.started_at);
         res.json(rows);
     } catch (error) {
         console.error('Error fetching service requests for institution:', error);
@@ -4474,7 +4603,7 @@ app.get('/api/service-requests/:id', async (req, res) => {
                 tech.last_name as technician_last_name,
                 tech.email as technician_email,
                 p.serial_number,
-                p.brand as printer_brand,
+                COALESCE(sr.printer_brand, p.brand) as printer_brand,
                 p.model as printer_model,
                 p.name as printer_name
             FROM service_requests sr
@@ -4496,13 +4625,18 @@ app.get('/api/service-requests/:id', async (req, res) => {
                 srh.new_status as status,
                 srh.notes,
                 srh.created_at as timestamp,
+                srh.changed_by,
                 u.first_name,
-                u.last_name
+                u.last_name,
+                u.role
             FROM service_request_history srh
             LEFT JOIN users u ON srh.changed_by = u.id
             WHERE srh.request_id = ?
             ORDER BY srh.created_at DESC
         `, [id]);
+        
+        // Get approval info from history (when status changed to 'completed')
+        const approvalRecord = historyRows.find(h => h.status === 'completed' && h.previous_status === 'pending_approval');
         
         // Get parts used for this service request
         const [partsRows] = await db.query(`
@@ -4511,10 +4645,22 @@ app.get('/api/service-requests/:id', async (req, res) => {
                 spu.quantity_used,
                 spu.notes as part_notes,
                 spu.used_at,
+                spu.amount_consumed,
+                spu.consumption_type,
+                COALESCE(spu.display_amount, 
+                    CASE 
+                        WHEN spu.amount_consumed IS NOT NULL AND spu.amount_consumed > 0 THEN
+                            CONCAT(spu.amount_consumed, IF(pp.ink_volume IS NOT NULL AND pp.ink_volume > 0, 'ml', 'g'))
+                        ELSE NULL
+                    END
+                ) as display_amount,
                 pp.name as part_name,
                 pp.brand,
                 pp.unit,
                 pp.category,
+                pp.color,
+                pp.ink_volume,
+                pp.toner_weight,
                 u.first_name as used_by_first_name,
                 u.last_name as used_by_last_name
             FROM service_items_used spu
@@ -4527,8 +4673,18 @@ app.get('/api/service-requests/:id', async (req, res) => {
         const request = requestRows[0];
         request.history = historyRows;
         request.parts_used = partsRows;
+        request.items_used = partsRows; // Also add as items_used for frontend compatibility
         request.client_contact = request.contact_phone || request.contact_email || 'N/A';
         request.department = 'N/A'; // This field might be removed from frontend
+        
+        // Add approver information if available
+        if (approvalRecord) {
+            request.approver_first_name = approvalRecord.first_name;
+            request.approver_last_name = approvalRecord.last_name;
+            request.approver_role = approvalRecord.role;
+            request.approved_at = approvalRecord.timestamp;
+            request.approval_notes = approvalRecord.notes;
+        }
         
         res.json(request);
     } catch (error) {
@@ -4568,16 +4724,21 @@ app.get('/api/service-requests/printer/:printerId/active', auth, async (req, res
 });
 
 // Update service request status
-app.post('/api/service-requests/:id/status', async (req, res) => {
+app.post('/api/service-requests/:id/status', auth, async (req, res) => {
     try {
         const { id } = req.params;
         const { status, notes } = req.body;
+        const changed_by = req.user.id;
         
         // Validate status
         const validStatuses = ['new', 'assigned', 'in_progress', 'completed', 'cancelled', 'on_hold'];
         if (!validStatuses.includes(status)) {
             return res.status(400).json({ error: 'Invalid status' });
         }
+        
+        // Get current status for history
+        const [currentRequest] = await db.query('SELECT status FROM service_requests WHERE id = ?', [id]);
+        const previousStatus = currentRequest.length > 0 ? currentRequest[0].status : null;
         
         // Update request status
         await db.query(
@@ -4587,7 +4748,16 @@ app.post('/api/service-requests/:id/status', async (req, res) => {
             [status, id]
         );
         
-        // The trigger will automatically log the status change
+        // Record history for the status change
+        if (previousStatus && previousStatus !== status) {
+            await db.query(
+                `INSERT INTO service_request_history (request_id, previous_status, new_status, changed_by, notes, created_at)
+                 VALUES (?, ?, ?, ?, ?, NOW())`,
+                [id, previousStatus, status, changed_by, notes || null]
+            );
+            console.log(`[HISTORY] Recorded status change: ${previousStatus} -> ${status} for request ${id}`);
+        }
+        
         res.json({ message: 'Status updated successfully' });
         
     } catch (error) {
@@ -4630,6 +4800,14 @@ app.post('/api/walk-in-service-requests', authenticateAdmin, async (req, res) =>
             ) VALUES (?, ?, ?, TRUE, ?, ?, 'pending', ?, NULL, NOW())`,
             [requestNumber, walk_in_customer_name, printer_brand, priority || 'medium', issue, created_by]
         );
+        
+        // Record initial history entry for new walk-in request
+        await db.query(
+            `INSERT INTO service_request_history (request_id, previous_status, new_status, changed_by, notes, created_at)
+             VALUES (?, 'new', 'pending', ?, ?, NOW())`,
+            [result.insertId, created_by, `Walk-in service request created for customer: ${walk_in_customer_name}`]
+        );
+        console.log(`[HISTORY] Created initial history for walk-in request ${result.insertId}`);
         
         // Get available technicians to notify
         const [technicians] = await db.query(
@@ -4738,6 +4916,7 @@ app.post('/api/service-requests/:id/complete', auth, async (req, res) => {
         }
         
         const request = requests[0];
+        const previousStatus = request.status; // Store the previous status for history
 
         // Upload photo to Cloudinary
         let photoUrl = null;
@@ -4753,16 +4932,24 @@ app.post('/api/service-requests/:id/complete', auth, async (req, res) => {
         }
         
         // Update service request to pending_approval status with photo
+        // Note: resolution_notes will be set when institution admin approves, NOT by technician
         await db.query(
             `UPDATE service_requests 
              SET status = 'pending_approval',
                  completed_at = NOW(),
-                 resolution_notes = ?,
                  completion_photo_url = ?,
                  technician_id = ?
              WHERE id = ?`,
-            [resolution_notes, photoUrl, technician_id, id]
+            [photoUrl, technician_id, id]
         );
+        
+        // Record history for status change to pending_approval
+        await db.query(
+            `INSERT INTO service_request_history (request_id, previous_status, new_status, changed_by, notes, created_at)
+             VALUES (?, ?, 'pending_approval', ?, ?, NOW())`,
+            [id, previousStatus, technician_id, resolution_notes || 'Service completed, awaiting approval']
+        );
+        console.log(`[HISTORY] Recorded status change: ${previousStatus} -> pending_approval for request ${id}`);
         
         // Delete existing parts if resubmitting (to prevent duplicates)
         await db.query(
@@ -4818,14 +5005,19 @@ app.post('/api/service-requests/:id/complete', auth, async (req, res) => {
                     partId = insertResult.insertId;
                 }
                 
-                // Insert into service_items_used with correct schema
+                // Get consumption data from the part
+                const consumptionType = part.consumptionType || part.consumption_type || null;
+                const amountConsumed = part.amountConsumed || part.amount_consumed || null;
+                const displayAmount = part.displayAmount || part.display_amount || null;
+                
+                // Insert into service_items_used with consumption tracking
                 await db.query(
-                    `INSERT INTO service_items_used (service_id, service_type, item_id, quantity_used, notes, used_by)
-                     VALUES (?, 'service_request', ?, ?, ?, ?)`,
-                    [id, partId, partQuantity, partNotes, technician_id]
+                    `INSERT INTO service_items_used (service_id, service_type, item_id, quantity_used, consumption_type, amount_consumed, display_amount, notes, used_by)
+                     VALUES (?, 'service_request', ?, ?, ?, ?, ?, ?, ?)`,
+                    [id, partId, partQuantity, consumptionType, amountConsumed, displayAmount, partNotes, technician_id]
                 );
                 
-                console.log(`✅ Saved part: ${partName} (ID: ${partId}), Quantity: ${partQuantity}`);
+                console.log(`✅ Saved part: ${partName} (ID: ${partId}), Quantity: ${partQuantity}, Consumption: ${consumptionType}, Amount: ${amountConsumed}`);
                 
                 // DO NOT deduct from inventory here - will be deducted upon approval
                 console.log(`  📦 Part will be deducted from inventory upon approval`);
@@ -4996,85 +5188,140 @@ app.post('/api/service-requests/:id/approve-completion', authenticateAdmin, asyn
             [newStatus, resolutionNotes, id]
         );
         
-        // If approved, deduct parts from technician inventory
+        // Record history for the status change (pending_approval -> completed or in_progress)
+        await db.query(
+            `INSERT INTO service_request_history (request_id, previous_status, new_status, changed_by, notes, created_at)
+             VALUES (?, ?, ?, ?, ?, NOW())`,
+            [id, 'pending_approval', newStatus, approver_id, resolutionNotes]
+        );
+        console.log(`[HISTORY] Recorded status change: pending_approval -> ${newStatus} for request ${id}`);
+        
+        // If approved, deduct parts from technician inventory with consumable tracking
         const technicianId = request.technician_id;
         
         if (approved && technicianId) {
             try {
                 console.log(`[INVENTORY DEDUCTION] Starting deduction for technician ${technicianId}, service request ${id}`);
                 
-                // Get all parts used for this service request
+                // Get all parts used with consumption tracking data
                 const [partsUsed] = await db.query(
-                    `SELECT spu.*, pp.name as part_name, pp.brand as part_brand
+                    `SELECT spu.item_id, spu.quantity_used, spu.consumption_type, spu.amount_consumed, spu.used_by,
+                            pp.name as part_name, pp.brand as part_brand
                      FROM service_items_used spu
                      JOIN printer_items pp ON spu.item_id = pp.id
                      WHERE spu.service_id = ? AND spu.service_type = 'service_request'`,
                     [id]
                 );
                 
-                console.log(`[INVENTORY DEDUCTION] Found ${partsUsed.length} parts to deduct for service request ${id}`, partsUsed);
+                console.log(`[INVENTORY DEDUCTION] Found ${partsUsed.length} parts to deduct for service request ${id}`);
                 
-                // Deduct each part from technician inventory or central stock (for universal parts)
+                // Deduct each part from technician inventory
                 for (const part of partsUsed) {
                     try {
-                        // Check if part is in technician's personal inventory
-                        const [inventory] = await db.query(
-                            `SELECT quantity FROM technician_inventory 
-                             WHERE technician_id = ? AND item_id = ?`,
-                            [technicianId, part.item_id]
-                        );
+                        // Get current inventory state with volume/weight tracking - prioritize opened items
+                        const [techInventory] = await db.query(`
+                            SELECT ti.id, ti.quantity, ti.remaining_volume, ti.remaining_weight, ti.is_opened,
+                                   pi.ink_volume, pi.toner_weight
+                            FROM technician_inventory ti
+                            JOIN printer_items pi ON ti.item_id = pi.id
+                            WHERE ti.technician_id = ? AND ti.item_id = ?
+                            ORDER BY ti.is_opened DESC, ti.id ASC
+                            LIMIT 1
+                        `, [technicianId, part.item_id]);
                         
-                        console.log(`[INVENTORY DEDUCTION] Checking part ${part.item_id} (${part.part_name}) for technician ${technicianId}`);
+                        if (techInventory.length === 0) {
+                            console.warn(`[INVENTORY WARNING] ⚠️ Part ${part.part_name} (ID: ${part.item_id}) not found in technician ${technicianId}'s inventory`);
+                            continue;
+                        }
                         
-                        if (inventory.length > 0) {
-                            // Part is in technician's personal inventory - deduct from there
-                            const currentQty = inventory[0].quantity;
-                            const newQty = currentQty - part.quantity_used;
+                        const item = techInventory[0];
+                        const isInk = item.ink_volume && parseFloat(item.ink_volume) > 0;
+                        const capacityPerPiece = isInk ? parseFloat(item.ink_volume) : parseFloat(item.toner_weight || 0);
+                        
+                        // Check if this is a consumable item with consumption tracking
+                        if (part.consumption_type && (part.consumption_type === 'full' || part.consumption_type === 'partial')) {
+                            let currentQty = item.quantity;
+                            let currentRemaining = isInk ? 
+                                (item.remaining_volume ? parseFloat(item.remaining_volume) : null) : 
+                                (item.remaining_weight ? parseFloat(item.remaining_weight) : null);
                             
-                            if (newQty >= 0) {
-                                await db.query(
-                                    `UPDATE technician_inventory 
-                                     SET quantity = ?, last_updated = NOW()
-                                     WHERE technician_id = ? AND item_id = ?`,
-                                    [newQty, technicianId, part.item_id]
-                                );
-                                console.log(`[INVENTORY DEDUCTION] ✅ Deducted ${part.quantity_used}x ${part.part_name} from technician's personal inventory. Old: ${currentQty}, New: ${newQty}`);
-                            } else {
-                                console.warn(`[INVENTORY WARNING] ⚠️ Cannot deduct ${part.quantity_used}x ${part.part_name} - insufficient technician inventory (current: ${currentQty})`);
-                            }
-                        } else {
-                            // Part not in technician inventory - check if it's a universal part in central stock
-                            const [centralPart] = await db.query(
-                                `SELECT quantity, is_universal, name FROM printer_items WHERE id = ?`,
-                                [part.item_id]
-                            );
+                            let newRemaining = currentRemaining;
+                            let newQty = currentQty;
                             
-                            console.log(`[INVENTORY DEDUCTION DEBUG] Central part lookup for ID ${part.item_id}:`, centralPart);
-                            
-                            if (centralPart.length > 0) {
-                                const centralStock = centralPart[0].quantity;
-                                const isUniversal = centralPart[0].is_universal;
-                                const newCentralStock = centralStock - part.quantity_used;
-                                
-                                console.log(`[INVENTORY DEDUCTION DEBUG] Part ${part.item_id} - Stock: ${centralStock}, is_universal: ${isUniversal}, Will deduct: ${part.quantity_used}, New stock: ${newCentralStock}`);
-                                
-                                if (isUniversal && newCentralStock >= 0) {
-                                    // Universal part - deduct from central inventory
-                                    await db.query(
-                                        `UPDATE printer_items 
-                                         SET quantity = ? 
-                                         WHERE id = ?`,
-                                        [newCentralStock, part.item_id]
-                                    );
-                                    console.log(`[INVENTORY DEDUCTION] ✅ Deducted ${part.quantity_used}x ${part.part_name} (UNIVERSAL) from central stock. Old: ${centralStock}, New: ${newCentralStock}`);
-                                } else if (isUniversal && newCentralStock < 0) {
-                                    console.warn(`[INVENTORY WARNING] ⚠️ Cannot deduct ${part.quantity_used}x ${part.part_name} - insufficient central stock (current: ${centralStock})`);
+                            if (part.consumption_type === 'full') {
+                                // FULL consumption - use a sealed bottle from stock
+                                // Do NOT touch the currently opened bottle
+                                if (newQty > 0) {
+                                    newQty--; // Deduct one sealed bottle
+                                    console.log(`[INVENTORY]  Full consumption: using 1 sealed bottle. Qty: ${currentQty} → ${newQty}`);
                                 } else {
-                                    console.warn(`[INVENTORY WARNING] ⚠️ Part ${part.part_name} (ID: ${part.item_id}) not found in technician ${technicianId}'s inventory and is not universal`);
+                                    console.warn(`[INVENTORY] ⚠️ No sealed bottles available for full consumption`);
                                 }
+                                // newRemaining stays the same - opened bottle is untouched
                             } else {
-                                console.error(`[INVENTORY ERROR] ❌ Part ${part.part_name} (ID: ${part.item_id}) not found in printer_items table`);
+                                // PARTIAL consumption - use from the opened bottle
+                                const amountToConsume = parseFloat(part.amount_consumed);
+                                
+                                // If no item is currently opened, open one first
+                                if (currentRemaining === null && currentQty > 0) {
+                                    newRemaining = capacityPerPiece;
+                                    console.log(`[INVENTORY]  Opening first ${isInk ? 'ink' : 'toner'} - set to ${newRemaining}${isInk ? 'ml' : 'g'}`);
+                                }
+                                
+                                // Deduct from currently opened item
+                                newRemaining = newRemaining - amountToConsume;
+                                
+                                // Handle consuming multiple items or depleting current one
+                                while (newRemaining <= 0 && newQty > 0) {
+                                    // Current item is depleted
+                                    newQty--;
+                                    if (newRemaining < 0 && newQty > 0) {
+                                        // Need to open next item
+                                        newRemaining = capacityPerPiece + newRemaining;
+                                        console.log(`[INVENTORY]  Item depleted, opening next. Remaining: ${newRemaining}${isInk ? 'ml' : 'g'}, Qty: ${newQty}`);
+                                    } else {
+                                        // Exactly depleted or no more items
+                                        newRemaining = 0;
+                                        break;
+                                    }
+                                }
+                                console.log(`[INVENTORY]  Partial consumption: ${amountToConsume}${isInk ? 'ml' : 'g'} consumed, remaining: ${currentRemaining} → ${newRemaining}`);
                             }
+                            
+                            // Update inventory with volume/weight tracking using specific row ID
+                            const updateColumn = isInk ? 'remaining_volume' : 'remaining_weight';
+                            // When remaining is 0 or less, reset to null and is_opened = 0
+                            const finalRemaining = newRemaining > 0 ? newRemaining : null;
+                            const finalIsOpened = newRemaining > 0 ? 1 : 0;
+                            
+                            await db.query(`
+                                UPDATE technician_inventory 
+                                SET quantity = ?,
+                                    ${updateColumn} = ?,
+                                    is_opened = ?,
+                                    last_updated = NOW()
+                                WHERE id = ?
+                            `, [
+                                newQty,
+                                finalRemaining,
+                                finalIsOpened,
+                                item.id
+                            ]);
+                            
+                            console.log(`[INVENTORY DEDUCTION] ✅ ${part.consumption_type} consumption complete. Quantity: ${item.quantity} → ${newQty}, Remaining: ${currentRemaining} → ${finalRemaining || 'null'}`);
+                            
+                        } else {
+                            // No consumption type (old data or non-consumables): deduct quantity as before
+                            const currentQty = item.quantity;
+                            const newQty = Math.max(0, currentQty - part.quantity_used);
+                            
+                            await db.query(`
+                                UPDATE technician_inventory 
+                                SET quantity = ?, last_updated = NOW()
+                                WHERE id = ?
+                            `, [newQty, item.id]);
+                            
+                            console.log(`[INVENTORY DEDUCTION] ✅ Deducted ${part.quantity_used}x ${part.part_name} from technician's inventory. Old: ${currentQty}, New: ${newQty}`);
                         }
                     } catch (partError) {
                         console.error(`[INVENTORY ERROR] ❌ Failed to deduct part ${part.part_name}:`, partError);
@@ -5868,22 +6115,44 @@ app.options('/api/geocode', (req, res) => {
 // Get all technicians with their service request statistics
 app.get('/api/admin/technician-progress', authenticateAdmin, async (req, res) => {
     try {
-        // Get all technicians with request counts
+        // Get all technicians with combined request counts (service_requests + maintenance_services)
         const query = `
             SELECT 
                 u.id,
                 u.first_name,
                 u.last_name,
                 u.email,
-                COUNT(sr.id) as total,
-                SUM(CASE WHEN sr.status = 'pending' THEN 1 ELSE 0 END) as pending,
-                SUM(CASE WHEN sr.status = 'in_progress' THEN 1 ELSE 0 END) as in_progress,
-                SUM(CASE WHEN sr.status = 'pending_approval' THEN 1 ELSE 0 END) as pending_approval,
-                SUM(CASE WHEN sr.status = 'completed' THEN 1 ELSE 0 END) as completed
+                COALESCE(sr_stats.sr_total, 0) + COALESCE(ms_stats.ms_total, 0) as total,
+                COALESCE(sr_stats.sr_pending, 0) + COALESCE(ms_stats.ms_pending, 0) as pending,
+                COALESCE(sr_stats.sr_in_progress, 0) + COALESCE(ms_stats.ms_in_progress, 0) as in_progress,
+                COALESCE(sr_stats.sr_pending_approval, 0) + COALESCE(ms_stats.ms_pending_approval, 0) as pending_approval,
+                COALESCE(sr_stats.sr_completed, 0) + COALESCE(ms_stats.ms_completed, 0) as completed,
+                COALESCE(sr_stats.sr_total, 0) as sr_total,
+                COALESCE(ms_stats.ms_total, 0) as ms_total
             FROM users u
-            LEFT JOIN service_requests sr ON u.id = sr.technician_id
+            LEFT JOIN (
+                SELECT 
+                    technician_id,
+                    COUNT(*) as sr_total,
+                    SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as sr_pending,
+                    SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) as sr_in_progress,
+                    SUM(CASE WHEN status = 'pending_approval' THEN 1 ELSE 0 END) as sr_pending_approval,
+                    SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as sr_completed
+                FROM service_requests
+                GROUP BY technician_id
+            ) sr_stats ON u.id = sr_stats.technician_id
+            LEFT JOIN (
+                SELECT 
+                    technician_id,
+                    COUNT(*) as ms_total,
+                    SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as ms_pending,
+                    SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) as ms_in_progress,
+                    SUM(CASE WHEN status = 'pending_approval' THEN 1 ELSE 0 END) as ms_pending_approval,
+                    SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as ms_completed
+                FROM maintenance_services
+                GROUP BY technician_id
+            ) ms_stats ON u.id = ms_stats.technician_id
             WHERE u.role = 'technician' AND u.approval_status = 'approved'
-            GROUP BY u.id, u.first_name, u.last_name, u.email
             ORDER BY u.first_name, u.last_name
         `;
 
@@ -5904,7 +6173,9 @@ app.get('/api/admin/technician-progress', authenticateAdmin, async (req, res) =>
                 pending: parseInt(t.pending) || 0,
                 in_progress: parseInt(t.in_progress) || 0,
                 pending_approval: parseInt(t.pending_approval) || 0,
-                completed: parseInt(t.completed) || 0
+                completed: parseInt(t.completed) || 0,
+                sr_total: parseInt(t.sr_total) || 0,
+                ms_total: parseInt(t.ms_total) || 0
             })),
             summary
         });
@@ -5933,10 +6204,11 @@ app.get('/api/admin/technician-progress/:technicianId', authenticateAdmin, async
         const technician = technicianRows[0];
 
         // Get all service requests for this technician
-        const query = `
+        const srQuery = `
             SELECT 
                 sr.id,
                 sr.request_number,
+                'service_request' as service_type,
                 sr.printer_id,
                 sr.institution_id,
                 sr.priority,
@@ -5953,6 +6225,7 @@ app.get('/api/admin/technician-progress/:technicianId', authenticateAdmin, async
                 sr.is_walk_in,
                 sr.resolution_notes,
                 sr.completion_photo_url,
+                sa.technician_notes,
                 u.first_name as institution_user_first_name,
                 u.last_name as institution_user_last_name,
                 u.email as institution_user_email,
@@ -5961,38 +6234,152 @@ app.get('/api/admin/technician-progress/:technicianId', authenticateAdmin, async
                 ii.model as printer_model,
                 ii.serial_number as printer_serial,
                 ii.name as printer_name,
-                i.name as institution_name
+                i.name as institution_name,
+                approver.first_name as approved_by_first_name,
+                approver.last_name as approved_by_last_name,
+                approver.role as approver_role
             FROM service_requests sr
             LEFT JOIN users u ON sr.requested_by = u.id
             LEFT JOIN printers ii ON sr.printer_id = ii.id
-            LEFT JOIN institutions i ON sr.institution_id = i.institution_id
+            LEFT JOIN institutions i ON sr.institution_id COLLATE utf8mb4_unicode_ci = i.institution_id COLLATE utf8mb4_unicode_ci
+            LEFT JOIN (
+                SELECT service_id, technician_notes, approved_by
+                FROM service_approvals sa_inner
+                WHERE sa_inner.service_type = 'service_request'
+                AND sa_inner.id = (
+                    SELECT MAX(id) FROM service_approvals 
+                    WHERE service_id = sa_inner.service_id AND service_type = 'service_request'
+                )
+            ) sa ON sr.id = sa.service_id
+            LEFT JOIN users approver ON sa.approved_by = approver.id
             WHERE sr.technician_id = ?
             ORDER BY sr.created_at DESC
         `;
 
-        const [requests] = await db.query(query, [technicianId]);
+        const [serviceRequests] = await db.query(srQuery, [technicianId]);
 
-        // Get parts used for each request from service_items_used table
-        for (const request of requests) {
+        // Get parts used for each service request
+        for (const request of serviceRequests) {
             const [parts] = await db.query(
                 `SELECT 
                     spu.id,
                     pp.name as part_name,
                     spu.quantity_used,
                     pp.brand,
+                    pp.color,
                     pp.unit,
-                    pp.category
+                    pp.category,
+                    pp.ink_volume,
+                    pp.toner_weight,
+                    spu.amount_consumed,
+                    spu.consumption_type,
+                    COALESCE(
+                        CASE 
+                            WHEN spu.amount_consumed IS NOT NULL AND spu.amount_consumed > 0 AND pp.ink_volume IS NOT NULL THEN CONCAT(spu.amount_consumed, 'ml')
+                            WHEN spu.amount_consumed IS NOT NULL AND spu.amount_consumed > 0 AND pp.toner_weight IS NOT NULL THEN CONCAT(spu.amount_consumed, 'g')
+                            WHEN spu.consumption_type = 'full' AND pp.ink_volume IS NOT NULL THEN CONCAT(pp.ink_volume, 'ml (Full)')
+                            WHEN spu.consumption_type = 'full' AND pp.toner_weight IS NOT NULL THEN CONCAT(pp.toner_weight, 'g (Full)')
+                            ELSE NULL
+                        END
+                    ) as display_amount
                 FROM service_items_used spu
                 JOIN printer_items pp ON spu.item_id = pp.id
                 WHERE spu.service_id = ? AND spu.service_type = 'service_request'`,
                 [request.id]
             );
-            request.parts_used = parts; // Return as array, not JSON string
+            request.parts_used = parts;
+        }
+
+        // Get all maintenance services for this technician
+        const msQuery = `
+            SELECT 
+                ms.id,
+                CONCAT('MS-', ms.id) as service_number,
+                'maintenance_service' as service_type,
+                ms.printer_id,
+                ms.institution_id,
+                'scheduled' as priority,
+                ms.service_description as description,
+                p.location,
+                p.department as printer_department,
+                ms.status,
+                ms.created_at,
+                ms.created_at as completed_at,
+                NULL as requested_by,
+                ms.technician_id,
+                NULL as walk_in_customer_name,
+                NULL as walk_in_printer_brand,
+                0 as is_walk_in,
+                sa.institution_admin_notes as resolution_notes,
+                ms.completion_photo as completion_photo_url,
+                sa.technician_notes,
+                NULL as institution_user_first_name,
+                NULL as institution_user_last_name,
+                NULL as institution_user_email,
+                NULL as user_role,
+                p.brand as printer_brand,
+                p.model as printer_model,
+                p.serial_number as printer_serial,
+                p.name as printer_name,
+                i.name as institution_name,
+                approver.first_name as approved_by_first_name,
+                approver.last_name as approved_by_last_name,
+                approver.role as approver_role
+            FROM maintenance_services ms
+            LEFT JOIN printers p ON ms.printer_id = p.id
+            LEFT JOIN institutions i ON ms.institution_id COLLATE utf8mb4_unicode_ci = i.institution_id COLLATE utf8mb4_unicode_ci
+            LEFT JOIN (
+                SELECT service_id, technician_notes, institution_admin_notes, approved_by
+                FROM service_approvals sa_inner
+                WHERE sa_inner.service_type = 'maintenance_service'
+                AND sa_inner.id = (
+                    SELECT MAX(id) FROM service_approvals 
+                    WHERE service_id = sa_inner.service_id AND service_type = 'maintenance_service'
+                )
+            ) sa ON ms.id = sa.service_id
+            LEFT JOIN users approver ON sa.approved_by = approver.id
+            WHERE ms.technician_id = ?
+            ORDER BY ms.created_at DESC
+        `;
+
+        const [maintenanceServices] = await db.query(msQuery, [technicianId]);
+
+        // Get parts used for each maintenance service
+        for (const ms of maintenanceServices) {
+            const [parts] = await db.query(
+                `SELECT 
+                    spu.id,
+                    pp.name as part_name,
+                    spu.quantity_used,
+                    pp.brand,
+                    pp.color,
+                    pp.unit,
+                    pp.category,
+                    pp.ink_volume,
+                    pp.toner_weight,
+                    spu.amount_consumed,
+                    spu.consumption_type,
+                    COALESCE(
+                        CASE 
+                            WHEN spu.amount_consumed IS NOT NULL AND spu.amount_consumed > 0 AND pp.ink_volume IS NOT NULL THEN CONCAT(spu.amount_consumed, 'ml')
+                            WHEN spu.amount_consumed IS NOT NULL AND spu.amount_consumed > 0 AND pp.toner_weight IS NOT NULL THEN CONCAT(spu.amount_consumed, 'g')
+                            WHEN spu.consumption_type = 'full' AND pp.ink_volume IS NOT NULL THEN CONCAT(pp.ink_volume, 'ml (Full)')
+                            WHEN spu.consumption_type = 'full' AND pp.toner_weight IS NOT NULL THEN CONCAT(pp.toner_weight, 'g (Full)')
+                            ELSE NULL
+                        END
+                    ) as display_amount
+                FROM service_items_used spu
+                JOIN printer_items pp ON spu.item_id = pp.id
+                WHERE spu.service_id = ? AND spu.service_type = 'maintenance_service'`,
+                [ms.id]
+            );
+            ms.parts_used = parts;
         }
 
         res.json({
             technician,
-            requests
+            requests: serviceRequests,
+            maintenanceServices: maintenanceServices
         });
 
     } catch (error) {
@@ -6005,7 +6392,7 @@ app.get('/api/admin/technician-progress/:technicianId', authenticateAdmin, async
 
 // ===== ADMIN INSTITUTION SERVICE CALENDAR API =====
 
-// Get institution service calendar data for a specific month (maintenance services only for public schools)
+// Get institution service calendar data for a specific month (maintenance services AND service requests for public schools, excluding walk-ins)
 app.get('/api/admin/institution-service-calendar', authenticateAdmin, async (req, res) => {
     try {
         const { year, month } = req.query;
@@ -6026,20 +6413,23 @@ app.get('/api/admin/institution-service-calendar', authenticateAdmin, async (req
             GROUP BY i.institution_id, i.name
         `);
 
-        // Get maintenance services for the specified month (including rejected)
-        const [services] = await db.query(`
+        // Get maintenance services for the specified month (completed or rejected)
+        const [maintenanceServices] = await db.query(`
             SELECT 
                 ms.id,
                 CONCAT('MS-', ms.id) as service_number,
+                'maintenance_service' as service_type,
                 DATE(ms.created_at) as service_date,
                 i.institution_id,
                 i.name as institution_name,
                 ms.printer_id,
                 p.name as printer_name,
+                p.brand as printer_brand,
+                p.model as printer_model,
                 p.location,
                 p.department,
                 ms.status,
-                ms.service_description,
+                ms.service_description as description,
                 ms.completion_photo,
                 ms.created_at,
                 u.first_name as tech_first_name,
@@ -6062,12 +6452,72 @@ app.get('/api/admin/institution-service-calendar', authenticateAdmin, async (req
             ORDER BY service_date, institution_name, printer_name
         `, [year, month]);
 
+        console.log(`[Calendar] Found ${maintenanceServices.length} maintenance services for ${year}-${month}`);
+        if (maintenanceServices.length > 0) {
+            console.log(`[Calendar] Sample service dates:`, maintenanceServices.slice(0, 3).map(s => ({ id: s.id, service_date: s.service_date, created_at: s.created_at })));
+        }
+
+        // Get service requests for the specified month (completed or rejected, excluding walk-ins)
+        const [serviceRequests] = await db.query(`
+            SELECT 
+                sr.id,
+                sr.request_number as service_number,
+                'service_request' as service_type,
+                DATE(COALESCE(sr.completed_at, sr.created_at)) as service_date,
+                i.institution_id,
+                i.name as institution_name,
+                sr.printer_id,
+                p.name as printer_name,
+                p.brand as printer_brand,
+                p.model as printer_model,
+                p.location,
+                p.department,
+                sr.status,
+                sr.description,
+                sr.completion_photo_url as completion_photo,
+                sr.created_at,
+                u.first_name as tech_first_name,
+                u.last_name as tech_last_name,
+                sa.approved_by,
+                sa.reviewed_at,
+                sa.status as approval_status,
+                sa.technician_notes as institution_admin_notes,
+                CONCAT(approver.first_name, ' ', approver.last_name) as approved_by_name
+            FROM service_requests sr
+            JOIN printers p ON sr.printer_id = p.id
+            JOIN institutions i ON sr.institution_id COLLATE utf8mb4_unicode_ci = i.institution_id
+            LEFT JOIN users u ON sr.technician_id = u.id
+            LEFT JOIN service_approvals sa ON sa.service_id = sr.id AND sa.service_type = 'service_request'
+            LEFT JOIN users approver ON sa.approved_by = approver.id
+            WHERE YEAR(COALESCE(sr.completed_at, sr.created_at)) = ?
+                AND MONTH(COALESCE(sr.completed_at, sr.created_at)) = ?
+                AND i.type = 'public_school'
+                AND sr.status IN ('completed', 'rejected')
+                AND (sr.is_walk_in = 0 OR sr.is_walk_in IS NULL)
+            ORDER BY service_date, institution_name, printer_name
+        `, [year, month]);
+
+        // Combine both service types
+        const allServices = [...maintenanceServices, ...serviceRequests];
+
         // Group by date and institution
         const calendarData = {};
-        services.forEach(service => {
-            // Format date as YYYY-MM-DD string
-            const dateObj = new Date(service.service_date);
-            const date = dateObj.toISOString().split('T')[0];
+        allServices.forEach(service => {
+            // Format date as YYYY-MM-DD string directly from MySQL DATE result
+            // service.service_date is already a Date object from MySQL's DATE() function
+            // We need to format it without timezone conversion
+            let date;
+            if (service.service_date instanceof Date) {
+                // Format as local date (YYYY-MM-DD) without timezone conversion
+                const year = service.service_date.getFullYear();
+                const month = String(service.service_date.getMonth() + 1).padStart(2, '0');
+                const day = String(service.service_date.getDate()).padStart(2, '0');
+                date = `${year}-${month}-${day}`;
+            } else {
+                // Fallback if it's already a string
+                date = String(service.service_date).split('T')[0];
+            }
+            
             if (!calendarData[date]) {
                 calendarData[date] = {
                     total_institutions: 0,
@@ -6099,12 +6549,15 @@ app.get('/api/admin/institution-service-calendar', authenticateAdmin, async (req
             const serviceData = {
                 id: service.id,
                 service_number: service.service_number,
+                service_type: service.service_type,
                 printer_id: service.printer_id,
                 printer_name: service.printer_name,
+                printer_brand: service.printer_brand,
+                printer_model: service.printer_model,
                 location: service.location,
                 department: service.department,
                 status: service.status,
-                service_description: service.service_description,
+                description: service.description,
                 items_used: [], // Will be populated from service_items_used table if needed
                 completion_photo: service.completion_photo,
                 created_at: service.created_at,
@@ -6174,6 +6627,7 @@ app.get('/api/admin/institution-service-details', authenticateAdmin, async (req,
         }
 
         const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        console.log(`[Calendar Detail] Fetching for institution: ${institution_id}, date: ${date}`);
 
         // Get institution info
         const [institutionInfo] = await db.query(
@@ -6186,6 +6640,8 @@ app.get('/api/admin/institution-service-details', authenticateAdmin, async (req,
             SELECT 
                 p.id as printer_id,
                 p.name as printer_name,
+                p.brand,
+                p.model,
                 p.location,
                 p.department
             FROM printers p
@@ -6194,29 +6650,154 @@ app.get('/api/admin/institution-service-details', authenticateAdmin, async (req,
             ORDER BY p.name
         `, [institution_id]);
 
-        // Get serviced printers for this date
-        const [servicedPrinters] = await db.query(`
+        // Get serviced printers from maintenance_services for this date
+        // Use the same date logic as the calendar query
+        // Use subquery to get only the latest service_approval to avoid duplicates
+        const [maintenanceServices] = await db.query(`
             SELECT 
                 ms.id,
                 CONCAT('MS-', ms.id) as service_number,
+                'maintenance_service' as service_type,
                 p.id as printer_id,
                 p.name as printer_name,
+                p.brand as printer_brand,
+                p.model as printer_model,
                 p.location,
                 p.department,
+                p.serial_number,
                 ms.status,
-                ms.service_description,
+                ms.service_description as description,
                 ms.completion_photo,
                 ms.created_at,
                 u.first_name as tech_first_name,
-                u.last_name as tech_last_name
+                u.last_name as tech_last_name,
+                sa.reviewed_at,
+                sa.institution_admin_notes,
+                approver.first_name as approver_first_name,
+                approver.last_name as approver_last_name,
+                approver.role as approver_role
             FROM maintenance_services ms
             JOIN printers p ON ms.printer_id = p.id
             LEFT JOIN users u ON ms.technician_id = u.id
-            WHERE ms.institution_id = ?
+            LEFT JOIN (
+                SELECT service_id, service_type, reviewed_at, institution_admin_notes, approved_by
+                FROM service_approvals sa_inner
+                WHERE sa_inner.service_type = 'maintenance_service'
+                AND sa_inner.id = (
+                    SELECT MAX(id) FROM service_approvals 
+                    WHERE service_id = sa_inner.service_id AND service_type = 'maintenance_service'
+                )
+            ) sa ON sa.service_id = ms.id
+            LEFT JOIN users approver ON sa.approved_by = approver.id
+            WHERE ms.institution_id COLLATE utf8mb4_unicode_ci = ?
                 AND DATE(ms.created_at) = ?
-                AND ms.status IN ('completed', 'approved')
-            ORDER BY p.name
+                AND ms.status IN ('completed', 'rejected')
+            ORDER BY ms.created_at DESC
         `, [institution_id, date]);
+
+        console.log(`[Calendar Detail] Found ${maintenanceServices.length} maintenance services`);
+
+        // Get items used for maintenance services
+        for (const ms of maintenanceServices) {
+            const [items] = await db.query(`
+                SELECT 
+                    siu.quantity_used,
+                    siu.consumption_type,
+                    siu.amount_consumed,
+                    CASE 
+                        WHEN siu.amount_consumed IS NOT NULL THEN CONCAT(siu.amount_consumed, '%')
+                        WHEN siu.consumption_type = 'partial' THEN '50%'
+                        WHEN siu.consumption_type = 'full' THEN '100%'
+                        ELSE NULL
+                    END as display_amount,
+                    siu.notes,
+                    pp.name as item_name,
+                    pp.color
+                FROM service_items_used siu
+                JOIN printer_items pp ON siu.item_id = pp.id
+                WHERE siu.service_id = ? AND siu.service_type = 'maintenance_service'
+            `, [ms.id]);
+            ms.items_used = items;
+        }
+
+        // Get serviced printers from service_requests for this date (non-walk-in)
+        // Use subquery to get only the latest service_approval to avoid duplicates
+        const [serviceRequests] = await db.query(`
+            SELECT 
+                sr.id,
+                sr.request_number as service_number,
+                'service_request' as service_type,
+                p.id as printer_id,
+                p.name as printer_name,
+                p.brand as printer_brand,
+                p.model as printer_model,
+                p.location,
+                p.department,
+                p.serial_number,
+                sr.status,
+                sr.description,
+                sr.resolution_notes,
+                sr.completion_photo_url as completion_photo,
+                sr.priority,
+                COALESCE(sr.completed_at, sr.created_at) as created_at,
+                sr.completed_at,
+                u.first_name as tech_first_name,
+                u.last_name as tech_last_name,
+                sa.technician_notes,
+                sa.reviewed_at,
+                approver.first_name as approver_first_name,
+                approver.last_name as approver_last_name,
+                approver.role as approver_role,
+                requester.first_name as requester_first_name,
+                requester.last_name as requester_last_name
+            FROM service_requests sr
+            JOIN printers p ON sr.printer_id = p.id
+            LEFT JOIN users u ON sr.technician_id = u.id
+            LEFT JOIN (
+                SELECT service_id, service_type, technician_notes, reviewed_at, approved_by
+                FROM service_approvals sa_inner
+                WHERE sa_inner.service_type = 'service_request'
+                AND sa_inner.id = (
+                    SELECT MAX(id) FROM service_approvals 
+                    WHERE service_id = sa_inner.service_id AND service_type = 'service_request'
+                )
+            ) sa ON sa.service_id = sr.id
+            LEFT JOIN users approver ON sa.approved_by = approver.id
+            LEFT JOIN users requester ON sr.requested_by = requester.id
+            WHERE sr.institution_id COLLATE utf8mb4_unicode_ci = ?
+                AND DATE(COALESCE(sr.completed_at, sr.created_at)) = ?
+                AND sr.status IN ('completed', 'rejected')
+                AND (sr.is_walk_in = 0 OR sr.is_walk_in IS NULL)
+            ORDER BY sr.created_at DESC
+        `, [institution_id, date]);
+
+        console.log(`[Calendar Detail] Found ${serviceRequests.length} service requests`);
+
+        // Get items used for service requests
+        for (const sr of serviceRequests) {
+            const [items] = await db.query(`
+                SELECT 
+                    siu.quantity_used,
+                    siu.consumption_type,
+                    siu.amount_consumed,
+                    CASE 
+                        WHEN siu.amount_consumed IS NOT NULL THEN CONCAT(siu.amount_consumed, '%')
+                        WHEN siu.consumption_type = 'partial' THEN '50%'
+                        WHEN siu.consumption_type = 'full' THEN '100%'
+                        ELSE NULL
+                    END as display_amount,
+                    siu.notes,
+                    pp.name as item_name,
+                    pp.color
+                FROM service_items_used siu
+                JOIN printer_items pp ON siu.item_id = pp.id
+                WHERE siu.service_id = ? AND siu.service_type = 'service_request'
+            `, [sr.id]);
+            sr.items_used = items;
+        }
+
+        // Combine both service types
+        const servicedPrinters = [...maintenanceServices, ...serviceRequests];
 
         // Create set of serviced printer IDs
         const servicedIds = new Set(servicedPrinters.map(p => p.printer_id));
@@ -6309,6 +6890,10 @@ app.get('/api/admin/technician-inventory/:technicianId', authenticateAdmin, asyn
                 ti.assigned_at,
                 ti.last_updated,
                 ti.notes,
+                ti.is_opened,
+                ti.remaining_volume,
+                ti.remaining_weight,
+                ti.assigned_by,
                 pp.id as item_id,
                 pp.name as part_name,
                 pp.brand,
@@ -6316,6 +6901,7 @@ app.get('/api/admin/technician-inventory/:technicianId', authenticateAdmin, asyn
                 pp.color,
                 pp.page_yield,
                 pp.ink_volume,
+                pp.toner_weight,
                 pp.is_universal,
                 pp.unit,
                 CONCAT(assigned_by_user.first_name, ' ', assigned_by_user.last_name) as assigned_by_name

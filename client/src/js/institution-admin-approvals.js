@@ -1,5 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     let pendingUsers = [];
+    let historyUsers = [];
+    let currentTab = 'pending';
 
     // DOM Elements
     const loadingState = document.getElementById('loadingState');
@@ -7,19 +9,48 @@ document.addEventListener('DOMContentLoaded', function() {
     const registrationsContainer = document.getElementById('registrationsContainer');
     const searchInput = document.getElementById('searchInput');
     const institutionFilter = document.getElementById('institutionFilter');
+    const statusFilter = document.getElementById('statusFilter');
     const refreshBtn = document.getElementById('refreshBtn');
     const secureDocumentModal = document.getElementById('secureDocumentModal');
     const secureDocumentContainer = document.getElementById('secureDocumentContainer');
     const closeSecureModal = document.getElementById('closeSecureModal');
     const closeSecureModalBtn = document.getElementById('closeSecureModalBtn');
 
+    // Make switchTab globally accessible
+    window.switchTab = function(tab) {
+        currentTab = tab;
+        
+        // Update tab buttons
+        const pendingTab = document.getElementById('pendingTab');
+        const historyTab = document.getElementById('historyTab');
+        
+        if (tab === 'pending') {
+            pendingTab.className = 'tab-button border-b-2 border-blue-500 text-blue-600 whitespace-nowrap py-4 px-1 text-sm font-semibold';
+            historyTab.className = 'tab-button border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 text-sm font-semibold';
+            statusFilter.classList.add('hidden');
+            loadPendingRegistrations();
+        } else {
+            historyTab.className = 'tab-button border-b-2 border-blue-500 text-blue-600 whitespace-nowrap py-4 px-1 text-sm font-semibold';
+            pendingTab.className = 'tab-button border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 text-sm font-semibold';
+            statusFilter.classList.remove('hidden');
+            loadApprovalHistory();
+        }
+    };
+
     // Load pending registrations on page load
     loadPendingRegistrations();
 
     // Event Listeners
-    refreshBtn.addEventListener('click', loadPendingRegistrations);
+    refreshBtn.addEventListener('click', () => {
+        if (currentTab === 'pending') {
+            loadPendingRegistrations();
+        } else {
+            loadApprovalHistory();
+        }
+    });
     searchInput.addEventListener('input', filterRegistrations);
     institutionFilter.addEventListener('change', filterRegistrations);
+    statusFilter.addEventListener('change', filterRegistrations);
 
     // Secure modal event listeners
     closeSecureModal.addEventListener('click', hideSecureDocumentModal);
@@ -56,6 +87,140 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error loading pending registrations:', error);
             showEmptyState();
         }
+    }
+
+    async function loadApprovalHistory() {
+        try {
+            showLoadingState();
+            
+            const token = localStorage.getItem('token');
+            const response = await fetch('/api/institution_admins/approval-history', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to fetch approval history');
+            }
+            
+            historyUsers = await response.json();
+            
+            if (historyUsers.length === 0) {
+                showEmptyState();
+            } else {
+                displayApprovalHistory(historyUsers);
+            }
+        } catch (error) {
+            console.error('Error loading approval history:', error);
+            showEmptyState();
+        }
+    }
+
+    function displayApprovalHistory(users) {
+        loadingState.classList.add('hidden');
+        emptyState.classList.add('hidden');
+        registrationsContainer.classList.remove('hidden');
+        
+        registrationsContainer.innerHTML = '';
+        
+        // Sort users by reviewed date (newest first)
+        const sortedUsers = users.sort((a, b) => {
+            return new Date(b.reviewed_at || b.created_at) - new Date(a.reviewed_at || a.created_at);
+        });
+        
+        sortedUsers.forEach(user => {
+            const historyCard = createHistoryCard(user);
+            registrationsContainer.appendChild(historyCard);
+        });
+    }
+
+    function createHistoryCard(user) {
+        const card = document.createElement('div');
+        const isApproved = user.approval_status === 'approved';
+        const borderColor = isApproved ? 'border-green-500' : 'border-red-500';
+        card.className = `bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 border-l-4 ${borderColor}`;
+        
+        const reviewDate = new Date(user.reviewed_at || user.created_at);
+        const formattedDate = reviewDate.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+        });
+        const formattedTime = reviewDate.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        
+        const institutionTypeDisplay = formatInstitutionType(user.institution_type);
+        const statusBadge = isApproved 
+            ? '<span class="px-3 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full"><i class="fas fa-check-circle mr-1"></i>Approved</span>'
+            : '<span class="px-3 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded-full"><i class="fas fa-times-circle mr-1"></i>Rejected</span>';
+        
+        const roleDisplay = user.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+        
+        card.innerHTML = `
+            <div class="p-6">
+                <div class="flex items-start justify-between mb-4">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-2">
+                            <h3 class="text-xl font-bold text-gray-900">
+                                ${user.first_name} ${user.last_name}
+                            </h3>
+                            ${statusBadge}
+                        </div>
+                        <p class="text-sm text-gray-600 flex items-center mb-1">
+                            <i class="fas fa-envelope mr-2 text-gray-400"></i>
+                            ${user.email}
+                        </p>
+                        <p class="text-sm text-gray-600 flex items-center mb-1">
+                            <i class="fas fa-user-tag mr-2 text-gray-400"></i>
+                            ${roleDisplay}
+                        </p>
+                        <p class="text-sm text-gray-600 flex items-center mb-1">
+                            <i class="fas fa-building mr-2 text-gray-400"></i>
+                            ${user.institution_name || 'N/A'}
+                        </p>
+                        <p class="text-sm text-gray-600 flex items-center">
+                            <i class="fas fa-layer-group mr-2 text-gray-400"></i>
+                            ${institutionTypeDisplay}
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="border-t pt-4 mt-4">
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <p class="text-gray-500 mb-1">Registered</p>
+                            <p class="font-medium text-gray-900">${new Date(user.created_at).toLocaleDateString()}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-500 mb-1">Reviewed</p>
+                            <p class="font-medium text-gray-900">${formattedDate} ${formattedTime}</p>
+                        </div>
+                        ${user.approved_by_name ? `
+                        <div class="col-span-2">
+                            <p class="text-gray-500 mb-1">Approved By</p>
+                            <p class="font-medium text-gray-900 flex items-center">
+                                <i class="fas fa-user-check mr-2 text-green-600"></i>
+                                ${user.approved_by_name}
+                                ${user.approved_by_role ? `<span class="ml-2 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs font-semibold rounded">${user.approved_by_role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>` : ''}
+                            </p>
+                        </div>
+                        ` : ''}
+                        ${user.rejection_reason ? `
+                        <div class="col-span-2">
+                            <p class="text-gray-500 mb-1">Rejection Reason</p>
+                            <p class="text-sm text-red-600 bg-red-50 p-2 rounded">${user.rejection_reason}</p>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        return card;
     }
 
     function showLoadingState() {
@@ -209,8 +374,11 @@ document.addEventListener('DOMContentLoaded', function() {
     function filterRegistrations() {
         const searchTerm = searchInput.value.toLowerCase();
         const institutionType = institutionFilter.value;
+        const statusValue = statusFilter.value;
         
-        const filteredUsers = pendingUsers.filter(user => {
+        const sourceUsers = currentTab === 'pending' ? pendingUsers : historyUsers;
+        
+        const filteredUsers = sourceUsers.filter(user => {
             const matchesSearch = !searchTerm || 
                 user.first_name.toLowerCase().includes(searchTerm) ||
                 user.last_name.toLowerCase().includes(searchTerm) ||
@@ -219,13 +387,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 
             const matchesInstitution = !institutionType || user.institution_type === institutionType;
             
-            return matchesSearch && matchesInstitution;
+            const matchesStatus = currentTab === 'pending' || !statusValue || user.approval_status === statusValue;
+            
+            return matchesSearch && matchesInstitution && matchesStatus;
         });
         
         if (filteredUsers.length === 0) {
             showEmptyState();
         } else {
-            displayRegistrations(filteredUsers);
+            if (currentTab === 'pending') {
+                displayRegistrations(filteredUsers);
+            } else {
+                displayApprovalHistory(filteredUsers);
+            }
         }
     }
 

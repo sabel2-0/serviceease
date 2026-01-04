@@ -114,8 +114,8 @@
 
     <!-- Add User Modal -->
     <div id="addUserModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
-        <div class="absolute inset-0 bg-black/40"></div>
-        <div class="relative bg-white rounded-lg shadow-lg w-full max-w-md">
+        <div class="absolute inset-0 bg-gray-900 bg-opacity-90"></div>
+        <div class="relative bg-white rounded-lg shadow-lg w-full max-w-md z-10">
             <div class="px-6 py-4 border-b">
                 <h3 class="text-lg font-semibold text-gray-800">Add New User</h3>
             </div>
@@ -184,8 +184,8 @@
 
     <!-- Edit User Modal (moved to top-level) -->
     <div id="editUserModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
-        <div class="absolute inset-0 bg-black/40"></div>
-        <div class="relative bg-white rounded-lg shadow-lg w-full max-w-md">
+        <div class="absolute inset-0 bg-gray-900 bg-opacity-90"></div>
+        <div class="relative bg-white rounded-lg shadow-lg w-full max-w-md z-10">
             <div class="px-6 py-4 border-b">
                 <h3 class="text-lg font-semibold text-gray-800">Edit User</h3>
             </div>
@@ -224,8 +224,8 @@
 
     <!-- Change Password Modal -->
     <div id="changePasswordModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
-        <div class="absolute inset-0 bg-black/40"></div>
-        <div class="relative bg-white rounded-lg shadow-lg w-full max-w-md">
+        <div class="absolute inset-0 bg-gray-900 bg-opacity-90"></div>
+        <div class="relative bg-white rounded-lg shadow-lg w-full max-w-md z-10">
             <div class="px-6 py-4 border-b">
                 <h3 class="text-lg font-semibold text-gray-800">Change User Password</h3>
             </div>
@@ -275,8 +275,8 @@
 
     <!-- Confirm Modal -->
     <div id="confirmModal" class="fixed inset-0 z-60 flex items-center justify-center hidden">
-        <div class="absolute inset-0 bg-black/40"></div>
-        <div class="relative bg-white rounded-lg shadow-lg w-full max-w-md">
+        <div class="absolute inset-0 bg-gray-900 bg-opacity-90"></div>
+        <div class="relative bg-white rounded-lg shadow-lg w-full max-w-md z-10">
             <div class="px-6 py-4 border-b">
                 <h3 id="confirmTitle" class="text-lg font-semibold text-gray-800">Confirm</h3>
             </div>
@@ -495,7 +495,7 @@
             // Load available printers for this Institution Admin's institution into checkboxes
             async function loadAvailablePrinters() {
                 const user = JSON.parse(localStorage.getItem('user')) || {};
-                console.log('?? Loading printers for institution:', user.institution_id);
+                console.log(' Loading printers for institution:', user.institution_id);
                 
                 if (!user.institution_id) {
                     console.error('? No institution_id found in user data');
@@ -506,7 +506,7 @@
                 
                 try {
                     const res = await fetch(`/api/institutions/${user.institution_id}/printers`);
-                    console.log('?? Printer API response status:', res.status);
+                    console.log(' Printer API response status:', res.status);
                     
                     if (!res.ok) {
                         const errorData = await res.json().catch(() => ({}));
@@ -556,7 +556,7 @@
             // Define and call helper loaders
             // Load available printers after Institution Admin profile is loaded
             window.addEventListener('Institution AdminProfileLoaded', function(event) {
-                console.log('?? Institution Admin profile loaded event received:', event.detail);
+                console.log(' Institution Admin profile loaded event received:', event.detail);
                 loadAvailablePrinters();
             });
             
@@ -727,7 +727,7 @@
             // Populate edit printers select (reuse loadAvailablePrinters but target edit select)
             async function loadAvailablePrintersForEdit() {
                 const user = JSON.parse(localStorage.getItem('user')) || {};
-                console.log('?? Loading printers for edit modal, institution:', user.institution_id);
+                console.log(' Loading printers for edit modal, institution:', user.institution_id);
                 
                 if (!user.institution_id) {
                     console.error('? No institution_id found in user data');
@@ -738,7 +738,7 @@
                 
                 try {
                     const res = await fetch(`/api/institutions/${user.institution_id}/printers`);
-                    console.log('?? Edit modal printer API response status:', res.status);
+                    console.log(' Edit modal printer API response status:', res.status);
                     
                     if (!res.ok) {
                         const errorData = await res.json().catch(() => ({}));
@@ -813,14 +813,14 @@
                         // some use `id`). Compare as strings to avoid number/string mismatches.
                         if (user.printers && user.printers.length > 0) {
                             user.printers.forEach(printer => {
-                                const printerId = String(printer.printer_id ?? printer.id ?? '');
+                                const printerId = String(printer.printer_id || printer.id || '');
                                 let checkbox = printerId ? Array.from(document.querySelectorAll('.edit-printer-checkbox'))
                                     .find(cb => String(cb.value) === printerId) : null;
 
                                 // If no direct id match, try matching by serial_number or name
                                 if (!checkbox) {
-                                    const serial = printer.serial_number ?? printer.serial ?? null;
-                                    const name = printer.name ?? null;
+                                    const serial = printer.serial_number || printer.serial || null;
+                                    const name = printer.name || null;
                                     if (serial) {
                                         checkbox = Array.from(document.querySelectorAll('.edit-printer-checkbox'))
                                             .find(cb => cb.getAttribute('data-serial') === String(serial));

@@ -41,10 +41,10 @@ async function sendVerificationCode(email, code) {
             });
 
         await request;
-        console.log('✅ Verification code email sent to:', email);
+        console.log(' Verification code email sent to:', email);
         return true;
     } catch (error) {
-        console.error('❌ Email send error:', error);
+        console.error(' Email send error:', error);
         throw error;
     }
 }

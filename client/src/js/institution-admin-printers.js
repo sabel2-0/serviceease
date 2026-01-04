@@ -235,6 +235,12 @@ function renderPrintersTable(printers) {
             <td class="px-6 py-4">
                 <div class="text-sm text-gray-900 font-mono">${printer.serial_number || 'No Serial'}</div>
             </td>
+            <td class="px-6 py-4">
+                <div class="text-sm text-gray-900">${printer.location || '<span class="text-gray-400 italic">Not set</span>'}</div>
+            </td>
+            <td class="px-6 py-4">
+                <div class="text-sm text-gray-900">${printer.department || '<span class="text-gray-400 italic">Not set</span>'}</div>
+            </td>
             <td class="px-6 py-4 text-right">
                 <div class="flex justify-end space-x-2">
                     <button onclick="viewPrinterDetails('${printer.printer_id || printer.printer_id || ''}')" class="px-3 py-1 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-md text-sm" title="View Details">

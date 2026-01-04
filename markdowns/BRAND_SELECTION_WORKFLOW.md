@@ -223,27 +223,27 @@ ORDER BY pp.brand, pp.category, pp.name
 
 ## Key Features
 
-### ✅ Progressive Disclosure
+###  Progressive Disclosure
 - Brand selector is always enabled
 - Part selector disabled until brand chosen
 - Quantity input disabled until part chosen
 
-### ✅ Smart Filtering
+###  Smart Filtering
 - Parts filtered by selected brand in real-time
 - Grouped by category for easy browsing
 - Shows stock availability immediately
 
-### ✅ Data Validation
+###  Data Validation
 - Frontend validates against available stock
 - Backend validates brand + name combination
 - Clear error messages with brand info
 
-### ✅ Visual Feedback
+###  Visual Feedback
 - Color-coded stock badges (green/orange/red)
 - Disabled states clearly visible
 - Brand displayed in multiple places
 
-### ✅ Multi-Part Support
+###  Multi-Part Support
 - Each part entry independent
 - Can mix brands across entries
 - Summary shows all parts with brands

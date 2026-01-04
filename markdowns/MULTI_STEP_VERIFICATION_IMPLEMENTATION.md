@@ -117,15 +117,15 @@ Code expires in 24 hours.
 ### 9. Why Registrations Don't Appear Immediately
 
 **In requester_registrations table:**
-✅ Appears immediately after submit
+ Appears immediately after submit
 
 **In coordinator dashboard:**
-❌ NOT visible until email verification code entered
-✅ Visible after code verification (`status = 'pending_coordinator'`)
+ NOT visible until email verification code entered
+ Visible after code verification (`status = 'pending_coordinator'`)
 
 **In users table:**
-❌ NOT visible until coordinator approves
-✅ Created only after approval with `role = 'institution_user'`
+ NOT visible until coordinator approves
+ Created only after approval with `role = 'institution_user'`
 
 ### 10. Testing Steps
 
@@ -216,10 +216,10 @@ WHERE email = 'test@example.com';
 
 ## Summary
 
-✅ Fixed: Multi-step form now shows one step at a time
-✅ Fixed: Step counter shows correct "Step 1 of 5"
-✅ Changed: Verification uses 6-digit code instead of email link
-✅ Clarified: Registration data flow (requester_registrations → users)
-✅ Improved: User experience with modal and clear instructions
+ Fixed: Multi-step form now shows one step at a time
+ Fixed: Step counter shows correct "Step 1 of 5"
+ Changed: Verification uses 6-digit code instead of email link
+ Clarified: Registration data flow (requester_registrations → users)
+ Improved: User experience with modal and clear instructions
 
 

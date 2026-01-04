@@ -167,7 +167,7 @@ These endpoints are only available when `NODE_ENV !== 'production'`:
 ### Console Logging (Dev Mode)
 
 When `NODE_ENV !== 'production'`, the registration form logs:
-- ✅ Registration submitted with response data
+-  Registration submitted with response data
 - 🔗 Direct verification URL you can click to bypass email
 
 Check browser console after submitting for the verification link.

@@ -11,20 +11,20 @@ window.selectedRequest = null;
 
 // Make refresh function globally available
 window.refreshRequestsPage = function() {
-    console.log('?? Refreshing requests page');
+    console.log(' Refreshing requests page');
     loadServiceRequests();
 };
 
 // Initialize the page
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('G?? Technician Requests page loaded');
+    console.log('G Technician Requests page loaded');
     
     // Check authentication first
     const token = localStorage.getItem('token');
     const user = localStorage.getItem('user');
     
     if (!token || !user) {
-        console.log('G?? Authentication missing, redirecting to login...');
+        console.log('G Authentication missing, redirecting to login...');
         window.location.href = '/pages/login.html';
         return;
     }
@@ -33,12 +33,12 @@ document.addEventListener('DOMContentLoaded', function() {
     try {
         const userData = JSON.parse(user);
         if (userData.role !== 'technician') {
-            console.log('G?? User is not a technician, redirecting...');
+            console.log('G User is not a technician, redirecting...');
             window.location.href = '/pages/login.html';
             return;
         }
     } catch (e) {
-        console.log('G?? Invalid user data, redirecting to login...');
+        console.log('G Invalid user data, redirecting to login...');
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         window.location.href = '/pages/login.html';
@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Also listen for the custom event from technician.html when search elements are ready
 document.addEventListener('searchElementsReady', function() {
-    console.log('?? searchElementsReady event received, reinitializing search');
+    console.log(' searchElementsReady event received, reinitializing search');
     setupSearchFunctionality();
 });
 
@@ -196,7 +196,7 @@ function setupModalEventHandlers() {
 
 // Make refresh function globally available
 window.refreshRequestsPage = function() {
-    console.log('=??? Refreshing requests page');
+    console.log('=? Refreshing requests page');
     loadServiceRequests();
 };
 
@@ -208,7 +208,7 @@ async function loadServiceRequests() {
         showLoadingState();
         
         const token = localStorage.getItem('token');
-        console.log('=??? Auth token:', token ? 'Present' : 'Missing');
+        console.log('=? Auth token:', token ? 'Present' : 'Missing');
         
         const response = await fetch('/api/technician/service-requests', {
             headers: {
@@ -216,23 +216,23 @@ async function loadServiceRequests() {
             }
         });
         
-        console.log('=??? API Response status:', response.status);
+        console.log('=? API Response status:', response.status);
         
         if (!response.ok) {
             throw new Error(`Failed to fetch service requests: ${response.statusText}`);
         }
         
         const requests = await response.json();
-        console.log('=??? Received requests data:', requests);
+        console.log('=? Received requests data:', requests);
         currentServiceRequests = requests;
         
-        console.log(`G?? Loaded ${requests.length} service requests`);
+        console.log(`G Loaded ${requests.length} service requests`);
         
         displayServiceRequests(requests);
         hideLoadingState();
         
     } catch (error) {
-        console.error('G?? Error loading service requests:', error);
+        console.error('G Error loading service requests:', error);
         
         // If error is 401 (unauthorized), redirect to login
         // Don't auto-logout on errors - let the user stay logged in
@@ -240,7 +240,7 @@ async function loadServiceRequests() {
         
         // For other errors, show empty state with retry option
         currentServiceRequests = [];
-        console.log('G?? No service requests available');
+        console.log('G No service requests available');
         
         displayServiceRequests([]);
         hideLoadingState();
@@ -254,17 +254,17 @@ async function loadServiceRequests() {
  * Display service requests in both desktop and mobile views
  */
 function displayServiceRequests(requests) {
-    console.log('=?? displayServiceRequests called with:', requests);
+    console.log('= displayServiceRequests called with:', requests);
     
     const mobileContainer = document.getElementById('serviceRequestsCardsMobile');
     const desktopContainer = document.getElementById('serviceRequestsTableDesktop');
     const mobileCount = document.getElementById('mobile-requests-count');
     const desktopCount = document.getElementById('desktop-requests-count');
     
-    console.log('=??? Mobile container found:', !!mobileContainer);
-    console.log('=??+ Desktop container found:', !!desktopContainer);
-    console.log('=??? Mobile count element found:', !!mobileCount);
-    console.log('=??? Desktop count element found:', !!desktopCount);
+    console.log('=? Mobile container found:', !!mobileContainer);
+    console.log('=+ Desktop container found:', !!desktopContainer);
+    console.log('=? Mobile count element found:', !!mobileCount);
+    console.log('=? Desktop count element found:', !!desktopCount);
     
     // Update counts
     if (mobileCount) mobileCount.textContent = `${requests.length} requests`;
@@ -296,27 +296,27 @@ function displayServiceRequests(requests) {
         return;
     }
     
-    console.log(`=??? Generating UI for ${requests.length} requests`);
+    console.log(`=? Generating UI for ${requests.length} requests`);
     
     // Generate mobile cards
     if (mobileContainer) {
         const mobileHTML = requests.map(request => createMobileRequestCard(request)).join('');
-        console.log('=??? Generated mobile HTML length:', mobileHTML.length);
+        console.log('=? Generated mobile HTML length:', mobileHTML.length);
         mobileContainer.innerHTML = mobileHTML;
-        console.log('=??? Mobile container updated');
+        console.log('=? Mobile container updated');
     }
     
     // Generate desktop table rows
     if (desktopContainer) {
         const desktopHTML = requests.map(request => createDesktopRequestRow(request)).join('');
-        console.log('=??+ Generated desktop HTML length:', desktopHTML.length);
+        console.log('=+ Generated desktop HTML length:', desktopHTML.length);
         desktopContainer.innerHTML = desktopHTML;
-        console.log('=??+ Desktop container updated');
+        console.log('=+ Desktop container updated');
     }
     
     // Add click handlers for viewing details
     addRequestClickHandlers();
-    console.log('G?? Request click handlers added');
+    console.log('G Request click handlers added');
 }
 
 /**
@@ -345,91 +345,84 @@ function createMobileRequestCard(request) {
     const formattedRequestNumber = formatRequestNumber(request.request_number);
     
     return `
-        <div class="modern-mobile-card group relative overflow-hidden bg-white rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300 mb-4 border border-slate-100" style="--animation-delay: ${Math.random() * 200}ms">
+        <div class="rounded-xl shadow-sm mb-3 overflow-hidden" style="background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);">
             <!-- Priority/Status Indicator Strip -->
-            <div class="absolute top-0 left-0 right-0 h-1 ${request.status === 'in_progress' ? getPriorityGradient(request.priority) : getStatusGradient(request.status)}"></div>
+            <div class="h-1 ${request.status === 'in_progress' ? getPriorityGradient(request.priority) : getStatusGradient(request.status)}"></div>
             
             <!-- Card Header -->
-            <div class="flex items-center justify-between p-5 pb-3">
+            <div class="flex items-center justify-between px-4 py-3 border-b border-slate-700">
                 <div class="flex items-center gap-3">
-                    <div class="p-2 rounded-2xl bg-blue-50">
-                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="p-2 rounded-lg bg-slate-700">
+                        <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
                         </svg>
                     </div>
                     <div>
-                        <div class="font-bold text-sm text-blue-600 tracking-wide">${formattedRequestNumber}</div>
-                        <div class="text-xs text-slate-500">${formatDate(request.created_at)}</div>
+                        <div class="font-bold text-sm text-blue-400">${formattedRequestNumber}</div>
+                        <div class="text-xs text-slate-400">${formatDate(request.created_at)}</div>
                     </div>
                 </div>
-                <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold ${displayStatusClass} border shadow-sm">
-                    <div class="w-1.5 h-1.5 rounded-full bg-current mr-2 animate-pulse"></div>
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${displayStatusClass}">
+                    <div class="w-1.5 h-1.5 rounded-full bg-current mr-1.5 animate-pulse"></div>
                     ${displayStatus}
                 </span>
             </div>
             
-            <!-- Institution & Client Info -->
-            <div class="px-5 pb-2">
+            <!-- Content -->
+            <div class="px-4 py-3">
                 ${request.is_walk_in ? `
                 <div class="flex items-center gap-2 mb-2">
-                    <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-purple-100 text-purple-800 border border-purple-200 text-xs font-bold">
-                        <svg class="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 text-xs font-bold">
+                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                         </svg>
-                        Walk-in Request
+                        Walk-in
                     </span>
                 </div>
-                <h3 class="font-bold text-lg text-purple-900 leading-tight">${request.walk_in_customer_name || 'Walk-in Customer'}</h3>
+                <h3 class="font-bold text-base text-purple-300">${request.walk_in_customer_name || 'Walk-in Customer'}</h3>
                 ` : `
-                <h3 class="font-bold text-lg text-slate-900 leading-tight">${request.institution_name || 'Institution'}</h3>
-                <div class="mt-1.5 text-sm text-slate-600">
-                    <span class="font-medium">Requested by:</span> 
+                <h3 class="font-bold text-base text-white mb-1">${request.institution_name || 'Institution'}</h3>
+                <div class="text-sm text-slate-300 mb-2">
+                    <span class="font-medium">By:</span> 
                     ${request.institution_user_first_name || ''} ${request.institution_user_last_name || 'N/A'}
-                    ${request.institution_user_role ? `<span class="ml-1 px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-semibold uppercase">${request.institution_user_role}</span>` : ''}
+                    ${request.institution_user_role ? `<span class="ml-1 px-1.5 py-0.5 bg-blue-500/20 text-blue-300 rounded text-xs font-semibold uppercase">${request.institution_user_role.replace(/_/g, ' ')}</span>` : ''}
                 </div>
                 ${request.location || request.printer_department ? `
-                <div class="mt-1 flex flex-wrap gap-2 text-xs text-slate-500">
-                    ${request.location ? `<span>📍 ${request.location}</span>` : ''}
-                    ${request.printer_department ? `<span>🏢 ${request.printer_department}</span>` : ''}
+                <div class="flex flex-wrap gap-2 text-xs text-slate-400 mb-2">
+                    ${request.location ? `<span class="flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>${request.location}</span>` : ''}
+                    ${request.printer_department ? `<span class="flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>${request.printer_department}</span>` : ''}
                 </div>
                 ` : ''}
                 `}
-            </div>
-            
-            <!-- Description -->
-            <div class="px-5 pb-4">
-                <div class="bg-gradient-to-r from-slate-50 to-slate-100 rounded-2xl p-4 border border-slate-200/50">
-                    <div class="text-sm text-slate-700 leading-relaxed line-clamp-2">
-                        ${request.issue || 'Service Request'}
-                    </div>
+                
+                <!-- Issue Description -->
+                <div class="bg-slate-700/50 rounded-lg p-3">
+                    <p class="text-sm text-slate-200 line-clamp-2">${request.issue || 'Service Request'}</p>
                 </div>
             </div>
             
-            <!-- Action Section -->
-            <div class="px-5 pb-5">
-                <div class="space-y-3">
-                    <button class="view-details-btn w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3.5 rounded-2xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5" data-request-id="${request.id}">
-                        ${request.status === 'in_progress' ? `
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                            Complete Service
-                        ` : ['assigned','pending','new'].includes(request.status) ? `
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
-                                <polygon points="10,8 16,12 10,16" fill="currentColor"/>
-                            </svg>
-                            Start Service
-                        ` : `
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                            </svg>
-                            View Details
-                        `}
-                    </button>
-                    <!-- Start button removed from card - Start action is now available inside View Details modal -->
-                </div>
+            <!-- Action Button -->
+            <div class="px-4 pb-4">
+                <button class="view-details-btn w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 text-sm transition-colors" data-request-id="${request.id}">
+                    ${request.status === 'in_progress' ? `
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Complete Service
+                    ` : ['assigned','pending','new'].includes(request.status) ? `
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+                            <polygon points="10,8 16,12 10,16" fill="currentColor"/>
+                        </svg>
+                        Start Service
+                    ` : `
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                        View Details
+                    `}
+                </button>
             </div>
         </div>
     `;
@@ -637,7 +630,7 @@ function setupSearchFunctionality() {
     const searchCount = document.getElementById('search-count');
     
     if (!searchInput) {
-        console.log('?? Search input not found');
+        console.log(' Search input not found');
         return;
     }
     
@@ -646,13 +639,13 @@ function setupSearchFunctionality() {
     searchInput.parentNode.replaceChild(newSearchInput, searchInput);
     const freshSearchInput = document.getElementById('search-input');
     
-    console.log('?? Setting up search functionality');
+    console.log(' Setting up search functionality');
     
     // Real-time inline search for the visible cards
     freshSearchInput.addEventListener('input', (e) => {
         const query = e.target.value.toLowerCase().trim();
         
-        console.log('?? Search query:', query);
+        console.log(' Search query:', query);
         
         if (query === '') {
             // Show all requests when search is empty
@@ -887,9 +880,12 @@ function formatStatus(status) {
         'in_progress': 'In Progress',
         'completed': 'Completed',
         'cancelled': 'Cancelled',
-        'on_hold': 'On Hold'
+        'on_hold': 'On Hold',
+        'pending_approval': 'Pending Approval',
+        'rejected': 'Rejected',
+        'pending': 'Pending'
     };
-    return statusLabels[status] || status;
+    return statusLabels[status] || status.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
 function formatDate(dateString) {
@@ -1188,13 +1184,12 @@ function populateServiceRequestModal(request) {
     if (requestNumber) requestNumber.textContent = request.request_number;
 
     if (content) {
-        // Priority badge left of request number
+        // Priority badge
         const priorityClass = getPriorityClass(request.priority);
         const institution = request.institution_name || '';
-        const address = request.location || '';
         const description = request.issue || 'Service Request';
         const isLong = description.length > 120;
-        const shortDesc = isLong ? description.slice(0, 120) + 'GO' : description;
+        const shortDesc = isLong ? description.slice(0, 120) + '...' : description;
         function formatRequestNumber(fullNumber) {
             const match = fullNumber.match(/SR-(\d{4})-(\d+)/);
             if (match) {
@@ -1205,157 +1200,128 @@ function populateServiceRequestModal(request) {
         const formattedRequestNumber = formatRequestNumber(request.request_number);
 
         content.innerHTML = `
-        <div class="modern-modal-container shadow-2xl rounded-2xl bg-white/95 backdrop-blur-md border border-slate-100 p-0 overflow-hidden">
-            <div class="flex items-center justify-between px-6 pt-6 pb-2">
-                <span class="rounded-lg px-3 py-1 bg-blue-100 text-blue-700 font-bold text-base tracking-wider">${formattedRequestNumber}</span>
-                <span class="rounded px-2 py-1 font-bold text-xs ${priorityClass}">${request.priority?.toUpperCase() || ''}</span>
+        <div class="bg-white">
+            <!-- Institution & Priority Header -->
+            <div class="flex items-center justify-between px-4 py-3 border-b border-slate-200">
+                <div class="font-bold text-base text-slate-800">${institution}</div>
+                <span class="rounded px-2.5 py-1 font-bold text-xs ${priorityClass}">${request.priority?.toUpperCase() || ''}</span>
             </div>
-            <div class="px-0 pb-2">
-                <div class="font-bold text-lg text-slate-800 mb-1 px-6">${institution}</div>
-                <div class="text-sm text-slate-600 mb-3 px-6">${address}</div>
-                
-                <!-- Printer Information Section (only show if printer data exists) -->
-                <div class="px-6">
-                ${request.is_walk_in ? `
-                <div class="mb-3 bg-purple-50 border border-purple-100 rounded-lg px-3 py-2">
-                    <div class="text-sm font-medium text-purple-800 mb-1 flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                        </svg>
-                        Walk-in Service
-                    </div>
-                    <div class="text-sm text-purple-900 font-semibold">Customer: ${request.walk_in_customer_name || 'N/A'}</div>
+            
+            <!-- Printer Information -->
+            ${request.is_walk_in ? `
+            <div class="px-4 py-3 border-b border-slate-200">
+                <div class="flex items-center gap-2 text-purple-700 text-sm font-medium mb-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                    Walk-in Service
                 </div>
-                ${request.printer_brand ? `
-                <div class="mb-3 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
-                    <div class="text-sm font-medium text-slate-700 mb-1">Printer Brand:</div>
-                    <div class="text-sm text-slate-900 font-semibold">${request.printer_brand}</div>
+                <div class="text-base text-slate-800 font-semibold">${request.walk_in_customer_name || 'Walk-in Customer'}</div>
+                ${request.printer_brand ? `<div class="text-sm text-slate-600 mt-1">Brand: ${request.printer_brand}</div>` : ''}
+            </div>
+            ` : (request.printer_name || request.brand || request.model || request.serial_number) ? `
+            <div class="px-4 py-3 border-b border-slate-200">
+                <div class="text-sm font-semibold text-slate-600 mb-2">Printer Information:</div>
+                <div class="space-y-1 text-sm text-slate-700">
+                    ${request.printer_name ? `<div><span class="font-medium">Name:</span> ${request.printer_name}</div>` : ''}
+                    ${request.brand ? `<div><span class="font-medium">Brand:</span> ${request.brand}</div>` : ''}
+                    ${request.model ? `<div><span class="font-medium">Model:</span> ${request.model}</div>` : ''}
+                    ${request.serial_number ? `<div><span class="font-medium">Serial Number:</span> ${request.serial_number}</div>` : ''}
+                    ${request.location ? `<div><span class="font-medium">Location:</span> ${request.location}</div>` : ''}
+                    ${request.printer_department ? `<div><span class="font-medium">Department:</span> ${request.printer_department}</div>` : ''}
                 </div>
-                ` : ''}
-                ` : (request.printer_name || request.brand || request.model || request.serial_number) ? `
-                <div class="mb-3">
-                    <div class="text-sm font-medium text-slate-700 mb-2">Printer Information:</div>
-                    <div class="space-y-1">
-                        ${request.printer_name ? `<div class="text-sm text-slate-600"><span class="font-medium">Name:</span> ${request.printer_name}</div>` : ''}
-                        ${request.brand ? `<div class="text-sm text-slate-600"><span class="font-medium">Brand:</span> ${request.brand}</div>` : ''}
-                        ${request.model ? `<div class="text-sm text-slate-600"><span class="font-medium">Model:</span> ${request.model}</div>` : ''}
-                        ${request.serial_number ? `<div class="text-sm text-slate-600"><span class="font-medium">Serial Number:</span> ${request.serial_number}</div>` : ''}
-                        ${request.location ? `<div class="text-sm text-slate-600"><span class="font-medium">Location:</span> ${request.location}</div>` : ''}
-                        ${request.printer_department ? `<div class="text-sm text-slate-600"><span class="font-medium">Department:</span> ${request.printer_department}</div>` : ''}
-                    </div>
+            </div>
+            ` : ''}
+            
+            <!-- Requester Info -->
+            ${request.is_walk_in ? `
+            ${(request.institution_user_first_name || request.institution_user_last_name) ? `
+            <div class="px-4 py-3 bg-blue-50 border-b border-blue-100">
+                <div class="flex items-center gap-2 text-sm">
+                    <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                    <span class="font-medium text-blue-800">Requested By:</span>
+                    ${request.institution_user_role ? `<span class="px-2 py-0.5 bg-blue-200 text-blue-800 text-xs rounded font-bold uppercase">${request.institution_user_role.replace(/_/g, ' ')}</span>` : ''}
                 </div>
-                ` : ''}
-                
-                <!-- institution_user Information Section -->
-                ${request.is_walk_in ? `
-                <div class="mb-3 bg-purple-50 border-purple-100 border rounded-lg px-3 py-2">
-                    <div class="text-sm font-medium text-purple-800 mb-1 flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                        </svg>
-                        Walk-in Customer:
-                        <span class="ml-2 px-2 py-0.5 bg-purple-200 text-purple-800 text-xs rounded-full font-bold">Walk-in</span>
-                    </div>
-                    <div class="text-sm text-purple-900 font-semibold">
-                        ${request.walk_in_customer_name || 'Walk-in Customer'}
-                    </div>
+                <div class="text-base text-blue-900 font-semibold mt-1">
+                    ${request.institution_user_first_name || ''} ${request.institution_user_last_name || ''}
                 </div>
-                ${(request.institution_user_first_name || request.institution_user_last_name) ? `
-                <div class="mb-3 bg-blue-50 border-blue-100 border rounded-lg px-3 py-2">
-                    <div class="text-sm font-medium text-blue-800 mb-1 flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                        </svg>
-                        Created By:
-                        ${request.institution_user_role ? `<span class="ml-2 px-2 py-0.5 bg-blue-200 text-blue-800 text-xs rounded-full font-bold uppercase">${request.institution_user_role}</span>` : ''}
-                    </div>
-                    <div class="text-sm text-blue-900 font-semibold">
-                        ${request.institution_user_first_name || ''} ${request.institution_user_last_name || ''}
-                    </div>
+            </div>
+            ` : ''}
+            ` : `
+            <div class="px-4 py-3 bg-blue-50 border-b border-blue-100">
+                <div class="flex items-center gap-2 text-sm">
+                    <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                    <span class="font-medium text-blue-800">Requested By:</span>
+                    ${request.institution_user_role ? `<span class="px-2 py-0.5 bg-blue-200 text-blue-800 text-xs rounded font-bold uppercase">${request.institution_user_role.replace(/_/g, ' ')}</span>` : ''}
                 </div>
-                ` : ''}
-                ` : `
-                <div class="mb-3 bg-blue-50 border-blue-100 border rounded-lg px-3 py-2">
-                    <div class="text-sm font-medium text-blue-800 mb-1 flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                        </svg>
-                        Requested By:
-                        ${request.institution_user_role ? `<span class="ml-2 px-2 py-0.5 bg-blue-200 text-blue-800 text-xs rounded-full font-bold uppercase">${request.institution_user_role}</span>` : ''}
-                    </div>
-                    <div class="text-sm text-blue-900 font-semibold">
-                        ${request.institution_user_first_name || ''} ${request.institution_user_last_name || 'N/A'}
-                    </div>
+                <div class="text-base text-blue-900 font-semibold mt-1">
+                    ${request.institution_user_first_name || ''} ${request.institution_user_last_name || 'N/A'}
                 </div>
-                `}
-                
+            </div>
+            `}
+            
+            <!-- Description -->
+            <div class="px-4 py-3 bg-gray-50 border-b border-slate-200">
+                <span id="modal-description" class="block text-slate-700 text-sm leading-relaxed ${isLong ? 'line-clamp-3' : ''}">${shortDesc}</span>
+                ${isLong ? `<button id="expand-description" class="text-blue-600 text-sm font-medium mt-2">Show more</button>` : ''}
+            </div>
+            
+            <!-- Additional Details -->
+            <details class="px-4 py-3 border-b border-slate-200">
+                <summary class="text-sm text-slate-600 cursor-pointer select-none font-medium">Show additional details</summary>
+                <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm mt-3">
+                    <div><span class="font-medium text-slate-500">Priority:</span> <span class="${priorityClass} font-bold">${request.priority?.toUpperCase()}</span></div>
+                    <div><span class="font-medium text-slate-500">Created:</span> <span>${formatDate(request.created_at)}</span></div>
                 </div>
-                
-                <!-- Description with gray background -->
-                <div class="px-6">
-                <div class="bg-gray-100 rounded-lg px-3 py-2 mb-3">
-                    <span id="modal-description" class="block text-gray-700 text-sm leading-relaxed ${isLong ? 'line-clamp-3' : ''}">${shortDesc}</span>
-                    ${isLong ? `<button id="expand-description" class="text-blue-600 text-xs font-medium mt-1 underline">Show more</button>` : ''}
-                </div>
-                
-                <div class="border-t border-slate-100 my-3"></div>
-                <details class="mb-3">
-                    <summary class="text-xs text-slate-500 cursor-pointer select-none py-1">Show additional details</summary>
-                    <div class="grid grid-cols-2 gap-x-6 gap-y-1 text-xs mt-2">
-                        <div><span class="font-medium text-slate-600">Priority:</span> <span class="${priorityClass} font-bold">${request.priority?.toUpperCase()}</span></div>
-                        <div><span class="font-medium text-slate-600">Created:</span> <span>${formatDate(request.created_at)} ${formatTime(request.created_at)}</span></div>
-                    </div>
-                </details>
-                </div>
-                
-                ${!request.is_walk_in ? `
-                <!-- Collapsible Analytics Section -->
-                <div id="analytics-section-${request.id}" class="modern-analytics-section bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl px-3 py-2 mb-3 cursor-pointer flex items-start gap-2 group hover:shadow-lg transition-all" onclick="toggleAnalytics(${request.id}, \`${request.brand || ''}\`, \`${request.model || ''}\`)">
-                    <div class="analytics-icon bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-full p-1.5 shadow-md">
+            </details>
+            
+            ${!request.is_walk_in ? `
+            <!-- Smart Recommendations -->
+            <div class="px-4 py-3 border-b border-slate-200">
+                <div id="analytics-section-${request.id}" class="bg-blue-50 border border-blue-200 rounded-xl p-3 cursor-pointer flex items-center gap-3" onclick="toggleAnalytics(${request.id}, \`${request.brand || ''}\`, \`${request.model || ''}\`)">
+                    <div class="bg-blue-500 text-white rounded-full p-1.5 flex-shrink-0">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                         </svg>
                     </div>
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2 flex-wrap">
-                            <span class="font-semibold text-blue-800 text-xs">Smart Part Recommendations</span>
-                            <span class="bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-2 py-0.5 rounded-full text-[10px] font-bold">AI</span>
-                            <span id="analytics-badge-${request.id}" class="hidden bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-[10px] font-bold"></span>
+                            <span class="font-semibold text-blue-800 text-sm">Smart Part Recommendations</span>
+                            <span class="bg-blue-500 text-white px-2 py-0.5 rounded text-xs font-bold">AI</span>
                         </div>
-                        <p class="text-[10px] text-blue-600 mt-0.5">See which parts other technicians used for similar repairs</p>
-                        <div id="analytics-content-${request.id}" class="modern-analytics-content text-xs mt-2 hidden">
+                        <p class="text-xs text-blue-600 mt-0.5">See which parts other technicians used for similar repairs</p>
+                        <div id="analytics-content-${request.id}" class="text-sm mt-3 hidden">
                             <div class="flex items-center justify-center py-4">
                                 <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
                             </div>
                         </div>
                     </div>
-                    <svg class="w-4 h-4 text-blue-400 transition-transform flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    <svg class="w-5 h-5 text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                 </div>
-                ` : ''}
             </div>
-            <div class="px-6 pb-6">
-                <div class="flex gap-2 mb-2">
-                    ${(['assigned','pending','new'].includes(request.status)) ? `
-                        <button class="modern-action-btn start-service-btn flex-1 bg-gradient-to-r from-green-400 to-green-600 text-white font-semibold py-2 rounded-xl shadow hover:from-green-500 hover:to-green-700 transition-colors flex items-center justify-center gap-2" onclick="startServiceFromModal(${request.id})">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
-                                <polygon points="10,8 16,12 10,16" fill="currentColor"/>
-                            </svg>
-                            Start
-                        </button>
-                    ` : ''}
-                    ${request.status === 'in_progress' ? `
-                        <button class="modern-action-btn complete-service-btn flex-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold py-2 rounded-xl shadow hover:from-yellow-500 hover:to-orange-600 transition-colors flex items-center justify-center gap-2" onclick="openCompletionFromModal(${request.id})">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                            Complete
-                        </button>
-                    ` : ''}
-                    <button class="modern-action-btn flex-1 bg-slate-200 text-slate-700 font-semibold py-2 rounded-xl shadow hover:bg-slate-300 transition-colors flex items-center justify-center gap-2" onclick="closeServiceRequestModal()">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                        Close
+            ` : ''}
+            
+            <!-- Action Buttons -->
+            <div class="p-4">
+                ${(['assigned','pending','new'].includes(request.status)) ? `
+                    <button class="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 text-base" onclick="startServiceFromModal(${request.id})">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+                            <polygon points="10,8 16,12 10,16" fill="currentColor"/>
+                        </svg>
+                        Start Service
                     </button>
-                </div>
+                ` : ''}
+                ${request.status === 'in_progress' ? `
+                    <button class="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 text-base" onclick="openCompletionFromModal(${request.id})">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Complete
+                    </button>
+                ` : ''}
             </div>
         </div>
         `;
@@ -1409,7 +1375,7 @@ function populateJobCompletionModal(request) {
             `;
             // Add creator info if available
             if (request.institution_user_first_name || request.institution_user_last_name) {
-                const roleBadge = request.institution_user_role ? `<span class="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-semibold uppercase">${request.institution_user_role}</span>` : '';
+                const roleBadge = request.institution_user_role ? `<span class="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-semibold uppercase">${request.institution_user_role.replace(/_/g, ' ')}</span>` : '';
                 institution_userDisplay += `
                     <div class="flex justify-between mt-2">
                         <span class="font-medium text-slate-600">Created By:</span>
@@ -1418,11 +1384,14 @@ function populateJobCompletionModal(request) {
                 `;
             }
         } else if (request.institution_user_first_name || request.institution_user_last_name) {
-            const roleBadge = request.institution_user_role ? `<span class="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-semibold uppercase">${request.institution_user_role}</span>` : '';
+            const roleBadge = request.institution_user_role ? `<span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-semibold uppercase">${request.institution_user_role.replace(/_/g, ' ')}</span>` : '';
             institution_userDisplay = `
-                <div class="flex justify-between">
-                    <span class="font-medium text-slate-600">Requested By:</span>
-                    <span class="text-slate-800">${request.institution_user_first_name || ''} ${request.institution_user_last_name || ''}${roleBadge}</span>
+                <div class="flex justify-between items-start">
+                    <span class="font-medium text-slate-600">Requested<br>By:</span>
+                    <span class="text-right">
+                        <span class="text-slate-800">${request.institution_user_first_name || ''} ${request.institution_user_last_name || ''}</span>
+                        ${roleBadge ? `<div class="mt-1">${roleBadge}</div>` : ''}
+                    </span>
                 </div>
             `;
         }
@@ -1459,6 +1428,12 @@ function populateJobCompletionModal(request) {
                     <span class="font-medium text-slate-600">Location:</span>
                     <span class="text-slate-800">${locationDisplay}</span>
                 </div>
+                ${request.printer_department ? `
+                    <div class="flex justify-between">
+                        <span class="font-medium text-slate-600">Department:</span>
+                        <span class="text-slate-800">${request.printer_department}</span>
+                    </div>
+                ` : ''}
                 <div class="flex justify-between">
                     <span class="font-medium text-slate-600">Equipment:</span>
                     <span class="text-slate-800">${equipmentDisplay}</span>
@@ -1516,7 +1491,7 @@ let currentPartSlide = 0;
 let totalPartSlides = 1;
 
 async function loadAvailableParts() {
-    console.log('=??? Loading available parts from technician inventory...');
+    console.log('=? Loading available parts from technician inventory...');
     try {
         const response = await fetch('/api/technician/parts', {
             headers: {
@@ -1528,35 +1503,32 @@ async function loadAvailableParts() {
         
         if (response.ok) {
             let parts = await response.json();
-            console.log('G?? Loaded parts (raw):', parts);
+            console.log('G Loaded parts (raw):', parts);
 
-            // If API returns merged central+tech inventory, prefer technician_stock where available
+            // The API already returns correct stock values for opened/sealed items
+            // Don't overwrite with technician_stock - the API has already done the calculation
             parts = parts.map(p => {
-                // normalize fields: some responses use `stock`, others `quantity`
-                const centralStock = p.stock !== undefined ? Number(p.stock) : (p.quantity !== undefined ? Number(p.quantity) : 0);
-                const techStock = p.technician_stock !== undefined ? Number(p.technician_stock) : 0;
-                const displayStock = techStock > 0 ? techStock : centralStock;
+                // Use the stock value from API directly (it's already calculated correctly)
+                const apiStock = p.stock !== undefined ? Number(p.stock) : (p.quantity !== undefined ? Number(p.quantity) : 0);
                 return Object.assign({}, p, {
-                    stock: displayStock,
-                    original_central_stock: centralStock,
-                    technician_stock: techStock,
-                    from_technician_inventory: techStock > 0
+                    stock: apiStock,
+                    from_technician_inventory: true
                 });
             });
 
             availableParts = parts;
-            console.log('G?? Loaded parts (normalized):', availableParts);
+            console.log('G Loaded parts (normalized):', availableParts);
             updatePartSelectors();
             updatePartSearchFunctionality();
             return availableParts; // Return the parts for promise chaining
         } else {
             const errorData = await response.json();
-            console.error('G?? Parts API error:', errorData);
+            console.error('G Parts API error:', errorData);
             showToast('Failed to load parts inventory. Please try again.', 'error');
             return [];
         }
     } catch (error) {
-        console.error('G?? Error loading parts:', error);
+        console.error('G Error loading parts:', error);
         showToast('Failed to load parts inventory. Please check your connection.', 'error');
         return [];
     }
@@ -1592,7 +1564,7 @@ function filterPartSelectors(query) {
 }
 
 function updatePartSelectors() {
-    console.log('=??? Updating part selectors with', availableParts.length, 'parts');
+    console.log('=? Updating part selectors with', availableParts.length, 'parts');
     
     // Update type selectors
     updateTypeSelectors();
@@ -1600,7 +1572,7 @@ function updatePartSelectors() {
     // Update parts summary
     updatePartsSummary();
     
-    console.log('G?? Part selectors updated');
+    console.log('G Part selectors updated');
 }
 
 function updateTypeSelectors() {
@@ -1621,12 +1593,12 @@ function updatePartsForType(typeSelector, selectedType) {
     const partSelect = partEntry.querySelector('.part-name-select');
     if (!partSelect) return;
     
-    console.log('?? Updating parts for type:', selectedType);
-    console.log('?? Available parts:', availableParts);
+    console.log(' Updating parts for type:', selectedType);
+    console.log(' Available parts:', availableParts);
     
     // Get printer brand from selected request
     const printerBrand = selectedRequest?.brand || selectedRequest?.printer_brand || selectedRequest?.printer?.brand;
-    console.log('??? Printer brand for filtering:', printerBrand || 'NO BRAND - showing all parts');
+    console.log('? Printer brand for filtering:', printerBrand || 'NO BRAND - showing all parts');
     
     // Reset part selector
     partSelect.innerHTML = '<option value="">Select part/consumable...</option>';
@@ -1694,7 +1666,7 @@ function updatePartsForType(typeSelector, selectedType) {
     
     console.log(`? Filtered to ${partsForType.length} parts for type: ${selectedType}`);
     if (printerBrand) {
-        console.log(`?? Brand filter active: Only showing ${printerBrand} parts + Universal parts`);
+        console.log(` Brand filter active: Only showing ${printerBrand} parts + Universal parts`);
     }
     
     // Get the part entry container
@@ -1709,20 +1681,73 @@ function updatePartsForType(typeSelector, selectedType) {
     
     if (partsForType.length === 0) {
         searchInput.disabled = true;
-        searchInput.placeholder = 'No parts available';
+        searchInput.placeholder = 'No items available';
         partsGridContainer.classList.add('hidden');
         return;
     }
     
+    // Count unique items (by name + brand) instead of split entries
+    const uniqueItems = new Set();
+    partsForType.forEach(part => {
+        const key = `${part.name}|${part.brand}`;
+        uniqueItems.add(key);
+    });
+    const uniqueCount = uniqueItems.size;
+    
     // Enable search but keep grid hidden initially
     searchInput.disabled = false;
-    searchInput.placeholder = `Search ${partsForType.length} available parts...`;
+    searchInput.placeholder = `Search ${uniqueCount} available ${uniqueCount === 1 ? 'item' : 'items'}...`;
     partsGridContainer.classList.add('hidden');
+    
+    // Get already selected items BEFORE this entry to filter them out
+    const selectedItemsBeforeThis = getSelectedItems(partEntry, true);
+    console.log('🔵 selectedItemsBeforeThis for card rendering:', selectedItemsBeforeThis.map(s => ({
+        name: s.name,
+        brand: s.brand,
+        isOpenedItem: s.isOpenedItem,
+        consumptionType: s.consumptionType,
+        quantity: s.quantity
+    })));
     
     // Render part cards (both opened and sealed items will show as separate cards)
     partsForType.forEach(part => {
         const card = document.createElement('div');
         const isOpenedItem = part.is_opened_item === true;
+        
+        // Filter logic:
+        // 1. OPENED items: filter out if already selected in any previous entry
+        // 2. SEALED items: filter out if all stock has been consumed in previous entries
+        
+        if (isOpenedItem) {
+            // Check if this specific opened item is already selected in previous entries
+            const isAlreadySelected = selectedItemsBeforeThis.some(selected => {
+                return selected.techInventoryId === part.tech_inventory_id && selected.isOpenedItem;
+            });
+            
+            // Skip already selected opened items
+            if (isAlreadySelected) {
+                return;
+            }
+        } else {
+            // For SEALED items: check if stock has been consumed with FULL consumption in previous entries
+            const itemName = part.name;
+            const itemBrand = part.brand || '';
+            let totalFullConsumption = 0;
+            
+            // Count total FULL consumption for this exact item (name + brand) in previous entries
+            // ONLY count consumption from SEALED items, not opened items
+            selectedItemsBeforeThis.forEach(selected => {
+                if (selected.name === itemName && selected.brand === itemBrand && 
+                    selected.consumptionType === 'full' && !selected.isOpenedItem) {
+                    totalFullConsumption += selected.quantity || 1;
+                }
+            });
+            
+            // If all stock is consumed, don't show this sealed item
+            if (totalFullConsumption >= part.stock) {
+                return; // Skip this sealed item - no stock left
+            }
+        }
         
         // Use display_name if available, otherwise fall back to name
         const displayName = part.display_name || part.name;
@@ -1740,7 +1765,9 @@ function updatePartsForType(typeSelector, selectedType) {
         card.dataset.itemId = part.id;  // Add itemId for consumption tracking
         card.dataset.techInventoryId = part.tech_inventory_id; // Individual inventory row ID
         card.dataset.name = part.name;
-        card.dataset.stock = part.stock;
+        // OPENED items always have stock = 1 (it's a single opened bottle)
+        // SEALED items use the actual stock count
+        card.dataset.stock = isOpenedItem ? 1 : part.stock;
         card.dataset.unit = part.unit || 'pieces';
         card.dataset.category = part.category;
         card.dataset.brand = part.brand || '';
@@ -1776,7 +1803,37 @@ function updatePartsForType(typeSelector, selectedType) {
         const colorBadge = part.color ? `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">${part.color}</span>` : '';
         
         // Priority indicator for opened items
-        const priorityIndicator = isOpenedItem ? '<div class="text-xs font-bold text-orange-600 mb-1">⚠️ USE THIS FIRST</div>' : '';
+        const priorityIndicator = isOpenedItem ? '<div class="text-xs font-bold text-orange-600 mb-1"> USE THIS FIRST</div>' : '';
+        
+        // Calculate dynamic available stock for sealed items
+        let displayStock = part.stock;
+        console.log('🟢 Card rendering for:', part.name, 'isOpenedItem:', isOpenedItem, 'part.stock from API:', part.stock);
+        if (!isOpenedItem) {
+            // For sealed items, subtract full consumption from previous entries
+            // NOTE: The API already subtracted opened bottles from sealed count,
+            // so we only need to subtract form-level consumption here
+            // ONLY count consumption from SEALED items, not opened items
+            const itemName = part.name;
+            const itemBrand = part.brand || '';
+            let totalFullConsumption = 0;
+            
+            selectedItemsBeforeThis.forEach(selected => {
+                if (selected.name === itemName && selected.brand === itemBrand && 
+                    selected.consumptionType === 'full' && !selected.isOpenedItem) {
+                    totalFullConsumption += selected.quantity || 1;
+                }
+            });
+            
+            displayStock = Math.max(0, part.stock - totalFullConsumption);
+            
+            // If no stock available, don't show this sealed item
+            if (displayStock <= 0) {
+                return; // Skip this sealed item - no stock left
+            }
+        }
+        
+        // Only show quantity for sealed items (not for opened items since remaining is in badge)
+        const quantityDisplay = !isOpenedItem ? `<div class="text-xs text-slate-500 font-medium">${displayStock} ${part.unit || 'pieces'} available</div>` : '';
         
         card.innerHTML = `
             <div class="flex items-start justify-between gap-2">
@@ -1789,20 +1846,10 @@ function updatePartsForType(typeSelector, selectedType) {
                         ${universalBadge}
                         ${statusBadge}
                     </div>
-                    <div class="text-xs ${stockColor} font-medium">
-                        <svg class="w-3 h-3 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-                        </svg>
-                        ${isOpenedItem ? 'Continue using this bottle' : `${part.stock} ${part.unit || 'pieces'} available`}
-                    </div>
+                    ${quantityDisplay}
                 </div>
                 <div class="flex-shrink-0">
-                    <svg class="w-5 h-5 ${isOpenedItem ? 'text-orange-500' : 'text-purple-400'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                    </svg>
-                </div>
-            </div>
-        `;
+                    <svg class="w-5 h-5 ${isOpenedItem ? 'text-orange-500' : 'text-purple-400'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">\n                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>\n                    </svg>\n                </div>\n            </div>\n        `;
         
         // Click handler to select part
         card.addEventListener('click', function() {
@@ -1815,7 +1862,151 @@ function updatePartsForType(typeSelector, selectedType) {
     // Setup search functionality
     setupPartSearch(partEntry, partsForType);
     
-    console.log('G?? Added', partsForType.length, 'parts for type', selectedType);
+    console.log('G Added', partsForType.length, 'parts for type', selectedType);
+}
+
+// Function to get all selected items across part entries
+// Function to get selected items - can get all, exclude one, or only items BEFORE a certain entry
+function getSelectedItems(excludeEntry = null, onlyBeforeEntry = false) {
+    const selected = [];
+    const entries = document.querySelectorAll('.part-entry');
+    
+    // Convert to array to get proper ordering
+    const entriesArray = Array.from(entries);
+    
+    // Find the index of the entry we want to stop at (if onlyBeforeEntry is true)
+    let stopIndex = entriesArray.length;
+    if (onlyBeforeEntry && excludeEntry) {
+        stopIndex = entriesArray.indexOf(excludeEntry);
+        if (stopIndex === -1) stopIndex = entriesArray.length;
+    }
+    
+    entriesArray.forEach((entry, index) => {
+        // If onlyBeforeEntry mode, stop when we reach the target entry
+        if (onlyBeforeEntry && index >= stopIndex) {
+            return;
+        }
+        
+        // Skip the entry we want to exclude (when not in onlyBeforeEntry mode)
+        if (!onlyBeforeEntry && excludeEntry && entry === excludeEntry) {
+            return;
+        }
+        
+        const partSelect = entry.querySelector('.part-name-select');
+        const selectedOption = partSelect?.options[partSelect.selectedIndex];
+        if (selectedOption && selectedOption.value) {
+            // Get consumption type from the hidden input field (more reliable than checking button classes)
+            const consumptionTypeField = entry.querySelector('.consumption-type');
+            let consumptionType = consumptionTypeField?.value || 'full';
+            
+            // Fallback: check which button has bg-blue-600 if hidden field is empty
+            if (!consumptionType || consumptionType === '') {
+                consumptionType = 'full'; // default
+                const consumptionTypeButtons = entry.querySelectorAll('[data-consumption-type]');
+                consumptionTypeButtons.forEach(btn => {
+                    if (btn.classList.contains('bg-blue-600')) {
+                        consumptionType = btn.dataset.consumptionType;
+                    }
+                });
+            }
+            
+            // Get quantity
+            const qtyInput = entry.querySelector('.part-quantity');
+            const quantity = parseInt(qtyInput?.value) || 0;
+            
+            const item = {
+                name: selectedOption.dataset.name || selectedOption.value,
+                brand: selectedOption.dataset.brand,
+                techInventoryId: selectedOption.dataset.techInventoryId,
+                isOpenedItem: selectedOption.dataset.isOpenedItem === '1',
+                consumptionType: consumptionType,
+                quantity: quantity,
+                entry: entry,
+                entryIndex: index
+            };
+            console.log('🔴 getSelectedItems - Adding item:', item.name, 'isOpenedItem:', item.isOpenedItem, 'dataset.isOpenedItem:', selectedOption.dataset.isOpenedItem);
+            selected.push(item);
+        }
+    });
+    return selected;
+}
+
+// Function to calculate dynamic remaining for an item
+// Only counts consumption from items BEFORE this entry in the list (sequential order)
+function calculateDynamicRemaining(itemName, itemBrand, techInventoryId, baseStock, isCurrentOpened, currentEntry = null) {
+    // Get only items that come BEFORE this entry in the order
+    const selectedItems = getSelectedItems(currentEntry, true);
+    
+    console.log('📋 Selected items BEFORE current entry:', selectedItems.map(s => ({
+        name: s.name,
+        brand: s.brand,
+        consumptionType: s.consumptionType,
+        quantity: s.quantity,
+        isOpenedItem: s.isOpenedItem
+    })));
+    console.log('🎯 Calculating for:', { itemName, itemBrand, baseStock, isCurrentOpened });
+    
+    // OPENED items: stock is always 1 (it's a single opened bottle)
+    if (isCurrentOpened) {
+        // Check if this opened item is already selected in a previous entry
+        const openedAlreadySelected = selectedItems.some(s => 
+            s.name === itemName && 
+            s.brand === itemBrand && 
+            s.isOpenedItem === true
+        );
+        const remaining = openedAlreadySelected ? 0 : 1;
+        console.log('🧮 OPENED item remaining:', remaining);
+        return remaining;
+    }
+    
+    // SEALED items: count full consumption from other SEALED items only
+    let fullConsumptionCount = 0;
+    
+    selectedItems.forEach(selected => {
+        // Only count FULL consumption FROM SEALED ITEMS (not opened items)
+        if (selected.name === itemName && 
+            selected.brand === itemBrand && 
+            selected.consumptionType === 'full' && 
+            !selected.isOpenedItem) {
+            fullConsumptionCount += selected.quantity || 1;
+        }
+    });
+    
+    // Subtract full consumptions from stock
+    const remaining = Math.max(0, baseStock - fullConsumptionCount);
+    
+    console.log('🧮 SEALED item remaining:', { baseStock, fullConsumptionCount, remaining });
+    return remaining;
+}
+
+// Custom mobile-friendly alert function
+function showCustomAlert(message, title = 'Warning') {
+    const modal = document.getElementById('customAlertModal');
+    const titleEl = document.getElementById('customAlertTitle');
+    const messageEl = document.getElementById('customAlertMessage');
+    const okBtn = document.getElementById('customAlertOkBtn');
+    
+    if (!modal) return;
+    
+    titleEl.textContent = title;
+    messageEl.textContent = message;
+    
+    modal.classList.remove('hidden');
+    
+    // Close handler
+    const closeModal = () => {
+        modal.classList.add('hidden');
+        okBtn.removeEventListener('click', closeModal);
+    };
+    
+    okBtn.addEventListener('click', closeModal);
+    
+    // Also close on backdrop click
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            closeModal();
+        }
+    });
 }
 
 function selectPartFromCard(partEntry, card) {
@@ -1825,11 +2016,38 @@ function selectPartFromCard(partEntry, card) {
     const searchInput = partEntry.querySelector('.part-search-input');
     const unitSelect = partEntry.querySelector('.part-unit');
     
+    // Check if this item is already selected in another entry
+    const selectedItems = getSelectedItems();
+    const itemName = card.dataset.name;
+    const itemBrand = card.dataset.brand;
+    const techInventoryId = card.dataset.techInventoryId;
+    const isOpenedItem = card.dataset.isOpenedItem === '1';
+    
+    // Only check for duplicates if this is an OPENED item
+    // Sealed items can be selected multiple times
+    if (isOpenedItem) {
+        const isDuplicate = selectedItems.some(selected => {
+            if (selected.entry === partEntry) return false; // Skip current entry
+            
+            // Check if this specific opened item (by tech_inventory_id) is already selected
+            return selected.techInventoryId === techInventoryId && selected.isOpenedItem;
+        });
+        
+        if (isDuplicate) {
+            showCustomAlert(
+                'This opened bottle is already selected in another item entry.\n\nYou can only use one opened bottle at a time. Please choose a different item or remove it from the other entry first.',
+                'Item Already Selected'
+            );
+            return;
+        }
+    }
+    
     // Clear existing options and add the selected one
     partSelect.innerHTML = '';
     const option = document.createElement('option');
     option.value = card.dataset.name;
     option.dataset.id = card.dataset.id;
+    option.dataset.name = card.dataset.name;  // Store name for comparison
     option.dataset.itemId = card.dataset.itemId;  // Add itemId for consumption tracking
     option.dataset.techInventoryId = card.dataset.techInventoryId;  // Specific inventory row ID
     option.dataset.stock = card.dataset.stock;
@@ -1846,18 +2064,21 @@ function selectPartFromCard(partEntry, card) {
     option.selected = true;
     partSelect.appendChild(option);
     
-    // Automatically set unit from part's specification
+    // Automatically set unit from part's specification - now using readonly input
     if (unitSelect && card.dataset.unit) {
-        unitSelect.value = card.dataset.unit.toLowerCase();
-        unitSelect.disabled = true; // Make it read-only since unit is defined by the part
-        unitSelect.style.backgroundColor = '#f1f5f9'; // Visual indication it's locked
-        unitSelect.style.cursor = 'not-allowed';
+        // Unit is now always 'Pieces' (non-editable)
+        // No need to update or disable since it's already readonly
     }
     
     // Show selected part display
     const selectedPartName = selectedPartDisplay.querySelector('.selected-part-name');
     const selectedPartInfo = selectedPartDisplay.querySelector('.selected-part-info');
     selectedPartName.textContent = card.dataset.name;
+    
+    // Calculate dynamic remaining (exclude current entry from count)
+    const currentEntry = partSelect.closest('.part-entry');
+    const baseStock = parseInt(card.dataset.stock);
+    const dynamicRemaining = calculateDynamicRemaining(itemName, itemBrand, techInventoryId, baseStock, isOpenedItem, currentEntry);
     
     // Build info text with color and opened status if available
     let infoText = `${card.dataset.brand || 'Universal'}`;
@@ -1866,14 +2087,11 @@ function selectPartFromCard(partEntry, card) {
     }
     
     // If this is an opened item, show remaining volume prominently
-    const isOpenedItem = card.dataset.isOpenedItem === '1';
     if (isOpenedItem) {
         const hasVolume = card.dataset.inkVolume && parseFloat(card.dataset.inkVolume) > 0;
         const remaining = hasVolume ? card.dataset.remainingVolume : card.dataset.remainingWeight;
         const unit = hasVolume ? 'ml' : 'g';
-        infoText += ` • 🔓 ${remaining}${unit} remaining (opened)`;
-    } else {
-        infoText += ` • ${card.dataset.stock} ${card.dataset.unit} available`;
+        infoText += ` • ${remaining}${unit} left`;
     }
     
     selectedPartInfo.textContent = infoText;
@@ -1891,21 +2109,72 @@ function selectPartFromCard(partEntry, card) {
         window.selectSRPartFromCard(partSelect);
     }
     
+    // Refresh all other part entry grids to update availability
+    refreshAllPartGrids();
+    
     // Setup clear button
     const clearBtn = selectedPartDisplay.querySelector('.clear-part-btn');
     clearBtn.onclick = function() {
         selectedPartDisplay.classList.add('hidden');
         partsGridContainer.classList.remove('hidden');
         partSelect.value = '';
-        // Re-enable unit selector when part is cleared
-        if (unitSelect) {
-            unitSelect.disabled = false;
-            unitSelect.style.backgroundColor = '';
-            unitSelect.style.cursor = '';
-            unitSelect.value = 'pieces'; // Reset to default
-        }
+        // Unit is now fixed as 'Pieces' (readonly), no need to re-enable
         partSelect.dispatchEvent(new Event('change'));
+        
+        // Refresh all part grids when item is cleared
+        refreshAllPartGrids();
     };
+}
+
+// Function to refresh all part entry grids (updates available items and remaining counts)
+function refreshAllPartGrids() {
+    const entries = document.querySelectorAll('.part-entry');
+    entries.forEach(entry => {
+        const typeSelect = entry.querySelector('.part-type-select');
+        const partsGrid = entry.querySelector('.parts-grid');
+        const selectedPartDisplay = entry.querySelector('.selected-part-display');
+        
+        // Only refresh if this entry has a type selected and no item is currently selected
+        if (typeSelect && typeSelect.value && partsGrid && selectedPartDisplay.classList.contains('hidden')) {
+            // Get the current type and rebuild the parts grid
+            const selectedType = typeSelect.value;
+            
+            // Clear and rebuild the parts grid with current filters
+            updatePartsForType(typeSelect, selectedType);
+        }
+        
+        // Update the info display if an item is selected
+        const partSelect = entry.querySelector('.part-name-select');
+        const selectedOption = partSelect?.options[partSelect.selectedIndex];
+        if (selectedOption && selectedOption.value) {
+            const selectedPartInfo = entry.querySelector('.selected-part-info');
+            if (selectedPartInfo) {
+                const itemName = selectedOption.dataset.name || selectedOption.value;
+                const itemBrand = selectedOption.dataset.brand;
+                const techInventoryId = selectedOption.dataset.techInventoryId;
+                const baseStock = parseInt(selectedOption.dataset.stock);
+                const isOpenedItem = selectedOption.dataset.isOpenedItem === '1';
+                
+                // Recalculate dynamic remaining (exclude this entry)
+                const dynamicRemaining = calculateDynamicRemaining(itemName, itemBrand, techInventoryId, baseStock, isOpenedItem, entry);
+                
+                // Update info text
+                let infoText = `${selectedOption.dataset.brand || 'Universal'}`;
+                if (selectedOption.dataset.color) {
+                    infoText += ` • ${selectedOption.dataset.color}`;
+                }
+                
+                if (isOpenedItem) {
+                    const hasVolume = selectedOption.dataset.inkVolume && parseFloat(selectedOption.dataset.inkVolume) > 0;
+                    const remaining = hasVolume ? selectedOption.dataset.remainingVolume : selectedOption.dataset.remainingWeight;
+                    const unit = hasVolume ? 'ml' : 'g';
+                    infoText += ` • ${remaining}${unit} left`;
+                }
+                
+                selectedPartInfo.textContent = infoText;
+            }
+        }
+    });
 }
 
 function setupPartSearch(partEntry, partsData) {
@@ -1976,10 +2245,10 @@ function addPartEntry() {
     const container = document.getElementById('partsContainer');
     const partNumber = container.querySelectorAll('.part-entry').length + 1;
     const entry = document.createElement('div');
-    entry.className = 'part-entry min-w-full bg-white rounded-xl p-4 border-2 border-purple-100 hover:border-purple-200 shadow-sm transition-all duration-200';
+    entry.className = 'part-entry min-w-full bg-white rounded-xl p-2.5 md:p-4 border-2 border-purple-100 hover:border-purple-200 shadow-sm transition-all duration-200';
     entry.innerHTML = `
         <!-- Part entry header -->
-        <div class="flex items-center justify-between mb-3 pb-3 border-b border-purple-100">
+        <div class="flex items-center justify-between mb-2 pb-2 border-b border-purple-100">
             <div class="flex items-center gap-2">
                 <div class="w-7 h-7 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-sm">
                     <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1996,17 +2265,17 @@ function addPartEntry() {
         </div>
 
         <!-- Form fields - mobile optimized stack layout -->
-        <div class="space-y-3">
-            <!-- Part Type Selection (First Step) -->
+        <div class="space-y-2 md:space-y-3">
+            <!-- Item Type Selection (First Step) -->
             <div>
                 <label class="block text-xs md:text-sm font-semibold text-slate-700 mb-1.5 flex items-center gap-1">
-                    <svg class="w-3.5 h-3.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path>
+                    <svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
                     </svg>
-                    Part Type
+                    Item Type
                 </label>
                 <div class="relative">
-                    <select class="part-type-select w-full p-2.5 md:p-3 pl-3 pr-10 border-2 border-slate-200 rounded-lg md:rounded-xl focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 bg-white text-sm md:text-base font-medium text-slate-700 appearance-none cursor-pointer hover:border-indigo-300 transition-all touch-manipulation">
+                    <select class="part-type-select w-full p-2.5 md:p-3 pl-3 pr-10 border-2 border-slate-200 rounded-lg md:rounded-xl focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 bg-white text-sm md:text-base font-medium text-slate-700 appearance-none cursor-pointer hover:border-emerald-300 transition-all touch-manipulation">
                         <option value="">Select type...</option>
                         <option value="consumable">Consumable</option>
                         <option value="printer_part">Printer Part</option>
@@ -2074,50 +2343,71 @@ function addPartEntry() {
                 <div class="part-stock-info mt-1.5 text-xs md:text-sm font-medium"></div>
             </div>
             
-            <!-- Quantity and Unit - side by side on mobile -->
-            <div class="grid grid-cols-2 gap-3">
+            <!-- Quantity and Unit Row -->
+            <div class="grid grid-cols-2 gap-2.5">
                 <!-- Quantity -->
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center gap-1">
+                    <label class="block text-xs md:text-sm font-semibold text-slate-700 mb-1.5 flex items-center gap-1">
                         <svg class="w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path>
                         </svg>
                         Quantity
                     </label>
-                    <div class="relative">
-                        <input type="number" class="part-quantity w-full p-3 pl-3.5 pr-3.5 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-sm font-semibold text-slate-700 hover:border-blue-300 transition-all" 
-                               min="1" placeholder="1" value="1" max="999">
-                    </div>
-                    <div class="availability-text text-xs mt-1.5 font-medium"></div>
+                    <input type="number" class="part-quantity w-full p-2.5 md:p-3 border-2 border-slate-200 rounded-lg md:rounded-xl bg-slate-100 text-sm md:text-base font-semibold text-slate-700 cursor-not-allowed" 
+                           min="1" placeholder="1" value="1" max="999" readonly>
+                    <div class="availability-text text-xs mt-1 font-medium"></div>
                 </div>
                 
                 <!-- Unit -->
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center gap-1">
+                    <label class="block text-xs md:text-sm font-semibold text-slate-700 mb-1.5 flex items-center gap-1">
                         <svg class="w-3.5 h-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
                         </svg>
                         Unit
                     </label>
                     <div class="relative">
-                        <select class="part-unit w-full p-3 pl-3.5 pr-9 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-green-400 focus:border-green-400 bg-white text-sm font-medium text-slate-700 appearance-none cursor-pointer hover:border-green-300 transition-all">
-                            <option value="pieces">Pieces</option>
-                            <option value="ml">ML</option>
-                            <option value="liters">Liters</option>
-                            <option value="grams">Grams</option>
-                            <option value="kg">KG</option>
-                            <option value="bottles">Bottles</option>
-                            <option value="cartridges">Cartridges</option>
-                            <option value="rolls">Rolls</option>
-                            <option value="sheets">Sheets</option>
-                            <option value="sets">Sets</option>
-                        </select>
+                        <input type="text" class="part-unit w-full p-2.5 md:p-3 pl-3 pr-10 border-2 border-slate-200 rounded-lg md:rounded-xl bg-slate-50 text-sm md:text-base font-medium text-slate-700 cursor-not-allowed" value="Pieces" readonly disabled>
                         <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
                             <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                             </svg>
                         </div>
                     </div>
+                </div>
+            </div>
+            
+            <!-- Consumption Type (only for consumables with volume/weight) -->
+            <div class="consumption-fields hidden">
+                <div class="col-span-2 border-t-2 border-slate-200 pt-3 mt-2">
+                    <label class="block text-xs md:text-sm font-semibold text-slate-700 mb-2">
+                        <svg class="w-3.5 h-3.5 text-orange-500 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                        Consumption Type <span class="consumption-capacity-display text-xs text-blue-600"></span>
+                    </label>
+                    <div class="grid grid-cols-2 gap-2 mb-3">
+                        <button type="button" data-consumption-type="full" class="bg-blue-600 text-white p-2 md:p-3 border-2 border-blue-600 rounded-lg md:rounded-xl font-semibold text-xs md:text-sm hover:bg-blue-700 transition-all" onclick="window.selectSRConsumptionType('full', this)">
+                            ✓ Full (All Used)
+                        </button>
+                        <button type="button" data-consumption-type="partial" class="bg-gray-100 text-gray-700 p-2 md:p-3 border-2 border-slate-300 rounded-lg md:rounded-xl font-semibold text-xs md:text-sm hover:bg-blue-50 hover:border-blue-400 transition-all" onclick="window.selectSRConsumptionType('partial', this)">
+                            Partial (Some Used)
+                        </button>
+                    </div>
+                    <input type="hidden" class="consumption-type" value="full">
+                    <input type="hidden" class="consumption-item-capacity" value="">
+                </div>
+                
+                <!-- Amount Consumed Field (shown when partial is selected) -->
+                <div class="consumption-amount-input hidden col-span-2">
+                    <label class="block text-xs md:text-sm font-semibold text-slate-700 mb-1.5">
+                        <svg class="w-3.5 h-3.5 text-orange-500 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                        </svg>
+                        Amount Used <span class="unit-label">(ml/grams)</span>
+                    </label>
+                    <input type="number" class="consumption-amount w-full p-2.5 md:p-3 border-2 border-orange-300 rounded-lg md:rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 font-semibold text-sm md:text-base text-slate-700" 
+                           min="0.1" step="0.1" placeholder="e.g., 50">
                 </div>
             </div>
         </div>
@@ -2175,6 +2465,9 @@ function updateCarousel() {
     
     // Update button states
     updateCarouselButtons();
+    
+    // Refresh stock display for ALL entries to reflect current consumption state
+    refreshAllEntriesStockDisplay();
     
     console.log(`Carousel: Slide ${currentPartSlide + 1} of ${totalPartSlides}`);
 }
@@ -2281,39 +2574,29 @@ function setupPartEntryHandlers(entry) {
                 const category = selectedOption.dataset.category;
                 const brand = selectedOption.dataset.brand;
                 
-                // Update unit selector
-                unitSelect.value = unit;
+                // Unit is now always 'Pieces' (readonly input)
+                // No need to update unitSelect.value
                 
-                // Update quantity max and stock info
-                quantityInput.max = stock;
+                // Calculate dynamic remaining
+                const itemName = selectedOption.dataset.name || selectedOption.value;
+                const itemBrand = selectedOption.dataset.brand;
+                const techInventoryId = selectedOption.dataset.techInventoryId;
+                const isOpenedItem = selectedOption.dataset.isOpenedItem === '1';
+                const currentEntry = partSelect.closest('.part-entry');
+                const dynamicRemaining = calculateDynamicRemaining(itemName, itemBrand, techInventoryId, stock, isOpenedItem, currentEntry);
                 
-                // Show detailed stock information with color-coded badges
-                let stockBadgeColor = 'green';
-                let stockIcon = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>';
+                // Update quantity max to dynamic remaining
+                quantityInput.max = dynamicRemaining;
                 
-                if (stock === 0) {
-                    stockBadgeColor = 'red';
-                    stockIcon = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>';
-                } else if (stock < 10) {
-                    stockBadgeColor = 'orange';
-                    stockIcon = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>';
-                }
-                
+                // Show simple stock information
                 stockInfo.innerHTML = `
-                    <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-${stockBadgeColor}-50 border border-${stockBadgeColor}-200">
-                        <svg class="w-4 h-4 text-${stockBadgeColor}-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            ${stockIcon}
-                        </svg>
-                        <span class="text-${stockBadgeColor}-700 font-semibold text-xs">
-                            ${stock > 0 ? `Available: ${stock} ${unit}` : 'Out of Stock'}
-                        </span>
-                        ${brand ? `<span class="text-slate-500 text-xs">? ${brand}</span>` : ''}
-                        ${category ? `<span class="text-slate-500 text-xs">? ${category}</span>` : ''}
+                    <div class="text-xs text-slate-600 font-medium">
+                        <span class="text-slate-500">Stock:</span> <span class="font-semibold text-slate-700">${dynamicRemaining} ${unit}</span>
                     </div>
                 `;
                 
-                // Validate current quantity
-                validateQuantity(quantityInput, stock, availabilityText);
+                // Validate current quantity with dynamic remaining
+                validateQuantity(quantityInput, dynamicRemaining, availabilityText);
                 
                 // Enable quantity input
                 quantityInput.disabled = false;
@@ -2326,6 +2609,9 @@ function setupPartEntryHandlers(entry) {
                 quantityInput.disabled = true;
             }
             
+            // Refresh all entries' state (stock and partial button)
+            refreshAllEntriesState(partSelect.closest('.part-entry'));
+            
             updatePartsSummary();
         });
     }
@@ -2335,7 +2621,12 @@ function setupPartEntryHandlers(entry) {
         const selectedOption = partSelect.options[partSelect.selectedIndex];
         if (selectedOption.value) {
             const stock = parseInt(selectedOption.dataset.stock);
-            validateQuantity(this, stock, availabilityText);
+            const itemName = selectedOption.dataset.name || selectedOption.value;
+            const itemBrand = selectedOption.dataset.brand;
+            const techInventoryId = selectedOption.dataset.techInventoryId;
+            const isOpenedItem = selectedOption.dataset.isOpenedItem === '1';
+            const dynamicRemaining = calculateDynamicRemaining(itemName, itemBrand, techInventoryId, stock, isOpenedItem, entry);
+            validateQuantity(this, dynamicRemaining, availabilityText);
             
             // Recalculate consumption amount if consumption fields are visible
             const consumptionFields = entry.querySelector('.consumption-fields');
@@ -2363,10 +2654,28 @@ function setupPartEntryHandlers(entry) {
         updatePartsSummary();
     });
     
-    // Unit change handler
-    unitSelect.addEventListener('change', function() {
-        updatePartsSummary();
-    });
+    // Unit is now fixed as 'Pieces', no change handler needed
+    
+    // Add event listener for consumption amount changes
+    const consumptionAmountField = entry.querySelector('.consumption-amount');
+    if (consumptionAmountField) {
+        consumptionAmountField.addEventListener('input', function() {
+            // Re-validate quantity to update "After use" display
+            const selectedOption = partSelect?.options[partSelect.selectedIndex];
+            if (selectedOption && selectedOption.value) {
+                const stock = parseInt(selectedOption.dataset.stock);
+                const itemName = selectedOption.dataset.name || selectedOption.value;
+                const itemBrand = selectedOption.dataset.brand;
+                const techInventoryId = selectedOption.dataset.techInventoryId;
+                const isOpenedItem = selectedOption.dataset.isOpenedItem === '1';
+                const dynamicRemaining = calculateDynamicRemaining(itemName, itemBrand, techInventoryId, stock, isOpenedItem, entry);
+                validateQuantity(quantityInput, dynamicRemaining, availabilityText);
+            }
+            // Refresh all other entries since consumption amount affects "After use" calculations
+            refreshAllEntriesState(entry);
+            updatePartsSummary();
+        });
+    }
     
     // Initially disable quantity input
     quantityInput.disabled = true;
@@ -2374,6 +2683,14 @@ function setupPartEntryHandlers(entry) {
 
 function validateQuantity(quantityInput, maxStock, availabilityText) {
     const value = parseInt(quantityInput.value);
+    
+    // Get the parent entry to check consumption type and calculate proper "after use"
+    const entry = quantityInput.closest('.part-entry');
+    const consumptionTypeField = entry?.querySelector('.consumption-type');
+    const isPartialConsumption = consumptionTypeField?.value === 'partial';
+    const partSelect = entry?.querySelector('.part-name-select');
+    const selectedOption = partSelect?.options[partSelect.selectedIndex];
+    const isOpenedItem = selectedOption?.dataset.isOpenedItem === '1';
     
     if (value > maxStock) {
         quantityInput.value = maxStock;
@@ -2386,14 +2703,18 @@ function validateQuantity(quantityInput, maxStock, availabilityText) {
             </div>
         `;
     } else if (value <= maxStock && value > 0) {
-        const remaining = maxStock - value;
+        let remaining;
+        
+        // OPENED items: After use is always 0 (bottle will be consumed)
+        if (isOpenedItem) {
+            remaining = 0;
+        } else {
+            // SEALED items: After use = current stock - quantity consumed
+            remaining = Math.max(0, maxStock - value);
+        }
+        
         availabilityText.innerHTML = `
-            <div class="flex items-center gap-1 text-blue-600">
-                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                <span class="font-medium">Remaining: ${remaining}</span>
-            </div>
+            <span class="text-xs text-slate-500">After use: <span class="font-semibold text-blue-600">${remaining}</span></span>
         `;
     } else {
         availabilityText.textContent = '';
@@ -2413,29 +2734,83 @@ function updatePartsSummary() {
         const brandSelect = entry.querySelector('.part-brand-select');
         const partSelect = entry.querySelector('.part-name-select');
         const quantityInput = entry.querySelector('.part-quantity');
-        const unitSelect = entry.querySelector('.part-unit');
+        const unitInput = entry.querySelector('.part-unit'); // Now an input, not select
+        const consumptionTypeButtons = entry.querySelectorAll('[data-consumption-type]');
         
         if (partSelect.value && quantityInput.value && parseInt(quantityInput.value) > 0) {
             const selectedOption = partSelect.options[partSelect.selectedIndex];
             const brand = brandSelect ? brandSelect.value : (selectedOption.dataset.brand || '');
+            const color = selectedOption.dataset.color || '';
+            
+            // Get consumption type by checking which button is selected (has bg-blue-600)
+            let consumptionType = '';
+            consumptionTypeButtons.forEach(btn => {
+                if (btn.classList.contains('bg-blue-600')) {
+                    consumptionType = btn.dataset.consumptionType;
+                }
+            });
+            
+            // Get consumption details (ml/g for consumables)
+            const isOpenedItem = selectedOption.dataset.isOpenedItem === '1';
+            const hasVolume = selectedOption.dataset.inkVolume && parseFloat(selectedOption.dataset.inkVolume) > 0;
+            const hasWeight = selectedOption.dataset.tonerWeight && parseFloat(selectedOption.dataset.tonerWeight) > 0;
+            
+            let consumptionDetails = '';
+            if (isOpenedItem) {
+                // For opened items, show remaining amount
+                const remaining = hasVolume ? selectedOption.dataset.remainingVolume : selectedOption.dataset.remainingWeight;
+                const unit = hasVolume ? 'ml' : 'g';
+                consumptionDetails = `${remaining}${unit} consumed`;
+            } else if (hasVolume || hasWeight) {
+                // For sealed consumables, check if partial consumption
+                const capacity = hasVolume ? selectedOption.dataset.inkVolume : selectedOption.dataset.tonerWeight;
+                const unit = hasVolume ? 'ml' : 'g';
+                
+                // Get actual consumption amount for partial
+                const consumptionAmountField = entry.querySelector('.consumption-amount');
+                const isPartial = consumptionType === 'partial';
+                
+                if (isPartial && consumptionAmountField) {
+                    // Read the value even if the field is disabled
+                    const fieldValue = consumptionAmountField.value;
+                    if (fieldValue && !isNaN(parseFloat(fieldValue))) {
+                        const actualAmount = parseFloat(fieldValue);
+                        consumptionDetails = `${actualAmount}${unit} used`;
+                    } else {
+                        // Fallback to showing capacity if no value
+                        consumptionDetails = `${capacity}${unit}`;
+                    }
+                } else if (consumptionType) {
+                    // Full consumption or no amount specified
+                    const totalAmount = parseInt(quantityInput.value) * parseFloat(capacity);
+                    consumptionDetails = `${totalAmount}${unit}`;
+                } else {
+                    consumptionDetails = `${capacity}${unit}`;
+                }
+            }
             
             selectedParts.push({
                 name: partSelect.value,
                 brand: brand,
+                color: color,
                 quantity: parseInt(quantityInput.value),
-                unit: unitSelect.value
+                unit: unitInput ? unitInput.value : 'Pieces',
+                consumption: consumptionDetails
             });
         }
     });
     
-    if (selectedParts.length > 1) {
-        summaryList.innerHTML = selectedParts.map(part => 
+    if (selectedParts.length > 0) {
+        summaryList.innerHTML = selectedParts.map((part, index) => 
             `<div class="flex justify-between items-center">
                 <div class="flex flex-col">
-                    <span>${part.name}</span>
-                    ${part.brand ? `<span class="text-xs text-slate-500">Brand: ${part.brand}</span>` : ''}
+                    <span class="font-medium">${index + 1}. ${part.name}</span>
+                    <div class="flex gap-2 text-xs text-slate-500">
+                        ${part.brand ? `<span>Brand: ${part.brand}</span>` : ''}
+                        ${part.color ? `<span>• Color: ${part.color}</span>` : ''}
+                    </div>
                 </div>
-                <span class="font-medium">${part.quantity} ${part.unit}</span>
+                <span class="font-medium text-blue-600">${part.consumption || `${part.quantity} ${part.unit}`}</span>
             </div>`
         ).join('');
         summaryContainer.classList.remove('hidden');
@@ -2567,6 +2942,17 @@ function isSignatureEmpty() {
 
 // Consumption type selection handler for service requests
 window.selectSRConsumptionType = function(type, button) {
+    // Check if button is disabled
+    if (button.disabled) {
+        const isPartialButton = button.dataset.consumptionType === 'partial';
+        const message = isPartialButton 
+            ? '⚠️ Cannot use Partial on this sealed bottle.\n\nThere is an opened bottle of this item available - please use that one first!'
+            : '⚠️ Cannot use Full consumption on an opened bottle.\n\nPlease use Partial consumption instead.';
+        console.log('⛔ Button is disabled, ignoring click for type:', type);
+        alert(message);
+        return;
+    }
+    
     // Get the parent entry
     const entry = button.closest('.part-entry');
     if (!entry) return;
@@ -2579,14 +2965,17 @@ window.selectSRConsumptionType = function(type, button) {
     // If trying to do partial on a sealed item, check if opened bottles exist
     if (type === 'partial' && !isOpenedItem) {
         // Check if there are any opened bottles of this item in availableParts
-        const itemId = selectedOption?.dataset.id;
+        const partName = selectedOption?.dataset.name;
+        const partBrand = selectedOption?.dataset.brand;
         const openedVersionExists = availableParts.some(p => 
-            p.id == itemId && p.is_opened_item === true
+            p.name === partName && 
+            p.brand === partBrand && 
+            p.is_opened_item === true
         );
         
         if (openedVersionExists) {
             // Show error message
-            showToast('⚠️ Cannot do partial consumption on sealed bottle. An opened bottle exists - please use that first!', 'error');
+            showToast('⚠️ Cannot do partial consumption on sealed bottle. An opened bottle of this item exists - please use that first!', 'error');
             
             // Reset to full consumption
             const fullButton = entry.querySelector('[data-consumption-type="full"]');
@@ -2597,14 +2986,24 @@ window.selectSRConsumptionType = function(type, button) {
         }
     }
     
-    // Update button states - use lighter blue for better text visibility
+    // Update button states
     const buttons = entry.querySelectorAll('[data-consumption-type]');
     buttons.forEach(btn => {
-        btn.classList.remove('bg-blue-600', 'text-white', 'bg-blue-500');
-        btn.classList.add('bg-gray-100', 'text-gray-700');
+        // Remove all possible active/selected classes
+        btn.classList.remove('bg-blue-600', 'bg-blue-500', 'bg-blue-700', 'text-white', 'border-blue-600', 'border-blue-500');
+        // Add default unselected classes
+        btn.classList.add('bg-gray-100', 'text-gray-700', 'border-slate-300');
+        // Clear any inline styles
+        btn.style.color = '';
+        btn.style.backgroundColor = '';
     });
-    button.classList.remove('bg-gray-100', 'text-gray-700');
-    button.classList.add('bg-blue-500', 'text-white');
+    // Remove default classes from selected button
+    button.classList.remove('bg-gray-100', 'text-gray-700', 'border-slate-300', 'text-gray-600', 'text-gray-800');
+    // Add selected classes
+    button.classList.add('bg-blue-600', 'text-white', 'border-blue-600');
+    // Force white text color with inline style to override any conflicts
+    button.style.color = '#ffffff';
+    button.style.backgroundColor = '#2563eb';
     
     // Get elements
     const qtyInput = entry.querySelector('.part-quantity');
@@ -2621,6 +3020,12 @@ window.selectSRConsumptionType = function(type, button) {
     // Show/hide amount input and handle calculations
     if (type === 'full') {
         amountInput.classList.add('hidden');
+        // Re-enable the field when switching to full (in case it was disabled from partial)
+        if (amountField) {
+            amountField.disabled = false;
+            amountField.classList.remove('bg-gray-100', 'cursor-not-allowed');
+            amountField.title = '';
+        }
         // Auto-calculate full consumption: quantity × capacity per piece
         if (qtyInput && capacity > 0) {
             const qty = parseInt(qtyInput.value) || 0;
@@ -2638,9 +3043,150 @@ window.selectSRConsumptionType = function(type, button) {
         if (amountField) {
             amountField.value = totalPartialAmount;
             amountField.placeholder = `e.g., ${totalPartialAmount}`;
+            // Disable the input field for partial - it's auto-calculated
+            amountField.disabled = true;
+            amountField.classList.add('bg-gray-100', 'cursor-not-allowed');
+            amountField.title = 'Partial consumption is automatically calculated as half the total capacity';
         }
     }
+    
+    // Update the "After use" display when consumption type changes
+    const availabilityText = entry.querySelector('.availability-text');
+    if (partSelect && qtyInput && availabilityText) {
+        const selectedOption = partSelect.options[partSelect.selectedIndex];
+        if (selectedOption && selectedOption.value) {
+            const stock = parseInt(selectedOption.dataset.stock);
+            const itemName = selectedOption.dataset.name || selectedOption.value;
+            const itemBrand = selectedOption.dataset.brand;
+            const techInventoryId = selectedOption.dataset.techInventoryId;
+            const isOpenedItem = selectedOption.dataset.isOpenedItem === '1';
+            const dynamicRemaining = calculateDynamicRemaining(itemName, itemBrand, techInventoryId, stock, isOpenedItem, entry);
+            validateQuantity(qtyInput, dynamicRemaining, availabilityText);
+        }
+    }
+    
+    // Refresh stock display and partial button state for ALL entries
+    // (because changing consumption type affects stock calculations for same items in other entries)
+    refreshAllEntriesState(entry);
+    
+    // Update parts summary after consumption type change
+    updatePartsSummary();
 };
+
+// Function to refresh stock display for ALL entries (used when navigating carousel)
+// This ensures stock values reflect cumulative consumption from all selected items
+function refreshAllEntriesStockDisplay() {
+    const allEntries = document.querySelectorAll('.part-entry');
+    
+    allEntries.forEach(entry => {
+        const partSelect = entry.querySelector('.part-name-select');
+        const selectedOption = partSelect?.options[partSelect.selectedIndex];
+        
+        if (!selectedOption || !selectedOption.value) return;
+        
+        const itemName = selectedOption.dataset.name || selectedOption.value;
+        const itemBrand = selectedOption.dataset.brand;
+        const techInventoryId = selectedOption.dataset.techInventoryId;
+        const baseStock = parseInt(selectedOption.dataset.stock || 0);
+        const isOpenedItem = selectedOption.dataset.isOpenedItem === '1';
+        const unit = selectedOption.dataset.unit || 'pieces';
+        
+        // Recalculate dynamic remaining (excluding this entry from the count)
+        const dynamicRemaining = calculateDynamicRemaining(itemName, itemBrand, techInventoryId, baseStock, isOpenedItem, entry);
+        
+        // Update stock display
+        const stockInfo = entry.querySelector('.part-stock-info');
+        if (stockInfo) {
+            stockInfo.innerHTML = `
+                <div class="text-xs text-slate-600 font-medium">
+                    <span class="text-slate-500">Stock:</span> <span class="font-semibold text-slate-700">${dynamicRemaining} ${unit}</span>
+                </div>
+            `;
+        }
+        
+        // Update "After use" display
+        const qtyInput = entry.querySelector('.part-quantity');
+        const availabilityText = entry.querySelector('.availability-text');
+        if (qtyInput && availabilityText && parseInt(qtyInput.value) > 0) {
+            validateQuantity(qtyInput, dynamicRemaining, availabilityText);
+        }
+    });
+}
+
+// Function to refresh stock display and partial button state for all entries
+function refreshAllEntriesState(changedEntry) {
+    const allEntries = document.querySelectorAll('.part-entry');
+    
+    allEntries.forEach(entry => {
+        // Skip the entry that just changed (it's already updated)
+        if (entry === changedEntry) return;
+        
+        const partSelect = entry.querySelector('.part-name-select');
+        const selectedOption = partSelect?.options[partSelect.selectedIndex];
+        
+        if (!selectedOption || !selectedOption.value) return;
+        
+        const itemName = selectedOption.dataset.name || selectedOption.value;
+        const itemBrand = selectedOption.dataset.brand;
+        const techInventoryId = selectedOption.dataset.techInventoryId;
+        const baseStock = parseInt(selectedOption.dataset.stock || 0);
+        const isOpenedItem = selectedOption.dataset.isOpenedItem === '1';
+        const unit = selectedOption.dataset.unit || 'pieces';
+        
+        // Recalculate dynamic remaining
+        const dynamicRemaining = calculateDynamicRemaining(itemName, itemBrand, techInventoryId, baseStock, isOpenedItem, entry);
+        
+        // Update stock display
+        const stockInfo = entry.querySelector('.part-stock-info');
+        if (stockInfo) {
+            stockInfo.innerHTML = `
+                <div class="text-xs text-slate-600 font-medium">
+                    <span class="text-slate-500">Stock:</span> <span class="font-semibold text-slate-700">${dynamicRemaining} ${unit}</span>
+                </div>
+            `;
+        }
+        
+        // Update "After use" display
+        const qtyInput = entry.querySelector('.part-quantity');
+        const availabilityText = entry.querySelector('.availability-text');
+        if (qtyInput && availabilityText) {
+            validateQuantity(qtyInput, dynamicRemaining, availabilityText);
+        }
+        
+        // Update partial button state for sealed items
+        if (!isOpenedItem) {
+            const partialButton = entry.querySelector('[data-consumption-type="partial"]');
+            if (partialButton) {
+                // Check if another entry has partial selected for this item
+                const selectedItems = getSelectedItems(entry);
+                const partialAlreadyUsedInForm = selectedItems.some(selected => 
+                    selected.name === itemName && 
+                    selected.brand === itemBrand && 
+                    selected.consumptionType === 'partial'
+                );
+                
+                // Check if opened version exists in inventory
+                const openedVersionExists = availableParts.some(p => 
+                    p.name === itemName && 
+                    p.brand === itemBrand && 
+                    p.is_opened_item === true
+                );
+                
+                if (openedVersionExists || partialAlreadyUsedInForm) {
+                    partialButton.disabled = true;
+                    partialButton.classList.add('opacity-50', 'cursor-not-allowed');
+                    partialButton.title = openedVersionExists 
+                        ? 'Cannot do partial consumption on sealed bottle - an opened bottle exists, use that first!'
+                        : 'Partial consumption already selected for this item in another entry';
+                } else {
+                    partialButton.disabled = false;
+                    partialButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                    partialButton.title = '';
+                }
+            }
+        }
+    });
+}
 
 // Part selection handler - fetch capacity and show consumption fields if applicable
 window.selectSRPartFromCard = async function(selectElement) {
@@ -2726,14 +3272,21 @@ window.selectSRPartFromCard = async function(selectElement) {
                 fullButton.title = 'Cannot do full consumption on an opened bottle';
             }
             
+            // ENABLE partial button for opened bottles
+            if (partialButton) {
+                partialButton.disabled = false;
+                partialButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                partialButton.title = '';
+            }
+            
             // Select partial button
             if (partialButton) {
                 window.selectSRConsumptionType('partial', partialButton);
             }
             
-            console.log('✅ Opened bottle selected - defaulted to partial, full disabled');
+            console.log(' Opened bottle selected - defaulted to partial, full disabled');
         } else {
-            // For sealed bottles: default to full, enable both
+            // For sealed bottles: default to full, check if opened bottle exists
             if (consumptionType) consumptionType.value = 'full';
             
             // Enable full button
@@ -2743,12 +3296,76 @@ window.selectSRPartFromCard = async function(selectElement) {
                 fullButton.title = '';
             }
             
+            // Check if there are any opened bottles of this item in availableParts
+            const partName = selectedOption.dataset.name || selectedOption.value;
+            const partBrand = selectedOption.dataset.brand;
+            
+            console.log('🔍 Checking for opened bottles:', {
+                partName,
+                partBrand,
+                availablePartsCount: availableParts.length,
+                availableParts: availableParts.map(p => ({
+                    name: p.name,
+                    brand: p.brand,
+                    is_opened_item: p.is_opened_item
+                }))
+            });
+            
+            const openedVersionExists = availableParts.some(p => {
+                const nameMatch = p.name === partName;
+                const brandMatch = p.brand === partBrand;
+                const isOpened = p.is_opened_item === true;
+                
+                console.log('  Checking part:', {
+                    partName: p.name,
+                    nameMatch,
+                    brandMatch,
+                    isOpened,
+                    matches: nameMatch && brandMatch && isOpened
+                });
+                
+                return nameMatch && brandMatch && isOpened;
+            });
+            
+            console.log('🎯 Opened version exists?', openedVersionExists);
+            
+            // Also check if another entry in the form has partial selected for this same item
+            const currentEntry = entry;
+            const selectedItems = getSelectedItems(currentEntry);
+            const partialAlreadyUsedInForm = selectedItems.some(selected => 
+                selected.name === partName && 
+                selected.brand === partBrand && 
+                selected.consumptionType === 'partial'
+            );
+            
+            console.log('🔍 Partial already used in form?', partialAlreadyUsedInForm);
+            
+            // Disable partial button if opened bottle exists OR if partial is already being used for this item in another entry
+            if (partialButton) {
+                if (openedVersionExists) {
+                    partialButton.disabled = true;
+                    partialButton.classList.add('opacity-50', 'cursor-not-allowed');
+                    partialButton.title = 'Cannot do partial consumption on sealed bottle - an opened bottle exists, use that first!';
+                    console.log('✅ Opened bottle exists - partial button DISABLED');
+                } else if (partialAlreadyUsedInForm) {
+                    partialButton.disabled = true;
+                    partialButton.classList.add('opacity-50', 'cursor-not-allowed');
+                    partialButton.title = 'Partial consumption already selected for this item in another entry - only one bottle can be opened at a time';
+                    console.log('✅ Partial already used in form - partial button DISABLED');
+                } else {
+                    partialButton.disabled = false;
+                    partialButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                    partialButton.title = '';
+                    console.log('✅ No opened bottle and no partial in form - partial button ENABLED');
+                }
+            }
+            
             // Select full button
             if (fullButton) {
                 window.selectSRConsumptionType('full', fullButton);
             }
             
-            console.log('✅ Sealed bottle selected - defaulted to full, both enabled');
+            console.log(' Sealed bottle selected - defaulted to full');
         }
     } else {
         console.log('Hiding consumption fields - not a consumable');
@@ -2851,9 +3468,9 @@ async function handleJobCompletion(e) {
                 if (isConsumable && consumptionType) {
                     partData.consumption_type = consumptionType;
                     partData.amount_consumed = amountConsumed ? parseFloat(amountConsumed) : null;
-                    console.log('✅ Adding consumption data to part:', partData);
+                    console.log(' Adding consumption data to part:', partData);
                 } else {
-                    console.log('⚠️ Not a consumable or no consumption type - skipping consumption data');
+                    console.log(' Not a consumable or no consumption type - skipping consumption data');
                 }
                 
                 parts.push(partData);
@@ -2877,7 +3494,6 @@ async function handleJobCompletion(e) {
         // Prepare request data
         const completionData = {
             actions: serviceActions,
-            notes: document.getElementById('additionalNotes').value.trim(),
             parts: parts
         };
         
@@ -2903,7 +3519,7 @@ async function handleJobCompletion(e) {
         console.log('Service completion submitted successfully:', result);
         
         // Show detailed success message
-        let successMessage = 'G?? Service completion submitted successfully!';
+        let successMessage = 'G Service completion submitted successfully!';
         if (parts.length > 0) {
             successMessage += ` ${parts.length} part${parts.length > 1 ? 's' : ''} recorded.`;
         }
@@ -2911,7 +3527,7 @@ async function handleJobCompletion(e) {
         
         // Show approval workflow info
         setTimeout(() => {
-            showToast('=??? Your Institution Admin will review and approve this service completion.', 'info');
+            showToast('=? Your Institution Admin will review and approve this service completion.', 'info');
         }, 2000);
         
         closeJobCompletionModal();
@@ -3169,7 +3785,7 @@ function displayARMResults(requestId, data) {
             <!-- Info Box -->
             <div class="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-2 mt-2">
                 <div class="flex-1">
-                    <p class="text-amber-900 font-semibold text-xs mb-0.5">?? Why These Parts?</p>
+                    <p class="text-amber-900 font-semibold text-xs mb-0.5"> Why These Parts?</p>
                     <p class="text-amber-800 text-[10px] leading-relaxed">
                         Our AI analyzed <strong>${data.total_transactions} past service jobs</strong> on <strong>${data.printer_brand} ${data.printer_model}</strong> 
                         and found these parts are commonly used together. Bringing them now can save you a second trip!

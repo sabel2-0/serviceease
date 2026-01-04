@@ -337,7 +337,7 @@ INSERT INTO service_parts_used (service_request_id, part_id, quantity_used, used
 (60, 16, 1, 6, '2024-09-09 12:15:00', 'Brother Toner TN-760');
 
 -- Verification queries
-SELECT '✅ Test Data Summary' as status;
+SELECT ' Test Data Summary' as status;
 SELECT 
     COUNT(*) as total_institutions,
     (SELECT COUNT(*) FROM users WHERE role = 'institution_user') as institution_users,
@@ -348,5 +348,5 @@ SELECT
     (SELECT COUNT(*) FROM service_parts_used) as parts_used_records
 FROM institutions;
 
-SELECT '✅ Ready for ARM Analysis!' as message;
+SELECT ' Ready for ARM Analysis!' as message;
 SELECT 'Run: cd server && node scripts/association_rule_mining.py analyze_printer "HP" "LaserJet Pro M404n" 0.08 0.4' as next_step;

@@ -110,17 +110,17 @@ All technician service request endpoints now support walk-in requests:
 
 ## Security Considerations
 
-✅ **Maintained Security:**
+ **Maintained Security:**
 - Institution-based requests still require proper technician assignment
 - Walk-in requests are intentionally accessible to all technicians (business requirement)
 - Authentication still required via `authenticateTechnician` middleware
 - Request validation and status checks remain intact
 
-✅ **No Breaking Changes:**
+ **No Breaking Changes:**
 - Existing institution-based functionality unchanged
 - Backward compatible with all existing requests
 - No database schema changes required
 
-## Status: ✅ COMPLETE
+## Status:  COMPLETE
 
 All technician actions now work correctly for both walk-in and institution-based service requests.

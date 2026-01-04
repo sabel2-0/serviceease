@@ -177,17 +177,17 @@ URL: http://localhost:3000/pages/coordinator/voluntary-services.html
 ## Expected Behavior
 
 ### Before This Implementation:
-❌ Coordinator could not see voluntary service requests
-❌ No way to approve/reject voluntary services
-❌ Services stuck in "pending_coordinator" status
+ Coordinator could not see voluntary service requests
+ No way to approve/reject voluntary services
+ Services stuck in "pending_coordinator" status
 
 ### After This Implementation:
-✅ Coordinator sees all pending voluntary services for their institutions
-✅ Can view full details including parts used
-✅ Can approve services (sends to requester for final approval)
-✅ Can reject services with reason
-✅ Proper notifications sent to technician and requester
-✅ Status tracking throughout approval workflow
+ Coordinator sees all pending voluntary services for their institutions
+ Can view full details including parts used
+ Can approve services (sends to requester for final approval)
+ Can reject services with reason
+ Proper notifications sent to technician and requester
+ Status tracking throughout approval workflow
 
 ## Next Steps (Optional Future Enhancements)
 1. Add requester interface for final approval

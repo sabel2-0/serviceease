@@ -1,11 +1,11 @@
 # Railway Cloudinary Configuration Verification
 
-## ✅ Environment Variables Status
+##  Environment Variables Status
 
 ### Confirmed Set on Railway (from screenshot):
-1. **CLOUDINARY_CLOUD_NAME**: `duodt5wlv` ✅
-2. **CLOUDINARY_API_KEY**: `386416582887682` ✅
-3. **CLOUDINARY_API_SECRET**: `kBYTDrBGN9CEYGlK4tYKB61Z6dg` ✅
+1. **CLOUDINARY_CLOUD_NAME**: `duodt5wlv` 
+2. **CLOUDINARY_API_KEY**: `386416582887682` 
+3. **CLOUDINARY_API_SECRET**: `kBYTDrBGN9CEYGlK4tYKB61Z6dg` 
 
 ### Required Additional Variables on Railway:
 4. **MAILJET_API_KEY**: `7e393e28beb083287865803c6a575514`
@@ -13,7 +13,7 @@
 6. **EMAIL_USER**: `serviceeaseph@gmail.com`
 7. **RECAPTCHA_SECRET_KEY**: `6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe`
 
-## 🔍 Railway Database Analysis
+##  Railway Database Analysis
 
 ### Current State:
 - **Database**: `railway` (MySQL on Railway)
@@ -22,19 +22,19 @@
 - **Password**: `YOUR_RAILWAY_PASSWORD`
 
 ### Tables Status:
-- ✅ All 24 tables exist
-- ✅ Foreign key constraints properly configured
-- ⚠️ `temp_user_photos` table is EMPTY (no pending registrations)
-- ⚠️ User ID 5 has status='active' but approval_status='pending' (inconsistent)
+-  All 24 tables exist
+-  Foreign key constraints properly configured
+-  `temp_user_photos` table is EMPTY (no pending registrations)
+-  User ID 5 has status='active' but approval_status='pending' (inconsistent)
 
 ### Users in Database:
 | ID | Name | Email | Role | Status | Approval Status |
 |----|------|-------|------|--------|-----------------|
 | 2 | Admin User | serviceeaseph@gmail.com | admin | active | null |
 | 3 | Test User | markivan.storm@gmail.com | technician | active | approved |
-| 5 | Bongbong Marcos | markivan.note@gmail.com | coordinator | active | **pending** ⚠️ |
+| 5 | Bongbong Marcos | markivan.note@gmail.com | coordinator | active | **pending**  |
 
-## ⚠️ Issues Found
+##  Issues Found
 
 ### 1. User ID 5 - Inconsistent State
 - Has `approval_status='pending'` but `status='active'`
@@ -47,7 +47,7 @@
 - Any new coordinator registration should create entries here
 - Photos should be Cloudinary URLs (not local file paths)
 
-## 🔧 Recommended Actions
+##  Recommended Actions
 
 ### Immediate Steps:
 1. **Delete User ID 5** to clean up inconsistent state:
@@ -77,7 +77,7 @@
 - [ ] Photos visible in coordinator approvals
 - [ ] Approve/reject deletes photos from Cloudinary
 
-## 📝 Code Verification
+##  Code Verification
 
 ### Cloudinary Configuration (server/index.js):
 ```javascript

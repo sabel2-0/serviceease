@@ -1,5 +1,24 @@
 <div id="requests-content" class="tab-content">
-    <div class="container mx-auto px-4 pt-2 pb-28">
+    <!-- Custom Alert Modal -->
+    <div id="customAlertModal" class="fixed inset-0 z-[10000] flex items-center justify-center hidden">
+        <div class="absolute inset-0 bg-gray-900 bg-opacity-75"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl max-w-sm w-full mx-4 modal-content-animated">
+            <div class="p-6">
+                <div class="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-orange-100 rounded-full">
+                    <svg class="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                </div>
+                <h3 id="customAlertTitle" class="text-lg font-bold text-center text-gray-900 mb-3">Warning</h3>
+                <p id="customAlertMessage" class="text-sm text-gray-600 text-center leading-relaxed mb-6"></p>
+                <button id="customAlertOkBtn" class="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 active:scale-95 touch-manipulation">
+                    OK
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container mx-auto px-4 pt-6 pb-4">
         <!-- Custom search animation styles -->
         <style>
             @keyframes slideDown {
@@ -48,6 +67,27 @@
                 transform: scale(1.1);
             }
             
+            /* Custom Alert Modal */
+            #customAlertModal {
+                backdrop-filter: blur(4px);
+                -webkit-backdrop-filter: blur(4px);
+            }
+            
+            @keyframes modalSlideIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(20px) scale(0.95);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0) scale(1);
+                }
+            }
+            
+            .modal-content-animated {
+                animation: modalSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            }
+            
             .page-ellipsis {
                 min-width: 36px;
                 height: 36px;
@@ -59,34 +99,37 @@
                 font-size: 16px;
             }
             
-            /* Mobile bottom navigation fix */
+            /* Mobile bottom navigation fix - Corporate standard approach */
+            /* Bottom nav is 75px + safe area inset */
+            :root {
+                --bottom-nav-height: 75px;
+                --bottom-nav-buffer: 8px;
+                --bottom-nav-total: calc(var(--bottom-nav-height) + var(--bottom-nav-buffer) + env(safe-area-inset-bottom, 0px));
+            }
+            
             @media (max-width: 768px) {
+                /* Main cards container - add proper bottom spacing for fixed nav */
                 #serviceRequestsCardsMobile {
-                    padding-bottom: 8px !important; /* Reduced padding */
+                    padding-bottom: var(--bottom-nav-total) !important;
+                    min-height: auto !important;
                 }
                 
-                /* Ensure last card has minimal margin */
+                /* Ensure last card has proper margin to clear nav */
                 #serviceRequestsCardsMobile > *:last-child {
                     margin-bottom: 8px !important;
                 }
                 
-                /* Pagination should be close to cards */
+                /* Pagination controls also need bottom spacing */
                 #paginationControls {
                     margin-top: 0 !important;
-                }
-                
-                /* Add safe area for iOS devices */
-                @supports (padding-bottom: env(safe-area-inset-bottom)) {
-                    #paginationControls {
-                        padding-bottom: calc(100px + env(safe-area-inset-bottom)) !important;
-                    }
+                    padding-bottom: var(--bottom-nav-total) !important;
                 }
             }
         </style>
         <!-- Header Section -->
-        <div class="max-w-6xl mx-auto mb-8">
+        <div class="max-w-6xl mx-auto mb-2">
             <!-- Mobile Header (No title/subtitle) -->
-            <div class="md:hidden mb-6"></div>
+            <div class="md:hidden mb-2"></div>
             
             <!-- Desktop Header -->
             <div class="hidden md:block bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6">
@@ -144,8 +187,8 @@
             <!-- Mobile Card View -->
             <div class="md:hidden">
                 <!-- Modern Mobile Stats -->
-                <div class="mb-4 px-4">
-                    <div class="bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/50 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30 p-4">
+                <div class="mb-3 px-2">
+                    <div class="bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/50 backdrop-blur-sm rounded-xl shadow-md border border-white/30 p-3">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2">
                                 <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
@@ -157,26 +200,26 @@
                 </div>
                 
                 <!-- Inline Search Bar (always visible) -->
-                <div id="search-bar-container" class="sticky top-0 z-40 bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/50 backdrop-blur-sm border-b-2 border-blue-100 shadow-md px-4 py-3 mx-4 rounded-2xl mb-4">
+                <div id="search-bar-container" class="sticky top-0 z-40 bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/50 backdrop-blur-sm border-b-2 border-blue-100 shadow-md px-3 py-2 mx-2 rounded-xl mb-3">
                     <div class="flex items-center gap-3">
                         <div class="p-2 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-xl flex-shrink-0">
                             <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                             </svg>
                         </div>
-                        <input id="search-input" type="text" class="flex-1 px-3 py-2 text-base font-medium bg-white border-2 border-blue-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder-slate-400" placeholder="Search by request number, issue, institution..." />
+                        <input id="search-input" type="text" class="flex-1 px-3 py-2 text-base font-medium bg-white border-2 border-blue-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder-slate-400" placeholder="Search requests..." />
                     </div>
                     <div class="mt-2 text-xs text-slate-600">
                         <span id="search-count">Type to filter requests...</span>
                     </div>
                 </div>
                 
-                <div id="serviceRequestsCardsMobile" class="px-4 pb-2">
+                <div id="serviceRequestsCardsMobile" class="px-2">
                     <!-- Service request cards will be populated here -->
                 </div>
                 
                 <!-- Pagination Controls -->
-                <div id="paginationControls" class="px-4 pb-32 hidden">
+                <div id="paginationControls" class="px-2 hidden">
                     <div class="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-4 mt-2">
                         <div class="flex items-center justify-center gap-2">
                             <button id="prevPageBtn" class="px-3 py-2 rounded-xl bg-gradient-to-r from-slate-200 to-slate-300 text-slate-700 font-semibold text-sm shadow-md hover:shadow-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1">
@@ -258,24 +301,25 @@
 </div>
 
 <!-- Service Request Detail Modal -->
-<div id="serviceRequestModal" class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/30 hidden">
-    <div class="glass-modal w-full h-full">
-        <!-- Modal Header -->
-        <div class="glass-modal-header">
+<div id="serviceRequestModal" class="fixed inset-0 z-[9999] hidden">
+    <div class="absolute inset-0 bg-gray-900 bg-opacity-90"></div>
+    <div class="absolute inset-0 bg-white z-10 flex flex-col">
+        <!-- Modal Header - Compact -->
+        <div class="bg-gradient-to-r from-blue-500 to-blue-600 px-3 py-2 flex-shrink-0">
             <div class="flex items-center justify-between">
-                <div class="flex items-center gap-4">
-                    <div class="glass-modal-icon">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="flex items-center gap-2">
+                    <div class="p-1.5 bg-white/20 rounded-lg">
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
                         </svg>
                     </div>
                     <div>
-                        <h2 class="glass-modal-title">Service Request</h2>
-                        <p id="modal-request-number" class="text-blue-600 font-semibold text-lg"></p>
+                        <h2 class="text-white font-bold text-sm">Service Request</h2>
+                        <p id="modal-request-number" class="text-blue-100 font-medium text-xs"></p>
                     </div>
                 </div>
-                <button id="closeServiceModal" class="glass-close-button" onclick="window.closeServiceRequestModal && window.closeServiceRequestModal()">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button id="closeServiceModal" class="p-1.5 bg-white hover:bg-gray-100 rounded-lg transition-colors" onclick="window.closeServiceRequestModal && window.closeServiceRequestModal()">
+                    <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
                 </button>
@@ -283,12 +327,12 @@
         </div>
 
         <!-- Modal Content -->
-        <div class="glass-modal-content">
+        <div class="flex-1 overflow-y-auto bg-white">
             <div id="serviceRequestContent">
                 <!-- Loading State -->
-                <div id="modalLoadingState" class="glass-loading-container">
-                    <div class="glass-spinner"></div>
-                    <p class="glass-loading-text">Loading request details...</p>
+                <div id="modalLoadingState" class="flex flex-col items-center justify-center py-8">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <p class="text-slate-500 text-sm mt-2">Loading request details...</p>
                 </div>
             </div>
         </div>
@@ -296,24 +340,22 @@
 </div>
 
 <!-- Job Completion Modal - Mobile Optimized -->
-<div id="jobCompletionModal" class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm hidden">
-    <div class="glass-modal w-full h-full max-h-screen overflow-hidden flex flex-col">
-        <!-- Modal Header - Sticky on Mobile -->
-        <div class="glass-modal-header bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 flex-shrink-0 sticky top-0 z-10 shadow-lg">
-            <div class="flex items-center justify-between px-4 py-3 md:px-6 md:py-4">
-                <div class="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
-                    <div class="glass-modal-icon bg-white/30 backdrop-blur-sm p-2 md:p-3 rounded-xl md:rounded-2xl shadow-lg flex-shrink-0">
-                        <svg class="w-5 h-5 md:w-6 md:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<div id="jobCompletionModal" class="fixed inset-0 z-[9999] hidden">
+    <div class="absolute inset-0 bg-gray-900 bg-opacity-90"></div>
+    <div class="relative glass-modal w-full h-full overflow-hidden flex flex-col z-10 bg-white">
+        <!-- Modal Header - Compact for Mobile -->
+        <div class="bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 flex-shrink-0 sticky top-0 z-10">
+            <div class="flex items-center justify-between px-3 py-2">
+                <div class="flex items-center gap-2 flex-1 min-w-0">
+                    <div class="bg-white/30 p-1.5 rounded-lg flex-shrink-0">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
                     </div>
-                    <div class="flex-1 min-w-0">
-                        <h2 class="glass-modal-title text-white text-base md:text-xl font-bold leading-tight truncate">Complete Service</h2>
-                        <p id="completion-modal-request-number" class="text-white/90 font-semibold text-xs md:text-lg mt-0.5 truncate"></p>
-                    </div>
+                    <h2 class="text-white text-base font-bold">Complete Service</h2>
                 </div>
-                <button id="closeCompletionModal" class="glass-close-button bg-white/20 hover:bg-white/30 p-2 md:p-2.5 rounded-xl transition-all flex-shrink-0 ml-2" onclick="window.closeJobCompletionModal && window.closeJobCompletionModal()">
-                    <svg class="w-5 h-5 md:w-6 md:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button id="closeCompletionModal" class="bg-white hover:bg-gray-100 p-1.5 rounded-lg transition-all flex-shrink-0" onclick="window.closeJobCompletionModal && window.closeJobCompletionModal()">
+                    <svg class="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
                 </button>
@@ -321,59 +363,55 @@
         </div>
 
         <!-- Modal Content - Scrollable -->
-        <div class="glass-modal-content flex-1 overflow-y-auto overscroll-contain pb-32 md:pb-24">
+        <div class="flex-1 overflow-y-auto overscroll-contain bg-white">
             <div id="jobCompletionContent" class="w-full">
-                <form id="jobCompletionForm" class="space-y-3 md:space-y-4 px-0 py-3 md:p-4" onsubmit="handleJobCompletion(event)">
+                <form id="jobCompletionForm" onsubmit="handleJobCompletion(event)">
                     <!-- Request Summary - Mobile Optimized -->
-                    <div class="glass-info-card bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-none md:rounded-2xl p-4 md:p-6 shadow-sm w-full">
-                        <div class="flex items-center gap-2 mb-3">
-                            <div class="p-2 bg-blue-500 rounded-xl shadow-md">
-                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="bg-gradient-to-br from-blue-50 to-indigo-50 border-b border-blue-200 p-3 w-full">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="p-1.5 bg-blue-500 rounded-lg">
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
                                 </svg>
                             </div>
-                            <h3 class="glass-card-title text-base md:text-xl font-bold text-slate-800">Request Summary</h3>
+                            <h3 class="text-sm font-bold text-slate-800">Request Summary</h3>
                         </div>
-                        <div id="completionRequestSummary" class="text-slate-700 text-sm md:text-base space-y-1.5">
+                        <div id="completionRequestSummary" class="text-slate-700 text-sm space-y-1">
                             <!-- Populated dynamically -->
                         </div>
                     </div>
 
-                    <!-- Service Actions - Mobile Optimized -->
-                    <div class="glass-info-card bg-white border-2 border-slate-200 rounded-none md:rounded-2xl p-4 md:p-6 shadow-sm w-full">
-                        <div class="flex items-start gap-2 mb-3">
-                            <div class="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-md flex-shrink-0">
-                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <!-- Service Actions -->
+                    <div class="bg-white border-b border-slate-200 p-3 w-full">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="p-1.5 bg-blue-500 rounded-lg flex-shrink-0">
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                                 </svg>
                             </div>
                             <div class="flex-1">
-                                <h3 class="glass-card-title text-base md:text-xl font-bold text-slate-800 leading-tight">
-                                    Actions Performed <span class="text-red-500 text-sm">*</span>
-                                </h3>
-                                <p class="text-xs text-slate-500 mt-0.5">Describe what you did</p>
+                                <h3 class="text-sm font-bold text-slate-800">Actions Performed <span class="text-red-500">*</span></h3>
+                                <p class="text-xs text-slate-500">Describe what you did</p>
                             </div>
                         </div>
-                        <textarea id="serviceActions" class="w-full p-3 md:p-4 border-2 border-slate-300 rounded-lg md:rounded-xl resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm md:text-base bg-white shadow-inner transition-all" 
-                                  rows="4" 
+                        <textarea id="serviceActions" class="w-full p-2.5 border border-slate-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white" 
+                                  rows="3" 
                                   placeholder="e.g., Replaced toner cartridge, cleaned print head..." required></textarea>
                     </div>
 
-                    <!-- Items Used - Mobile Optimized -->
-                    <div class="glass-info-card overflow-hidden bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-none md:rounded-2xl shadow-sm w-full">
-                        <div class="p-4 md:p-6">
-                            <div class="mb-4 pb-3 border-b-2 border-purple-200">
-                                <div class="flex items-start gap-2 mb-2">
-                                    <div class="p-2 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg flex-shrink-0">
-                                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <!-- Items Used -->
+                    <div class="bg-gradient-to-br from-purple-50 to-indigo-50 border-b border-purple-200 w-full">
+                        <div class="p-3">
+                            <div class="mb-3 pb-2 border-b border-purple-200">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <div class="p-1.5 bg-purple-500 rounded-lg flex-shrink-0">
+                                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
                                         </svg>
                                     </div>
                                     <div class="flex-1 min-w-0">
-                                        <h3 class="text-base md:text-xl font-bold text-slate-800 leading-tight">Parts & Consumables</h3>
-                                        <p class="text-xs text-slate-600 leading-relaxed mt-0.5">
-                                            Select items used during service
-                                        </p>
+                                        <h3 class="text-sm font-bold text-slate-800">Parts & Consumables</h3>
+                                        <p class="text-xs text-slate-600">Select items used</p>
                                     </div>
                                 </div>
                                 
@@ -422,9 +460,9 @@
                                     <!-- Parts Container -->
                                     <div id="partsContainer" class="flex transition-transform duration-500 ease-in-out" style="transform: translateX(0);">
                                         <!-- Initial Part Entry - Full Width -->
-                                        <div class="part-entry min-w-full bg-white rounded-lg md:rounded-xl p-3 md:p-5 border-2 border-purple-100 hover:border-purple-200 shadow-sm transition-all duration-200">
+                                        <div class="part-entry min-w-full bg-white rounded-lg md:rounded-xl p-2.5 md:p-5 border-2 border-purple-100 hover:border-purple-200 shadow-sm transition-all duration-200">
                                             <!-- Part entry header - Compact -->
-                                            <div class="flex items-center justify-between mb-3 pb-2 border-b border-purple-100">
+                                            <div class="flex items-center justify-between mb-2 pb-2 border-b border-purple-100">
                                                 <div class="flex items-center gap-1.5">
                                                     <div class="w-7 h-7 md:w-8 md:h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-sm">
                                                         <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -441,7 +479,7 @@
                                             </div>
 
                                             <!-- Form fields - Compact spacing -->
-                                            <div class="space-y-3">
+                                            <div class="space-y-2 md:space-y-3">
                                                 <!-- Part Type Selection (First Step) -->
                                                 <div>
                                                     <label class="block text-xs md:text-sm font-semibold text-slate-700 mb-1.5 flex items-center gap-1">
@@ -529,8 +567,8 @@
                                                             </svg>
                                                             Quantity
                                                         </label>
-                                                        <input type="number" class="part-quantity w-full p-2.5 md:p-3 border-2 border-slate-200 rounded-lg md:rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-sm md:text-base font-semibold text-slate-700 hover:border-blue-300 transition-all touch-manipulation" 
-                                                               min="1" placeholder="1" value="1" max="999">
+                                                        <input type="number" class="part-quantity w-full p-2.5 md:p-3 border-2 border-slate-200 rounded-lg md:rounded-xl bg-slate-100 text-sm md:text-base font-semibold text-slate-700 cursor-not-allowed" 
+                                                               min="1" placeholder="1" value="1" max="999" readonly>
                                                         <div class="availability-text text-xs mt-1 font-medium"></div>
                                                     </div>
                                                     
@@ -543,18 +581,7 @@
                                                             Unit
                                                         </label>
                                                         <div class="relative">
-                                                            <select class="part-unit w-full p-2.5 md:p-3 pl-3 pr-10 border-2 border-slate-200 rounded-lg md:rounded-xl focus:ring-2 focus:ring-green-400 focus:border-green-400 bg-white text-sm md:text-base font-medium text-slate-700 appearance-none cursor-pointer hover:border-green-300 transition-all touch-manipulation">
-                                                                <option value="pieces">Pieces</option>
-                                                                <option value="ml">ML</option>
-                                                                <option value="liters">Liters</option>
-                                                                <option value="grams">Grams</option>
-                                                                <option value="kg">KG</option>
-                                                                <option value="bottles">Bottles</option>
-                                                                <option value="cartridges">Cartridges</option>
-                                                                <option value="rolls">Rolls</option>
-                                                                <option value="sheets">Sheets</option>
-                                                                <option value="sets">Sets</option>
-                                                            </select>
+                                                            <input type="text" class="part-unit w-full p-2.5 md:p-3 pl-3 pr-10 border-2 border-slate-200 rounded-lg md:rounded-xl bg-slate-50 text-sm md:text-base font-medium text-slate-700 cursor-not-allowed" value="Pieces" readonly disabled>
                                                             <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
                                                                 <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
@@ -577,7 +604,7 @@
                                                             <button type="button" data-consumption-type="full" class="bg-blue-600 text-white p-2 md:p-3 border-2 border-blue-600 rounded-lg md:rounded-xl font-semibold text-xs md:text-sm hover:bg-blue-700 transition-all" onclick="window.selectSRConsumptionType('full', this)">
                                                                 ✓ Full (All Used)
                                                             </button>
-                                                            <button type="button" data-consumption-type="partial" class="bg-gray-100 text-gray-700 p-2 md:p-3 border-2 border-slate-300 rounded-lg md:rounded-xl font-semibold text-xs md:text-sm hover:bg-orange-50 hover:border-orange-400 transition-all" onclick="window.selectSRConsumptionType('partial', this)">
+                                                            <button type="button" data-consumption-type="partial" class="bg-gray-100 text-gray-700 p-2 md:p-3 border-2 border-slate-300 rounded-lg md:rounded-xl font-semibold text-xs md:text-sm hover:bg-blue-50 hover:border-blue-400 transition-all" onclick="window.selectSRConsumptionType('partial', this)">
                                                                 Partial (Some Used)
                                                             </button>
                                                         </div>
@@ -615,20 +642,18 @@
                                     </div>
                                 </div>
                                 
-                                <!-- Parts Summary - Mobile Optimized -->
-                                <div id="partsSummary" class="mt-4 bg-gradient-to-br from-white via-purple-50/50 to-indigo-50 rounded-xl border-2 border-purple-200 overflow-hidden shadow-md hidden">
-                                    <div class="px-4 py-3 bg-gradient-to-r from-purple-500 via-purple-600 to-indigo-600 border-b-2 border-purple-400">
-                                        <h4 class="text-sm md:text-base font-bold text-white flex items-center gap-2">
-                                            <div class="p-1 bg-white/20 rounded-lg">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
-                                                </svg>
-                                            </div>
+                                <!-- Parts Summary -->
+                                <div id="partsSummary" class="mt-3 bg-purple-50 rounded-lg border border-purple-200 overflow-hidden hidden">
+                                    <div class="px-3 py-2 bg-purple-500">
+                                        <h4 class="text-xs font-bold text-white flex items-center gap-1.5">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                                            </svg>
                                             <span>Selected Items</span>
                                         </h4>
                                     </div>
-                                    <div class="p-4 bg-white">
-                                        <div id="partsSummaryList" class="space-y-2">
+                                    <div class="p-2 bg-white">
+                                        <div id="partsSummaryList" class="space-y-1.5">
                                             <!-- Summary items added here -->
                                         </div>
                                     </div>
@@ -638,40 +663,38 @@
                     </div>
 
                     <!-- Completion Photo - Required -->
-                    <div class="bg-gradient-to-br from-white to-blue-50/50 rounded-none md:rounded-2xl p-4 md:p-6 border-2 border-blue-200 shadow-sm w-full">
-                        <div class="flex items-start gap-2 mb-3">
-                            <div class="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-md flex-shrink-0">
-                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="bg-white border-b border-slate-200 p-3 w-full">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="p-1.5 bg-blue-500 rounded-lg flex-shrink-0">
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                 </svg>
                             </div>
                             <div class="flex-1">
-                                <h3 class="text-base md:text-xl font-bold text-slate-800 leading-tight flex items-center gap-2">
-                                    Completion Photo <span class="text-red-500 text-sm">*</span>
-                                </h3>
-                                <p class="text-xs text-slate-500 mt-0.5">Take a photo of completed work</p>
+                                <h3 class="text-sm font-bold text-slate-800">Completion Photo <span class="text-red-500">*</span></h3>
+                                <p class="text-xs text-slate-500">Take a photo of completed work</p>
                             </div>
                         </div>
 
                         <!-- Camera/Photo Area -->
-                        <div class="space-y-3">
+                        <div class="space-y-2">
                             <!-- Camera Button -->
                             <div id="cameraArea">
                                 <input type="file" id="completionPhotoInput" accept="image/*" capture="environment" class="hidden" required>
-                                <button type="button" onclick="openCamera()" class="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-semibold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-3">
-                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <button type="button" onclick="openCamera()" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg transition-all flex items-center justify-center gap-2">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                     </svg>
-                                    <span class="text-lg">Take Photo</span>
+                                    <span class="text-sm">Take Photo</span>
                                 </button>
                             </div>
 
                             <!-- Photo Preview -->
                             <div id="photoPreview" class="hidden">
-                                <div class="relative rounded-xl overflow-hidden border-2 border-blue-200 shadow-lg">
-                                    <img id="previewImage" src="" alt="Completion photo" class="w-full h-auto max-h-96 object-cover">
+                                <div class="relative rounded-lg overflow-hidden border border-blue-200">
+                                    <img id="previewImage" src="" alt="Completion photo" class="w-full h-auto max-h-64 object-cover">
                                     <div class="absolute top-2 right-2 flex gap-2">
                                         <button type="button" onclick="retakePhoto()" class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg shadow-lg transition-all">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -697,65 +720,125 @@
                         </div>
                     </div>
 
-                    <!-- Additional Notes - Full Width -->
-                    <div class="bg-gradient-to-br from-white to-green-50/50 rounded-none md:rounded-2xl p-4 md:p-6 border-2 border-green-200 shadow-sm w-full">
-                        <div class="flex items-start gap-2 mb-2">
-                            <div class="p-2 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-md flex-shrink-0">
-                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path>
-                                </svg>
-                            </div>
-                            <div class="flex-1">
-                                <h3 class="text-base md:text-xl font-bold text-slate-800 leading-tight">Additional Notes</h3>
-                                <p class="text-xs text-slate-500 mt-0.5">Optional observations</p>
-                            </div>
+                    <!-- Approval Notice -->
+                    <div class="border-l-4 border-blue-500 bg-blue-50 p-3 w-full">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <p class="text-blue-800 text-xs">Sent to Institution Admin for review. Parts deducted upon approval.</p>
                         </div>
-                        <textarea id="additionalNotes" class="w-full p-3 md:p-4 border-2 border-green-200 rounded-lg md:rounded-xl resize-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white shadow-inner transition-all hover:border-green-300 text-slate-700 text-sm md:text-base" 
-                                  rows="3" 
-                                  placeholder="Any recommendations or observations..."></textarea>
                     </div>
 
-                    <!-- Approval Notice - Full Width -->
-                    <div class="glass-info-card border-l-4 border-blue-500 bg-blue-50/80 rounded-none md:rounded-xl p-3 md:p-4 shadow-sm w-full">
-                        <div class="flex items-start gap-2">
-                            <div class="flex-shrink-0 w-7 h-7 md:w-8 md:h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <h3 class="text-sm md:text-base font-semibold text-blue-900 mb-1">Approval Required</h3>
-                                <p class="text-blue-800 text-xs md:text-sm leading-relaxed">
-                                    This will be sent to your Institution Admin for review. Parts will be deducted upon approval.
-                                </p>
-                            </div>
-                        </div>
+                    <!-- Submit Button -->
+                    <div class="p-3">
+                        <button type="submit" id="submitCompletion" class="w-full py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2 text-sm">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span>Submit</span>
+                        </button>
                     </div>
                 </form>
-            </div>
-        </div>
-
-        <!-- Modal Actions - Fixed at Bottom, Compact Buttons -->
-        <div class="glass-actions-container fixed bottom-0 left-0 right-0 bg-white/98 backdrop-blur-md border-t-2 border-slate-200 p-3 md:p-4 z-[10000] shadow-2xl safe-area-inset-bottom">
-            <div class="max-w-4xl mx-auto flex flex-row justify-center gap-2 md:gap-3">
-                <button type="button" id="cancelCompletion" class="glass-action-secondary flex-1 max-w-[140px] md:max-w-xs px-4 py-2.5 md:py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg md:rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 shadow-md hover:shadow-lg active:scale-98 touch-manipulation border-2 border-slate-200 text-sm md:text-base" onclick="window.closeJobCompletionModal && window.closeJobCompletionModal()">
-                    <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                    <span>Cancel</span>
-                </button>
-                <button type="submit" form="jobCompletionForm" id="submitCompletion" class="glass-action-primary flex-1 max-w-[180px] md:max-w-xs px-4 py-2.5 md:py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold rounded-lg md:rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 shadow-lg hover:shadow-xl active:scale-98 touch-manipulation text-sm md:text-base">
-                    <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    <span>Submit</span>
-                </button>
             </div>
         </div>
     </div>
 </div>
 <!-- External script will be loaded by technician.html -->
 
+<!-- Service Completion Success Modal -->
+<div id="completionSuccessModal" class="fixed inset-0 z-[99999] hidden">
+    <div class="absolute inset-0 bg-gray-900/95 backdrop-blur-sm"></div>
+    <div class="relative h-full flex items-center justify-center p-4 z-10">
+        <div class="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-success-bounce">
+            <!-- Success Animation Header -->
+            <div class="bg-gradient-to-br from-green-400 via-emerald-500 to-teal-500 p-8 text-center relative overflow-hidden">
+                <!-- Animated circles background -->
+                <div class="absolute inset-0 overflow-hidden">
+                    <div class="absolute -top-10 -left-10 w-40 h-40 bg-white/10 rounded-full animate-pulse"></div>
+                    <div class="absolute -bottom-10 -right-10 w-32 h-32 bg-white/10 rounded-full animate-pulse" style="animation-delay: 0.5s"></div>
+                </div>
+                
+                <!-- Success icon with animation -->
+                <div class="relative">
+                    <div class="w-24 h-24 mx-auto bg-white rounded-full flex items-center justify-center shadow-xl animate-success-check">
+                        <svg class="w-14 h-14 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path class="success-checkmark" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                    </div>
+                    <h2 class="text-white text-2xl font-bold mt-4">Job Complete!</h2>
+                    <p class="text-white/90 text-sm mt-1">Service submitted for approval</p>
+                </div>
+            </div>
+            
+            <!-- Details Card -->
+            <div class="p-5 space-y-4">
+                <div id="successRequestDetails" class="bg-slate-50 rounded-xl p-4 space-y-3">
+                    <!-- Populated dynamically -->
+                </div>
+                
+                <!-- Status Badge -->
+                <div class="flex items-center justify-center gap-2 py-3 bg-amber-50 rounded-xl border border-amber-200">
+                    <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span class="text-amber-700 font-medium text-sm">Awaiting Admin Approval</span>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="grid grid-cols-2 gap-3 pt-2">
+                    <button onclick="window.location.href='/technician/history.html'" class="flex items-center justify-center gap-2 py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition-all">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        History
+                    </button>
+                    <button onclick="closeCompletionSuccessModal()" class="flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-semibold rounded-xl transition-all shadow-lg">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        Done
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    @keyframes successBounce {
+        0% { transform: scale(0.3); opacity: 0; }
+        50% { transform: scale(1.05); }
+        70% { transform: scale(0.95); }
+        100% { transform: scale(1); opacity: 1; }
+    }
+    
+    @keyframes successCheck {
+        0% { transform: scale(0) rotate(-45deg); }
+        50% { transform: scale(1.2) rotate(0deg); }
+        100% { transform: scale(1) rotate(0deg); }
+    }
+    
+    @keyframes checkmarkDraw {
+        0% { stroke-dashoffset: 50; }
+        100% { stroke-dashoffset: 0; }
+    }
+    
+    .animate-success-bounce {
+        animation: successBounce 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+    }
+    
+    .animate-success-check {
+        animation: successCheck 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) 0.2s forwards;
+        transform: scale(0);
+    }
+    
+    .success-checkmark {
+        stroke-dasharray: 50;
+        stroke-dashoffset: 50;
+        animation: checkmarkDraw 0.6s ease-out 0.4s forwards;
+    }
+</style>
 
 
 

@@ -829,6 +829,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('Select a printer');
                 return;
             }
+            
+            // Get the selected printer name from the dropdown
+            const selectedOption = selectList.options[selectList.selectedIndex];
+            const printerName = selectedOption ? selectedOption.textContent : 'Printer';
+            const clientName = selectedInstitution ? selectedInstitution.name : 'Client';
+            
             const payload = { printer_id: inventoryId };
             try {
                 const token = localStorage.getItem('token');
@@ -844,6 +850,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.body.removeChild(modal);
                 await fetchPrinters();
                 await loadAvailableInventory();
+                
+                // Show success modal
+                showPrinterSuccessModal(printerName, clientName);
             } catch (e) {
                 console.error(e);
                 alert('Failed to assign printer');
@@ -882,6 +891,24 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize
     fetchInstitutions().then(async () => {
         await loadAvailableInventory();
+        
+        // Check if there's an institution parameter in the URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const institutionId = urlParams.get('institution');
+        if (institutionId) {
+            // Find the institution and auto-select it
+            const institution = allInstitutions.find(inst => inst.institution_id === institutionId);
+            if (institution) {
+                selectClient(institution);
+                // Scroll to the selected client section
+                setTimeout(() => {
+                    const selectedSection = document.getElementById('selectedClientSection');
+                    if (selectedSection) {
+                        selectedSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }, 300);
+            }
+        }
     });
 });
 
@@ -903,6 +930,27 @@ function closeNoPrintersModal() {
 function goToInventoryItems() {
     // Navigate to inventory items page
     window.location.href = '/pages/admin/inventory-items.html';
+}
+
+// Modal Functions for Printer Assigned Success
+function showPrinterSuccessModal(printerName, clientName) {
+    const modal = document.getElementById('printerSuccessModal');
+    const printerNameEl = document.getElementById('printerSuccessName');
+    const clientNameEl = document.getElementById('printerSuccessClient');
+    
+    if (printerNameEl) printerNameEl.textContent = printerName;
+    if (clientNameEl) clientNameEl.textContent = clientName;
+    
+    if (modal) {
+        modal.classList.remove('hidden');
+    }
+}
+
+function closePrinterSuccessModal() {
+    const modal = document.getElementById('printerSuccessModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
 }
 
 

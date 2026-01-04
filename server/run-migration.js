@@ -22,7 +22,7 @@ async function runMigration() {
                 } catch (error) {
                     // Ignore errors for already existing columns
                     if (error.code === 'ER_DUP_FIELDNAME' || error.message.includes('Duplicate column name')) {
-                        console.log(`⚠ Statement ${i + 1} skipped (column already exists)`);
+                        console.log(` Statement ${i + 1} skipped (column already exists)`);
                     } else {
                         throw error;
                     }

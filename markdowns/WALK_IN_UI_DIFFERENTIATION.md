@@ -153,6 +153,6 @@ WHERE (ta.technician_id = ?) OR (sr.is_walk_in = TRUE)
 - Backward compatible with regular institution-based requests
 - All existing functionality preserved
 
-## Status: ✅ COMPLETE
+## Status:  COMPLETE
 
 All technician UI components now properly differentiate between walk-in and institution-based service requests.

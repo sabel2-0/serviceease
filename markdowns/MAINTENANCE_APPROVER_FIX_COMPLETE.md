@@ -6,7 +6,7 @@ The `maintenance_services` table had `approved_by_institution_admin` column, but
 ## Solution Implemented
 
 ### Database Changes
-✅ **Column Renamed**: `approved_by_institution_admin` → `approved_by_user_id`
+ **Column Renamed**: `approved_by_institution_admin` → `approved_by_user_id`
 - This generic name now correctly represents that either role can approve
 - Foreign key updated to reference `users(id)`
 - Added column comment: "User ID of approver (can be institution_admin or institution_user)"
@@ -146,11 +146,11 @@ LEFT JOIN users u ON ms.approved_by_user_id = u.id
 ```
 
 ## Benefits
-✅ **Accurate naming**: Column name reflects actual usage
-✅ **Flexible approvals**: Both roles can approve without confusion
-✅ **Cleaner structure**: Removed 9 redundant columns
-✅ **Single source of truth**: One `status` field, one `approved_by_user_id`
-✅ **Audit trail**: Can see WHO approved and WHAT ROLE they had
+ **Accurate naming**: Column name reflects actual usage
+ **Flexible approvals**: Both roles can approve without confusion
+ **Cleaner structure**: Removed 9 redundant columns
+ **Single source of truth**: One `status` field, one `approved_by_user_id`
+ **Audit trail**: Can see WHO approved and WHAT ROLE they had
 
 ## Files Modified
 1. `c:\Users\marki\Desktop\SE\fix_maintenance_services_approver.sql` - Migration script

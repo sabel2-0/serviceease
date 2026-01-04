@@ -12,7 +12,7 @@ router.post('/analyze', async (req, res) => {
     try {
         const { printer_brand, printer_model, min_support, min_confidence } = req.body;
 
-        console.log('🔍 Running ARM analysis:', { printer_brand, printer_model, min_support, min_confidence });
+        console.log(' Running ARM analysis:', { printer_brand, printer_model, min_support, min_confidence });
 
         // Default parameters
         const support = min_support || 0.1;
@@ -40,7 +40,7 @@ router.post('/analyze', async (req, res) => {
 
         pythonProcess.on('close', (code) => {
             if (code !== 0) {
-                console.error('❌ Python script error:', errorString);
+                console.error(' Python script error:', errorString);
                 return res.status(500).json({
                     success: false,
                     message: 'Analysis failed',
@@ -52,7 +52,7 @@ router.post('/analyze', async (req, res) => {
                 const result = JSON.parse(dataString);
                 return res.json(result);
             } catch (parseError) {
-                console.error('❌ JSON parse error:', parseError);
+                console.error(' JSON parse error:', parseError);
                 return res.status(500).json({
                     success: false,
                     message: 'Failed to parse analysis results',
@@ -62,7 +62,7 @@ router.post('/analyze', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ ARM analysis error:', error);
+        console.error(' ARM analysis error:', error);
         res.status(500).json({
             success: false,
             message: 'Analysis failed',
@@ -78,7 +78,7 @@ router.post('/analyze-all', async (req, res) => {
     try {
         const { min_support, min_confidence } = req.body;
 
-        console.log('🔍 Running ARM analysis for all printers...');
+        console.log(' Running ARM analysis for all printers...');
 
         const support = min_support || 0.1;
         const confidence = min_confidence || 0.5;
@@ -101,7 +101,7 @@ router.post('/analyze-all', async (req, res) => {
 
         pythonProcess.on('close', (code) => {
             if (code !== 0) {
-                console.error('❌ Python script error:', errorString);
+                console.error(' Python script error:', errorString);
                 return res.status(500).json({
                     success: false,
                     message: 'Analysis failed',
@@ -113,7 +113,7 @@ router.post('/analyze-all', async (req, res) => {
                 const result = JSON.parse(dataString);
                 return res.json(result);
             } catch (parseError) {
-                console.error('❌ JSON parse error:', parseError);
+                console.error(' JSON parse error:', parseError);
                 return res.status(500).json({
                     success: false,
                     message: 'Failed to parse analysis results',
@@ -123,7 +123,7 @@ router.post('/analyze-all', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ ARM analysis error:', error);
+        console.error(' ARM analysis error:', error);
         res.status(500).json({
             success: false,
             message: 'Analysis failed',
@@ -159,7 +159,7 @@ router.get('/cached/:brand/:model', async (req, res) => {
         res.json(analysisData);
 
     } catch (error) {
-        console.error('❌ Error fetching cached analysis:', error);
+        console.error(' Error fetching cached analysis:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to fetch cached analysis',
@@ -228,7 +228,7 @@ router.get('/recommendations/:inventoryItemId', async (req, res) => {
 
         pythonProcess.on('close', async (code) => {
             if (code !== 0) {
-                console.error('❌ Python script error:', errorString);
+                console.error(' Python script error:', errorString);
                 return res.status(500).json({
                     success: false,
                     message: 'Analysis failed',
@@ -253,7 +253,7 @@ router.get('/recommendations/:inventoryItemId', async (req, res) => {
 
                 return res.json({ ...result, cached: false });
             } catch (parseError) {
-                console.error('❌ JSON parse error:', parseError);
+                console.error(' JSON parse error:', parseError);
                 return res.status(500).json({
                     success: false,
                     message: 'Failed to parse analysis results',
@@ -263,7 +263,7 @@ router.get('/recommendations/:inventoryItemId', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ Error getting recommendations:', error);
+        console.error(' Error getting recommendations:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to get recommendations',
@@ -320,7 +320,7 @@ router.get('/statistics', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ Error getting statistics:', error);
+        console.error(' Error getting statistics:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to get statistics',

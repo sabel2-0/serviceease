@@ -8,12 +8,12 @@ Successfully reverted the system back to the original institution architecture w
 ## Database Changes
 
 ### 1. Removed from `users` table:
-- ❌ Dropped column: `institution_id` (VARCHAR(50))
-- ❌ Dropped foreign key: `fk_users_institution`
+-  Dropped column: `institution_id` (VARCHAR(50))
+-  Dropped foreign key: `fk_users_institution`
 
 ### 2. Using `institutions` table:
-- ✅ Column: `user_id` (INT) - Points to The institution_admin who owns the institution
-- ✅ This is the ORIGINAL design and is now being used
+-  Column: `user_id` (INT) - Points to The institution_admin who owns the institution
+-  This is the ORIGINAL design and is now being used
 
 ## How It Works Now
 
@@ -100,11 +100,11 @@ if (role === 'institution_admin' && institutionId) {
 - **institutions table:** institution_id="INST-017", name="Pajo Elementary School", user_id=64
 
 ### Test Results:
-✅ institutions.user_id = 64 (correctly linked)
-✅ Login query returns "Pajo Elementary School"
-✅ Coordinator list shows institution name
-✅ Pending users query works correctly
-✅ users.institution_id column removed
+ institutions.user_id = 64 (correctly linked)
+ Login query returns "Pajo Elementary School"
+ Coordinator list shows institution name
+ Pending users query works correctly
+ users.institution_id column removed
 
 ## Benefits of Original System
 
@@ -133,5 +133,5 @@ When a new coordinator registers:
 - `check_institution_data.js` - Data inspection script
 
 ## Status
-✅ **COMPLETE** - System successfully reverted to original architecture
+ **COMPLETE** - System successfully reverted to original architecture
 

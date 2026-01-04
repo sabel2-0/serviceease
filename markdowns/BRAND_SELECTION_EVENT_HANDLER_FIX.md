@@ -135,10 +135,10 @@ async function loadAvailableParts() {
 
 When modal opens:
 ```
-🔧 Loading available parts from technician inventory...
+ Loading available parts from technician inventory...
 Parts API response status: 200
-✅ Loaded parts: [array of 15 parts]
-🔧 Updating part selectors with 15 parts
+ Loaded parts: [array of 15 parts]
+ Updating part selectors with 15 parts
 Found 1 brand selectors
 Updating brand selector 1
 Setting up handlers for 1 part entries
@@ -147,8 +147,8 @@ Setting up handlers for 1 part entries
 When brand is selected:
 ```
 Brand selected: HP1
-🔧 Updating parts for brand: HP1
-✅ Added 5 parts for brand HP1
+ Updating parts for brand: HP1
+ Added 5 parts for brand HP1
 ```
 
 ## Additional Benefits

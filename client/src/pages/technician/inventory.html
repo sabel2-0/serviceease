@@ -61,261 +61,215 @@
             background: rgba(59, 130, 246, 0.1);
             color: #2563eb;
         }
+        
+        /* BOTTOM NAVIGATION SPACING - Corporate standard */
+        :root {
+            --bottom-nav-height: 75px;
+            --bottom-nav-buffer: 8px;
+            --bottom-nav-total: calc(var(--bottom-nav-height) + var(--bottom-nav-buffer) + env(safe-area-inset-bottom, 0px));
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding-bottom: var(--bottom-nav-total) !important;
+            }
+        }
     </style>
 </head>
-<body class="p-4">
+<body class="p-4 bg-gray-50">
     <!-- Header -->
-    <div class="bg-white rounded-2xl shadow-lg border-2 border-emerald-100 p-5 mb-5">
-        <div class="flex justify-between items-center pb-4 border-b-2 border-emerald-50">
-            <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 bg-gradient-to-br from-emerald-500 to-green-600 rounded-lg flex items-center justify-center shadow-md">
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-                    </svg>
-                </div>
-                <div>
-                    <h1 class="text-lg font-bold text-gray-900">My Inventory</h1>
-                    <p class="text-xs text-emerald-600">Parts assigned to you by administrators</p>
-                </div>
-            </div>
-            <button onclick="history.back()" class="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors font-medium text-sm shadow-md hover:shadow-lg flex items-center space-x-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+    <div class="flex items-center justify-between mb-5">
+        <div class="flex items-center gap-3">
+            <div class="w-11 h-11 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
                 </svg>
-                <span>Back</span>
-            </button>
+            </div>
+            <div>
+                <h1 class="text-lg font-bold text-gray-800">My Inventory</h1>
+                <p class="text-sm text-gray-500">Assigned items</p>
+            </div>
         </div>
+        <button onclick="history.back()" class="p-2.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
     </div>
     
-    <!-- Search and Filters -->
-    <div class="bg-white rounded-2xl shadow-lg border-2 border-emerald-100 p-5 mb-5">
-        <div class="flex flex-col gap-3">
-            <input type="text" id="searchInput" placeholder="Search parts by name, category, or SKU" 
-                   class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
-            
-            <div class="grid grid-cols-2 gap-3">
-                <select id="categoryFilter" class="px-3 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 text-sm font-medium">
-                    <option value="">All Categories</option>
-                    <option value="ink-bottle">Ink Bottles</option>
-                    <option value="toner">Toner Cartridges</option>
-                    <option value="maintenance">Maintenance Kits</option>
-                    <option value="hardware">Hardware Parts</option>
-                    <option value="accessories">Accessories</option>
-                </select>
-                
-                <select id="stockFilter" class="px-3 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 text-sm font-medium">
-                    <option value="">All Stock Levels</option>
-                    <option value="high">High Stock (>20)</option>
-                    <option value="medium">Medium Stock (11-20)</option>
-                    <option value="low">Low Stock (1-10)</option>
-                    <option value="out">Out of Stock</option>
-                </select>
-            </div>
-            
-            <button id="refreshBtn" class="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 font-semibold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                </svg>
-                <span>Refresh</span>
-            </button>
-        </div>
+    <!-- Search -->
+    <div class="relative mb-4">
+        <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <input type="text" id="searchInput" placeholder="Search items..." 
+               class="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
     </div>
     
-    <!-- Inventory Stats -->
-    <div class="grid grid-cols-2 gap-3 mb-5">
-        <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border-2 border-blue-200">
-            <div class="text-3xl font-bold text-blue-600" id="totalItems">0</div>
-            <div class="text-sm font-medium text-blue-700">Total Items</div>
+    <!-- Filters Row -->
+    <div class="flex gap-2 mb-5">
+        <select id="categoryFilter" class="flex-1 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-600 focus:ring-2 focus:ring-blue-500">
+            <option value="">All Categories</option>
+            <option value="ink-bottle">Ink Bottle</option>
+            <option value="toner">Toner</option>
+            <option value="ink">Ink</option>
+            <option value="drum">Drum</option>
+            <option value="maintenance">Maintenance</option>
+            <option value="hardware">Hardware</option>
+        </select>
+        <select id="stockFilter" class="flex-1 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-600 focus:ring-2 focus:ring-blue-500">
+            <option value="">All Stock</option>
+            <option value="high">High (>20)</option>
+            <option value="medium">Medium (11-20)</option>
+            <option value="low">Low (1-10)</option>
+            <option value="out">Out of Stock</option>
+        </select>
+        <button id="refreshBtn" class="p-2.5 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+        </button>
+    </div>
+    
+    <!-- Inline Stats -->
+    <div class="flex items-center gap-5 mb-5 px-1">
+        <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 bg-blue-500 rounded-full"></span>
+            <span class="text-sm text-gray-600"><span id="totalItems" class="font-semibold">0</span> Total</span>
         </div>
-        <div class="bg-gradient-to-br from-green-50 to-emerald-100 rounded-xl p-4 border-2 border-green-200">
-            <div class="text-3xl font-bold text-green-600" id="inStock">0</div>
-            <div class="text-sm font-medium text-green-700">In Stock</div>
+        <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 bg-green-500 rounded-full"></span>
+            <span class="text-sm text-gray-600"><span id="inStock" class="font-semibold">0</span> In Stock</span>
         </div>
-        <div class="bg-gradient-to-br from-yellow-50 to-amber-100 rounded-xl p-4 border-2 border-yellow-200">
-            <div class="text-3xl font-bold text-yellow-600" id="lowStock">0</div>
-            <div class="text-sm font-medium text-yellow-700">Low Stock</div>
-        </div>
-        <div class="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-4 border-2 border-red-200">
-            <div class="text-3xl font-bold text-red-600" id="outOfStock">0</div>
-            <div class="text-sm font-medium text-red-700">Out of Stock</div>
+        <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 bg-amber-500 rounded-full"></span>
+            <span class="text-sm text-gray-600"><span id="lowStock" class="font-semibold">0</span> Low</span>
         </div>
     </div>
     
     <!-- Loading State -->
     <div id="loadingState" class="text-center py-12">
-        <div class="inline-flex items-center space-x-2">
-            <div class="w-3 h-3 bg-emerald-500 rounded-full animate-bounce" style="animation-delay: 0s;"></div>
-            <div class="w-3 h-3 bg-green-500 rounded-full animate-bounce" style="animation-delay: 0.1s;"></div>
-            <div class="w-3 h-3 bg-teal-500 rounded-full animate-bounce" style="animation-delay: 0.2s;"></div>
+        <div class="inline-flex items-center space-x-1.5">
+            <div class="w-2.5 h-2.5 bg-blue-500 rounded-full animate-bounce" style="animation-delay: 0s;"></div>
+            <div class="w-2.5 h-2.5 bg-blue-400 rounded-full animate-bounce" style="animation-delay: 0.1s;"></div>
+            <div class="w-2.5 h-2.5 bg-blue-300 rounded-full animate-bounce" style="animation-delay: 0.2s;"></div>
         </div>
-        <p class="mt-4 text-emerald-700 font-semibold">Loading inventory...</p>
+        <p class="mt-3 text-gray-500">Loading...</p>
     </div>
     
     <!-- Empty State -->
-    <div id="emptyState" class="hidden bg-white rounded-xl border-2 border-emerald-100 p-8 text-center">
-        <div class="text-emerald-200 mb-4">
-            <svg class="mx-auto h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+    <div id="emptyState" class="hidden bg-white rounded-2xl border border-gray-100 p-8 text-center">
+        <div class="text-gray-300 mb-4">
+            <svg class="mx-auto h-14 w-14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
             </svg>
         </div>
-        <h3 class="text-lg font-bold text-gray-900 mb-2">No Inventory Items</h3>
-        <p class="text-gray-600 mb-4" id="emptyMessage">No parts are currently assigned to your inventory.</p>
-        <button onclick="window.location.href='/client/src/pages/technician/parts-request.html'" class="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-3 rounded-xl transition-all shadow-md hover:shadow-lg font-semibold">
-            Request Parts
+        <h3 class="text-base font-semibold text-gray-700 mb-2">No Items Found</h3>
+        <p class="text-sm text-gray-500 mb-4" id="emptyMessage">No items in your inventory.</p>
+        <button onclick="window.location.href='/client/src/pages/technician/parts-request.html'" class="bg-blue-500 hover:bg-blue-600 text-white px-5 py-2.5 rounded-xl transition-colors font-medium">
+            Request Items
         </button>
     </div>
     
     <!-- Inventory Grid -->
-    <div id="inventoryGrid" class="hidden grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div id="inventoryGrid" class="hidden space-y-3">
         <!-- Inventory items will be loaded here -->
     </div>
     
     <!-- Error State -->
-    <div id="errorState" class="hidden glass-card rounded-2xl shadow-xl p-12 text-center">
-        <div class="text-red-500 mb-4">
-            <svg class="mx-auto h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <div id="errorState" class="hidden bg-white rounded-2xl border border-gray-100 p-8 text-center">
+        <div class="text-red-400 mb-4">
+            <svg class="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
         </div>
-        <h3 class="text-xl font-medium text-gray-900 mb-2">Error Loading Inventory</h3>
-        <p class="text-gray-500 mb-4" id="errorMessage">Failed to load inventory data.</p>
-        <button onclick="loadInventory()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors">
+        <h3 class="text-base font-semibold text-gray-700 mb-2">Error Loading</h3>
+        <p class="text-sm text-gray-500 mb-4" id="errorMessage">Failed to load data.</p>
+        <button onclick="loadInventory()" class="bg-blue-500 hover:bg-blue-600 text-white px-5 py-2.5 rounded-xl transition-colors font-medium">
             Try Again
         </button>
     </div>
 
-    <!-- Part Details Modal -->
-    <div id="partDetailsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <!-- Modal Header -->
-            <div class="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4 rounded-t-2xl">
-                <div class="flex justify-between items-center">
-                    <h2 class="text-xl font-bold flex items-center space-x-2">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                        <span>Part Details</span>
-                    </h2>
-                    <button onclick="closePartDetailsModal()" class="text-white hover:bg-white hover:bg-opacity-20 rounded-lg p-2 transition-all">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                        </svg>
-                    </button>
-                </div>
+    <!-- Part Details Modal - Minimalist -->
+    <div id="partDetailsModal" class="fixed inset-0 hidden z-50 flex items-end sm:items-center justify-center">
+        <div class="absolute inset-0 bg-black/50" onclick="closePartDetailsModal()"></div>
+        <div class="relative bg-white w-full sm:max-w-sm sm:rounded-2xl rounded-t-2xl max-h-[85vh] overflow-y-auto z-10">
+            <!-- Header -->
+            <div class="flex items-center justify-between p-4 border-b border-gray-100">
+                <h2 class="text-lg font-semibold text-gray-900">Item Details</h2>
+                <button onclick="closePartDetailsModal()" class="p-1.5 hover:bg-gray-100 rounded-full transition-colors">
+                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
             </div>
 
-            <!-- Modal Body -->
-            <div class="p-6 space-y-6">
-                <!-- Part Name & Brand -->
-                <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border-2 border-blue-200">
-                    <div class="flex items-start justify-between">
-                        <div class="flex-1">
-                            <h3 id="modalPartName" class="text-2xl font-bold text-gray-900 mb-2">HP Drum Cartridge</h3>
-                            <div class="flex items-center space-x-3 flex-wrap gap-2">
-                                <span id="modalPartBrand" class="inline-flex items-center px-3 py-1 bg-blue-600 text-white rounded-full text-sm font-semibold">
-                                    HP
-                                </span>
-                                <span id="modalPartCategory" class="inline-flex items-center px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-semibold">
-                                    drum-cartridge
-                                </span>
-                            </div>
-                        </div>
-                        <div id="modalStockIndicator" class="w-16 h-16 rounded-full flex items-center justify-center bg-green-100 border-4 border-green-300">
-                            <svg class="w-8 h-8 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                            </svg>
-                        </div>
+            <!-- Body -->
+            <div class="p-4 space-y-4">
+                <!-- Name & Type -->
+                <div class="text-center pb-3 border-b border-gray-100">
+                    <h3 id="modalPartName" class="text-xl font-bold text-gray-900 mb-2">Ink</h3>
+                    <div class="flex items-center justify-center gap-2 flex-wrap">
+                        <span id="modalPartBrand" class="px-2.5 py-1 bg-blue-500 text-white rounded-full text-xs font-medium">HP</span>
+                        <span id="modalPartCategory" class="px-2.5 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">ink-bottle</span>
+                        <span id="modalItemType" class="px-2.5 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">Consumable</span>
                     </div>
                 </div>
 
-                <!-- Quantity & Stock Status -->
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-5 border-2 border-green-200">
-                        <div class="text-xs font-semibold text-green-700 mb-1 uppercase tracking-wider">Current Stock</div>
-                        <div class="flex items-baseline space-x-2">
-                            <span id="modalQuantity" class="text-4xl font-bold text-green-600">8</span>
-                            <span id="modalUnit" class="text-lg text-green-600 font-medium">pieces</span>
-                        </div>
+                <!-- Stock Info -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-blue-50 rounded-xl p-3 text-center">
+                        <p class="text-xs text-blue-600 font-medium mb-1">Stock</p>
+                        <p class="text-2xl font-bold text-blue-700"><span id="modalQuantity">10</span></p>
+                        <p id="modalUnit" class="text-xs text-blue-600">pieces</p>
                     </div>
-                    <div class="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-xl p-5 border-2 border-amber-200">
-                        <div class="text-xs font-semibold text-amber-700 mb-1 uppercase tracking-wider">Stock Status</div>
-                        <div id="modalStockStatus" class="text-xl font-bold text-amber-600">Low Stock</div>
+                    <div id="modalStockBox" class="bg-orange-50 rounded-xl p-3 text-center">
+                        <p class="text-xs text-orange-600 font-medium mb-1">Status</p>
+                        <p id="modalStockStatus" class="text-lg font-bold text-orange-700">Low Stock</p>
                     </div>
                 </div>
 
-                <!-- Part Information -->
-                <div class="space-y-4">
-                    <h4 class="text-lg font-bold text-gray-900 flex items-center space-x-2 border-b-2 border-gray-200 pb-2">
-                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                        <span>Part Information</span>
-                    </h4>
-                    
-                    <div class="grid gap-3">
-                        <div id="modalColorSection" class="flex items-start hidden">
-                            <div class="w-32 text-sm font-semibold text-gray-600"><i class="fas fa-palette text-pink-500 mr-1"></i>Color:</div>
-                            <div id="modalColor" class="flex-1 text-sm text-gray-900 bg-gray-50 px-3 py-1 rounded capitalize">N/A</div>
-                        </div>
-                        <div id="modalPageYieldSection" class="flex items-start hidden">
-                            <div class="w-32 text-sm font-semibold text-gray-600"><i class="fas fa-file-alt text-orange-500 mr-1"></i>Page Yield:</div>
-                            <div id="modalPageYield" class="flex-1 text-sm text-gray-900 bg-gray-50 px-3 py-1 rounded">N/A</div>
-                        </div>
-                        <div id="modalInkVolumeSection" class="flex items-start hidden">
-                            <div class="w-32 text-sm font-semibold text-gray-600"><i class="fas fa-flask text-cyan-500 mr-1"></i>Ink Volume:</div>
-                            <div id="modalInkVolume" class="flex-1 text-sm text-gray-900 bg-gray-50 px-3 py-1 rounded">N/A</div>
-                        </div>
-                        <div id="modalTonerWeightSection" class="flex items-start hidden">
-                            <div class="w-32 text-sm font-semibold text-gray-600"><i class="fas fa-weight text-purple-500 mr-1"></i>Toner Weight:</div>
-                            <div id="modalTonerWeight" class="flex-1 text-sm text-gray-900 bg-gray-50 px-3 py-1 rounded">N/A</div>
-                        </div>
-                        <div id="modalRemainingSection" class="flex items-start hidden">
-                            <div class="w-32 text-sm font-semibold text-orange-600"><i class="fas fa-box-open text-orange-500 mr-1"></i>Remaining:</div>
-                            <div id="modalRemaining" class="flex-1 text-sm font-bold text-orange-700 bg-orange-50 px-3 py-2 rounded border border-orange-200">N/A</div>
-                        </div>
-                        <div id="modalUniversalSection" class="flex items-start hidden">
-                            <span class="inline-flex items-center px-3 py-1 rounded-lg text-sm font-medium bg-purple-100 text-purple-800">
-                                <i class="fas fa-globe mr-1"></i>Universal - Compatible with all brands
-                            </span>
-                        </div>
+                <!-- Opened/In-Use Section -->
+                <div id="modalOpenedSection" class="hidden bg-amber-50 border border-amber-200 rounded-xl p-3">
+                    <div class="flex items-center gap-2 mb-2">
+                        <i class="fas fa-box-open text-amber-600"></i>
+                        <span class="text-sm font-semibold text-amber-800">Opened Bottle</span>
                     </div>
+                    <p id="modalOpenedInfo" class="text-sm text-amber-700">1 bottle opened with <span id="modalRemaining" class="font-bold">50ml</span> remaining</p>
                 </div>
 
-                <!-- Assignment Information -->
-                <div class="space-y-4">
-                    <h4 class="text-lg font-bold text-gray-900 flex items-center space-x-2 border-b-2 border-gray-200 pb-2">
-                        <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                        </svg>
-                        <span>Assignment Details</span>
-                    </h4>
-                    
-                    <div class="grid gap-3">
-                        <div class="flex items-center space-x-3 bg-blue-50 rounded-lg p-3">
-                            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                            </svg>
-                            <div class="flex-1">
-                                <div class="text-xs font-semibold text-blue-700 uppercase tracking-wider">Assigned Date</div>
-                                <div id="modalAssignedDate" class="text-sm font-medium text-gray-900">11/22/2025</div>
-                            </div>
-                        </div>
-                        <div class="flex items-center space-x-3 bg-purple-50 rounded-lg p-3">
-                            <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                            </svg>
-                            <div class="flex-1">
-                                <div class="text-xs font-semibold text-purple-700 uppercase tracking-wider">Assigned By</div>
-                                <div id="modalAssignedBy" class="text-sm font-medium text-gray-900">Admin User</div>
-                            </div>
-                        </div>
+                <!-- Details List -->
+                <div class="space-y-2">
+                    <div id="modalColorSection" class="hidden flex items-center justify-between py-2 border-b border-gray-50">
+                        <span class="text-sm text-gray-500">Color</span>
+                        <span id="modalColor" class="text-sm font-medium text-gray-900 capitalize">Black</span>
+                    </div>
+                    <div id="modalInkVolumeSection" class="hidden flex items-center justify-between py-2 border-b border-gray-50">
+                        <span class="text-sm text-gray-500">Capacity</span>
+                        <span id="modalInkVolume" class="text-sm font-medium text-gray-900">100ml</span>
+                    </div>
+                    <div id="modalTonerWeightSection" class="hidden flex items-center justify-between py-2 border-b border-gray-50">
+                        <span class="text-sm text-gray-500">Weight</span>
+                        <span id="modalTonerWeight" class="text-sm font-medium text-gray-900">500g</span>
+                    </div>
+                    <div id="modalPageYieldSection" class="hidden flex items-center justify-between py-2 border-b border-gray-50">
+                        <span class="text-sm text-gray-500">Page Yield</span>
+                        <span id="modalPageYield" class="text-sm font-medium text-gray-900">~5,000 pages</span>
+                    </div>
+                    <div id="modalUniversalSection" class="hidden flex items-center justify-between py-2 border-b border-gray-50">
+                        <span class="text-sm text-gray-500">Compatibility</span>
+                        <span class="text-sm font-medium text-purple-600"><i class="fas fa-globe mr-1"></i>Universal</span>
+                    </div>
+                    <div class="flex items-center justify-between py-2 border-b border-gray-50">
+                        <span class="text-sm text-gray-500">Assigned</span>
+                        <span id="modalAssignedDate" class="text-sm font-medium text-gray-900">Jan 3, 2026</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Modal Footer -->
-            <div class="sticky bottom-0 bg-gray-50 px-6 py-4 rounded-b-2xl border-t-2 border-gray-200">
-                <button onclick="closePartDetailsModal()" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 rounded-xl transition-all shadow-md hover:shadow-lg">
+            <!-- Footer -->
+            <div class="p-4 border-t border-gray-100">
+                <button onclick="closePartDetailsModal()" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2.5 rounded-xl transition-colors">
                     Close
                 </button>
             </div>
@@ -329,7 +283,7 @@
         
         // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('?? Initializing Inventory Page');
+            console.log('Initializing Inventory Page');
             loadInventory();
             setupEventListeners();
         });
@@ -362,7 +316,7 @@
         
         // Load inventory from API
         async function loadInventory() {
-            console.log('?? Loading technician inventory...');
+            console.log(' Loading technician inventory...');
             showLoadingState();
             
             try {
@@ -390,7 +344,7 @@
                 }
                 
                 const data = await response.json();
-                console.log('?? Technician inventory data received:', data);
+                console.log(' Technician inventory data received:', data);
                 
                 allParts = Array.isArray(data) ? data : [];
                 
@@ -451,13 +405,19 @@
             }
         }
         
-        // Check if a category is consumable
-        function isConsumable(category) {
+        // Check if a part is consumable - uses item_type from database
+        function isConsumablePart(part) {
+            // First check the actual item_type from database
+            if (part.item_type) {
+                return part.item_type === 'consumable';
+            }
+            // Fallback: check category (ink, toner, etc. are consumables)
             const consumableCategories = [
-                'paper', 'cleaning-supplies', 'tools', 'cables', 
-                'batteries', 'lubricants', 'labels', 'other-consumable'
+                'ink', 'ink-bottle', 'toner', 'drum', 'drum-cartridge', 
+                'fuser', 'roller', 'printhead', 'maintenance-unit', 'maintenance-box',
+                'paper', 'cleaning-supplies', 'labels'
             ];
-            return consumableCategories.includes(category);
+            return consumableCategories.includes(part.category);
         }
         
         // Update statistics
@@ -468,12 +428,14 @@
                 const qty = parseInt(p.assigned_quantity) || 0;
                 return qty >= 1 && qty <= 10;
             }).length;
-            const outOfStock = allParts.filter(p => (parseInt(p.assigned_quantity) || 0) === 0).length;
             
-            document.getElementById('totalItems').textContent = total;
-            document.getElementById('inStock').textContent = inStock;
-            document.getElementById('lowStock').textContent = lowStock;
-            document.getElementById('outOfStock').textContent = outOfStock;
+            const totalEl = document.getElementById('totalItems');
+            const inStockEl = document.getElementById('inStock');
+            const lowStockEl = document.getElementById('lowStock');
+            
+            if (totalEl) totalEl.textContent = total;
+            if (inStockEl) inStockEl.textContent = inStock;
+            if (lowStockEl) lowStockEl.textContent = lowStock;
         }
         
         // Display parts in grid
@@ -493,42 +455,48 @@
                              quantity > 10 ? 'Medium Stock' : 
                              quantity > 0 ? 'Low Stock' : 'Out of Stock';
             
-            const typeClass = isConsumable(part.category) ? 'badge-consumable' : 'badge-printer-part';
-            const typeText = isConsumable(part.category) ? 'Consumable' : 'Printer Part';
+            const typeClass = isConsumablePart(part) ? 'badge-consumable' : 'badge-printer-part';
+            const typeText = isConsumablePart(part) ? 'Consumable' : 'Printer Part';
+            
+            // Check for opened bottle
+            const hasOpenedBottle = part.is_opened && (part.remaining_volume || part.remaining_weight);
+            const openedBadge = hasOpenedBottle 
+                ? `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 border border-amber-300">
+                    <i class="fas fa-box-open mr-1"></i>1 Opened
+                   </span>` 
+                : '';
             
             return `
                 <div class="inventory-card glass-card rounded-xl p-4 relative">
                     <div class="stock-indicator ${stockClass}" title="${stockText}"></div>
                     
-                    <div class="mb-4">
-                        <h3 class="font-semibold text-gray-900 mb-1">${part.name || 'Unknown Part'}</h3>
-                        <div class="space-y-1">
-                            <span class="category-badge ${typeClass}">
-                                ${typeText}
-                            </span>
-                            <p class="text-sm text-gray-600">${part.category || 'No Category'}</p>
-                            ${part.brand ? `<p class="text-xs text-gray-500"><i class="fas fa-building text-blue-500 mr-1"></i>Brand: ${part.brand}</p>` : ''}
-                            ${part.color ? `<p class="text-xs text-gray-500"><i class="fas fa-palette text-pink-500 mr-1"></i>Color: ${part.color.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</p>` : ''}
-                            ${part.page_yield ? `<p class="text-xs text-gray-500"><i class="fas fa-file-alt text-orange-500 mr-1"></i>~${parseInt(part.page_yield).toLocaleString()} pages</p>` : ''}
-                            ${part.ink_volume ? `<p class="text-xs text-gray-500"><i class="fas fa-flask text-cyan-500 mr-1"></i>${parseFloat(part.ink_volume)} ml capacity</p>` : ''}
-                            ${part.toner_weight ? `<p class="text-xs text-gray-500"><i class="fas fa-weight text-purple-500 mr-1"></i>${parseFloat(part.toner_weight)} grams capacity</p>` : ''}
-                            ${part.is_opened && (part.remaining_volume || part.remaining_weight) ? `<p class="text-xs text-orange-600 font-semibold"><i class="fas fa-box-open mr-1"></i>Opened: ${part.remaining_volume ? part.remaining_volume + 'ml' : part.remaining_weight + 'grams'} left</p>` : ''}
-                            ${part.is_universal ? `<span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-800 mt-1"><i class="fas fa-globe mr-1"></i>Universal</span>` : ''}
+                    <div class="mb-3">
+                        <h3 class="font-semibold text-gray-900 mb-1.5">${part.name || 'Unknown Part'}</h3>
+                        <div class="flex flex-wrap gap-1.5 mb-2">
+                            <span class="category-badge ${typeClass}">${typeText}</span>
+                            ${openedBadge}
+                        </div>
+                        <p class="text-sm text-gray-600 mb-1">${part.category || 'No Category'}</p>
+                        <div class="space-y-0.5">
+                            ${part.brand ? `<p class="text-xs text-gray-500"><i class="fas fa-building text-blue-500 mr-1"></i>${part.brand}</p>` : ''}
+                            ${part.color ? `<p class="text-xs text-gray-500"><i class="fas fa-palette text-pink-500 mr-1"></i>${part.color.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</p>` : ''}
+                            ${part.ink_volume ? `<p class="text-xs text-gray-500"><i class="fas fa-flask text-cyan-500 mr-1"></i>${parseFloat(part.ink_volume)}ml</p>` : ''}
+                            ${part.toner_weight ? `<p class="text-xs text-gray-500"><i class="fas fa-weight text-purple-500 mr-1"></i>${parseFloat(part.toner_weight)}g</p>` : ''}
+                            ${hasOpenedBottle ? `<p class="text-xs text-amber-600 font-medium"><i class="fas fa-droplet mr-1"></i>${part.remaining_volume ? part.remaining_volume + 'ml' : part.remaining_weight + 'g'} remaining</p>` : ''}
                         </div>
                     </div>
                     
                     <div class="flex items-center justify-between pt-3 border-t border-gray-100">
                         <div>
                             <span class="text-2xl font-bold ${quantity > 0 ? 'text-blue-600' : 'text-red-500'}">${quantity}</span>
-                            <span class="text-sm text-gray-500 ml-1">${part.unit || 'pieces'}</span>
+                            <span class="text-sm text-gray-500 ml-1">${part.unit || 'pcs'}</span>
                         </div>
-                        <button onclick="viewPartDetails('${part.inventory_id}')" class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1 rounded-lg text-sm transition-colors">
+                        <button onclick="viewPartDetails('${part.inventory_id}')" class="bg-blue-50 hover:bg-blue-100 text-blue-600 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">
                             Details
                         </button>
                     </div>
                     
-                    ${part.assigned_at ? `<p class="text-xs text-gray-500 mt-2">?? Assigned: ${new Date(part.assigned_at).toLocaleDateString()}</p>` : ''}
-                    ${part.notes ? `<p class="text-xs text-gray-600 mt-1">?? ${part.notes}</p>` : ''}
+                    <p class="text-xs text-gray-400 mt-2">Assigned: ${part.assigned_at ? new Date(part.assigned_at).toLocaleDateString() : 'N/A'}</p>
                 </div>
             `;
         }
@@ -577,6 +545,14 @@
             document.getElementById('modalPartBrand').textContent = part.brand || 'Generic';
             document.getElementById('modalPartCategory').textContent = part.category || 'N/A';
             
+            // Set item type badge
+            const itemTypeEl = document.getElementById('modalItemType');
+            const isConsumable = isConsumablePart(part);
+            itemTypeEl.textContent = isConsumable ? 'Consumable' : 'Printer Part';
+            itemTypeEl.className = isConsumable 
+                ? 'px-2.5 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium'
+                : 'px-2.5 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium';
+            
             // Handle color
             const colorSection = document.getElementById('modalColorSection');
             if (part.color && part.color.trim()) {
@@ -598,7 +574,7 @@
             // Handle ink volume
             const inkVolumeSection = document.getElementById('modalInkVolumeSection');
             if (part.ink_volume && parseFloat(part.ink_volume) > 0) {
-                document.getElementById('modalInkVolume').textContent = `${parseFloat(part.ink_volume)} ml capacity`;
+                document.getElementById('modalInkVolume').textContent = `${parseFloat(part.ink_volume)}ml`;
                 inkVolumeSection.classList.remove('hidden');
             } else {
                 inkVolumeSection.classList.add('hidden');
@@ -607,22 +583,22 @@
             // Handle toner weight
             const tonerWeightSection = document.getElementById('modalTonerWeightSection');
             if (part.toner_weight && parseFloat(part.toner_weight) > 0) {
-                document.getElementById('modalTonerWeight').textContent = `${parseFloat(part.toner_weight)} grams capacity`;
+                document.getElementById('modalTonerWeight').textContent = `${parseFloat(part.toner_weight)}g`;
                 tonerWeightSection.classList.remove('hidden');
             } else {
                 tonerWeightSection.classList.add('hidden');
             }
             
-            // Handle remaining amount for opened items
-            const remainingSection = document.getElementById('modalRemainingSection');
+            // Handle opened/in-use items
+            const openedSection = document.getElementById('modalOpenedSection');
             if (part.is_opened && (part.remaining_volume || part.remaining_weight)) {
                 const remainingAmount = part.remaining_volume 
-                    ? `${parseFloat(part.remaining_volume)} ml remaining` 
-                    : `${parseFloat(part.remaining_weight)} grams remaining`;
+                    ? `${parseFloat(part.remaining_volume)}ml` 
+                    : `${parseFloat(part.remaining_weight)}g`;
                 document.getElementById('modalRemaining').textContent = remainingAmount;
-                remainingSection.classList.remove('hidden');
+                openedSection.classList.remove('hidden');
             } else {
-                remainingSection.classList.add('hidden');
+                openedSection.classList.add('hidden');
             }
             
             // Handle universal badge
@@ -637,53 +613,35 @@
             document.getElementById('modalQuantity').textContent = quantity;
             document.getElementById('modalUnit').textContent = part.unit || 'pieces';
             
-            // Stock status
-            let stockStatus = '';
-            let stockClass = '';
-            let stockIcon = '';
+            // Stock status - update modal box styling
+            const stockBox = document.getElementById('modalStockBox');
+            const stockStatusEl = document.getElementById('modalStockStatus');
             
             if (quantity > 20) {
-                stockStatus = 'High Stock';
-                stockClass = 'text-green-600';
-                stockIcon = '<svg class="w-8 h-8 text-green-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>';
+                stockStatusEl.textContent = 'In Stock';
+                stockBox.className = 'bg-green-50 rounded-xl p-3 text-center';
+                stockStatusEl.className = 'text-lg font-bold text-green-700';
             } else if (quantity > 10) {
-                stockStatus = 'Medium Stock';
-                stockClass = 'text-yellow-600';
-                stockIcon = '<svg class="w-8 h-8 text-yellow-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>';
+                stockStatusEl.textContent = 'Medium';
+                stockBox.className = 'bg-yellow-50 rounded-xl p-3 text-center';
+                stockStatusEl.className = 'text-lg font-bold text-yellow-700';
             } else if (quantity > 0) {
-                stockStatus = 'Low Stock';
-                stockClass = 'text-orange-600';
-                stockIcon = '<svg class="w-8 h-8 text-orange-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>';
+                stockStatusEl.textContent = 'Low Stock';
+                stockBox.className = 'bg-orange-50 rounded-xl p-3 text-center';
+                stockStatusEl.className = 'text-lg font-bold text-orange-700';
             } else {
-                stockStatus = 'Out of Stock';
-                stockClass = 'text-red-600';
-                stockIcon = '<svg class="w-8 h-8 text-red-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>';
+                stockStatusEl.textContent = 'Out';
+                stockBox.className = 'bg-red-50 rounded-xl p-3 text-center';
+                stockStatusEl.className = 'text-lg font-bold text-red-700';
             }
             
-            document.getElementById('modalStockStatus').textContent = stockStatus;
-            document.getElementById('modalStockStatus').className = `text-xl font-bold ${stockClass}`;
-            document.getElementById('modalStockIndicator').innerHTML = stockIcon;
-            
-            // Update stock indicator background
-            const indicator = document.getElementById('modalStockIndicator');
-            if (quantity > 20) {
-                indicator.className = 'w-16 h-16 rounded-full flex items-center justify-center bg-green-100 border-4 border-green-300';
-            } else if (quantity > 10) {
-                indicator.className = 'w-16 h-16 rounded-full flex items-center justify-center bg-yellow-100 border-4 border-yellow-300';
-            } else if (quantity > 0) {
-                indicator.className = 'w-16 h-16 rounded-full flex items-center justify-center bg-orange-100 border-4 border-orange-300';
-            } else {
-                indicator.className = 'w-16 h-16 rounded-full flex items-center justify-center bg-red-100 border-4 border-red-300';
-            }
-            
-            // Assignment details
+            // Assignment date
             const assignedDate = part.assigned_at ? new Date(part.assigned_at).toLocaleDateString('en-US', {
                 year: 'numeric',
-                month: 'long',
+                month: 'short',
                 day: 'numeric'
             }) : 'Unknown';
             document.getElementById('modalAssignedDate').textContent = assignedDate;
-            document.getElementById('modalAssignedBy').textContent = part.assigned_by_name || 'System';
             
             // Show modal
             document.getElementById('partDetailsModal').classList.remove('hidden');

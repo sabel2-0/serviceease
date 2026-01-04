@@ -138,11 +138,12 @@ router.get('/:approvalId/details', authenticateinstitution_admin, async (req, re
                 pp.name as part_name,
                 pp.category,
                 pp.brand,
+                pp.color,
                 CASE
                     WHEN spu.consumption_type = 'partial' AND spu.amount_consumed IS NOT NULL THEN
-                        CONCAT(spu.amount_consumed, IF(pp.ink_volume IS NOT NULL, 'ml', 'grams'))
+                        CONCAT(spu.amount_consumed, IF(pp.ink_volume IS NOT NULL AND pp.ink_volume > 0, 'ml', 'g'))
                     WHEN spu.consumption_type = 'full' AND spu.amount_consumed IS NOT NULL THEN
-                        CONCAT(spu.amount_consumed, IF(pp.ink_volume IS NOT NULL, 'ml', 'grams'))
+                        CONCAT(spu.amount_consumed, IF(pp.ink_volume IS NOT NULL AND pp.ink_volume > 0, 'ml', 'g'))
                     ELSE NULL
                 END as display_amount
             FROM service_items_used spu
@@ -150,6 +151,8 @@ router.get('/:approvalId/details', authenticateinstitution_admin, async (req, re
             WHERE spu.service_id = ? AND spu.service_type = 'service_request'
             ORDER BY pp.category, pp.name
         `, [approvalDetails[0].service_id]);
+        
+        console.log('[DEBUG] Items Used:', JSON.stringify(partsUsed, null, 2));
         
         res.json({
             approval: approvalDetails[0],
@@ -212,14 +215,15 @@ router.post('/:approvalId/approve', authenticateinstitution_admin, async (req, r
                 [institution_adminId, approvalId]
             );
             // Update service request status to completed with approver information
-            const resolutionNotes = `Approved by ${institution_adminRole} - ${institution_adminName}${notes ? '. ' + notes : ''}`;
+            const approvalNote = `Approved by ${institution_adminRole} - ${institution_adminName}${notes ? '. ' + notes : ''}`;
+            // For now, just update resolution_notes - TODO: add service_actions column to preserve technician's work description
             await db.query(`
                 UPDATE service_requests 
                 SET status = 'completed', 
                     completed_at = NOW(),
                     resolution_notes = ?
                 WHERE id = ?`,
-                [resolutionNotes, serviceRequestId]
+                [approvalNote, serviceRequestId]
             );
             
             // Deduct parts from technician inventory based on consumption type
@@ -230,13 +234,15 @@ router.post('/:approvalId/approve', authenticateinstitution_admin, async (req, r
             `, [serviceRequestId]);
             
             for (const part of partsToDeduct) {
-                // Get current inventory state first
+                // Get current inventory state first - prioritize opened items
                 const [techInventory] = await db.query(`
-                    SELECT ti.quantity, ti.remaining_volume, ti.remaining_weight, ti.is_opened,
+                    SELECT ti.id, ti.quantity, ti.remaining_volume, ti.remaining_weight, ti.is_opened,
                            pi.ink_volume, pi.toner_weight
                     FROM technician_inventory ti
                     JOIN printer_items pi ON ti.item_id = pi.id
                     WHERE ti.technician_id = ? AND ti.item_id = ?
+                    ORDER BY ti.is_opened DESC, ti.id ASC
+                    LIMIT 1
                 `, [technicianId, part.item_id]);
                 
                 if (techInventory.length === 0) continue;
@@ -247,49 +253,74 @@ router.post('/:approvalId/approve', authenticateinstitution_admin, async (req, r
                 
                 // Check if this is a consumable item (has consumption_type)
                 if (part.consumption_type && (part.consumption_type === 'full' || part.consumption_type === 'partial')) {
-                    // Get current remaining
-                    const currentRemaining = isInk ? 
-                        (item.remaining_volume ? parseFloat(item.remaining_volume) : 0) : 
-                        (item.remaining_weight ? parseFloat(item.remaining_weight) : 0);
+                    let currentQty = item.quantity;
+                    let currentRemaining = isInk ? 
+                        (item.remaining_volume ? parseFloat(item.remaining_volume) : null) : 
+                        (item.remaining_weight ? parseFloat(item.remaining_weight) : null);
                     
-                    // Calculate amount to consume
-                    let amountToConsume;
+                    let newRemaining = currentRemaining;
+                    let newQty = currentQty;
+                    
                     if (part.consumption_type === 'full') {
-                        amountToConsume = part.quantity_used * capacityPerPiece;
+                        // FULL consumption - use a sealed bottle from stock
+                        // Do NOT touch the currently opened bottle
+                        if (newQty > 0) {
+                            newQty--; // Deduct one sealed bottle
+                            console.log(`  Full consumption: using 1 sealed bottle. Qty: ${currentQty} → ${newQty}`);
+                        } else {
+                            console.warn(`  ⚠️ No sealed bottles available for full consumption`);
+                        }
+                        // newRemaining stays the same - opened bottle is untouched
                     } else {
-                        amountToConsume = parseFloat(part.amount_consumed);
+                        // PARTIAL consumption - use from the opened bottle
+                        const amountToConsume = parseFloat(part.amount_consumed);
+                        
+                        // If no item is currently opened, open one first
+                        if (currentRemaining === null && newQty > 0) {
+                            newRemaining = capacityPerPiece;
+                            console.log(`  Opening first ${isInk ? 'ink' : 'toner'} - set to ${newRemaining}${isInk ? 'ml' : 'g'}`);
+                        }
+                        
+                        // Deduct from currently opened item
+                        newRemaining = newRemaining - amountToConsume;
+                        
+                        // Handle consuming multiple items or depleting current one
+                        while (newRemaining <= 0 && newQty > 0) {
+                            // Current item is depleted
+                            newQty--;
+                            if (newRemaining < 0 && newQty > 0) {
+                                // Need to open next item
+                                newRemaining = capacityPerPiece + newRemaining;
+                                console.log(`  Item depleted, opening next. Remaining: ${newRemaining}${isInk ? 'ml' : 'g'}, Qty: ${newQty}`);
+                            } else {
+                                // Exactly depleted or no more items
+                                newRemaining = 0;
+                                break;
+                            }
+                        }
+                        console.log(`  Partial consumption: ${parseFloat(part.amount_consumed)}${isInk ? 'ml' : 'g'} consumed, remaining: ${currentRemaining} → ${newRemaining}`);
                     }
                     
-                    // Deduct from remaining volume
-                    const newRemaining = Math.max(0, currentRemaining - amountToConsume);
+                    // When remaining is 0 or less, reset to null and is_opened = 0
+                    const finalRemaining = (newRemaining > 0) ? newRemaining : null;
+                    const finalIsOpened = (newRemaining > 0) ? 1 : 0;
                     
-                    // Calculate quantity based on remaining volume
-                    // quantity = how many full bottles are represented by the remaining volume
-                    // Use ceil to round up (if 350ml remaining with 100ml bottles = 4 bottles)
-                    let newQty;
-                    if (newRemaining > 0) {
-                        newQty = Math.ceil(newRemaining / capacityPerPiece);
-                    } else {
-                        newQty = 0;
-                    }
-                    
-                    // Update inventory
+                    // Update inventory - use specific ID to avoid updating wrong row
                     const updateColumn = isInk ? 'remaining_volume' : 'remaining_weight';
                     await db.query(`
                         UPDATE technician_inventory 
                         SET quantity = ?,
                             ${updateColumn} = ?,
                             is_opened = ?
-                        WHERE technician_id = ? AND item_id = ?
+                        WHERE id = ?
                     `, [
                         newQty,
-                        newRemaining > 0 ? newRemaining : null,
-                        newRemaining > 0 && newQty > 0 ? 1 : 0,
-                        technicianId,
-                        part.item_id
+                        finalRemaining,
+                        finalIsOpened,
+                        item.id
                     ]);
                     
-                    console.log(`✅ ${part.consumption_type} consumption: ${amountToConsume}${isInk ? 'ml' : 'g'} consumed, remaining ${currentRemaining} → ${newRemaining}${isInk ? 'ml' : 'g'}, quantity ${item.quantity} → ${newQty}`);
+                    console.log(`  ${part.consumption_type} consumption complete. Quantity: ${item.quantity} → ${newQty}, Remaining: ${currentRemaining} → ${finalRemaining || 'null'}`);
                     
                 } else {
                     // No consumption type (old data or non-consumables): deduct quantity as before
@@ -299,7 +330,7 @@ router.post('/:approvalId/approve', authenticateinstitution_admin, async (req, r
                         WHERE technician_id = ? AND item_id = ?
                     `, [part.quantity_used, technicianId, part.item_id]);
                     
-                    console.log(`✅ Standard deduction: deducted ${part.quantity_used} units of item ${part.item_id}`);
+                    console.log(` Standard deduction: deducted ${part.quantity_used} units of item ${part.item_id}`);
                 }
             }
             

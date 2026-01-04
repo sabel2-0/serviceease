@@ -248,7 +248,7 @@ function renderRequestCard(request) {
                     ${formatDate(request.created_at)}
                 </p>
                 <button class="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                    View Details ?
+                    View Details
                 </button>
             </div>
         </div>
@@ -375,7 +375,14 @@ async function viewRequestDetails(requestId) {
                                 <span class="font-semibold text-blue-700 bg-blue-100 px-3 py-1 rounded-full text-sm">x${part.quantity_used} ${part.unit || 'pcs'}</span>
                             </div>
                             ${part.brand ? `<p class="text-sm text-slate-600"><span class="font-medium">Brand:</span> ${escapeHtml(part.brand)}</p>` : ''}
+                            ${part.color ? `<p class="text-sm text-slate-600"><span class="font-medium">Color:</span> ${escapeHtml(part.color)}</p>` : ''}
                             ${part.category ? `<p class="text-sm text-slate-600"><span class="font-medium">Category:</span> ${escapeHtml(part.category)}</p>` : ''}
+                            ${part.display_amount ? `
+                                <p class="text-sm text-blue-700 font-medium mt-1">
+                                    <i class="fas fa-tint mr-1"></i>→ ${escapeHtml(part.display_amount)} 
+                                    ${part.consumption_type ? `(${part.consumption_type === 'partial' ? 'Partial Use' : 'Full Consumption'})` : ''}
+                                </p>
+                            ` : ''}
                             ${part.part_notes ? `<p class="text-sm text-slate-600 mt-1"><span class="font-medium">Notes:</span> ${escapeHtml(part.part_notes)}</p>` : ''}
                             ${part.used_by_first_name ? `
                                 <p class="text-xs text-slate-500 mt-2">

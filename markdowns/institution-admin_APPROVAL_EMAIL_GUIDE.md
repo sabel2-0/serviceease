@@ -2,7 +2,7 @@
 
 This guide explains how to set up email notifications for approved coordinators using EmailJS.
 
-## 📋 Overview
+##  Overview
 
 When an admin approves An institution_admin registration, the system will automatically send a professional email notification to The institution_admin's email address, informing them that their account is ready to use.
 
@@ -30,7 +30,7 @@ When an admin approves An institution_admin registration, the system will automa
    
    **Subject Line:**
    ```
-   Your ServiceEase institution_admin account Has Been Approved! 🎉
+   Your ServiceEase institution_admin account Has Been Approved! 
    ```
 
 4. **Email Content (HTML)**
@@ -43,7 +43,7 @@ When an admin approves An institution_admin registration, the system will automa
    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
-               <h1 style="margin: 0;">🎉 Account Approved!</h1>
+               <h1 style="margin: 0;"> Account Approved!</h1>
            </div>
            
            <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
@@ -160,23 +160,23 @@ When an admin approves An institution_admin registration, the system will automa
 ## 📁 Files Modified
 
 ### **Backend Changes**
-- ✅ `server/index.js` (line ~2068-2095)
+-  `server/index.js` (line ~2068-2095)
   - Added `emailData` to approval response
   - Includes coordinator name and email for frontend to send
 
 ### **Frontend Changes**
-- ✅ `client/src/pages/admin/account-management.html`
+-  `client/src/pages/admin/account-management.html`
   - Added EmailJS library script
   - Initialized EmailJS with public key
 
-- ✅ `client/src/js/account-management.js`
+-  `client/src/js/account-management.js`
   - Updated `approveCoordinator()` function
   - Sends email automatically after successful approval
   - Includes error handling if email fails
 
 ---
 
-## 🔧 Template Variables Reference
+##  Template Variables Reference
 
 When EmailJS sends the email, these variables are automatically replaced:
 
@@ -280,7 +280,7 @@ Success message shown to admin
 
 ---
 
-## 📝 Additional Features to Consider
+##  Additional Features to Consider
 
 ### **Future Enhancements:**
 
@@ -304,7 +304,7 @@ Success message shown to admin
 
 ---
 
-## ✅ Success Checklist
+##  Success Checklist
 
 - [ ] EmailJS template created and saved
 - [ ] Template ID copied and pasted into code
@@ -317,7 +317,7 @@ Success message shown to admin
 
 ---
 
-## 📧 Support
+##  Support
 
 If you encounter issues:
 1. Check EmailJS documentation: https://www.emailjs.com/docs/
@@ -327,7 +327,7 @@ If you encounter issues:
 
 ---
 
-## 🎉 You're Done!
+##  You're Done!
 
 Once you've completed all steps and the test email arrives successfully, the feature is fully implemented and ready for production use!
 

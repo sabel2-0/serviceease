@@ -315,7 +315,7 @@
             // If we just got redirected due to token invalidation, clear the flag and allow login
             const wasRedirected = sessionStorage.getItem('redirecting_to_login') === 'true';
             if (wasRedirected) {
-                console.log('?? Arrived at login page after token invalidation - clearing redirect flag');
+                console.log('Arrived at login page after token invalidation - clearing redirect flag');
                 sessionStorage.removeItem('redirecting_to_login');
                 // Also ensure all auth data is cleared
                 localStorage.removeItem('isLoggedIn');
@@ -354,7 +354,7 @@
             } else {
                 // Clear any partial/invalid auth data
                 if (isLoggedIn || userStr || token) {
-                    console.log('?? Cleaning up incomplete auth data');
+                    console.log('Cleaning up incomplete auth data');
                     localStorage.removeItem('isLoggedIn');
                     localStorage.removeItem('user');
                     localStorage.removeItem('token');

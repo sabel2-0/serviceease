@@ -28,7 +28,7 @@ The institution_user interface has been completely redesigned to provide a bette
   - Description preview
   - Date submitted
 
-### 📝 Request Page
+###  Request Page
 **Location:** `client/src/pages/requester/requester-request.html`
 
 **Improvements:**
@@ -38,7 +38,7 @@ The institution_user interface has been completely redesigned to provide a bette
 - Better priority descriptions
 - Improved validation messages
 
-### 📋 History Page
+###  History Page
 **Location:** `client/src/pages/requester/requester-history.html`
 
 **Features:**
@@ -72,7 +72,7 @@ The institution_user interface has been completely redesigned to provide a bette
 - Fixed to bottom of screen
 - 4 clear navigation items:
   - 🏠 Home
-  - 📝 Request
+  -  Request
   - 🕓 History
   - ⚙️ Settings
 - Active state highlighting (blue background)
@@ -281,11 +281,11 @@ The institution_user interface has been completely redesigned to provide a bette
 
 ## Browser Compatibility
 
-- ✅ Chrome (latest)
-- ✅ Firefox (latest)
-- ✅ Safari (latest)
-- ✅ Edge (latest)
-- ✅ Mobile browsers (iOS Safari, Chrome Mobile)
+-  Chrome (latest)
+-  Firefox (latest)
+-  Safari (latest)
+-  Edge (latest)
+-  Mobile browsers (iOS Safari, Chrome Mobile)
 
 ## Future Enhancements
 
@@ -304,16 +304,16 @@ The institution_user interface has been completely redesigned to provide a bette
 ## Files Modified
 
 ### Client-Side
-- ✅ `client/src/pages/requester/requester.html` - Main container
-- ✅ `client/src/pages/requester/requester-home.html` - Dashboard
-- ✅ `client/src/pages/requester/requester-request.html` - Request form
-- ✅ `client/src/pages/requester/requester-history.html` - History page
-- ✅ `client/src/components/requester-topnav.html` - Top navigation
-- ✅ `client/src/components/requester-bottomnav.html` - Bottom navigation
-- ✅ `client/src/js/requester-app.js` - Application logic
+-  `client/src/pages/requester/requester.html` - Main container
+-  `client/src/pages/requester/requester-home.html` - Dashboard
+-  `client/src/pages/requester/requester-request.html` - Request form
+-  `client/src/pages/requester/requester-history.html` - History page
+-  `client/src/components/requester-topnav.html` - Top navigation
+-  `client/src/components/requester-bottomnav.html` - Bottom navigation
+-  `client/src/js/requester-app.js` - Application logic
 
 ### Server-Side
-- ✅ `server/index.js` - Added service requests endpoint
+-  `server/index.js` - Added service requests endpoint
 
 ## Support
 

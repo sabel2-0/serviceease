@@ -22,7 +22,7 @@ router.post('/validate-printers', async (req, res) => {
             return res.status(400).json({ error: 'Institution ID and printers array required' });
         }
         
-        console.log('🔍 Validating printers for institution:', institution_id);
+        console.log(' Validating printers for institution:', institution_id);
         console.log('Printers to validate:', printers);
         
         const validated = [];
@@ -66,7 +66,7 @@ router.post('/validate-printers', async (req, res) => {
             }
         }
         
-        console.log(`✅ Validated ${validated.length}/${printers.length} printers`);
+        console.log(` Validated ${validated.length}/${printers.length} printers`);
         
         res.json({
             validated,
@@ -75,7 +75,7 @@ router.post('/validate-printers', async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Printer validation error:', error);
+        console.error(' Printer validation error:', error);
         res.status(500).json({ error: 'Failed to validate printers' });
     }
 });
@@ -100,7 +100,7 @@ router.post('/submit', upload.fields([
             printer_serial_numbers // JSON string
         } = req.body;
         
-        console.log('📝 institution_user registration submission:', { first_name, last_name, email, institution_id });
+        console.log(' institution_user registration submission:', { first_name, last_name, email, institution_id });
         
         // Validate required fields
         if (!first_name || !last_name || !email || !password || !institution_id || !printer_serial_numbers) {
@@ -224,7 +224,7 @@ router.post('/submit', upload.fields([
         // Send verification code email
         await sendinstitution_userVerificationEmail(email, email_verification_code, first_name);
         
-        console.log('✅ institution_user registration created, ID:', result.insertId);
+        console.log(' institution_user registration created, ID:', result.insertId);
         
         res.json({
             message: 'Registration submitted successfully. Please check your email for the verification code.',
@@ -232,7 +232,7 @@ router.post('/submit', upload.fields([
         });
         
     } catch (error) {
-        console.error('❌ institution_user registration error:', error);
+        console.error(' institution_user registration error:', error);
         res.status(500).json({ error: 'Failed to submit registration' });
     }
 });
@@ -293,12 +293,12 @@ router.post('/verify-code', async (req, res) => {
             );
         }
         
-        console.log('✅ Email verified with code for registration ID:', registration_id);
+        console.log(' Email verified with code for registration ID:', registration_id);
         
         res.json({ message: 'Email verified successfully. Your registration is now pending institution_admin approval.' });
         
     } catch (error) {
-        console.error('❌ Code verification error:', error);
+        console.error(' Code verification error:', error);
         res.status(500).json({ error: 'Failed to verify code' });
     }
 });
@@ -348,12 +348,12 @@ router.get('/verify-email/:token', async (req, res) => {
             );
         }
         
-        console.log('✅ Email verified for registration ID:', registrations[0].id);
+        console.log(' Email verified for registration ID:', registrations[0].id);
         
         res.json({ message: 'Email verified successfully. Your registration is now pending institution_admin approval.' });
         
     } catch (error) {
-        console.error('❌ Email verification error:', error);
+        console.error(' Email verification error:', error);
         res.status(500).json({ error: 'Failed to verify email' });
     }
 });
@@ -399,7 +399,7 @@ router.get('/pending', auth, async (req, res) => {
         res.json(registrations);
         
     } catch (error) {
-        console.error('❌ Error fetching pending registrations:', error);
+        console.error(' Error fetching pending registrations:', error);
         res.status(500).json({ error: 'Failed to fetch registrations' });
     }
 });
@@ -443,7 +443,7 @@ router.get('/history', auth, async (req, res) => {
         res.json(registrations);
         
     } catch (error) {
-        console.error('❌ Error fetching registration history:', error);
+        console.error(' Error fetching registration history:', error);
         res.status(500).json({ error: 'Failed to fetch history' });
     }
 });
@@ -512,7 +512,7 @@ router.post('/:id/approve', auth, async (req, res) => {
             matched_printer_ids.length
         );
         
-        console.log('✅ institution_user registration approved, user ID:', newUserId);
+        console.log(' institution_user registration approved, user ID:', newUserId);
         
         res.json({ 
             message: 'Registration approved successfully',
@@ -520,7 +520,7 @@ router.post('/:id/approve', auth, async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Approval error:', error);
+        console.error(' Approval error:', error);
         res.status(500).json({ error: 'Failed to approve registration' });
     }
 });
@@ -563,12 +563,12 @@ router.post('/:id/reject', auth, async (req, res) => {
             notes
         );
         
-        console.log('✅ institution_user registration rejected, ID:', id);
+        console.log(' institution_user registration rejected, ID:', id);
         
         res.json({ message: 'Registration rejected' });
         
     } catch (error) {
-        console.error('❌ Rejection error:', error);
+        console.error(' Rejection error:', error);
         res.status(500).json({ error: 'Failed to reject registration' });
     }
 });

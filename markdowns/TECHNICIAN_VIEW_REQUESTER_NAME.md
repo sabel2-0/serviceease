@@ -4,7 +4,7 @@
 
 ## Feature Added
 
-### ✅ Show Requester Name in Service Request Details
+###  Show Requester Name in Service Request Details
 
 When a technician views a service request in the mobile app, they can now see who requested the service.
 
@@ -138,16 +138,16 @@ The service request detail modal now shows:
 ## Related Features
 
 This complements the earlier fix where:
-- ✅ Requester sees their own name in service request history
-- ✅ Requester only sees requests they created
-- ✅ `coordinator_id` column removed from database
+-  Requester sees their own name in service request history
+-  Requester only sees requests they created
+-  `coordinator_id` column removed from database
 
 ---
 
 ## Server Status
-✅ Server running with updated code
-✅ API endpoint returning requester information
-✅ Frontend displaying requester details
+ Server running with updated code
+ API endpoint returning requester information
+ Frontend displaying requester details
 
 ## Date Completed
 October 16, 2025

@@ -26,9 +26,9 @@ const [rows] = await db.query(
 
 ### Filtering Logic
 The endpoint now only returns institutions that:
-1. ✅ Have **no user assigned** (`user_id IS NULL`)
-2. ✅ Are **active** (`status = "active"`)
-3. ✅ Are **sorted alphabetically** by name
+1.  Have **no user assigned** (`user_id IS NULL`)
+2.  Are **active** (`status = "active"`)
+3.  Are **sorted alphabetically** by name
 
 ### Test Results
 From the database check:
@@ -54,4 +54,4 @@ node test_available_institutions.js
 ```
 
 ## Status
-✅ **COMPLETE** - The registration dropdown now only shows available institutions.
+ **COMPLETE** - The registration dropdown now only shows available institutions.

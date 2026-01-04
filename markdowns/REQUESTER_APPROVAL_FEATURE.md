@@ -5,12 +5,12 @@ Requesters can now approve or reject completed service requests before they are 
 
 ## Features Implemented
 
-### 1. Requester Notifications ✅
+### 1. Requester Notifications 
 - **Service Started**: Notification when technician starts working
 - **Service Completed**: Notification when work is submitted for approval
 - **Printer Assigned**: Notification when coordinator assigns a printer
 
-### 2. Approval Workflow ✅
+### 2. Approval Workflow 
 When a technician completes a service request:
 1. Status changes to `pending_approval`
 2. Requester receives a notification
@@ -31,8 +31,8 @@ When a technician completes a service request:
 - Shows request number and technician name
 - Optional feedback textarea
 - Two action buttons:
-  - ✅ **Approve**: Completes the service request
-  - ❌ **Reject**: Sends back for revision
+  -  **Approve**: Completes the service request
+  -  **Reject**: Sends back for revision
 - Cancel option to close without action
 
 ### 4. Backend API
@@ -102,8 +102,8 @@ No schema changes required. Uses existing:
    - Click "Review & Approve" button
    - Add optional feedback
    - Click either:
-     - "✅ Approve" → Request completed
-     - "❌ Reject" → Back to technician
+     - " Approve" → Request completed
+     - " Reject" → Back to technician
 
 4. **As Technician**:
    - Check notifications

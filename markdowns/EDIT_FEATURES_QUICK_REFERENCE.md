@@ -76,8 +76,8 @@ Serial: ABC1234 → [🟣 Edit] Button
     ↓
 Purple Modal Opens
     ↓
-Brand: [HP___________] 🔒 Read-only
-Model: [Laser Pro 213] 🔒 Read-only
+Brand: [HP___________]  Read-only
+Model: [Laser Pro 213]  Read-only
 Serial: [ABC1234______] ✏️ Editable
     ↓
 Change to "ABC1235"
@@ -95,9 +95,9 @@ ONLY this unit's serial number changes
 |---------|----------------|----------------|
 | **Button Location** | Main table | View Printers modal |
 | **Color** | Emerald green | Purple |
-| **Edits Brand** | ✅ Yes | ❌ No (read-only) |
-| **Edits Model** | ✅ Yes | ❌ No (read-only) |
-| **Edits Serial** | ❌ No | ✅ Yes |
+| **Edits Brand** |  Yes |  No (read-only) |
+| **Edits Model** |  Yes |  No (read-only) |
+| **Edits Serial** |  No |  Yes |
 | **Affects** | All units | Single unit |
 | **Use Case** | Model renaming | Serial correction |
 
@@ -107,8 +107,8 @@ ONLY this unit's serial number changes
 
 | Field | Edit Model | Edit Unit |
 |-------|-----------|-----------|
-| Brand | ✏️ Editable | 🔒 Read-only |
-| Model | ✏️ Editable | 🔒 Read-only |
+| Brand | ✏️ Editable |  Read-only |
+| Model | ✏️ Editable |  Read-only |
 | Serial Number | ➖ N/A | ✏️ Editable |
 | Status | ➖ Unchanged | ➖ Unchanged |
 | Location | ➖ Unchanged | ➖ Unchanged |
@@ -146,7 +146,7 @@ ONLY this unit's serial number changes
 1. Main page → Find model
 2. Click emerald "Edit" button
 3. Change model name
-4. All 5 units updated ✅
+4. All 5 units updated 
 
 ### Example 2: Single Serial Number Fix
 **Scenario**: One printer has typo in serial  
@@ -156,7 +156,7 @@ ONLY this unit's serial number changes
 2. Find the unit with wrong serial
 3. Click purple "Edit" button
 4. Fix serial number
-5. Only that unit updated ✅
+5. Only that unit updated 
 
 ### Example 3: Bulk Rebranding
 **Scenario**: Company switched from "Canon" to "Brother"  
@@ -165,7 +165,7 @@ ONLY this unit's serial number changes
 1. Main page → Find Canon models
 2. Click emerald "Edit" button
 3. Change brand to "Brother"
-4. All units rebranded ✅
+4. All units rebranded 
 
 ### Example 4: Printer Replacement
 **Scenario**: Replaced faulty printer, new serial number  
@@ -175,19 +175,19 @@ ONLY this unit's serial number changes
 2. Find the replaced unit
 3. Click purple "Edit" button
 4. Enter new serial
-5. Unit updated with new serial ✅
+5. Unit updated with new serial 
 
 ---
 
 ## Quick Tips
 
-### ✅ Do's
+###  Do's
 - Use Edit Model for naming corrections
 - Use Edit Unit for serial updates
 - Check the info banner in modals
 - Verify changes after saving
 
-### ❌ Don'ts
+###  Don'ts
 - Don't use Edit Model for single units
 - Don't use Edit Unit to change models
 - Don't forget which modal you're in
@@ -254,4 +254,4 @@ View Printers Modal
 🟢 **EMERALD = EDIT MODEL** = All Units  
 🟣 **PURPLE = EDIT UNIT** = Single Unit  
 
-Choose wisely! 🎯
+Choose wisely! 

@@ -327,16 +327,18 @@
     </div>
 
     <!-- Loading State -->
-    <div id="loadingState" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg p-6 flex items-center space-x-3">
+    <div id="loadingState" class="hidden fixed inset-0 flex items-center justify-center z-50">
+        <div class="absolute inset-0 bg-gray-900 bg-opacity-90"></div>
+        <div class="relative bg-white rounded-lg p-6 flex items-center space-x-3 z-10">
             <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
             <span class="text-gray-700">Loading staff members...</span>
         </div>
     </div>
 
     <!-- Manage Assignments Modal -->
-    <div id="assignmentsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg max-w-2xl w-full mx-4 p-6 transform transition-all max-h-[90vh] overflow-y-auto">
+    <div id="assignmentsModal" class="hidden fixed inset-0 flex items-center justify-center z-50">
+        <div class="absolute inset-0 bg-gray-900 bg-opacity-90"></div>
+        <div class="relative bg-white rounded-lg max-w-2xl w-full mx-4 p-6 transform transition-all max-h-[90vh] overflow-y-auto z-10">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-lg font-semibold text-gray-900" id="assignmentsModalTitle">Manage Client Assignments</h3>
                 <button onclick="closeAssignmentsModal()" class="text-gray-400 hover:text-gray-500">
@@ -398,8 +400,8 @@
 
     <!-- Edit Staff Modal -->
     <div id="editStaffModal" class="hidden fixed inset-0 flex items-center justify-center z-50">
-        <div class="absolute inset-0 bg-black bg-opacity-75 backdrop-blur-sm"></div>
-        <div class="relative bg-white rounded-lg max-w-lg w-full mx-4 p-8 transform transition-all">
+        <div class="absolute inset-0 bg-gray-900 bg-opacity-90"></div>
+        <div class="relative bg-white rounded-lg max-w-lg w-full mx-4 p-8 transform transition-all z-10">
             <div class="flex justify-between items-center mb-6">
                 <div class="flex items-center gap-3">
                     <div class="h-10 w-10 bg-slate-200 rounded-full flex items-center justify-center text-slate-700">
@@ -454,9 +456,9 @@
 
     <!-- Add Staff Modal -->
     <div id="addStaffModal" class="hidden fixed inset-0 flex items-center justify-center z-50">
-        <!-- Darker overlay with backdrop blur -->
-        <div id="addStaffModalOverlay" class="absolute inset-0 bg-black bg-opacity-75 backdrop-blur-sm"></div>
-    <div class="relative bg-white rounded-lg max-w-lg w-full mx-4 p-8 transform transition-all">
+        <!-- Darker overlay -->
+        <div id="addStaffModalOverlay" class="absolute inset-0 bg-gray-900 bg-opacity-90"></div>
+    <div class="relative bg-white rounded-lg max-w-lg w-full mx-4 p-8 transform transition-all z-10">
             <div class="flex justify-between items-center mb-6">
                 <div class="flex items-center gap-3">
                     <div class="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-700">
@@ -534,8 +536,9 @@
     </div>
     
     <!-- View Staff Modal -->
-    <div id="viewStaffModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-xl max-w-lg w-full mx-4 p-6 transform transition-all shadow-2xl">
+    <div id="viewStaffModal" class="hidden fixed inset-0 flex items-center justify-center z-50">
+        <div class="absolute inset-0 bg-gray-900 bg-opacity-90"></div>
+        <div class="relative bg-white rounded-xl max-w-lg w-full mx-4 p-6 transform transition-all shadow-2xl z-10">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-xl font-bold text-gray-900">Staff Details</h3>
                 <button onclick="closeViewStaffModal()" class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100">
@@ -588,8 +591,8 @@
     
     <!-- Change Password Modal -->
     <div id="changePasswordModal" class="hidden fixed inset-0 flex items-center justify-center z-50">
-        <div class="absolute inset-0 bg-black bg-opacity-75 backdrop-blur-sm"></div>
-        <div class="relative bg-white rounded-lg max-w-md w-full mx-4 p-6 transform transition-all shadow-2xl">
+        <div class="absolute inset-0 bg-gray-900 bg-opacity-90"></div>
+        <div class="relative bg-white rounded-lg max-w-md w-full mx-4 p-6 transform transition-all shadow-2xl z-10">
             <div class="flex justify-between items-center mb-6">
                 <div class="flex items-center gap-3">
                     <div class="h-10 w-10 bg-purple-100 rounded-full flex items-center justify-center text-purple-600">
@@ -628,7 +631,7 @@
                         <div class="h-2 bg-gray-200 rounded overflow-hidden">
                             <div id="changePasswordStrengthBar" class="h-full w-0 bg-red-500 transition-all"></div>
                         </div>
-                        <div id="changePasswordStrengthText" class="mt-1 text-xs text-gray-600">Password strength: <span id="changePasswordStrengthLabel">—</span></div>
+                        <div id="changePasswordStrengthText" class="mt-1 text-xs text-gray-600">Password strength: <span id="changePasswordStrengthLabel"></span></div>
                     </div>
                 </div>
                 

@@ -166,12 +166,12 @@ Deleted photo file: C:\Users\...\SE\server\temp_photos\selfie-[timestamp]-[rando
 
 ## KNOWN ISSUES RESOLVED
 
-1. ✅ Camera capture now properly saves file to input element
-2. ✅ Files are correctly uploaded to server
-3. ✅ Photo filenames are saved to database
-4. ✅ Photos are deleted from filesystem on approval
-5. ✅ Photos are deleted from filesystem on rejection
-6. ✅ Debug logging helps identify upload issues
+1.  Camera capture now properly saves file to input element
+2.  Files are correctly uploaded to server
+3.  Photo filenames are saved to database
+4.  Photos are deleted from filesystem on approval
+5.  Photos are deleted from filesystem on rejection
+6.  Debug logging helps identify upload issues
 
 ## PREVIOUS REGISTRATIONS
 
@@ -191,10 +191,10 @@ These users should be rejected or deleted, and they should re-register with the 
 - Photo deletion is automatic on both approve and reject actions
 
 ## SERVER STATUS
-✅ Server running on port 3000
-✅ Photo upload system FIXED
-✅ Photo deletion system working
-✅ Debug logging enabled
+ Server running on port 3000
+ Photo upload system FIXED
+ Photo deletion system working
+ Debug logging enabled
 
 ## NEXT STEPS
 1. Test registration with file upload

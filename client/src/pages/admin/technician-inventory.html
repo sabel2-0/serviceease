@@ -88,89 +88,97 @@
     </div>
 
     <!-- Technician Inventory Details Modal -->
-    <div id="inventory-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+    <div id="inventory-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 animate-fadeIn">
+        <div class="absolute inset-0 bg-gray-900 bg-opacity-90"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[92vh] overflow-hidden flex flex-col transform transition-all animate-slideUp z-10">
             <!-- Modal Header -->
-            <div class="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4 flex items-center justify-between">
-                <div>
-                    <h2 id="modal-tech-name" class="text-2xl font-bold"></h2>
-                    <p id="modal-tech-email" class="text-blue-100 text-sm mt-1"></p>
+            <div class="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-700 text-white px-8 py-6 relative overflow-hidden">
+                <div class="absolute inset-0 bg-white/5 backdrop-blur-sm"></div>
+                <div class="relative flex items-center justify-between">
+                    <div>
+                        <h2 id="modal-tech-name" class="text-2xl font-bold tracking-tight"></h2>
+                        <p id="modal-tech-email" class="text-blue-100 text-sm mt-1">
+                            <span></span>
+                        </p>
+                    </div>
+                    <button onclick="closeModal()" class="text-white hover:bg-white/20 rounded-xl px-4 py-2 transition-all duration-200 hover:scale-110 font-medium">
+                        Close
+                    </button>
                 </div>
-                <button onclick="closeModal()" class="text-white hover:bg-white/20 rounded-lg p-2 transition-colors">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
             </div>
 
             <!-- Modal Content -->
-            <div class="flex-1 overflow-y-auto p-6">
+            <div class="flex-1 overflow-y-auto bg-gradient-to-br from-slate-50 to-slate-100">
                 <!-- Loading State -->
-                <div id="modal-loading" class="flex flex-col items-center justify-center py-12">
+                <div id="modal-loading" class="flex flex-col items-center justify-center py-16">
                     <div class="loading-spinner"></div>
-                    <p class="mt-4 text-slate-600">Loading inventory details...</p>
+                    <p class="mt-4 text-slate-600 font-medium">Loading inventory details...</p>
                 </div>
 
                 <!-- Inventory Table -->
-                <div id="modal-content" class="hidden">
+                <div id="modal-content" class="hidden p-6">
+                    <!-- Stats Cards -->
                     <div class="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                            <div class="flex items-center space-x-3">
-                                <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                                    <i class="fas fa-boxes text-white"></i>
-                                </div>
-                                <div>
-                                    <p class="text-sm text-slate-600">Total Parts</p>
-                                    <p id="total-parts" class="text-2xl font-bold text-slate-800">0</p>
-                                </div>
-                            </div>
+                        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-5 text-white shadow-lg hover:shadow-xl transition-shadow">
+                            <p class="text-blue-100 text-sm font-medium mb-1">Total Parts</p>
+                            <p id="total-parts" class="text-4xl font-bold">0</p>
                         </div>
-                        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-                            <div class="flex items-center space-x-3">
-                                <div class="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
-                                    <i class="fas fa-layer-group text-white"></i>
-                                </div>
-                                <div>
-                                    <p class="text-sm text-slate-600">Total Items</p>
-                                    <p id="total-items" class="text-2xl font-bold text-slate-800">0</p>
-                                </div>
-                            </div>
+                        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-5 text-white shadow-lg hover:shadow-xl transition-shadow">
+                            <p class="text-green-100 text-sm font-medium mb-1">Total Items</p>
+                            <p id="total-items" class="text-4xl font-bold">0</p>
                         </div>
-                        <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                            <div class="flex items-center space-x-3">
-                                <div class="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
-                                    <i class="fas fa-star text-white"></i>
-                                </div>
-                                <div>
-                                    <p class="text-sm text-slate-600">Universal Parts</p>
-                                    <p id="universal-parts" class="text-2xl font-bold text-slate-800">0</p>
-                                </div>
-                            </div>
+                        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-5 text-white shadow-lg hover:shadow-xl transition-shadow">
+                            <p class="text-purple-100 text-sm font-medium mb-1">Universal Parts</p>
+                            <p id="universal-parts" class="text-4xl font-bold">0</p>
                         </div>
                     </div>
 
-                    <div class="overflow-x-auto">
-                        <table class="w-full">
-                            <thead class="bg-slate-50 border-y border-slate-200">
-                                <tr>
-                                    <th class="text-left px-4 py-3 text-sm font-semibold text-slate-700">Part Name</th>
-                                    <th class="text-left px-4 py-3 text-sm font-semibold text-slate-700">Brand</th>
-                                    <th class="text-left px-4 py-3 text-sm font-semibold text-slate-700">Category</th>
-                                    <th class="text-center px-4 py-3 text-sm font-semibold text-slate-700">Quantity</th>
-                                    <th class="text-center px-4 py-3 text-sm font-semibold text-slate-700">Remaining (ml/g)</th>
-                                    <th class="text-center px-4 py-3 text-sm font-semibold text-slate-700">Universal</th>
-                                    <th class="text-left px-4 py-3 text-sm font-semibold text-slate-700">Assigned By</th>
-                                    <th class="text-left px-4 py-3 text-sm font-semibold text-slate-700">Assigned Date</th>
-                                </tr>
-                            </thead>
-                            <tbody id="inventory-table-body">
-                                <!-- Inventory rows will be inserted here -->
-                            </tbody>
-                        </table>
+                    <!-- Table Container -->
+                    <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-slate-200">
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="bg-gradient-to-r from-slate-100 to-slate-50 border-b-2 border-slate-200">
+                                    <tr>
+                                        <th class="text-left px-4 py-4 text-sm font-bold text-slate-700 uppercase tracking-wider">
+                                            Part Name
+                                        </th>
+                                        <th class="text-left px-4 py-4 text-sm font-bold text-slate-700 uppercase tracking-wider">
+                                            Brand
+                                        </th>
+                                        <th class="text-left px-4 py-4 text-sm font-bold text-slate-700 uppercase tracking-wider">
+                                            Category
+                                        </th>
+                                        <th class="text-center px-4 py-4 text-sm font-bold text-slate-700 uppercase tracking-wider">
+                                            Quantity
+                                        </th>
+                                        <th class="text-center px-4 py-4 text-sm font-bold text-slate-700 uppercase tracking-wider">
+                                            Remaining
+                                        </th>
+                                        <th class="text-center px-4 py-4 text-sm font-bold text-slate-700 uppercase tracking-wider">
+                                            Universal
+                                        </th>
+                                        <th class="text-left px-4 py-4 text-sm font-bold text-slate-700 uppercase tracking-wider">
+                                            Assigned By
+                                        </th>
+                                        <th class="text-left px-4 py-4 text-sm font-bold text-slate-700 uppercase tracking-wider">
+                                            Date
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody id="inventory-table-body" class="divide-y divide-slate-100">
+                                    <!-- Inventory rows will be inserted here -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
 
                     <!-- Empty Inventory State -->
-                    <div id="empty-inventory" class="hidden text-center py-12">
-                        <i class="fas fa-box-open text-slate-300 text-5xl mb-3"></i>
-                        <p class="text-slate-600">This technician has no parts in inventory</p>
+                    <div id="empty-inventory" class="hidden text-center py-16">
+                        <div class="inline-flex items-center justify-center w-24 h-24 bg-slate-100 rounded-full mb-4 text-6xl text-slate-300">
+                            📦
+                        </div>
+                        <p class="text-slate-600 text-lg font-medium">This technician has no parts in inventory</p>
+                        <p class="text-slate-400 text-sm mt-2">Parts will appear here once assigned</p>
                     </div>
                 </div>
             </div>
@@ -382,7 +390,7 @@
 
             // Update header
             document.getElementById('modal-tech-name').textContent = `${technician.first_name} ${technician.last_name}`;
-            document.getElementById('modal-tech-email').textContent = technician.email;
+            document.getElementById('modal-tech-email').querySelector('span').textContent = technician.email;
 
             // Calculate stats
             const totalParts = inventory.length;
@@ -413,59 +421,103 @@
                     });
 
                     // Calculate remaining info
-                    const hasVolume = item.remaining_volume !== null && item.remaining_volume !== undefined;
-                    const hasWeight = item.remaining_weight !== null && item.remaining_weight !== undefined;
-                    const totalCapacity = item.ink_volume || item.toner_weight || 0;
-                    const currentRemaining = hasVolume ? parseFloat(item.remaining_volume) : (hasWeight ? parseFloat(item.remaining_weight) : 0);
-                    const percentage = totalCapacity > 0 ? Math.round((currentRemaining / totalCapacity) * 100) : 0;
+                    const capacityPerItem = item.ink_volume || item.toner_weight || 0;
+                    const isTrackable = capacityPerItem > 0; // Can we track volume/weight?
+                    
+                    const hasVolume = item.ink_volume && item.ink_volume > 0;
+                    const hasWeight = item.toner_weight && item.toner_weight > 0;
+                    const unit = hasVolume ? 'ml' : 'g';
+                    
+                    const openedRemaining = item.is_opened ? 
+                        (hasVolume ? parseFloat(item.remaining_volume || 0) : parseFloat(item.remaining_weight || 0)) : 0;
+                    const percentage = capacityPerItem > 0 ? Math.round((openedRemaining / capacityPerItem) * 100) : 0;
+                    
+                    // Calculate total remaining (unopened items + opened item)
+                    const unopenedCount = item.is_opened ? Math.max(0, item.quantity - 1) : item.quantity;
+                    const totalRemaining = (unopenedCount * capacityPerItem) + openedRemaining;
                     
                     row.innerHTML = `
-                        <td class="px-4 py-3">
-                            <div class="font-medium text-slate-800">${item.part_name}</div>
-                            ${item.color ? `<div class="text-xs text-slate-500"><i class="fas fa-circle text-${item.color === 'black' ? 'slate-700' : item.color}-500"></i> ${item.color}</div>` : ''}
+                        <td class="px-4 py-4">
+                            <div class="font-semibold text-slate-900">${item.part_name}</div>
+                            ${item.color ? `<div class="text-xs text-slate-500 mt-1">${item.color}</div>` : ''}
                         </td>
-                        <td class="px-4 py-3 text-slate-600">${item.brand || '-'}</td>
-                        <td class="px-4 py-3">
-                            <span class="px-2 py-1 bg-slate-100 text-slate-700 rounded text-xs">${item.category || '-'}</span>
+                        <td class="px-4 py-4">
+                            <span class="text-slate-700 font-medium">${item.brand || '-'}</span>
                         </td>
-                        <td class="px-4 py-3 text-center">
-                            <div class="font-semibold text-slate-800">${item.quantity} ${item.unit || 'pcs'}</div>
+                        <td class="px-4 py-4">
+                            <span class="inline-flex items-center px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg text-xs font-medium">
+                                ${item.category || '-'}
+                            </span>
                         </td>
-                        <td class="px-4 py-3 text-center">
-                            ${(hasVolume || hasWeight) ? `
-                                <div class="flex flex-col items-center gap-1">
-                                    <div class="font-semibold ${item.is_opened ? 'text-orange-600' : 'text-green-600'}">
-                                        ${currentRemaining}${hasVolume ? 'ml' : 'g'}
+                        <td class="px-4 py-4 text-center">
+                            <div class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 rounded-lg">
+                                <span class="font-bold text-slate-800">${item.quantity}</span>
+                                <span class="text-xs text-slate-600">${item.unit || 'pcs'}</span>
+                            </div>
+                        </td>
+                        <td class="px-4 py-4 text-center">
+                            ${isTrackable ? `
+                                <div class="flex flex-col items-center gap-2">
+                                    <!-- Total Remaining -->
+                                    <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg">
+                                        <span class="font-bold text-lg text-blue-700">${totalRemaining}${unit}</span>
+                                        <span class="text-xs text-blue-600 font-medium">Total</span>
                                     </div>
+                                    
                                     ${item.is_opened ? `
-                                        <div class="flex items-center gap-1">
-                                            <div class="w-20 h-2 bg-slate-200 rounded-full overflow-hidden">
-                                                <div class="h-full ${
-                                                    percentage > 60 ? 'bg-green-500' : 
-                                                    percentage > 30 ? 'bg-orange-500' : 'bg-red-500'
-                                                }" style="width: ${percentage}%"></div>
+                                        <!-- Breakdown: Unopened + Opened -->
+                                        <div class="flex flex-col gap-1.5 w-full">
+                                            <!-- Unopened Items -->
+                                            ${unopenedCount > 0 ? `
+                                                <div class="flex items-center justify-center gap-2 px-2 py-1 bg-green-50 rounded border border-green-200">
+                                                    <span class="text-sm text-green-700 font-medium">${unopenedCount} sealed</span>
+                                                    <span class="text-xs text-green-600">(${unopenedCount * capacityPerItem}${unit})</span>
+                                                </div>
+                                            ` : ''}
+                                            
+                                            <!-- Opened Item with Progress -->
+                                            <div class="flex flex-col gap-1 px-2 py-1.5 bg-orange-50 rounded border border-orange-200">
+                                                <div class="flex items-center justify-between">
+                                                    <div class="flex items-center gap-1.5">
+                                                        <span class="text-sm font-semibold text-orange-700">${openedRemaining}${unit}</span>
+                                                        <span class="text-xs font-medium text-orange-600">${percentage}% left</span>
+                                                    </div>
+                                                </div>
+                                                <div class="w-full h-2 bg-orange-200 rounded-full overflow-hidden">
+                                                    <div class="h-full transition-all duration-300 ${
+                                                        percentage > 60 ? 'bg-green-500' : 
+                                                        percentage > 30 ? 'bg-orange-500' : 'bg-red-500'
+                                                    }" style="width: ${percentage}%"></div>
+                                                </div>
+                                                <div class="text-xs text-orange-600 text-center">
+                                                    <i class="fas fa-droplet"></i> Opened bottle
+                                                </div>
                                             </div>
-                                            <span class="text-xs text-slate-500">${percentage}%</span>
-                                        </div>
-                                        <div class="text-xs text-orange-600">
-                                            <i class="fas fa-box-open"></i> Opened
                                         </div>
                                     ` : `
-                                        <div class="text-xs text-green-600">
-                                            <i class="fas fa-box"></i> Sealed
+                                        <!-- All Sealed -->
+                                        <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-green-50 border border-green-300 rounded-lg">
+                                            <div class="flex flex-col items-start">
+                                                <span class="text-sm font-semibold text-green-700">${item.quantity} × ${capacityPerItem}${unit}</span>
+                                                <span class="text-xs text-green-600">All Sealed</span>
+                                            </div>
                                         </div>
                                     `}
                                 </div>
                             ` : `<span class="text-slate-400 text-sm">-</span>`}
                         </td>
-                        <td class="px-4 py-3 text-center">
+                        <td class="px-4 py-4 text-center">
                             ${item.is_universal 
-                                ? '<span class="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs"><i class="fas fa-check mr-1"></i>Yes</span>' 
-                                : '<span class="px-2 py-1 bg-slate-100 text-slate-600 rounded-full text-xs">No</span>'
+                                ? '<span class="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg text-xs font-semibold shadow-sm">Universal</span>' 
+                                : '<span class="inline-flex items-center px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-xs font-medium">Standard</span>'
                             }
                         </td>
-                        <td class="px-4 py-3 text-slate-600 text-sm">${item.assigned_by_name || '-'}</td>
-                        <td class="px-4 py-3 text-slate-600 text-sm">${assignedDate}</td>
+                        <td class="px-4 py-4">
+                            <span class="text-slate-700 text-sm font-medium">${item.assigned_by_name || '-'}</span>
+                        </td>
+                        <td class="px-4 py-4">
+                            <span class="text-slate-600 text-sm">${assignedDate}</span>
+                        </td>
                     `;
 
                     tbody.appendChild(row);

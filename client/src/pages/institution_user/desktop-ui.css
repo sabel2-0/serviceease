@@ -1,0 +1,24 @@
+/* Desktop UI styles for institution_user pages */
+:root{
+  --sidenav-width: 260px;
+}
+/* Default: hide desktop UI on small screens */
+.desktop-only{ display:none; }
+
+/* Show desktop UI at >=640px and hide mobile UI */
+@media (min-width: 640px) {
+  .desktop-only{ display:block; }
+  .mobile-only{ display:none !important; }
+
+  body { background: #f8fafc; }
+
+  .iu-desktop-layout{ display:flex; min-height:100vh; }
+  .iu-sidenav{ width:var(--sidenav-width); background:#ffffff; border-right:1px solid #e6e6e6; padding:20px; }
+  .iu-sidenav .logo{ font-weight:700; color:#1f2937; margin-bottom:12px; }
+  .iu-sidenav nav a{ display:flex; gap:12px; align-items:center; padding:10px 12px; border-radius:8px; color:#374151; margin-bottom:6px; text-decoration:none; }
+  .iu-sidenav nav a:hover{ background:#f1f5f9; color:#0f172a; }
+
+  .iu-main{ flex:1; display:flex; flex-direction:column; }
+  .iu-topbar{ height:64px; border-bottom:1px solid #eef2f7; display:flex; align-items:center; padding:0 20px; background:white; }
+  .iu-content{ padding:24px; }
+}

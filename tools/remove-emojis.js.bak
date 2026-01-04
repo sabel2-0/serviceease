@@ -1,0 +1,43 @@
+const fs = require('fs');
+const path = require('path');
+
+// Configure which folders and file extensions to process
+const ROOT = path.resolve(__dirname, '..');
+const includeExt = new Set(['.js', '.jsx', '.ts', '.tsx', '.md', '.html', '.sql']);
+const ignoreDirs = new Set(['node_modules', '.git', 'server/node_modules']);
+
+// List of emoji characters (and variants) to remove
+const emojis = [
+  '🔍','❌','✅','⚠️','⚠','ℹ️','📦','📜','📋','📝','🔧','🔒','🎉','✉️','⏰','📧','📤','📌','🤖','✔️','🎯','📦'
+];
+
+const emojiRegex = new RegExp(emojis.map(e => e.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), 'g');
+
+function walk(dir) {
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    if (ignoreDirs.has(entry.name)) continue;
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) walk(full);
+    else if (entry.isFile()) {
+      const ext = path.extname(entry.name).toLowerCase();
+      if (!includeExt.has(ext)) continue;
+      try {
+        let content = fs.readFileSync(full, 'utf8');
+        if (emojiRegex.test(content)) {
+          const backup = full + '.bak';
+          if (!fs.existsSync(backup)) fs.writeFileSync(backup, content, 'utf8');
+          const newContent = content.replace(emojiRegex, '');
+          fs.writeFileSync(full, newContent, 'utf8');
+          console.log('Cleaned emojis in:', path.relative(ROOT, full));
+        }
+      } catch (e) {
+        console.error('Failed to process', full, e.message);
+      }
+    }
+  }
+}
+
+console.log('Starting emoji removal...');
+walk(ROOT);
+console.log('Done.');

@@ -10,22 +10,22 @@ async function migrate() {
     });
 
     try {
-        console.log('🔧 Adding approved_by column to service_requests table...');
+        console.log(' Adding approved_by column to service_requests table...');
         
         await db.query('ALTER TABLE service_requests ADD COLUMN approved_by INT NULL AFTER completed_at');
-        console.log('✅ approved_by column added');
+        console.log(' approved_by column added');
         
         await db.query('CREATE INDEX idx_service_requests_approved_by ON service_requests(approved_by)');
-        console.log('✅ Index created');
+        console.log(' Index created');
         
-        console.log('✅ Migration completed successfully!');
+        console.log(' Migration completed successfully!');
     } catch (err) {
         if (err.code === 'ER_DUP_FIELDNAME') {
-            console.log('⚠️ Column already exists');
+            console.log(' Column already exists');
         } else if (err.code === 'ER_DUP_KEYNAME') {
-            console.log('⚠️ Index already exists');
+            console.log(' Index already exists');
         } else {
-            console.error('❌ Migration error:', err.message);
+            console.error(' Migration error:', err.message);
             throw err;
         }
     } finally {

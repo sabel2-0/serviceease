@@ -148,10 +148,10 @@ rm *
 Or keep them if you want to manually test photo viewing in the UI.
 
 ## Server Status
-✅ Server running on port 3000
-✅ Photo upload system configured
-✅ Photo deletion system implemented
-✅ Logging enabled for debugging
+ Server running on port 3000
+ Photo upload system configured
+ Photo deletion system implemented
+ Logging enabled for debugging
 
 ## Next Steps
 1. Test new registration with photos

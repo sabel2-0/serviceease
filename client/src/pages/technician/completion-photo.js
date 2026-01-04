@@ -2,7 +2,7 @@
 (function() {
     'use strict';
     
-    console.log('?? Loading completion-photo.js');
+    console.log(' Loading completion-photo.js');
     
     // Handle completion photo capture - Make functions globally accessible
     window.openCamera = function() {
@@ -80,10 +80,13 @@
         event.preventDefault();
         
         const form = event.target;
-        const serviceActions = document.getElementById('serviceActions').value;
-        const additionalNotes = document.getElementById('additionalNotes').value;
+        const serviceActionsEl = document.getElementById('serviceActions');
+        const additionalNotesEl = document.getElementById('additionalNotes');
         const photoInput = document.getElementById('completionPhotoInput');
         const submitBtn = document.getElementById('submitCompletion');
+        
+        const serviceActions = serviceActionsEl ? serviceActionsEl.value : '';
+        const additionalNotes = additionalNotesEl ? additionalNotesEl.value : '';
         
         // Validate photo
         if (!photoInput.files || !photoInput.files[0]) {
@@ -106,7 +109,7 @@
                 document.querySelectorAll('.part-entry').forEach(entry => {
                     const nameSelect = entry.querySelector('.part-name-select');
                     const quantityInput = entry.querySelector('.part-quantity');
-                    const unitSelect = entry.querySelector('.part-unit');
+                    const unitInput = entry.querySelector('.part-unit'); // Now an input, not select
                     const brandSelect = entry.querySelector('.part-brand-select');
                     
                     if (nameSelect && nameSelect.value) {
@@ -125,7 +128,7 @@
                             name: nameSelect.value,
                             brand: brand,
                             qty: parseInt(quantityInput?.value || 1),
-                            unit: unitSelect?.value || 'pieces',
+                            unit: unitInput?.value || 'Pieces', // Get value from readonly input
                             tech_inventory_id: selectedOption?.dataset.techInventoryId || null
                         };
                         
@@ -133,14 +136,14 @@
                         if (isConsumable && consumptionTypeField?.value) {
                             partData.consumption_type = consumptionTypeField.value;
                             partData.amount_consumed = amountConsumedField?.value ? parseFloat(amountConsumedField.value) : null;
-                            console.log('✅ [completion-photo.js] Adding consumption data:', partData);
+                            console.log(' [completion-photo.js] Adding consumption data:', partData);
                         }
                         
                         parts.push(partData);
                     }
                 });
                 
-                console.log('📦 [completion-photo.js] Parts collected:', parts);
+                console.log(' [completion-photo.js] Parts collected:', parts);
                 
                 // Get current request ID from selectedRequest (set when modal opens)
                 let requestId = null;
@@ -184,13 +187,14 @@
                 }
                 
                 const result = await response.json();
-                alert('Service request completed successfully!');
                 
-                // Close modal and reload
+                // Show success modal instead of alert
+                showCompletionSuccessModal();
+                
+                // Close completion modal
                 if (window.closeJobCompletionModal) {
                     window.closeJobCompletionModal();
                 }
-                window.location.reload();
                 
             } catch (error) {
                 console.error('Error submitting completion:', error);
@@ -203,11 +207,54 @@
         reader.readAsDataURL(photoInput.files[0]);
     };
 
+    // Show success modal with request details
+    function showCompletionSuccessModal() {
+        const modal = document.getElementById('completionSuccessModal');
+        const detailsContainer = document.getElementById('successRequestDetails');
+        
+        if (!modal) {
+            console.error('Success modal not found');
+            window.location.reload();
+            return;
+        }
+        
+        // Get request details from selectedRequest
+        const request = window.selectedRequest || {};
+        
+        detailsContainer.innerHTML = `
+            <div class="flex items-center gap-3 pb-3 border-b border-slate-200">
+                <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                    </svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="font-semibold text-slate-800 truncate">${request.printer_name || request.brand || 'Service Request'}</p>
+                    <p class="text-xs text-slate-500">${request.printer_model || request.issue_type || 'Completed'}</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3 pt-2">
+                <div class="text-center p-2 bg-white rounded-lg">
+                    <p class="text-xs text-slate-500">Request ID</p>
+                    <p class="font-bold text-slate-700">#${request.id || 'N/A'}</p>
+                </div>
+                <div class="text-center p-2 bg-white rounded-lg">
+                    <p class="text-xs text-slate-500">Status</p>
+                    <p class="font-bold text-amber-600">Pending Review</p>
+                </div>
+            </div>
+        `;
+        
+        modal.classList.remove('hidden');
+    }
+    
+    // Close success modal and reload
+    window.closeCompletionSuccessModal = function() {
+        const modal = document.getElementById('completionSuccessModal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+        window.location.reload();
+    };
+
 })();
-
-
-
-
-
-
-

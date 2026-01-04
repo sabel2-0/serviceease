@@ -139,20 +139,34 @@ async function viewTechnicianDetails(technicianId) {
 }
 
 function displayTechnicianDetails(data) {
-    const { technician, requests } = data;
+    const { technician, requests, maintenanceServices } = data;
+    
+    // Combine both for total stats
+    const allServices = [...requests, ...(maintenanceServices || [])];
     
     document.getElementById('modalTechnicianName').textContent = 
         `${technician.first_name} ${technician.last_name}`;
 
     const content = document.getElementById('detailsContent');
     
-    // Group requests by status
-    const grouped = {
+    // Group service requests by status
+    const srGrouped = {
         pending: requests.filter(r => r.status === 'pending'),
         in_progress: requests.filter(r => r.status === 'in_progress'),
         pending_approval: requests.filter(r => r.status === 'pending_approval'),
         completed: requests.filter(r => r.status === 'completed')
     };
+
+    // Group maintenance services by status
+    const msGrouped = {
+        pending: (maintenanceServices || []).filter(r => r.status === 'pending'),
+        in_progress: (maintenanceServices || []).filter(r => r.status === 'in_progress'),
+        pending_approval: (maintenanceServices || []).filter(r => r.status === 'pending_approval'),
+        completed: (maintenanceServices || []).filter(r => r.status === 'completed')
+    };
+
+    const totalCompleted = srGrouped.completed.length + msGrouped.completed.length;
+    const completionRate = allServices.length > 0 ? Math.round((totalCompleted / allServices.length) * 100) : 0;
 
     content.innerHTML = `
         <div class="space-y-6">
@@ -165,54 +179,145 @@ function displayTechnicianDetails(data) {
                     </div>
                     <div>
                         <p class="text-sm text-blue-600 font-medium">Total Requests</p>
-                        <p class="text-2xl font-bold text-slate-800">${requests.length}</p>
+                        <p class="text-2xl font-bold text-slate-800">${allServices.length}</p>
                     </div>
                     <div>
                         <p class="text-sm text-blue-600 font-medium">Completed</p>
-                        <p class="text-2xl font-bold text-green-600">${grouped.completed.length}</p>
+                        <p class="text-2xl font-bold text-green-600">${totalCompleted}</p>
                     </div>
                     <div>
                         <p class="text-sm text-blue-600 font-medium">Completion Rate</p>
                         <p class="text-2xl font-bold text-blue-600">
-                            ${requests.length > 0 ? Math.round((grouped.completed.length / requests.length) * 100) : 0}%
+                            ${completionRate}%
                         </p>
                     </div>
                 </div>
             </div>
 
-            <!-- Tabs for different statuses -->
+            <!-- Service Type Tabs -->
             <div class="border-b border-slate-200">
-                <nav class="flex space-x-4">
+                <nav class="flex space-x-1">
+                    <button onclick="switchServiceType('all')" class="service-type-tab px-4 py-2 font-medium text-white bg-blue-600 rounded-t-lg">
+                        <i class="fas fa-list mr-2"></i>All (${allServices.length})
+                    </button>
+                    <button onclick="switchServiceType('service_requests')" class="service-type-tab px-4 py-2 font-medium text-slate-600 bg-slate-100 rounded-t-lg hover:bg-slate-200">
+                        <i class="fas fa-ticket-alt mr-2"></i>Service Requests (${requests.length})
+                    </button>
+                    <button onclick="switchServiceType('maintenance')" class="service-type-tab px-4 py-2 font-medium text-slate-600 bg-slate-100 rounded-t-lg hover:bg-slate-200">
+                        <i class="fas fa-wrench mr-2"></i>Maintenance Services (${(maintenanceServices || []).length})
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Status Filter Tabs -->
+            <div class="border-b border-slate-200" id="statusTabsContainer">
+                <nav class="flex space-x-4 flex-wrap">
                     <button onclick="switchTab('all')" class="status-tab px-4 py-2 font-medium border-b-2 border-blue-600 text-blue-600">
-                        All (${requests.length})
+                        All (${allServices.length})
                     </button>
                     <button onclick="switchTab('pending')" class="status-tab px-4 py-2 font-medium border-b-2 border-transparent text-slate-600 hover:text-slate-800">
-                        Pending (${grouped.pending.length})
+                        Pending (${srGrouped.pending.length + msGrouped.pending.length})
                     </button>
                     <button onclick="switchTab('in_progress')" class="status-tab px-4 py-2 font-medium border-b-2 border-transparent text-slate-600 hover:text-slate-800">
-                        In Progress (${grouped.in_progress.length})
+                        In Progress (${srGrouped.in_progress.length + msGrouped.in_progress.length})
                     </button>
                     <button onclick="switchTab('pending_approval')" class="status-tab px-4 py-2 font-medium border-b-2 border-transparent text-slate-600 hover:text-slate-800">
-                        Pending Approval (${grouped.pending_approval.length})
+                        Pending Approval (${srGrouped.pending_approval.length + msGrouped.pending_approval.length})
                     </button>
                     <button onclick="switchTab('completed')" class="status-tab px-4 py-2 font-medium border-b-2 border-transparent text-slate-600 hover:text-slate-800">
-                        Completed (${grouped.completed.length})
+                        Completed (${totalCompleted})
                     </button>
                 </nav>
             </div>
 
             <!-- Requests List -->
             <div id="requestsList">
-                ${renderRequestsList(requests, 'all')}
+                ${renderRequestsList(allServices, 'all')}
             </div>
         </div>
     `;
 
-    // Store grouped data for tab switching
-    window.currentTechnicianRequests = grouped;
-    window.allTechnicianRequests = requests;
+    // Store data for tab switching
+    window.currentServiceRequests = requests;
+    window.currentMaintenanceServices = maintenanceServices || [];
+    window.currentServiceType = 'all';
+    window.srGrouped = srGrouped;
+    window.msGrouped = msGrouped;
+    window.currentTechnicianRequests = {
+        pending: [...srGrouped.pending, ...msGrouped.pending],
+        in_progress: [...srGrouped.in_progress, ...msGrouped.in_progress],
+        pending_approval: [...srGrouped.pending_approval, ...msGrouped.pending_approval],
+        completed: [...srGrouped.completed, ...msGrouped.completed]
+    };
+    window.allTechnicianRequests = allServices;
     
     document.getElementById('detailsModal').classList.remove('hidden');
+}
+
+function switchServiceType(type) {
+    // Update tab styles
+    document.querySelectorAll('.service-type-tab').forEach(tab => {
+        tab.classList.remove('text-white', 'bg-blue-600');
+        tab.classList.add('text-slate-600', 'bg-slate-100');
+    });
+    event.target.classList.remove('text-slate-600', 'bg-slate-100');
+    event.target.classList.add('text-white', 'bg-blue-600');
+
+    window.currentServiceType = type;
+    
+    let filteredList;
+    let grouped;
+    
+    if (type === 'all') {
+        filteredList = [...window.currentServiceRequests, ...window.currentMaintenanceServices];
+        grouped = window.currentTechnicianRequests;
+    } else if (type === 'service_requests') {
+        filteredList = window.currentServiceRequests;
+        grouped = window.srGrouped;
+    } else {
+        filteredList = window.currentMaintenanceServices;
+        grouped = window.msGrouped;
+    }
+
+    // Update status tabs counts
+    updateStatusTabs(filteredList, grouped);
+    
+    // Render the list
+    document.getElementById('requestsList').innerHTML = renderRequestsList(filteredList, 'all');
+    
+    // Reset status tab selection
+    document.querySelectorAll('.status-tab').forEach((tab, index) => {
+        if (index === 0) {
+            tab.classList.add('border-blue-600', 'text-blue-600');
+            tab.classList.remove('border-transparent', 'text-slate-600');
+        } else {
+            tab.classList.remove('border-blue-600', 'text-blue-600');
+            tab.classList.add('border-transparent', 'text-slate-600');
+        }
+    });
+}
+
+function updateStatusTabs(list, grouped) {
+    const container = document.getElementById('statusTabsContainer');
+    container.innerHTML = `
+        <nav class="flex space-x-4 flex-wrap">
+            <button onclick="switchTab('all')" class="status-tab px-4 py-2 font-medium border-b-2 border-blue-600 text-blue-600">
+                All (${list.length})
+            </button>
+            <button onclick="switchTab('pending')" class="status-tab px-4 py-2 font-medium border-b-2 border-transparent text-slate-600 hover:text-slate-800">
+                Pending (${grouped.pending.length})
+            </button>
+            <button onclick="switchTab('in_progress')" class="status-tab px-4 py-2 font-medium border-b-2 border-transparent text-slate-600 hover:text-slate-800">
+                In Progress (${grouped.in_progress.length})
+            </button>
+            <button onclick="switchTab('pending_approval')" class="status-tab px-4 py-2 font-medium border-b-2 border-transparent text-slate-600 hover:text-slate-800">
+                Pending Approval (${grouped.pending_approval.length})
+            </button>
+            <button onclick="switchTab('completed')" class="status-tab px-4 py-2 font-medium border-b-2 border-transparent text-slate-600 hover:text-slate-800">
+                Completed (${grouped.completed.length})
+            </button>
+        </nav>
+    `;
 }
 
 function renderRequestsList(requests, filter = 'all') {
@@ -227,17 +332,25 @@ function renderRequestsList(requests, filter = 'all') {
 
     return `
         <div class="space-y-4">
-            ${requests.map(req => `
+            ${requests.map(req => {
+                const isMaintenanceService = req.service_type === 'maintenance_service';
+                const serviceLabel = isMaintenanceService ? 'Maintenance' : (req.is_walk_in ? 'Walk-In' : 'Service Request');
+                const serviceBadgeClass = isMaintenanceService ? 'bg-cyan-100 text-cyan-700' : (req.is_walk_in ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700');
+                const serviceIcon = isMaintenanceService ? 'fa-wrench' : 'fa-ticket-alt';
+                
+                return `
                 <div class="bg-white border border-slate-200 rounded-lg p-4 hover:shadow-md transition-shadow">
                     <div class="flex items-start justify-between mb-3">
                         <div class="flex-1">
-                            <div class="flex items-center gap-2 mb-1">
+                            <div class="flex items-center gap-2 mb-1 flex-wrap">
                                 <h4 class="font-semibold text-slate-800">
-                                    Request #${req.id} - ${req.is_walk_in ? (req.walk_in_printer_brand || 'Unknown') : (req.printer_brand || 'Unknown')} ${req.printer_model || ''}
+                                    ${req.service_number || ('Request #' + req.id)} - ${req.is_walk_in ? (req.walk_in_printer_brand || 'Unknown') : (req.printer_brand || 'Unknown')} ${req.printer_model || ''}
                                 </h4>
-                                ${req.is_walk_in ? '<span class="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full font-semibold">Walk-In</span>' : '<span class="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full font-semibold">Institution</span>'}
+                                <span class="px-2 py-0.5 ${serviceBadgeClass} text-xs rounded-full font-semibold">
+                                    <i class="fas ${serviceIcon} mr-1"></i>${serviceLabel}
+                                </span>
                             </div>
-                            <p class="text-sm text-slate-600 mb-2">${escapeHtml(req.description || req.issue)}</p>
+                            <p class="text-sm text-slate-600 mb-2">${escapeHtml(req.description || req.issue || '')}</p>
                             <div class="flex flex-wrap gap-3 text-xs">
                                 ${req.location ? `<span class="text-slate-500"><i class="fas fa-map-marker-alt mr-1"></i>${escapeHtml(req.location)}</span>` : ''}
                                 ${req.printer_department ? `<span class="text-slate-500"><i class="fas fa-building mr-1"></i>${escapeHtml(req.printer_department)}</span>` : ''}
@@ -278,17 +391,18 @@ function renderRequestsList(requests, filter = 'all') {
                             ${req.user_role ? `<p class="text-xs text-slate-500 capitalize">${req.user_role.replace('_', ' ')}</p>` : ''}
                         </div>
                         `}
-                        ${req.resolution_notes || (req.approved_by_first_name && req.approved_by_last_name) ? `
+                        ${req.technician_notes ? `
                         <div class="col-span-2 md:col-span-4">
-                            <p class="text-slate-500">Resolution Notes</p>
-                            ${req.approved_by_first_name && req.approved_by_last_name ? `
-                            <p class="font-semibold text-green-700 mb-1">
-                                Approved by: <span class="capitalize">${req.approver_role || 'Staff'}</span> - ${escapeHtml(req.approved_by_first_name + ' ' + req.approved_by_last_name)}
-                            </p>
-                            ` : ''}
-                            ${req.resolution_notes ? `
+                            <p class="text-slate-500">Actions Performed</p>
+                            <div class="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                                <p class="font-medium text-blue-900">${escapeHtml(req.technician_notes)}</p>
+                            </div>
+                        </div>
+                        ` : ''}
+                        ${req.resolution_notes ? `
+                        <div class="col-span-2 md:col-span-4">
+                            <p class="text-slate-500">Approval Notes</p>
                             <p class="font-medium text-slate-800">${escapeHtml(req.resolution_notes)}</p>
-                            ` : ''}
                         </div>
                         ` : ''}
                         ${req.parts_used && req.parts_used.length > 0 ? `
@@ -298,10 +412,10 @@ function renderRequestsList(requests, filter = 'all') {
                                 ${req.parts_used.map(part => `
                                     <div class="flex items-center justify-between py-2 border-b border-slate-200 last:border-b-0">
                                         <div class="flex flex-col">
-                                            <span class="font-medium text-slate-700">${escapeHtml(part.part_name)}</span>
+                                            <span class="font-medium text-slate-700">${escapeHtml(part.part_name)}${part.color ? ` <span class="text-xs text-gray-500">(${escapeHtml(part.color)})</span>` : ''}</span>
                                             ${part.brand ? `<span class="text-xs text-slate-500">Brand: ${escapeHtml(part.brand)}</span>` : ''}
                                             ${part.category ? `<span class="text-xs text-slate-500">Category: ${escapeHtml(part.category)}</span>` : ''}
-                                            ${part.display_amount ? `<span class="text-xs text-blue-600 font-semibold"><i class="fas fa-flask"></i> ${escapeHtml(part.display_amount)}</span>` : ''}
+                                            ${part.display_amount ? `<span class="text-xs text-blue-600 font-semibold mt-1">→ ${escapeHtml(part.display_amount)} ${part.consumption_type ? '(' + (part.consumption_type === 'partial' ? 'Partial Use' : 'Full Consumption') + ')' : ''}</span>` : ''}
                                         </div>
                                         <span class="text-slate-600 font-semibold">Qty: ${part.quantity_used} ${part.unit || 'pcs'}</span>
                                     </div>
@@ -320,7 +434,7 @@ function renderRequestsList(requests, filter = 'all') {
                         ` : ''}
                     </div>
                 </div>
-            `).join('')}
+            `;}).join('')}
         </div>
     `;
 }
@@ -334,12 +448,27 @@ function switchTab(status) {
     event.target.classList.add('border-blue-600', 'text-blue-600');
     event.target.classList.remove('border-transparent', 'text-slate-600');
 
+    // Determine which list to filter based on current service type
+    let baseList;
+    let grouped;
+    
+    if (window.currentServiceType === 'all') {
+        baseList = [...window.currentServiceRequests, ...window.currentMaintenanceServices];
+        grouped = window.currentTechnicianRequests;
+    } else if (window.currentServiceType === 'service_requests') {
+        baseList = window.currentServiceRequests;
+        grouped = window.srGrouped;
+    } else {
+        baseList = window.currentMaintenanceServices;
+        grouped = window.msGrouped;
+    }
+
     // Filter requests
     let requests;
     if (status === 'all') {
-        requests = window.allTechnicianRequests;
+        requests = baseList;
     } else {
-        requests = window.currentTechnicianRequests[status] || [];
+        requests = grouped[status] || [];
     }
 
     // Re-render list

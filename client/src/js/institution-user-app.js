@@ -6,9 +6,65 @@ document.addEventListener('DOMContentLoaded', () => {
 async function initInstitutionUserApp() {
   await loadTopnav();
   await loadBottomnav();
+  // Ensure service container is placed into the appropriate (mobile vs desktop) parent
+  syncServiceContainerPlacement();
+  // Bind desktop sidenav links (if present)
+  bindSidenavLinks();
+  // Re-run placement on resize (debounced)
+  let _resizeTimer = null;
+  window.addEventListener('resize', function() { clearTimeout(_resizeTimer); _resizeTimer = setTimeout(syncServiceContainerPlacement, 120); });
+
   // Handle hash routing
   window.addEventListener('hashchange', renderRoute);
   renderRoute();
+}
+
+function bindSidenavLinks() {
+  try {
+    const sidenav = document.querySelector('.iu-sidenav');
+    if (!sidenav) return;
+    const links = sidenav.querySelectorAll('a[data-route]');
+    links.forEach(a => {
+      a.removeEventListener('click', _sidenavClickHandler);
+      a.addEventListener('click', _sidenavClickHandler);
+    });
+  } catch (e) { console.error('bindSidenavLinks', e); }
+}
+
+function _sidenavClickHandler(ev) {
+  ev.preventDefault();
+  const route = ev.currentTarget.getAttribute('data-route');
+  if (route) navigateTo(route);
+}
+
+// Move the single service container element into the visible area to avoid duplicate IDs
+function syncServiceContainerPlacement() {
+  try {
+    const mobileContainer = document.getElementById('institution-user-service-component');
+    const desktopPlaceholder = document.getElementById('institution-user-service-component-desktop');
+    const mobileMain = document.querySelector('#app main');
+    if (!mobileContainer) return;
+
+    const isDesktop = window.innerWidth >= 640;
+
+    if (isDesktop && desktopPlaceholder && desktopPlaceholder.parentElement) {
+      const desktopParent = desktopPlaceholder.parentElement;
+      if (mobileContainer.parentElement !== desktopParent) {
+        desktopParent.replaceChild(mobileContainer, desktopPlaceholder);
+      }
+    } else {
+      // move back to mobile main
+      if (mobileMain && mobileContainer.parentElement !== mobileMain) {
+        // If desktop placeholder missing, recreate it so markup stays consistent for future moves
+        const desktopParent = document.querySelector('.iu-content');
+        if (desktopParent && !document.getElementById('institution-user-service-component-desktop')) {
+          const ph = document.createElement('div'); ph.id = 'institution-user-service-component-desktop'; desktopParent.appendChild(ph);
+        }
+        // place container back inside mobile main
+        mobileMain.appendChild(mobileContainer);
+      }
+    }
+  } catch (e) { console.error('syncServiceContainerPlacement', e); }
 }
 
 async function loadTopnav() {
@@ -17,6 +73,8 @@ async function loadTopnav() {
   try {
     const r = await fetch('/components/institution-user-topnav.html');
     c.innerHTML = await r.text();
+    // Mirror key topnav elements into the desktop topbar (if present)
+    copyTopnavToDesktop();
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     const firstName = user.first_name || '';
     const lastName = user.last_name || '';
@@ -29,10 +87,40 @@ async function loadTopnav() {
     
     // Fetch and display institution_user profile (institution name)
     await loadInstitutionUserProfile();
+    // Ensure desktop header mirrors profile data as well
+    copyProfileToDesktop();
     
     // Setup notification system
     setupNotifications();
   } catch (e) { console.error('loadTopnav', e); }
+}
+
+function copyTopnavToDesktop() {
+  try {
+    const mobileInitials = document.getElementById('req-user-initials')?.textContent || '';
+    const desktopInitialsEl = document.getElementById('req-user-initials-desktop');
+    if (desktopInitialsEl) desktopInitialsEl.textContent = mobileInitials;
+
+    const mobileInstName = document.getElementById('req-institution-name')?.textContent || '';
+    const desktopInstNameEl = document.getElementById('req-institution-name-desktop');
+    if (desktopInstNameEl) desktopInstNameEl.textContent = mobileInstName;
+
+    const mobileUserName = document.getElementById('req-institution_user-name')?.textContent || '';
+    const desktopUserNameEl = document.getElementById('req-institution_user-name-desktop');
+    if (desktopUserNameEl) desktopUserNameEl.textContent = mobileUserName;
+  } catch (e) { console.error('copyTopnavToDesktop', e); }
+}
+
+function copyProfileToDesktop() {
+  try {
+    const inst = document.getElementById('req-institution-name')?.textContent || '';
+    const instEl = document.getElementById('req-institution-name-desktop');
+    if (instEl) instEl.textContent = inst;
+
+    const user = document.getElementById('req-institution_user-name')?.textContent || '';
+    const userEl = document.getElementById('req-institution_user-name-desktop');
+    if (userEl) userEl.textContent = user;
+  } catch (e) { console.error('copyProfileToDesktop', e); }
 }
 
 async function loadInstitutionUserProfile() {
@@ -94,12 +182,13 @@ function useFallbackProfileData() {
 
 function setupNotifications() {
   const notificationBtn = document.getElementById('req-notifications-btn');
+  const notificationBtnDesktop = document.getElementById('req-notifications-btn-desktop');
   const notificationModal = document.getElementById('req-notification-modal');
   const notificationModalContent = document.getElementById('req-notification-modal-content');
   const closeNotificationModal = document.getElementById('req-close-notification-modal');
-  
-  if (!notificationBtn || !notificationModal) {
-    console.warn('[institution_user] Notification elements not found');
+
+  if (!notificationModal) {
+    console.warn('[institution_user] Notification modal not found');
     return;
   }
   
@@ -107,25 +196,25 @@ function setupNotifications() {
   
   // Load notification JS module if not already loaded
   if (!window.institution_userNotifications) {
-    console.log('??? [institution_user] Loading notification module...');
+    console.log('[institution_user] Loading notification module...');
     const script = document.createElement('script');
     script.src = '/js/institution-user-notifications.js';
-    script.onload = () => console.log('??? [institution_user] Notification module loaded');
-    script.onerror = () => console.error('??? [institution_user] Failed to load notification module');
+    script.onload = () => console.log('[institution_user] Notification module loaded');
+    script.onerror = () => console.error('[institution_user] Failed to load notification module');
     document.head.appendChild(script);
   }
   
-  notificationBtn.addEventListener('click', function(e) {
-    e.stopPropagation();
-    console.log('??? [institution_user] Notification button clicked');
-    
+  const handleNotificationClick = function(e) {
+    e?.stopPropagation();
+    console.log('[institution_user] Notification button clicked');
+
     // Open modal
     notificationModal.classList.remove('hidden');
     document.body.classList.add('overflow-hidden');
-    
+
     if (!notificationsLoaded) {
       // First time - load the HTML
-      console.log('??? [institution_user] Loading notifications component...');
+      console.log('[institution_user] Loading notifications component...');
       fetch('/components/institution-user-notifications.html')
         .then(res => res.text())
         .then(html => {
@@ -135,25 +224,29 @@ function setupNotifications() {
           // Initialize notifications module
           setTimeout(() => {
             if (window.institution_userNotifications) {
-              console.log('??? [institution_user] Initializing institution_userNotifications module...');
+              console.log('[institution_user] Initializing institution_userNotifications module...');
               window.institution_userNotifications.init();
             } else {
-              console.error('??? [institution_user] institution_userNotifications module not loaded!');
+              console.error('[institution_user] institution_userNotifications module not loaded!');
             }
           }, 100);
         })
         .catch(err => {
-          console.error('??? [institution_user] Failed to load notifications component', err);
+          console.error('[institution_user] Failed to load notifications component', err);
           notificationModalContent.innerHTML = '<div class="p-4 text-center text-gray-500">Unable to load notifications.</div>';
         });
     } else {
       // Already loaded - just refresh the data
-      console.log('??? [institution_user] Refreshing notifications...');
+      console.log('[institution_user] Refreshing notifications...');
       if (window.institution_userNotifications) {
         window.institution_userNotifications.refresh();
       }
     }
-  });
+  };
+
+  // Attach handler to both mobile and desktop buttons if present
+  if (notificationBtn) notificationBtn.addEventListener('click', handleNotificationClick);
+  if (notificationBtnDesktop) notificationBtnDesktop.addEventListener('click', handleNotificationClick);
   
   if (closeNotificationModal) {
     closeNotificationModal.addEventListener('click', function() {
@@ -191,7 +284,11 @@ function navigateTo(route) {
 
 async function renderRoute() {
   const hash = (window.location.hash || '#home').replace('#','');
-  const container = document.getElementById('institution-user-service-component');
+  // Prefer the visible container: desktop placeholder when viewport is desktop-sized
+  const isDesktop = window.innerWidth >= 640;
+  let container = null;
+  if (isDesktop) container = document.getElementById('institution-user-service-component-desktop') || document.getElementById('institution-user-service-component');
+  else container = document.getElementById('institution-user-service-component') || document.getElementById('institution-user-service-component-desktop');
   if (!container) return;
   
   // Update bottom nav active state
@@ -543,7 +640,7 @@ function displayHistoryRequests(requests) {
             <button 
               onclick="viewCompletedRequestDetails(${req.id})" 
               class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg text-sm font-medium transition">
-              ?? View Completion Details
+              View Completion Details
             </button>
           </div>
         ` : ''}
@@ -670,13 +767,13 @@ async function initRequestForm() {
             // Location exists - auto-fill and make optional
             locationInput.value = printerLocation;
             locationRequired.classList.add('hidden');
-            locationHint.innerHTML = '? Location saved. Edit if printer moved.';
+            locationHint.innerHTML = ' Location saved. Edit if printer moved.';
             locationHint.className = 'text-xs text-green-600 mt-1';
           } else {
             // No location - require user to provide
             locationInput.value = '';
             locationRequired.classList.remove('hidden');
-            locationHint.innerHTML = '?? Please provide printer location (Building, Floor, Room)';
+            locationHint.innerHTML = 'Please provide printer location (Building, Floor, Room)';
             locationHint.className = 'text-xs text-orange-600 mt-1';
           }
 
@@ -689,13 +786,13 @@ async function initRequestForm() {
             // Department exists - auto-fill and make optional
             departmentInput.value = printerDepartment;
             departmentRequired.classList.add('hidden');
-            departmentHint.innerHTML = '? Department saved. Edit if changed.';
+            departmentHint.innerHTML = ' Department saved. Edit if changed.';
             departmentHint.className = 'text-xs text-green-600 mt-1';
           } else {
             // No department - require user to provide
             departmentInput.value = '';
             departmentRequired.classList.remove('hidden');
-            departmentHint.innerHTML = '?? Please provide the department/office';
+            departmentHint.innerHTML = 'Please provide the department/office';
             departmentHint.className = 'text-xs text-orange-600 mt-1';
           }
         });
@@ -767,7 +864,7 @@ async function submitRequestForm() {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     // Server will derive institution_id, requested_by_user_id, and assigned technician from authenticated user
     const payload = {
-      printerId: printer?.value,
+      printer_id: printer?.value,
       priority: priority?.value || 'medium',
       description: description?.value?.trim() || '',
       location: location?.value?.trim() || null, // Include location in payload
@@ -785,9 +882,19 @@ async function submitRequestForm() {
     });
     const data = await res.json().catch(()=>({}));
     if (res.ok) {
-      alert('Request submitted');
-      // go to history
-      navigateTo('history');
+      // Show success modal with request details
+      showSuccessModal(data);
+      
+      // Clear form after successful submission
+      if (printer) printer.value = '';
+      if (location) location.value = '';
+      if (department) department.value = '';
+      if (priority) priority.value = 'medium';
+      if (description) description.value = '';
+      
+      // Reset character counter if it exists
+      const charCount = document.getElementById('char-count');
+      if (charCount) charCount.textContent = '0';
     } else {
       // Check if error is about active request
       if (data.activeRequest) {
@@ -820,6 +927,54 @@ async function submitRequestForm() {
     const submitBtn = document.getElementById('rq-submit');
     if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Submit Request'; }
   }
+}
+
+function showSuccessModal(data) {
+  const modal = document.getElementById('successModal');
+  if (!modal) {
+    console.error('Success modal not found');
+    // Fallback to navigating to history
+    navigateTo('history');
+    return;
+  }
+  
+  // Update modal with request details
+  const requestNumberEl = document.getElementById('successRequestNumber');
+  if (requestNumberEl) {
+    requestNumberEl.textContent = data.request_number || data.request_id || '-';
+  }
+  
+  const priorityEl = document.getElementById('successPriority');
+  if (priorityEl) {
+    priorityEl.textContent = data.priority || 'medium';
+  }
+  
+  // Show modal
+  modal.classList.remove('hidden');
+  
+  // Setup button handlers
+  const viewHistoryBtn = document.getElementById('successViewHistoryBtn');
+  if (viewHistoryBtn) {
+    viewHistoryBtn.onclick = () => {
+      modal.classList.add('hidden');
+      navigateTo('history');
+    };
+  }
+  
+  const closeBtn = document.getElementById('successCloseBtn');
+  if (closeBtn) {
+    closeBtn.onclick = () => {
+      modal.classList.add('hidden');
+      // Stay on request page for new request
+    };
+  }
+  
+  // Close on backdrop click
+  modal.onclick = (e) => {
+    if (e.target === modal) {
+      modal.classList.add('hidden');
+    }
+  };
 }
 
 function logout() {
@@ -865,7 +1020,7 @@ async function openApprovalModal(requestId, requestNumber, technicianName) {
           <div class="p-4 space-y-3">
             <!-- Printer Info -->
             <div class="bg-blue-50 rounded-lg p-3">
-              <h4 class="font-semibold text-sm text-gray-800 mb-1">??? Printer</h4>
+              <h4 class="font-semibold text-sm text-gray-800 mb-1">Printer</h4>
               <div class="text-sm text-gray-700">${printerName}</div>
               ${req.serial_number ? `<div class="text-xs text-gray-600 mt-1">SN: ${req.serial_number}</div>` : ''}
               ${req.location ? `<div class="text-xs text-gray-600 mt-1">${req.location}</div>` : ''}
@@ -873,7 +1028,7 @@ async function openApprovalModal(requestId, requestNumber, technicianName) {
             
             <!-- Technician -->
             <div class="bg-purple-50 rounded-lg p-3">
-              <h4 class="font-semibold text-sm text-gray-800 mb-1">?? Technician</h4>
+              <h4 class="font-semibold text-sm text-gray-800 mb-1"> Technician</h4>
               <div class="text-sm text-gray-700">${technicianName}</div>
             </div>
             
@@ -886,15 +1041,43 @@ async function openApprovalModal(requestId, requestNumber, technicianName) {
             <!-- Technician Notes -->
             ${req.technician_notes ? `
               <div>
-                <h4 class="font-semibold text-sm text-gray-800 mb-1">?? Technician Notes</h4>
+                <h4 class="font-semibold text-sm text-gray-800 mb-1"> Technician Notes</h4>
                 <p class="text-sm text-gray-700 bg-green-50 rounded-lg p-2">${req.technician_notes}</p>
+              </div>
+            ` : ''}
+            
+            <!-- Items Used -->
+            ${req.items_used && req.items_used.length > 0 ? `
+              <div class="bg-orange-50 rounded-lg p-3 border border-orange-200">
+                <h4 class="font-semibold text-sm text-gray-800 mb-2"><i class="fas fa-tools text-orange-500 mr-1"></i> Items Used</h4>
+                <div class="space-y-2">
+                  ${req.items_used.map(item => `
+                    <div class="bg-white rounded p-2 text-sm border border-orange-100">
+                      <div class="font-medium text-gray-800">${item.part_name || item.name || 'Unknown Item'}</div>
+                      <div class="text-xs text-gray-600">
+                        Qty: ${item.quantity_used || item.qty || 1} ${item.unit || 'pcs'}
+                        ${item.brand ? ` | Brand: ${item.brand}` : ''}
+                        ${item.color ? ` | Color: ${item.color}` : ''}
+                      </div>
+                      ${item.display_amount ? `
+                        <div class="text-xs text-blue-600 font-semibold mt-1">
+                          <i class="fas fa-flask"></i> ${item.display_amount}
+                        </div>
+                      ` : item.amount_consumed ? `
+                        <div class="text-xs text-blue-600 font-semibold mt-1">
+                          <i class="fas fa-flask"></i> ${item.consumption_type === 'partial' ? 'Partial' : 'Full'} consumption: ${item.amount_consumed}ml
+                        </div>
+                      ` : ''}
+                    </div>
+                  `).join('')}
+                </div>
               </div>
             ` : ''}
             
             <!-- Completion Photo -->
             ${req.completion_photo_url ? `
               <div>
-                <h4 class="font-semibold text-sm text-gray-800 mb-1">?? Completion Photo</h4>
+                <h4 class="font-semibold text-sm text-gray-800 mb-1"> Completion Photo</h4>
                 <div class="bg-gray-50 rounded-lg p-2">
                   <img src="${req.completion_photo_url}" alt="Completion photo" class="w-full rounded-lg shadow-sm cursor-pointer" onclick="window.open('${req.completion_photo_url}', '_blank')">
                   <p class="text-xs text-gray-500 text-center mt-1">Tap to enlarge</p>
@@ -904,15 +1087,15 @@ async function openApprovalModal(requestId, requestNumber, technicianName) {
             
             <!-- Feedback Section -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">?? Your Feedback (Optional)</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1"> Your Feedback (Optional)</label>
               <textarea id="approval-feedback" rows="3" class="w-full border border-gray-300 rounded-lg p-2 text-sm" placeholder="Share your thoughts about the completed work..."></textarea>
             </div>
             
             <!-- Info Box -->
             <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <p class="text-xs text-blue-800 mb-1">?? <strong>What happens next?</strong></p>
+              <p class="text-xs text-blue-800 mb-1"> <strong>What happens next?</strong></p>
               <p class="text-xs text-blue-700"><strong>Approve:</strong> Request marked as completed</p>
-              <p class="text-xs text-blue-700">? <strong>Reject:</strong> Sent back for revision</p>
+              <p class="text-xs text-blue-700"> <strong>Reject:</strong> Sent back for revision</p>
             </div>
           </div>
           
@@ -920,7 +1103,7 @@ async function openApprovalModal(requestId, requestNumber, technicianName) {
           <div class="sticky bottom-0 bg-white border-t p-4 space-y-2 rounded-b-xl">
             <div class="flex gap-2">
               <button id="approval-reject-btn" class="flex-1 bg-red-600 text-white px-4 py-3 rounded-lg font-medium hover:bg-red-700 transition">
-                ? Reject
+                Reject
               </button>
               <button id="approval-approve-btn" class="flex-1 bg-green-600 text-white px-4 py-3 rounded-lg font-medium hover:bg-green-700 transition">
                 Approve
@@ -1026,6 +1209,21 @@ window.viewCompletedRequestDetails = async function(requestId) {
       ? `${req.technician_first_name} ${req.technician_last_name}`
       : 'Not assigned';
     
+    // Extract approver information
+    let approverName = null;
+    let approverRole = null;
+    if (req.approver_first_name && req.approver_last_name) {
+      approverName = `${req.approver_first_name} ${req.approver_last_name}`;
+      approverRole = req.approver_role ? req.approver_role.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'Staff';
+    } else if (req.resolution_notes || req.approval_notes) {
+      const notes = req.approval_notes || req.resolution_notes;
+      const match = notes.match(/Approved by ([^-]+) - (.+?)(?:\.|$)/);
+      if (match) {
+        approverRole = match[1].trim();
+        approverName = match[2].trim();
+      }
+    }
+    
     // Build modal HTML with completion details
     const modalHTML = `
       <div id="view-details-modal" class="fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center p-4">
@@ -1045,7 +1243,7 @@ window.viewCompletedRequestDetails = async function(requestId) {
             
             <!-- Printer Info -->
             <div class="bg-blue-50 rounded-lg p-3">
-              <h4 class="font-semibold text-sm text-gray-800 mb-1">??? Printer</h4>
+              <h4 class="font-semibold text-sm text-gray-800 mb-1">Printer</h4>
               <div class="text-sm text-gray-700">${printerName}</div>
               ${req.serial_number ? `<div class="text-xs text-gray-600 mt-1">SN: ${req.serial_number}</div>` : ''}
               ${req.location ? `<div class="text-xs text-gray-600 mt-1">${req.location}</div>` : ''}
@@ -1053,7 +1251,7 @@ window.viewCompletedRequestDetails = async function(requestId) {
             
             <!-- Technician -->
             <div class="bg-purple-50 rounded-lg p-3">
-              <h4 class="font-semibold text-sm text-gray-800 mb-1">?? Technician</h4>
+              <h4 class="font-semibold text-sm text-gray-800 mb-1"> Technician</h4>
               <div class="text-sm text-gray-700">${technicianName}</div>
             </div>
             
@@ -1066,15 +1264,43 @@ window.viewCompletedRequestDetails = async function(requestId) {
             <!-- Technician Notes -->
             ${req.technician_notes ? `
               <div>
-                <h4 class="font-semibold text-sm text-gray-800 mb-1">?? Technician Notes</h4>
+                <h4 class="font-semibold text-sm text-gray-800 mb-1"> Technician Notes</h4>
                 <p class="text-sm text-gray-700 bg-green-50 rounded-lg p-2">${req.technician_notes}</p>
+              </div>
+            ` : ''}
+            
+            <!-- Items Used -->
+            ${req.items_used && req.items_used.length > 0 ? `
+              <div class="bg-orange-50 rounded-lg p-3 border border-orange-200">
+                <h4 class="font-semibold text-sm text-gray-800 mb-2"><i class="fas fa-tools text-orange-500 mr-1"></i> Items Used</h4>
+                <div class="space-y-2">
+                  ${req.items_used.map(item => `
+                    <div class="bg-white rounded p-2 text-sm border border-orange-100">
+                      <div class="font-medium text-gray-800">${item.part_name || item.name || 'Unknown Item'}</div>
+                      <div class="text-xs text-gray-600">
+                        Qty: ${item.quantity_used || item.qty || 1} ${item.unit || 'pcs'}
+                        ${item.brand ? ` | Brand: ${item.brand}` : ''}
+                        ${item.color ? ` | Color: ${item.color}` : ''}
+                      </div>
+                      ${item.display_amount ? `
+                        <div class="text-xs text-blue-600 font-semibold mt-1">
+                          <i class="fas fa-flask"></i> ${item.display_amount}
+                        </div>
+                      ` : item.amount_consumed ? `
+                        <div class="text-xs text-blue-600 font-semibold mt-1">
+                          <i class="fas fa-flask"></i> ${item.consumption_type === 'partial' ? 'Partial' : 'Full'} consumption: ${item.amount_consumed}ml
+                        </div>
+                      ` : ''}
+                    </div>
+                  `).join('')}
+                </div>
               </div>
             ` : ''}
             
             <!-- Completion Photo -->
             ${req.completion_photo_url ? `
               <div>
-                <h4 class="font-semibold text-sm text-gray-800 mb-1">?? Completion Photo</h4>
+                <h4 class="font-semibold text-sm text-gray-800 mb-1"> Completion Photo</h4>
                 <div class="bg-gray-50 rounded-lg p-2">
                   <img src="${req.completion_photo_url}" alt="Completion photo" class="w-full rounded-lg shadow-sm cursor-pointer" onclick="window.open('${req.completion_photo_url}', '_blank')">
                   <p class="text-xs text-gray-500 text-center mt-1">Tap to enlarge</p>
@@ -1083,13 +1309,14 @@ window.viewCompletedRequestDetails = async function(requestId) {
             ` : ''}
             
             <!-- Approval Information -->
-            ${(req.approver_first_name && req.approver_last_name) || req.resolution_notes ? `
+            ${approverName || req.resolution_notes ? `
               <div class="bg-green-50 rounded-lg p-3 border-2 border-green-200">
-                <h4 class="font-semibold text-sm text-gray-800 mb-2">? Approval Information</h4>
-                ${req.approver_first_name && req.approver_last_name ? `
+                <h4 class="font-semibold text-sm text-gray-800 mb-2"><i class="fas fa-user-check text-green-600 mr-1"></i> Approval Information</h4>
+                ${approverName ? `
                   <div class="text-sm text-green-800 font-semibold mb-1">
-                    Approved by: <span class="capitalize">${req.approver_role ? req.approver_role.replace('_', ' ') : 'Staff'}</span> - ${req.approver_first_name} ${req.approver_last_name}
+                    Approved by: <span class="capitalize">${approverRole || 'Staff'}</span> - ${approverName}
                   </div>
+                  ${req.approved_at ? `<div class="text-xs text-gray-600">on ${new Date(req.approved_at).toLocaleString()}</div>` : ''}
                 ` : ''}
                 ${req.resolution_notes ? `
                   <div class="text-xs text-gray-700 mt-2 bg-white rounded p-2">${req.resolution_notes}</div>
@@ -1352,13 +1579,23 @@ function viewMaintenanceDetails(serviceId) {
   if (!service) return;
   
   const partsUsed = service.items_used || [];
-  const partsHtml = partsUsed.length > 0 ? partsUsed.map(p => `
+  const partsHtml = partsUsed.length > 0 ? partsUsed.map(p => {
+    const colorBadge = p.color ? `<span class="inline-block px-1.5 py-0.5 text-xs rounded" style="background-color: ${p.color.toLowerCase()}; color: ${['white', 'yellow', 'cyan', 'lime'].includes(p.color.toLowerCase()) ? '#333' : '#fff'}">${p.color}</span>` : '';
+    const consumptionInfo = p.consumption_type ? `<div class="text-xs mt-1 px-2 py-1 rounded inline-block ${p.consumption_type === 'partial' ? 'bg-orange-50 border border-orange-200' : 'bg-blue-50 border border-blue-200'}">
+      <span class="${p.consumption_type === 'partial' ? 'text-orange-700' : 'text-blue-700'} font-semibold">${p.display_amount || (p.amount_consumed ? p.amount_consumed + (p.ink_volume ? 'ml' : 'g') : '')}</span>
+      <span class="${p.consumption_type === 'partial' ? 'text-orange-600' : 'text-blue-600'} ml-1">(${p.consumption_type === 'partial' ? 'Partial' : 'Full'})</span>
+    </div>` : '';
+    return `
     <div class="bg-gray-50 rounded p-2 text-sm">
-      <div class="font-medium">${p.name || p.part_name}</div>
-      <div class="text-xs text-gray-600">Qty: ${p.qty || p.quantity_used} ${p.unit || 'pcs'} | Brand: ${p.brand || 'N/A'}</div>
-      ${p.display_amount ? `<div class="text-xs text-blue-600 font-semibold mt-1"><i class="fas fa-flask"></i> ${p.display_amount}</div>` : ''}
+      <div class="flex items-center gap-2">
+        <span class="font-medium">${p.name || p.part_name}</span>
+        ${colorBadge}
+      </div>
+      <div class="text-xs text-gray-600 mt-1">Qty: ${p.qty || p.quantity_used} ${p.unit || 'pcs'} | Brand: ${p.brand || 'N/A'}</div>
+      ${consumptionInfo}
     </div>
-  `).join('') : '<p class="text-sm text-gray-500">No items used</p>';
+  `;
+  }).join('') : '<p class="text-sm text-gray-500">No items used</p>';
   
   const modalContent = `
     <div class="space-y-4">
@@ -1428,7 +1665,7 @@ function viewMaintenanceDetails(serviceId) {
       </div>
       ` : service.status === 'completed' ? `
       <div class="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-800">
-        ? Service completed
+         Service completed
       </div>
       ` : ''}
     </div>

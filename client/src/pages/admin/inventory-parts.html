@@ -329,28 +329,37 @@
                         <table class="min-w-full divide-y divide-slate-200 table-hover-effect">
                             <thead class="bg-gradient-to-r from-slate-50 to-slate-100">
                                 <tr>
-                                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider cursor-pointer hover:bg-slate-200 transition-colors" data-sort="name">
+                                    <th class="px-4 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider cursor-pointer hover:bg-slate-200 transition-colors" data-sort="name">
                                         <div class="flex items-center gap-2">
                                             <span>Item Name</span>
                                             <i class="fas fa-sort text-slate-400"></i>
                                         </div>
                                     </th>
-                                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider cursor-pointer hover:bg-slate-200 transition-colors" data-sort="brand">
+                                    <th class="px-4 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider cursor-pointer hover:bg-slate-200 transition-colors" data-sort="category">
+                                        <div class="flex items-center gap-2">
+                                            <span>Category</span>
+                                            <i class="fas fa-sort text-slate-400"></i>
+                                        </div>
+                                    </th>
+                                    <th class="px-4 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider cursor-pointer hover:bg-slate-200 transition-colors" data-sort="brand">
                                         <div class="flex items-center gap-2">
                                             <span>Brand</span>
                                             <i class="fas fa-sort text-slate-400"></i>
                                         </div>
                                     </th>
-                                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider cursor-pointer hover:bg-slate-200 transition-colors" data-sort="stock">
+                                    <th class="px-4 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                                        <span>Details</span>
+                                    </th>
+                                    <th class="px-4 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider cursor-pointer hover:bg-slate-200 transition-colors" data-sort="stock">
                                         <div class="flex items-center gap-2">
                                             <span>Quantity</span>
                                             <i class="fas fa-sort text-slate-400"></i>
                                         </div>
                                     </th>
-                                    <th class="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                                    <th class="px-4 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
                                         Status
                                     </th>
-                                    <th class="px-6 py-4 text-right text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                                    <th class="px-4 py-4 text-right text-xs font-semibold text-slate-700 uppercase tracking-wider">
                                         Actions
                                     </th>
                                 </tr>
@@ -384,8 +393,9 @@
                 </div>
 
                 <!-- Enhanced Add/Edit Part Modal with Progressive Disclosure -->
-                <div id="partModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 opacity-0 transition-all duration-300" style="overflow-y: auto;">
-                    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl transform transition-all duration-300 scale-95 border border-white/20 my-8"   style="position: relative; z-index: 51;">
+                <div id="partModal" class="hidden fixed inset-0 flex items-center justify-center z-50 p-4 opacity-0 transition-all duration-300" style="overflow-y: auto;">
+                    <div class="absolute inset-0 bg-gray-900 bg-opacity-90"></div>
+                    <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl transform transition-all duration-300 scale-95 border border-white/20 my-8 z-10" style="position: relative; z-index: 51;">
                         <!-- Enhanced Header with Gradient -->
                         <div class="bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-600 p-5 rounded-t-2xl relative overflow-hidden">
                             <div class="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20"></div>
@@ -501,8 +511,6 @@
                                                 <option value="toner" data-type="consumable">Toner Cartridge</option>
                                                 <option value="drum-cartridge" data-type="consumable">Drum Cartridge</option>
                                                 <option value="maintenance-box" data-type="consumable">Maintenance Box / Waste Ink Pad</option>
-                                                <option value="paper-a4" data-type="consumable">Paper A4</option>
-                                                <option value="paper-a3" data-type="consumable">Paper A3</option>
                                                 <option value="other-consumable" data-type="consumable">Other Consumable</option>
                                             </select>
                                             <div class="absolute right-3 top-12 pointer-events-none">
@@ -573,21 +581,21 @@
                                                     <!-- Hidden select for form submission -->
                                                     <select id="inkColor" name="inkColor" class="hidden">
                                                         <option value="">Select color...</option>
-                                                        <option value="black">? Black</option>
-                                                        <option value="cyan">?? Cyan</option>
-                                                        <option value="magenta">?? Magenta</option>
-                                                        <option value="yellow">?? Yellow</option>
-                                                        <option value="photo-black">? Photo Black</option>
-                                                        <option value="light-cyan">?? Light Cyan</option>
-                                                        <option value="light-magenta">?? Light Magenta</option>
-                                                        <option value="gray">? Gray</option>
-                                                        <option value="light-gray">? Light Gray</option>
-                                                        <option value="tri-color">?? Tri-Color (CMY)</option>
-                                                        <option value="orange">?? Orange</option>
-                                                        <option value="green">?? Green</option>
-                                                        <option value="blue">?? Blue</option>
-                                                        <option value="red">?? Red</option>
-                                                        <option value="other">?? Other</option>
+                                                        <option value="black">Black</option>
+                                                        <option value="cyan">Cyan</option>
+                                                        <option value="magenta">Magenta</option>
+                                                        <option value="yellow">Yellow</option>
+                                                        <option value="photo-black">Photo Black</option>
+                                                        <option value="light-cyan">Light Cyan</option>
+                                                        <option value="light-magenta">Light Magenta</option>
+                                                        <option value="gray">Gray</option>
+                                                        <option value="light-gray">Light Gray</option>
+                                                        <option value="tri-color">Tri-Color (CMY)</option>
+                                                        <option value="orange">Orange</option>
+                                                        <option value="green">Green</option>
+                                                        <option value="blue">Blue</option>
+                                                        <option value="red">Red</option>
+                                                        <option value="other">Other</option>
                                                     </select>
                                                     <!-- Custom dropdown UI -->
                                                     <div class="relative">
@@ -600,21 +608,21 @@
                                                         <div id="colorDropdownMenu" class="hidden absolute top-full left-0 right-0 mt-1 bg-white border-2 border-slate-200 rounded-lg shadow-lg max-h-60 overflow-y-auto z-50">
                                                             <div class="py-1">
                                                                 <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm text-slate-400" data-value="">Select color...</div>
-                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="black">? Black</div>
-                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="cyan">?? Cyan</div>
-                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="magenta">?? Magenta</div>
-                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="yellow">?? Yellow</div>
-                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="photo-black">? Photo Black</div>
-                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="light-cyan">?? Light Cyan</div>
-                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="light-magenta">?? Light Magenta</div>
-                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="gray">? Gray</div>
-                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="light-gray">? Light Gray</div>
-                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="tri-color">?? Tri-Color (CMY)</div>
-                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="orange">?? Orange</div>
-                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="green">?? Green</div>
-                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="blue">?? Blue</div>
-                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="red">?? Red</div>
-                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="other">?? Other</div>
+                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="black">Black</div>
+                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="cyan"> Cyan</div>
+                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="magenta">Magenta</div>
+                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="yellow"> Yellow</div>
+                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="photo-black">Photo Black</div>
+                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="light-cyan">Light Cyan</div>
+                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="light-magenta"> Light Magenta</div>
+                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="gray">Gray</div>
+                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="light-gray">Light Gray</div>
+                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="tri-color"> Tri-Color (CMY)</div>
+                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="orange"> Orange</div>
+                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="green"> Green</div>
+                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="blue"> Blue</div>
+                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="red"> Red</div>
+                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="other"> Other</div>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -700,8 +708,9 @@
                 </div>
 
                 <!-- Loading Overlay -->
-                <div id="loadingOverlay" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-                    <div class="bg-white rounded-2xl p-8 shadow-2xl flex flex-col items-center gap-4">
+                <div id="loadingOverlay" class="hidden fixed inset-0 flex items-center justify-center z-50">
+                    <div class="absolute inset-0 bg-gray-900 bg-opacity-90"></div>
+                    <div class="relative bg-white rounded-2xl p-8 shadow-2xl flex flex-col items-center gap-4 z-10">
                         <div class="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
                         <p class="text-slate-700 font-medium">Processing...</p>
                     </div>

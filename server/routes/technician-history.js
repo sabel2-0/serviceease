@@ -27,6 +27,8 @@ router.get('/service-history', authenticateTechnician, async (req, res) => {
                 sr.printer_brand as walk_in_printer_brand,
                 sr.is_walk_in,
                 sa.approved_by,
+                sa.technician_notes,
+                sa.institution_admin_notes,
                 i.name as institution_name,
                 i.type as institution_type,
                 institution_user.first_name as institution_user_first_name,
@@ -77,10 +79,22 @@ router.get('/service-history', authenticateTechnician, async (req, res) => {
                     spu.quantity_used,
                     spu.notes as part_notes,
                     spu.used_at,
+                    spu.amount_consumed,
+                    spu.consumption_type,
+                    COALESCE(spu.display_amount, 
+                        CASE 
+                            WHEN spu.amount_consumed IS NOT NULL AND spu.amount_consumed > 0 THEN
+                                CONCAT(spu.amount_consumed, IF(pp.ink_volume IS NOT NULL AND pp.ink_volume > 0, 'ml', 'g'))
+                            ELSE NULL
+                        END
+                    ) as display_amount,
                     pp.name as part_name,
                     pp.brand,
+                    pp.color,
                     pp.unit,
                     pp.category,
+                    pp.ink_volume,
+                    pp.toner_weight,
                     u.first_name as used_by_first_name,
                     u.last_name as used_by_last_name
                 FROM service_items_used spu
@@ -91,7 +105,7 @@ router.get('/service-history', authenticateTechnician, async (req, res) => {
             `, [serviceHistory[i].id]);
             
             serviceHistory[i].history = history;
-            serviceHistory[i].parts_used = partsUsed;
+            serviceHistory[i].items_used = partsUsed;
             
             // Debug log to check parts data
             if (partsUsed.length > 0) {

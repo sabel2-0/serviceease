@@ -206,7 +206,7 @@ const auth = async (req, res, next) => {
         // Add user data to request
         req.user = decoded;
         
-        console.log(`✅ Auth successful - user ${decoded.id} authenticated for ${req.method} ${req.path}`);
+        console.log(` Auth successful - user ${decoded.id} authenticated for ${req.method} ${req.path}`);
         
         if (['admin', 'technician', 'operations_officer'].includes(req.user.role)) {
             // Define which actions should be logged

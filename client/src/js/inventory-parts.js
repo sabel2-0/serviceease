@@ -153,7 +153,7 @@ class InventoryPartsManager {
         if (paginatedParts.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="5" class="px-6 py-12 text-center">
+                    <td colspan="7" class="px-6 py-12 text-center">
                         <div class="flex flex-col items-center gap-4">
                             <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center">
                                 <i class="fas fa-search text-slate-400 text-xl"></i>
@@ -173,30 +173,36 @@ class InventoryPartsManager {
             const row = document.createElement('tr');
             row.className = 'hover:bg-slate-50 transition-colors cursor-pointer';
             row.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap">
+                <td class="px-4 py-4 whitespace-nowrap">
                     <div class="flex items-center">
                         <div>
                             <div class="text-sm font-medium text-slate-900">${this.escapeHtml(part.name)}</div>
-                            ${part.category ? `<div class="text-sm text-slate-500">${this.formatCategory(part.category)}</div>` : ''}
+                            ${part.item_type ? `<div class="text-xs text-slate-400 mt-0.5">${part.item_type === 'consumable' ? 'Consumable' : 'Printer Part'}</div>` : ''}
                         </div>
                     </div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
+                <td class="px-4 py-4 whitespace-nowrap">
+                    ${this.getCategoryBadge(part.category)}
+                </td>
+                <td class="px-4 py-4 whitespace-nowrap">
                     <div class="flex items-center gap-2">
                         <div class="text-sm text-slate-900">${this.escapeHtml(part.brand || 'N/A')}</div>
                         ${part.is_universal === 1 ? '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700 border border-indigo-200"><i class="fas fa-globe mr-1"></i>Universal</span>' : ''}
                     </div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
+                <td class="px-4 py-4 whitespace-nowrap">
+                    ${this.getItemDetails(part)}
+                </td>
+                <td class="px-4 py-4 whitespace-nowrap">
                     <div class="flex items-center gap-2">
                         <span class="text-lg font-semibold text-slate-900">${part.quantity || 0}</span>
-                        <span class="text-sm text-slate-500">units</span>
+                        <span class="text-sm text-slate-500">${this.escapeHtml(part.unit || 'units')}</span>
                     </div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
+                <td class="px-4 py-4 whitespace-nowrap">
                     ${this.getStatusBadge(part)}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-right">
+                <td class="px-4 py-4 whitespace-nowrap text-right">
                     <div class="flex justify-end gap-2">
                         <button onclick="inventoryManager.editPart(${part.id})" 
                             class="action-button action-edit" title="Edit Item">
@@ -261,23 +267,40 @@ class InventoryPartsManager {
                 
                 <div class="grid grid-cols-2 gap-4 mb-3">
                     <div>
+                        <span class="text-xs font-medium text-slate-500 uppercase tracking-wide">Category</span>
+                        <div class="mt-1">
+                            ${this.getCategoryBadge(part.category)}
+                        </div>
+                    </div>
+                    <div>
                         <span class="text-xs font-medium text-slate-500 uppercase tracking-wide">Brand</span>
                         <div class="mt-1">
                             <span class="text-sm text-slate-900">${this.escapeHtml(part.brand || 'N/A')}</span>
                         </div>
                     </div>
+                </div>
+                
+                <div class="mb-3">
+                    <span class="text-xs font-medium text-slate-500 uppercase tracking-wide">Details</span>
+                    <div class="mt-1">
+                        ${this.getItemDetails(part)}
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4 mb-3">
                     <div>
                         <span class="text-xs font-medium text-slate-500 uppercase tracking-wide">Quantity</span>
                         <div class="mt-1 flex items-center gap-2">
                             <span class="font-semibold text-slate-900">${part.quantity || 0}</span>
-                            <span class="text-xs text-slate-500">units</span>
+                            <span class="text-xs text-slate-500">${part.unit || 'units'}</span>
                         </div>
                     </div>
-                </div>
-                
-                <div class="flex items-center justify-between">
-                    <span class="text-xs font-medium text-slate-500 uppercase tracking-wide">Status</span>
-                    ${this.getStatusBadge(part)}
+                    <div>
+                        <span class="text-xs font-medium text-slate-500 uppercase tracking-wide">Status</span>
+                        <div class="mt-1">
+                            ${this.getStatusBadge(part)}
+                        </div>
+                    </div>
                 </div>
             `;
             container.appendChild(card);
@@ -864,18 +887,97 @@ class InventoryPartsManager {
 
     getCategoryIcon(category) {
         const icons = {
-            'toner': '???',
-            'drum': '??',
-            'fuser': '??',
-            'roller': '??',
-            'other': '??'
+            'toner': '',
+            'drum': '',
+            'fuser': '',
+            'roller': '',
+            'other': ''
         };
         return icons[category] || icons['other'];
     }
 
     formatCategory(category) {
         if (!category) return 'Other';
-        return category.charAt(0).toUpperCase() + category.slice(1);
+        return category.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+    }
+
+    getCategoryBadge(category) {
+        if (!category) return '<span class="category-badge category-other">Other</span>';
+        
+        const categoryColors = {
+            'toner': 'bg-purple-100 text-purple-800 border-purple-200',
+            'ink': 'bg-yellow-100 text-yellow-800 border-yellow-200',
+            'ink-bottle': 'bg-amber-100 text-amber-800 border-amber-200',
+            'drum': 'bg-violet-100 text-violet-800 border-violet-200',
+            'drum-cartridge': 'bg-indigo-100 text-indigo-800 border-indigo-200',
+            'fuser': 'bg-red-100 text-red-800 border-red-200',
+            'roller': 'bg-green-100 text-green-800 border-green-200',
+            'printhead': 'bg-blue-100 text-blue-800 border-blue-200',
+            'maintenance-box': 'bg-gray-100 text-gray-800 border-gray-200',
+            'maintenance-unit': 'bg-slate-100 text-slate-800 border-slate-200',
+            'paper': 'bg-lime-100 text-lime-800 border-lime-200',
+            'paper-a4': 'bg-lime-100 text-lime-800 border-lime-200',
+            'paper-a3': 'bg-lime-100 text-lime-800 border-lime-200',
+            'other': 'bg-gray-100 text-gray-700 border-gray-200',
+            'other-consumable': 'bg-cyan-100 text-cyan-800 border-cyan-200'
+        };
+        
+        const colorClass = categoryColors[category] || categoryColors['other'];
+        const displayName = this.formatCategory(category);
+        
+        return `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${colorClass}">${displayName}</span>`;
+    }
+
+    getItemDetails(part) {
+        const details = [];
+        
+        // Color
+        if (part.color) {
+            const colorDot = this.getColorDot(part.color);
+            details.push(`<span class="inline-flex items-center gap-1">${colorDot}<span class="text-xs text-slate-600">${this.escapeHtml(part.color)}</span></span>`);
+        }
+        
+        // Page Yield
+        if (part.page_yield) {
+            details.push(`<span class="inline-flex items-center gap-1 text-xs text-slate-600"><i class="fas fa-file-alt text-orange-500"></i>${part.page_yield.toLocaleString()} pages</span>`);
+        }
+        
+        // Ink Volume
+        if (part.ink_volume) {
+            details.push(`<span class="inline-flex items-center gap-1 text-xs text-slate-600"><i class="fas fa-tint text-blue-500"></i>${part.ink_volume}ml</span>`);
+        }
+        
+        // Toner Weight
+        if (part.toner_weight) {
+            details.push(`<span class="inline-flex items-center gap-1 text-xs text-slate-600"><i class="fas fa-weight text-purple-500"></i>${part.toner_weight}g</span>`);
+        }
+        
+        if (details.length === 0) {
+            return '<span class="text-xs text-slate-400">—</span>';
+        }
+        
+        return `<div class="flex flex-col gap-1">${details.join('')}</div>`;
+    }
+
+    getColorDot(color) {
+        if (!color) return '';
+        
+        const colorMap = {
+            'black': '#1f2937',
+            'cyan': '#06b6d4',
+            'magenta': '#ec4899',
+            'yellow': '#eab308',
+            'blue': '#3b82f6',
+            'red': '#ef4444',
+            'green': '#22c55e',
+            'tri-color': 'linear-gradient(135deg, #06b6d4 33%, #ec4899 33%, #ec4899 66%, #eab308 66%)',
+            'photo': 'linear-gradient(135deg, #3b82f6, #8b5cf6)'
+        };
+        
+        const bgColor = colorMap[color.toLowerCase()] || '#6b7280';
+        const isGradient = bgColor.includes('gradient');
+        
+        return `<span class="inline-block w-3 h-3 rounded-full border border-slate-300" style="${isGradient ? 'background:' : 'background-color:'}${bgColor}"></span>`;
     }
 
     getPartStatus(part) {

@@ -81,21 +81,21 @@ If API call fails, the header falls back to localStorage data:
 
 ## Benefits
 
-### ✅ Consistency
+###  Consistency
 - All coordinator pages now have identical header layout
 - Same navigation experience throughout the portal
 
-### ✅ Real-time Data
+###  Real-time Data
 - Institution name and coordinator name are fetched fresh from database
 - No reliance on outdated localStorage data
 - Notification counts update automatically
 
-### ✅ Maintainability
+###  Maintainability
 - Single source of truth for header component
 - Easy to update header design in one place
 - Affects all coordinator pages simultaneously
 
-### ✅ Scalability
+###  Scalability
 - Easy to add new coordinator pages
 - Just include the header container and loader script
 - Specify page-specific title and subtitle

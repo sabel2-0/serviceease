@@ -143,32 +143,32 @@ WHERE id = ?;
 **Before**: HP Laser Pro 213  
 **Action**: Edit → Change model to "LaserJet Pro 213"  
 **After**: HP LaserJet Pro 213  
-**Result**: All units updated ✅
+**Result**: All units updated 
 
 ### Example 2: Changing Brand
 **Before**: Canon ImageClass 2000  
 **Action**: Edit → Change brand to "Brother"  
 **After**: Brother ImageClass 2000  
-**Result**: All units updated ✅
+**Result**: All units updated 
 
 ### Example 3: Complete Rename
 **Before**: Epson WorkForce 1000  
 **Action**: Edit → Change to "Epson EcoTank 2000"  
 **After**: Epson EcoTank 2000  
-**Result**: All units updated ✅
+**Result**: All units updated 
 
 ## Important Notes
 
-⚠️ **Bulk Operation**  
+ **Bulk Operation**  
 All units of the printer model are updated together. This ensures consistency across the inventory.
 
-✅ **Preserved Data**  
+ **Preserved Data**  
 - Serial numbers are NOT changed
 - Assignment status is NOT changed
 - Quantity is NOT changed
 - Location is NOT changed
 
-🔒 **Data Integrity**  
+ **Data Integrity**  
 The existing PUT endpoint handles all database validations and ensures data integrity.
 
 🔄 **Auto-Refresh**  
@@ -212,10 +212,10 @@ This provides three test buttons:
 
 ## Browser Support
 
-✅ Chrome/Edge (latest)  
-✅ Firefox (latest)  
-✅ Safari (latest)  
-✅ Mobile browsers (responsive)
+ Chrome/Edge (latest)  
+ Firefox (latest)  
+ Safari (latest)  
+ Mobile browsers (responsive)
 
 ## Files Modified
 

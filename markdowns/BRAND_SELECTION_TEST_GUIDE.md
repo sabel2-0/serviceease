@@ -15,7 +15,7 @@
 - Modal should open
 
 #### Step 2: Check Initial State
-✅ **Expected Behavior:**
+ **Expected Behavior:**
 - Brand selector: ENABLED with brands (HP, Epson, Canon, etc.)
 - Part selector: DISABLED with text "Select brand first..."
 - Quantity input: DISABLED
@@ -24,7 +24,7 @@
 - Click the brand dropdown
 - Select a brand (e.g., "Epson")
 
-✅ **Expected Behavior:**
+ **Expected Behavior:**
 - Part selector: Becomes ENABLED
 - Part selector: Shows ONLY Epson parts
 - Parts grouped by category (Toner, Ink, Drum, etc.)
@@ -34,7 +34,7 @@
 - Click the part dropdown
 - Select a part (e.g., "Toner Cartridge Black")
 
-✅ **Expected Behavior:**
+ **Expected Behavior:**
 - Stock info badge appears below dropdown
 - Badge shows:
   - Green/Orange/Red color based on stock
@@ -48,7 +48,7 @@
 - Enter a quantity (e.g., "2")
 - Try entering more than available
 
-✅ **Expected Behavior:**
+ **Expected Behavior:**
 - Accepts valid quantities
 - On submit, validates against stock
 - Shows error if quantity exceeds available
@@ -56,7 +56,7 @@
 #### Step 6: Test Brand Change
 - Change the selected brand
 
-✅ **Expected Behavior:**
+ **Expected Behavior:**
 - Part selector: Resets to "Select part/consumable..."
 - Stock info: Clears
 - Quantity input: Becomes DISABLED again
@@ -66,7 +66,7 @@
 - Click "Add Another Part/Consumable"
 - Select different brand for second part
 
-✅ **Expected Behavior:**
+ **Expected Behavior:**
 - New part entry appears
 - Each entry has independent brand selector
 - Can select different brands for different parts
@@ -75,7 +75,7 @@
 #### Step 8: Check Summary
 - Select multiple parts with different brands
 
-✅ **Expected Behavior:**
+ **Expected Behavior:**
 - Summary panel shows all selected parts
 - Each part displays its brand
 - Format:
@@ -93,7 +93,7 @@
 - Fill in "Actions Performed"
 - Click "Submit for Approval"
 
-✅ **Expected Behavior:**
+ **Expected Behavior:**
 - Success message appears
 - Parts are recorded with brand information
 - Status changes to "Pending Approval"
@@ -108,7 +108,7 @@ WHERE service_request_id = [request_id]
 ORDER BY id DESC;
 ```
 
-✅ **Expected:**
+ **Expected:**
 - Records created for each part
 - Notes include brand: "Used 2 pieces (Brand: Epson)"
 
@@ -119,7 +119,7 @@ FROM service_requests
 WHERE id = [request_id];
 ```
 
-✅ **Expected:**
+ **Expected:**
 - Status: "pending_approval"
 - resolution_notes: Contains actions performed
 
@@ -130,7 +130,7 @@ WHERE id = [request_id];
 2. Enter quantity higher than available (e.g., 5)
 3. Try to submit
 
-✅ **Expected:**
+ **Expected:**
 - Error toast appears
 - Message: "Insufficient inventory for [Part Name] (Brand: [Brand]). Available: 2, Required: 5"
 - Part entry highlighted in red
@@ -141,7 +141,7 @@ WHERE id = [request_id];
 2. Part selector should remain disabled
 3. Cannot select a part
 
-✅ **Expected:**
+ **Expected:**
 - Part selector stays disabled
 - Gray appearance
 - Shows "Select brand first..."
@@ -150,7 +150,7 @@ WHERE id = [request_id];
 1. Select a brand that has no parts in inventory
 2. Part selector should show message
 
-✅ **Expected:**
+ **Expected:**
 - Part selector enabled but shows:
 - "No parts available for this brand"
 - Quantity input stays disabled
@@ -159,20 +159,20 @@ WHERE id = [request_id];
 
 Open browser console (F12) and look for:
 
-✅ **Should See:**
+ **Should See:**
 ```
-🔧 Loading available parts from technician inventory...
+ Loading available parts from technician inventory...
 Parts API response status: 200
-✅ Loaded parts: [array of parts with brands]
-🔧 Updating part selectors with X parts
+ Loaded parts: [array of parts with brands]
+ Updating part selectors with X parts
 Found Y brand selectors
 Updating brand selector 1
 Brand selected: Epson
-🔧 Updating parts for brand: Epson
-✅ Added Z parts for brand Epson
+ Updating parts for brand: Epson
+ Added Z parts for brand Epson
 ```
 
-❌ **Should NOT See:**
+ **Should NOT See:**
 - Any 404 errors
 - "Failed to load parts inventory"
 - "undefined" brands
@@ -241,7 +241,7 @@ UPDATE printer_parts SET brand = 'Generic' WHERE brand IS NULL OR brand = '';
 
 ## Success Criteria
 
-✅ Feature is working correctly if:
+ Feature is working correctly if:
 1. Brand must be selected before part can be selected
 2. Only parts matching selected brand appear in part dropdown
 3. Stock info includes brand name
