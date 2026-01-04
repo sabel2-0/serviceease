@@ -1610,22 +1610,28 @@ function updatePartsForType(typeSelector, selectedType) {
     
     // Define category groups for filtering
     const consumableCategories = [
-        'toner', 'ink', 'ink-bottle', 'drum', 'drum-cartridge', 
+        'toner', 'ink', 'ink-bottle', 
         'other-consumable', 'paper', 'cleaning-supplies'
     ];
     
     const printerPartCategories = [
-        'fuser', 'roller', 'printhead', 'transfer-belt', 'maintenance-unit', 
+        'drum', 'drum-cartridge', 'fuser', 'roller', 'printhead', 'transfer-belt', 'maintenance-unit', 
         'power-board', 'mainboard', 'maintenance-box', 'tools', 'cables', 
         'batteries', 'lubricants', 'replacement-parts', 'software', 'labels', 'other'
     ];
     
-    // Filter parts by selected type using category AND brand
+    // Filter parts by selected type using item_type field first, then category as fallback
     let partsForType;
     if (selectedType === 'consumable') {
         partsForType = availableParts.filter(part => {
-            const categoryMatch = consumableCategories.includes(part.category);
-            if (!categoryMatch) return false;
+            // First check item_type field from database
+            if (part.item_type) {
+                if (part.item_type !== 'consumable') return false;
+            } else {
+                // Fallback to category check
+                const categoryMatch = consumableCategories.includes(part.category);
+                if (!categoryMatch) return false;
+            }
             
             // If no printer brand, show all parts (for walk-in without brand info)
             if (!printerBrand) return true;
@@ -1643,8 +1649,14 @@ function updatePartsForType(typeSelector, selectedType) {
         });
     } else if (selectedType === 'printer_part') {
         partsForType = availableParts.filter(part => {
-            const categoryMatch = printerPartCategories.includes(part.category);
-            if (!categoryMatch) return false;
+            // First check item_type field from database
+            if (part.item_type) {
+                if (part.item_type !== 'printer_part') return false;
+            } else {
+                // Fallback to category check
+                const categoryMatch = printerPartCategories.includes(part.category);
+                if (!categoryMatch) return false;
+            }
             
             // If no printer brand, show all parts (for walk-in without brand info)
             if (!printerBrand) return true;
