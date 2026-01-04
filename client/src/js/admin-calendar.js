@@ -159,13 +159,16 @@ function showEmptyCalendar() {
 
 function showDayDetail(dateStr, dayData) {
     const modal = document.getElementById('dayDetailModal');
-    // Parse date string in local timezone by adding time component
-    const date = new Date(dateStr + 'T00:00:00');
+    // Parse date string directly without timezone conversion
+    const dateParts = dateStr.split('-');
+    const year = parseInt(dateParts[0], 10);
+    const monthIndex = parseInt(dateParts[1], 10) - 1;
+    const day = parseInt(dateParts[2], 10);
     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
                        'July', 'August', 'September', 'October', 'November', 'December'];
     
     document.getElementById('modalDate').textContent = 
-        `${monthNames[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+        `${monthNames[monthIndex]} ${day}, ${year}`;
     
     document.getElementById('modalTotalSchools').textContent = dayData.total_institutions;
     document.getElementById('modalTotalPrinters').textContent = dayData.total_printers_serviced;
@@ -203,11 +206,11 @@ window.closeDayDetailModal = function() {
 
 window.showInstitutionDetail = async function(institutionId, dateStr, institutionName) {
     try {
-        // Parse date string in local timezone by adding time component
-        const date = new Date(dateStr + 'T00:00:00');
-        const year = date.getFullYear();
-        const month = date.getMonth() + 1;
-        const day = date.getDate();
+        // Parse date string directly without timezone conversion
+        const dateParts = dateStr.split('-');
+        const year = parseInt(dateParts[0], 10);
+        const month = parseInt(dateParts[1], 10);
+        const day = parseInt(dateParts[2], 10);
 
         const token = localStorage.getItem('token');
         const response = await fetch(
@@ -230,7 +233,7 @@ window.showInstitutionDetail = async function(institutionId, dateStr, institutio
         
         document.getElementById('instModalName').textContent = institutionName;
         document.getElementById('instModalDate').textContent = 
-            `${monthNames[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+            `${monthNames[month - 1]} ${day}, ${year}`;
         
         document.getElementById('instTotalPrinters').textContent = data.total_printers;
         document.getElementById('instServicedCount').textContent = data.serviced_count;

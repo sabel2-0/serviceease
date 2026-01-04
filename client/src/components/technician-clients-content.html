@@ -1097,8 +1097,9 @@ window.updatePartTypeFilter = async function(typeSelect) {
     }
     
     // Define category mappings
-    const consumableCategories = ['toner', 'ink', 'ink-bottle', 'drum', 'drum-cartridge', 'other-consumable', 'paper', 'cleaning-supplies'];
-    const printerPartCategories = ['fuser', 'roller', 'printhead', 'transfer-belt', 'maintenance-unit', 'power-board', 'mainboard', 'maintenance-box', 'tools', 'cables', 'batteries', 'lubricants', 'replacement-parts', 'software', 'labels', 'other'];
+    // Note: drum and drum-cartridge are printer parts, not consumables
+    const consumableCategories = ['toner', 'ink', 'ink-bottle', 'other-consumable', 'paper', 'cleaning-supplies'];
+    const printerPartCategories = ['drum', 'drum-cartridge', 'fuser', 'roller', 'printhead', 'transfer-belt', 'maintenance-unit', 'power-board', 'mainboard', 'maintenance-box', 'tools', 'cables', 'batteries', 'lubricants', 'replacement-parts', 'software', 'labels', 'other'];
     
     console.log(`Filtering parts: Type=${selectedType}`);
     
@@ -1406,8 +1407,12 @@ function setupPartSearch(partEntry) {
             return;
         }
         
+        // Search by name, brand, category, or color
         const searchResults = filteredParts.filter(part => 
-            part.name.toLowerCase().includes(searchTerm)
+            part.name.toLowerCase().includes(searchTerm) ||
+            (part.brand && part.brand.toLowerCase().includes(searchTerm)) ||
+            (part.category && part.category.toLowerCase().includes(searchTerm)) ||
+            (part.color && part.color.toLowerCase().includes(searchTerm))
         );
         
         renderPartsCards(partEntry, searchResults);

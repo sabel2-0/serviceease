@@ -10,25 +10,35 @@ const mysql = require('mysql2/promise');
         database: process.env.DB_NAME
     });
     
-    console.log('=== Maintenance Services ===');
+    // Check MySQL timezone
+    const [tz] = await db.query(`SELECT @@global.time_zone, @@session.time_zone, NOW() as mysql_now`);
+    console.log('=== MySQL Timezone ===');
+    console.log(JSON.stringify(tz, null, 2));
+    
+    console.log('\n=== All Maintenance Services ===');
     const [ms] = await db.query(`
-        SELECT id, DATE(created_at) as service_date, created_at, status, institution_id 
+        SELECT id, 
+               DATE_FORMAT(completed_at, '%Y-%m-%d') as service_date_mysql, 
+               completed_at,
+               status, 
+               institution_id 
         FROM maintenance_services 
         WHERE status IN ('completed', 'rejected') 
-        ORDER BY created_at DESC LIMIT 10
+        ORDER BY completed_at DESC LIMIT 20
     `);
     console.log(JSON.stringify(ms, null, 2));
     
-    console.log('\n=== Service Requests (non-walkin) ===');
-    const [sr] = await db.query(`
-        SELECT id, request_number, DATE(COALESCE(completed_at, created_at)) as service_date, 
-               completed_at, created_at, status, institution_id, is_walk_in
+    console.log('\n=== Services completed on/after Jan 5 2026 UTC ===');
+    const [jan5] = await db.query(`
+        SELECT id, request_number, 
+               DATE_FORMAT(completed_at, '%Y-%m-%d %H:%i:%s') as completed_mysql, 
+               completed_at,
+               status
         FROM service_requests 
-        WHERE status IN ('completed', 'rejected') 
-        AND (is_walk_in = 0 OR is_walk_in IS NULL)
-        ORDER BY created_at DESC LIMIT 10
+        WHERE completed_at >= '2026-01-05 00:00:00'
+        ORDER BY completed_at DESC LIMIT 10
     `);
-    console.log(JSON.stringify(sr, null, 2));
+    console.log(JSON.stringify(jan5, null, 2));
     
     await db.end();
     process.exit(0);

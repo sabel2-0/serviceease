@@ -1819,7 +1819,7 @@ router.get('/institution_admin/monthly-billing', auth, async (req, res) => {
                 i.name as institution_name,
                 CONCAT(u_tech.first_name, ' ', u_tech.last_name) as technician_name,
                 u_tech.email as technician_email,
-                DATE(ms.completed_at) as service_date,
+                DATE_FORMAT(CONVERT_TZ(ms.completed_at, '+00:00', '+08:00'), '%Y-%m-%d') as service_date,
                 'maintenance_service' as service_type
             FROM maintenance_services ms
             INNER JOIN printers p ON ms.printer_id = p.id
@@ -1827,8 +1827,8 @@ router.get('/institution_admin/monthly-billing', auth, async (req, res) => {
             INNER JOIN users u_tech ON ms.technician_id = u_tech.id
             WHERE ms.institution_id IN (?)
                 AND ms.status = 'completed'
-                AND YEAR(ms.completed_at) = ?
-                AND MONTH(ms.completed_at) = ?
+                AND YEAR(CONVERT_TZ(ms.completed_at, '+00:00', '+08:00')) = ?
+                AND MONTH(CONVERT_TZ(ms.completed_at, '+00:00', '+08:00')) = ?
             ORDER BY ms.completed_at DESC
         `;
         
@@ -1856,7 +1856,7 @@ router.get('/institution_admin/monthly-billing', auth, async (req, res) => {
                 i.name as institution_name,
                 CONCAT(u_tech.first_name, ' ', u_tech.last_name) as technician_name,
                 u_tech.email as technician_email,
-                DATE(sr.completed_at) as service_date,
+                DATE_FORMAT(CONVERT_TZ(sr.completed_at, '+00:00', '+08:00'), '%Y-%m-%d') as service_date,
                 'service_request' as service_type
             FROM service_requests sr
             INNER JOIN printers p ON sr.printer_id = p.id
@@ -1864,13 +1864,19 @@ router.get('/institution_admin/monthly-billing', auth, async (req, res) => {
             INNER JOIN users u_tech ON sr.technician_id = u_tech.id
             WHERE sr.institution_id IN (?)
                 AND sr.status = 'completed'
-                AND YEAR(sr.completed_at) = ?
-                AND MONTH(sr.completed_at) = ?
+                AND YEAR(CONVERT_TZ(sr.completed_at, '+00:00', '+08:00')) = ?
+                AND MONTH(CONVERT_TZ(sr.completed_at, '+00:00', '+08:00')) = ?
             ORDER BY sr.completed_at DESC
         `;
         
         const [maintenanceServices] = await db.query(maintenanceQuery, [institutionIds, year, month]);
         const [serviceRequests] = await db.query(serviceRequestsQuery, [institutionIds, year, month]);
+        
+        console.log(`[Monthly Billing] Found ${maintenanceServices.length} maintenance services`);
+        console.log(`[Monthly Billing] Found ${serviceRequests.length} service requests`);
+        if (serviceRequests.length > 0) {
+            console.log(`[Monthly Billing] Sample service_dates:`, serviceRequests.slice(0, 3).map(s => s.service_date));
+        }
         
         // Combine both types of services
         const services = [...maintenanceServices, ...serviceRequests].sort((a, b) => 
@@ -1916,7 +1922,9 @@ router.get('/institution_admin/monthly-billing', auth, async (req, res) => {
         // Group services by date for calendar view
         const dailyServicesMap = {};
         services.forEach(service => {
+            // service_date is now a string 'YYYY-MM-DD' directly from DATE_FORMAT in MySQL
             const date = service.service_date;
+            
             if (!dailyServicesMap[date]) {
                 dailyServicesMap[date] = {
                     date,

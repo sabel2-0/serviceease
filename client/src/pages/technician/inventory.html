@@ -412,10 +412,10 @@
                 return part.item_type === 'consumable';
             }
             // Fallback: check category (ink, toner, etc. are consumables)
+            // Note: drum and drum-cartridge are printer parts, not consumables
             const consumableCategories = [
-                'ink', 'ink-bottle', 'toner', 'drum', 'drum-cartridge', 
-                'fuser', 'roller', 'printhead', 'maintenance-unit', 'maintenance-box',
-                'paper', 'cleaning-supplies', 'labels'
+                'ink', 'ink-bottle', 'toner', 'other-consumable',
+                'paper', 'cleaning-supplies'
             ];
             return consumableCategories.includes(part.category);
         }

@@ -6414,12 +6414,13 @@ app.get('/api/admin/institution-service-calendar', authenticateAdmin, async (req
         `);
 
         // Get maintenance services for the specified month (completed or rejected)
+        // Use subquery to avoid duplicates from multiple service_approvals
         const [maintenanceServices] = await db.query(`
             SELECT 
                 ms.id,
                 CONCAT('MS-', ms.id) as service_number,
                 'maintenance_service' as service_type,
-                DATE(ms.created_at) as service_date,
+                DATE_FORMAT(CONVERT_TZ(ms.completed_at, '+00:00', '+08:00'), '%Y-%m-%d') as service_date,
                 i.institution_id,
                 i.name as institution_name,
                 ms.printer_id,
@@ -6443,10 +6444,15 @@ app.get('/api/admin/institution-service-calendar', authenticateAdmin, async (req
             JOIN printers p ON ms.printer_id = p.id
             JOIN institutions i ON ms.institution_id COLLATE utf8mb4_unicode_ci = i.institution_id
             LEFT JOIN users u ON ms.technician_id = u.id
-            LEFT JOIN service_approvals sa ON sa.service_id = ms.id AND sa.service_type = 'maintenance_service'
+            LEFT JOIN (
+                SELECT service_id, approved_by, reviewed_at, status, institution_admin_notes
+                FROM service_approvals
+                WHERE service_type = 'maintenance_service'
+                AND id IN (SELECT MAX(id) FROM service_approvals WHERE service_type = 'maintenance_service' GROUP BY service_id)
+            ) sa ON sa.service_id = ms.id
             LEFT JOIN users approver ON sa.approved_by = approver.id
-            WHERE YEAR(ms.created_at) = ?
-                AND MONTH(ms.created_at) = ?
+            WHERE YEAR(CONVERT_TZ(ms.completed_at, '+00:00', '+08:00')) = ?
+                AND MONTH(CONVERT_TZ(ms.completed_at, '+00:00', '+08:00')) = ?
                 AND i.type = 'public_school'
                 AND ms.status IN ('completed', 'rejected')
             ORDER BY service_date, institution_name, printer_name
@@ -6463,7 +6469,7 @@ app.get('/api/admin/institution-service-calendar', authenticateAdmin, async (req
                 sr.id,
                 sr.request_number as service_number,
                 'service_request' as service_type,
-                DATE(COALESCE(sr.completed_at, sr.created_at)) as service_date,
+                DATE_FORMAT(CONVERT_TZ(COALESCE(sr.completed_at, sr.created_at), '+00:00', '+08:00'), '%Y-%m-%d') as service_date,
                 i.institution_id,
                 i.name as institution_name,
                 sr.printer_id,
@@ -6487,36 +6493,32 @@ app.get('/api/admin/institution-service-calendar', authenticateAdmin, async (req
             JOIN printers p ON sr.printer_id = p.id
             JOIN institutions i ON sr.institution_id COLLATE utf8mb4_unicode_ci = i.institution_id
             LEFT JOIN users u ON sr.technician_id = u.id
-            LEFT JOIN service_approvals sa ON sa.service_id = sr.id AND sa.service_type = 'service_request'
+            LEFT JOIN (
+                SELECT service_id, approved_by, reviewed_at, status, technician_notes
+                FROM service_approvals
+                WHERE service_type = 'service_request'
+                AND id IN (SELECT MAX(id) FROM service_approvals WHERE service_type = 'service_request' GROUP BY service_id)
+            ) sa ON sa.service_id = sr.id
             LEFT JOIN users approver ON sa.approved_by = approver.id
-            WHERE YEAR(COALESCE(sr.completed_at, sr.created_at)) = ?
-                AND MONTH(COALESCE(sr.completed_at, sr.created_at)) = ?
+            WHERE YEAR(CONVERT_TZ(COALESCE(sr.completed_at, sr.created_at), '+00:00', '+08:00')) = ?
+                AND MONTH(CONVERT_TZ(COALESCE(sr.completed_at, sr.created_at), '+00:00', '+08:00')) = ?
                 AND i.type = 'public_school'
                 AND sr.status IN ('completed', 'rejected')
                 AND (sr.is_walk_in = 0 OR sr.is_walk_in IS NULL)
             ORDER BY service_date, institution_name, printer_name
         `, [year, month]);
 
+        console.log(`[Calendar] Found ${serviceRequests.length} service requests for ${year}-${month}`);
+
         // Combine both service types
         const allServices = [...maintenanceServices, ...serviceRequests];
+        console.log(`[Calendar] Total combined services: ${allServices.length}`);
 
         // Group by date and institution
         const calendarData = {};
         allServices.forEach(service => {
-            // Format date as YYYY-MM-DD string directly from MySQL DATE result
-            // service.service_date is already a Date object from MySQL's DATE() function
-            // We need to format it without timezone conversion
-            let date;
-            if (service.service_date instanceof Date) {
-                // Format as local date (YYYY-MM-DD) without timezone conversion
-                const year = service.service_date.getFullYear();
-                const month = String(service.service_date.getMonth() + 1).padStart(2, '0');
-                const day = String(service.service_date.getDate()).padStart(2, '0');
-                date = `${year}-${month}-${day}`;
-            } else {
-                // Fallback if it's already a string
-                date = String(service.service_date).split('T')[0];
-            }
+            // service_date is now a string 'YYYY-MM-DD' directly from DATE_FORMAT in MySQL
+            const date = service.service_date;
             
             if (!calendarData[date]) {
                 calendarData[date] = {
@@ -6690,7 +6692,7 @@ app.get('/api/admin/institution-service-details', authenticateAdmin, async (req,
             ) sa ON sa.service_id = ms.id
             LEFT JOIN users approver ON sa.approved_by = approver.id
             WHERE ms.institution_id COLLATE utf8mb4_unicode_ci = ?
-                AND DATE(ms.created_at) = ?
+                AND DATE_FORMAT(CONVERT_TZ(ms.completed_at, '+00:00', '+08:00'), '%Y-%m-%d') = ?
                 AND ms.status IN ('completed', 'rejected')
             ORDER BY ms.created_at DESC
         `, [institution_id, date]);
@@ -6765,7 +6767,7 @@ app.get('/api/admin/institution-service-details', authenticateAdmin, async (req,
             LEFT JOIN users approver ON sa.approved_by = approver.id
             LEFT JOIN users requester ON sr.requested_by = requester.id
             WHERE sr.institution_id COLLATE utf8mb4_unicode_ci = ?
-                AND DATE(COALESCE(sr.completed_at, sr.created_at)) = ?
+                AND DATE_FORMAT(CONVERT_TZ(COALESCE(sr.completed_at, sr.created_at), '+00:00', '+08:00'), '%Y-%m-%d') = ?
                 AND sr.status IN ('completed', 'rejected')
                 AND (sr.is_walk_in = 0 OR sr.is_walk_in IS NULL)
             ORDER BY sr.created_at DESC

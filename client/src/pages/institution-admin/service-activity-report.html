@@ -322,11 +322,17 @@
             
             // Days with services
             const dailyServicesMap = {};
+            console.log('dailyServices from server:', currentData.dailyServices);
             currentData.dailyServices.forEach(day => {
-                const date = new Date(day.date);
-                const dayNum = date.getDate();
+                // Parse date string directly without timezone conversion
+                // Format is YYYY-MM-DD, extract day number from string
+                console.log('Processing day.date:', day.date, typeof day.date);
+                const dateParts = String(day.date).split('T')[0].split('-');
+                const dayNum = parseInt(dateParts[2], 10);
+                console.log('Parsed dayNum:', dayNum);
                 dailyServicesMap[dayNum] = day;
             });
+            console.log('dailyServicesMap:', dailyServicesMap);
             
             // Create day cells
             for (let day = 1; day <= daysInMonth; day++) {
@@ -377,10 +383,10 @@
             });
             
             // Get full service details for this date
-            // Extract date from service using local timezone (same as calendar display)
+            // service_date is already a string 'YYYY-MM-DD' from server, use it directly
             const dayServices = allServices.filter(s => {
-                const serviceDate = new Date(s.service_date);
-                const serviceDateStr = `${serviceDate.getFullYear()}-${String(serviceDate.getMonth() + 1).padStart(2, '0')}-${String(serviceDate.getDate()).padStart(2, '0')}`;
+                // Extract just the date part (YYYY-MM-DD) without timezone conversion
+                const serviceDateStr = String(s.service_date).split('T')[0];
                 console.log('🔍 Comparing:', serviceDateStr, '===', date, '?', serviceDateStr === date);
                 return serviceDateStr === date;
             });

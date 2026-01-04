@@ -477,7 +477,8 @@ class InventoryPartsManager {
     
     showFormForEdit(part) {
         // Determine item type based on category
-        const consumableCategories = ['toner', 'ink', 'ink-bottle', 'drum', 'drum-cartridge', 'other-consumable', 'paper', 'cleaning-supplies'];
+        // Note: drum and drum-cartridge are printer parts, not consumables
+        const consumableCategories = ['toner', 'ink', 'ink-bottle', 'other-consumable', 'paper', 'cleaning-supplies'];
         const itemType = consumableCategories.includes(part.category) ? 'consumable' : 'part';
         
         // Hide type selection

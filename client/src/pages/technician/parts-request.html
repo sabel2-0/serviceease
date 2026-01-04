@@ -471,9 +471,11 @@
                     part.brand?.toLowerCase().includes(search);
                 
                 // Type filter (consumable vs printer part)
-                // Check item_type field OR category to determine type
-                const consumableCategories = ['ink', 'ink-bottle', 'toner', 'drum', 'drum-cartridge', 'fuser', 'roller', 'printhead', 'maintenance-unit', 'maintenance-box'];
-                const isConsumableItem = part.item_type === 'consumable' || consumableCategories.includes(part.category);
+                // Check item_type field first, then fall back to category
+                // Note: drum and drum-cartridge are printer parts, not consumables
+                const consumableCategories = ['ink', 'ink-bottle', 'toner', 'other-consumable', 'paper', 'cleaning-supplies'];
+                const isConsumableItem = part.item_type === 'consumable' || 
+                    (!part.item_type && consumableCategories.includes(part.category));
                 const matchesType = currentFilter === 'all' || 
                     (currentFilter === 'consumable' && isConsumableItem) ||
                     (currentFilter === 'printer_part' && !isConsumableItem);
@@ -506,10 +508,11 @@
         }
         
         // Check if a category is consumable
+        // Note: drum and drum-cartridge are printer parts, not consumables
         function isConsumable(category) {
             const consumableCategories = [
-                'paper', 'cleaning-supplies', 'tools', 'cables', 
-                'batteries', 'lubricants', 'labels', 'other-consumable'
+                'toner', 'ink', 'ink-bottle', 'other-consumable', 
+                'paper', 'cleaning-supplies'
             ];
             return consumableCategories.includes(category);
         }

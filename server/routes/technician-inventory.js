@@ -81,6 +81,7 @@ router.get('/parts', authenticateTechnician, async (req, res) => {
                 pp.name,
                 pp.brand,
                 pp.category,
+                pp.item_type,
                 pp.color,
                 pp.unit,
                 pp.ink_volume,
@@ -184,6 +185,7 @@ router.get('/available-parts', authenticateTechnician, async (req, res) => {
                 name,
                 brand,
                 category,
+                item_type,
                 quantity,
                 unit,
                 minimum_stock,
@@ -211,9 +213,10 @@ router.get('/available-parts', authenticateTechnician, async (req, res) => {
         }
         
         // Add part type filter (consumable vs printer_part based on category)
+        // Note: drum and drum-cartridge are printer parts, not consumables
         if (part_type) {
-            const consumableCategories = ['toner', 'ink', 'ink-bottle', 'drum', 'drum-cartridge', 'other-consumable', 'paper', 'cleaning-supplies'];
-            const printerPartCategories = ['fuser', 'roller', 'printhead', 'transfer-belt', 'maintenance-unit', 'power-board', 'mainboard', 'maintenance-box', 'tools', 'cables', 'batteries', 'lubricants', 'replacement-parts', 'software', 'labels', 'other'];
+            const consumableCategories = ['toner', 'ink', 'ink-bottle', 'other-consumable', 'paper', 'cleaning-supplies'];
+            const printerPartCategories = ['drum', 'drum-cartridge', 'fuser', 'roller', 'printhead', 'transfer-belt', 'maintenance-unit', 'power-board', 'mainboard', 'maintenance-box', 'tools', 'cables', 'batteries', 'lubricants', 'replacement-parts', 'software', 'labels', 'other'];
             
             if (part_type === 'consumable') {
                 const placeholders = consumableCategories.map(() => '?').join(',');
