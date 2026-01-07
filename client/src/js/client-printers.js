@@ -763,19 +763,19 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Create modern selection modal
+        // Create modern searchable selection modal with multi-select
         const modal = document.createElement('div');
         modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4';
         modal.innerHTML = `
             <div class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
-            <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md transform transition-all">
-                <div class="bg-gradient-to-r from-green-500 to-green-600 p-6 rounded-t-2xl">
+            <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg transform transition-all flex flex-col" style="max-height: 90vh;">
+                <div class="bg-gradient-to-r from-green-500 to-green-600 p-6 rounded-t-2xl flex-shrink-0">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center space-x-3">
                             <div class="bg-white/20 p-2 rounded-lg">
                                 <i class="fas fa-link text-white"></i>
                             </div>
-                            <h2 class="text-xl font-bold text-white">Assign Printer</h2>
+                            <h2 class="text-xl font-bold text-white">Assign Printers</h2>
                         </div>
                         <button class="cancelBtn text-white/80 hover:text-white hover:bg-white/20 p-2 rounded-lg transition-all duration-200">
                             <i class="fa-solid fa-xmark text-lg"></i>
@@ -786,78 +786,245 @@ document.addEventListener('DOMContentLoaded', () => {
                         ${escapeHtml(selectedInstitution.name)}
                     </div>
                 </div>
-                <div class="p-6">
-                    <div class="space-y-2 mb-6">
-                        <label class="block text-sm font-semibold text-slate-700">Select Available Printer</label>
-                        <select class="selectList w-full border-2 border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all duration-200">
-                            <option value="">Choose a printer...</option>
-                        </select>
+                <div class="p-6 flex-1 overflow-hidden flex flex-col">
+                    <!-- Search Input -->
+                    <div class="space-y-2 mb-4 flex-shrink-0">
+                        <label class="block text-sm font-semibold text-slate-700">Search Available Printers</label>
+                        <div class="relative">
+                            <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                            <input id="printerSearchInput" type="text" autocomplete="off"
+                                class="w-full pl-12 pr-4 py-3 border-2 border-slate-200 rounded-xl text-slate-900 focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all duration-200"
+                                placeholder="Search by serial number, brand, or model...">
+                        </div>
+                    </div>
+                    
+                    <!-- Selected Printers Display (Fixed height) -->
+                    <div class="mb-4 flex-shrink-0" style="min-height: 60px;">
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="block text-sm font-semibold text-slate-700">Selected Printers</label>
+                            <span id="selectedCount" class="text-xs font-medium px-2 py-1 bg-green-100 text-green-700 rounded-full">0 selected</span>
+                        </div>
+                        <div id="selectedPrintersContainer" class="flex flex-wrap gap-2 min-h-[36px] p-2 bg-slate-50 border border-slate-200 rounded-xl">
+                            <span class="text-sm text-slate-400 italic" id="noSelectionText">Click printers below to select</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Printer List -->
+                    <div class="flex-1 overflow-hidden flex flex-col min-h-0">
+                        <div class="flex items-center justify-between mb-2 flex-shrink-0">
+                            <label class="block text-sm font-semibold text-slate-700">Available Printers</label>
+                            <span id="printerResultCount" class="text-xs text-slate-500">${availableInventory.length} printers</span>
+                        </div>
+                        <div id="printerListContainer" class="flex-1 overflow-y-auto border-2 border-slate-200 rounded-xl" style="max-height: 200px;">
+                            <!-- Printer items will be rendered here -->
+                        </div>
                     </div>
                 </div>
-                <div class="p-6 bg-slate-50 rounded-b-2xl flex justify-end gap-3">
+                <div class="p-6 bg-slate-50 rounded-b-2xl flex justify-end gap-3 flex-shrink-0">
                     <button class="cancelBtn px-6 py-3 border-2 border-slate-200 text-slate-600 font-semibold rounded-xl hover:bg-slate-100 hover:border-slate-300 transition-all duration-200">
                         Cancel
                     </button>
-                    <button class="confirmBtn px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold rounded-xl shadow-lg hover:from-green-700 hover:to-green-800 transform hover:scale-105 transition-all duration-200">
+                    <button class="confirmBtn px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold rounded-xl shadow-lg hover:from-green-700 hover:to-green-800 transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none" disabled>
                         <i class="fas fa-link mr-2"></i>
-                        Assign Printer
+                        <span class="confirmBtnText">Assign Printers</span>
                     </button>
                 </div>
             </div>
         `;
 
-        const selectList = modal.querySelector('.selectList');
-        availableInventory.forEach(i => {
-            const opt = document.createElement('option');
-            opt.value = i.id;
-            opt.textContent = `${i.brand || 'Unknown'} ${i.model || 'Model'} (${i.serial_number || 'No Serial'})`;
-            selectList.appendChild(opt);
-        });
-
         document.body.appendChild(modal);
 
-        const cancelBtns = modal.querySelectorAll('.cancelBtn');
+        // Elements
+        const searchInput = modal.querySelector('#printerSearchInput');
+        const printerListContainer = modal.querySelector('#printerListContainer');
+        const printerResultCount = modal.querySelector('#printerResultCount');
+        const selectedPrintersContainer = modal.querySelector('#selectedPrintersContainer');
+        const selectedCount = modal.querySelector('#selectedCount');
+        const noSelectionText = modal.querySelector('#noSelectionText');
         const confirmBtn = modal.querySelector('.confirmBtn');
+        const confirmBtnText = modal.querySelector('.confirmBtnText');
+        const cancelBtns = modal.querySelectorAll('.cancelBtn');
+        
+        // Multi-select state
+        let selectedPrinters = new Map(); // Map of id -> printer object
+        
+        // Update selected printers display
+        function updateSelectedDisplay() {
+            const count = selectedPrinters.size;
+            selectedCount.textContent = `${count} selected`;
+            confirmBtnText.textContent = count > 1 ? `Assign ${count} Printers` : 'Assign Printer';
+            confirmBtn.disabled = count === 0;
+            
+            if (count === 0) {
+                selectedPrintersContainer.innerHTML = '<span class="text-sm text-slate-400 italic" id="noSelectionText">Click printers below to select</span>';
+            } else {
+                selectedPrintersContainer.innerHTML = Array.from(selectedPrinters.values()).map(printer => `
+                    <span class="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-lg" data-id="${printer.id}">
+                        <i class="fas fa-print text-green-600"></i>
+                        ${escapeHtml(printer.brand || '')} ${escapeHtml(printer.model || '')}
+                        <button class="remove-selected ml-1 text-green-600 hover:text-green-800" data-id="${printer.id}">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </span>
+                `).join('');
+                
+                // Add remove handlers
+                selectedPrintersContainer.querySelectorAll('.remove-selected').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const id = btn.dataset.id;
+                        selectedPrinters.delete(parseInt(id));
+                        updateSelectedDisplay();
+                        renderPrinterList(filterPrinters(searchInput.value));
+                    });
+                });
+            }
+        }
+        
+        // Render printer list
+        function renderPrinterList(printers) {
+            if (printers.length === 0) {
+                printerListContainer.innerHTML = `
+                    <div class="p-6 text-center text-slate-500">
+                        <i class="fas fa-search text-3xl mb-2 text-slate-300"></i>
+                        <p class="font-medium">No printers found</p>
+                        <p class="text-sm">Try a different search term</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            printerListContainer.innerHTML = printers.map(printer => {
+                const isSelected = selectedPrinters.has(printer.id);
+                return `
+                <div class="printer-item p-3 hover:bg-green-50 cursor-pointer transition-colors border-b border-slate-100 last:border-0 ${isSelected ? 'bg-green-50' : ''}" data-id="${printer.id}">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-5 h-5 rounded border-2 flex items-center justify-center ${isSelected ? 'bg-green-500 border-green-500' : 'border-slate-300'}">
+                            ${isSelected ? '<i class="fas fa-check text-white text-xs"></i>' : ''}
+                        </div>
+                        <div class="bg-slate-100 p-2 rounded-lg">
+                            <i class="fas fa-print text-slate-500"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-semibold text-slate-900 truncate">${escapeHtml(printer.brand || 'Unknown')} ${escapeHtml(printer.model || 'Model')}</p>
+                            <div class="flex items-center space-x-2 text-xs text-slate-500">
+                                <span class="flex items-center">
+                                    <i class="fas fa-barcode mr-1"></i>
+                                    ${escapeHtml(printer.serial_number || 'No Serial')}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `}).join('');
+            
+            // Add click handlers for multi-select
+            printerListContainer.querySelectorAll('.printer-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const printerId = parseInt(item.dataset.id);
+                    const printer = availableInventory.find(p => p.id === printerId);
+                    if (printer) {
+                        if (selectedPrinters.has(printerId)) {
+                            selectedPrinters.delete(printerId);
+                        } else {
+                            selectedPrinters.set(printerId, printer);
+                        }
+                        updateSelectedDisplay();
+                        renderPrinterList(filterPrinters(searchInput.value));
+                    }
+                });
+            });
+        }
+        
+        // Filter printers
+        function filterPrinters(query) {
+            const lowerQuery = query.toLowerCase().trim();
+            if (!lowerQuery) return availableInventory;
+            
+            return availableInventory.filter(printer => {
+                const brand = (printer.brand || '').toLowerCase();
+                const model = (printer.model || '').toLowerCase();
+                const serial = (printer.serial_number || '').toLowerCase();
+                return brand.includes(lowerQuery) || model.includes(lowerQuery) || serial.includes(lowerQuery);
+            });
+        }
+        
+        // Search handler
+        searchInput.addEventListener('input', () => {
+            const filtered = filterPrinters(searchInput.value);
+            printerResultCount.textContent = `${filtered.length} printer${filtered.length !== 1 ? 's' : ''}`;
+            renderPrinterList(filtered);
+        });
+        
+        // Initial render
+        renderPrinterList(availableInventory);
+        updateSelectedDisplay();
 
+        // Cancel buttons
         cancelBtns.forEach(btn => {
             btn.onclick = () => document.body.removeChild(modal);
         });
 
+        // Confirm assignment - assign all selected printers
         confirmBtn.onclick = async () => {
-            const inventoryId = selectList.value;
-            if (!inventoryId) {
-                alert('Select a printer');
+            if (selectedPrinters.size === 0) {
+                alert('Please select at least one printer');
                 return;
             }
             
-            // Get the selected printer name from the dropdown
-            const selectedOption = selectList.options[selectList.selectedIndex];
-            const printerName = selectedOption ? selectedOption.textContent : 'Printer';
             const clientName = selectedInstitution ? selectedInstitution.name : 'Client';
+            const token = localStorage.getItem('token');
             
-            const payload = { printer_id: inventoryId };
-            try {
-                const token = localStorage.getItem('token');
-                const res = await fetch(`/api/institutions/${encodeURIComponent(selectedInstitution.institution_id)}/printers`, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify(payload)
-                });
-                if (!res.ok) throw new Error('Failed to assign');
-                document.body.removeChild(modal);
-                await fetchPrinters();
-                await loadAvailableInventory();
-                
-                // Show success modal
-                showPrinterSuccessModal(printerName, clientName);
-            } catch (e) {
-                console.error(e);
-                alert('Failed to assign printer');
+            // Disable button and show loading
+            confirmBtn.disabled = true;
+            confirmBtnText.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Assigning...';
+            
+            let successCount = 0;
+            let failedCount = 0;
+            const printerNames = [];
+            
+            // Assign all selected printers
+            for (const [printerId, printer] of selectedPrinters) {
+                try {
+                    const res = await fetch(`/api/institutions/${encodeURIComponent(selectedInstitution.institution_id)}/printers`, {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ printer_id: printerId })
+                    });
+                    if (res.ok) {
+                        successCount++;
+                        printerNames.push(`${printer.brand || 'Unknown'} ${printer.model || 'Model'}`);
+                    } else {
+                        failedCount++;
+                    }
+                } catch (e) {
+                    console.error(e);
+                    failedCount++;
+                }
+            }
+            
+            document.body.removeChild(modal);
+            await fetchPrinters();
+            await loadAvailableInventory();
+            
+            // Show success modal with count
+            if (successCount > 0) {
+                const printerText = successCount === 1 
+                    ? printerNames[0] 
+                    : `${successCount} printers`;
+                showPrinterSuccessModal(printerText, clientName);
+            }
+            
+            if (failedCount > 0) {
+                alert(`${failedCount} printer(s) failed to assign`);
             }
         };
+        
+        // Focus search input
+        setTimeout(() => searchInput.focus(), 100);
     }
 
     // Event handlers for printer table

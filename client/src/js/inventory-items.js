@@ -1,6 +1,18 @@
 // Global variables for grouped view
 let currentItems = [];
 
+// Common printer brands list (static fallback)
+const STATIC_PRINTER_BRANDS = [
+    'HP', 'Canon', 'Epson', 'Brother', 'Lexmark', 'Xerox', 'Ricoh', 'Kyocera',
+    'Samsung', 'Dell', 'Konica Minolta', 'Sharp', 'Panasonic', 'OKI', 'Toshiba',
+    'Fuji Xerox', 'Zebra', 'Kodak', 'Dymo', 'Pantum', 'Sindoh', 'Riso', 
+    'Star Micronics', 'Citizen', 'TSC', 'Honeywell', 'SATO', 'Datamax', 
+    'Intermec', 'Printronix', 'Evolis', 'Magicard', 'Fargo', 'Entrust'
+];
+
+// Dynamic brands list (will be populated from inventory + static)
+let availableBrands = [...STATIC_PRINTER_BRANDS];
+
 // Global utility function
 function escapeHtml(str) {
     return String(str)
@@ -22,6 +34,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalSerial = document.getElementById('modalSerial');
     const count = document.getElementById('invCount');
     const filterAvailable = document.getElementById('filterAvailable');
+    
+    // Brand autocomplete elements
+    const brandDropdown = document.getElementById('brandDropdown');
+    const customBrandContainer = document.getElementById('customBrandContainer');
+    const customBrandInput = document.getElementById('customBrandInput');
+    let isOthersSelected = false;
     
     // Edit modal elements
     const editModal = document.getElementById('editPrinterModal');
@@ -48,6 +66,134 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeViewInfo = document.getElementById('closeViewInfo');
     const closeViewInfoBtn = document.getElementById('closeViewInfoBtn');
     
+    // ========== Brand Autocomplete Functions ==========
+    
+    // Merge static brands with brands from inventory
+    function updateAvailableBrands(inventoryItems) {
+        const inventoryBrands = inventoryItems
+            .map(item => item.brand)
+            .filter(brand => brand && brand.trim()); // Filter out empty brands
+        
+        // Merge and deduplicate (case-insensitive)
+        const allBrands = [...STATIC_PRINTER_BRANDS, ...inventoryBrands];
+        const uniqueBrandsMap = new Map();
+        
+        allBrands.forEach(brand => {
+            const lowerBrand = brand.toLowerCase().trim();
+            // Keep the first occurrence (prefer static list casing)
+            if (!uniqueBrandsMap.has(lowerBrand)) {
+                uniqueBrandsMap.set(lowerBrand, brand.trim());
+            }
+        });
+        
+        // Sort alphabetically
+        availableBrands = Array.from(uniqueBrandsMap.values()).sort((a, b) => 
+            a.toLowerCase().localeCompare(b.toLowerCase())
+        );
+    }
+    
+    function filterBrands(query) {
+        const lowerQuery = query.toLowerCase().trim();
+        if (!lowerQuery) return availableBrands;
+        return availableBrands.filter(brand => 
+            brand.toLowerCase().includes(lowerQuery)
+        );
+    }
+    
+    // Check if a brand is from static list or custom added
+    function isCustomBrand(brand) {
+        return !STATIC_PRINTER_BRANDS.some(
+            staticBrand => staticBrand.toLowerCase() === brand.toLowerCase()
+        );
+    }
+    
+    function renderBrandDropdown(brands, query) {
+        const lowerQuery = query.toLowerCase().trim();
+        let html = '';
+        
+        // Show filtered brands
+        brands.forEach(brand => {
+            const highlighted = lowerQuery 
+                ? brand.replace(new RegExp(`(${escapeHtml(lowerQuery)})`, 'gi'), '<strong class="text-blue-600">$1</strong>')
+                : brand;
+            
+            const isCustom = isCustomBrand(brand);
+            const customBadge = isCustom 
+                ? '<span class="ml-2 text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">Added</span>' 
+                : '';
+            const iconClass = isCustom ? 'text-emerald-500' : 'text-slate-400';
+            
+            html += `
+                <div class="brand-option px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors border-b border-slate-100 last:border-0" data-brand="${escapeHtml(brand)}">
+                    <i class="fas fa-print ${iconClass} mr-2"></i>${highlighted}${customBadge}
+                </div>
+            `;
+        });
+        
+        // Always show "Others" option at the bottom
+        html += `
+            <div class="brand-option px-4 py-3 hover:bg-amber-50 cursor-pointer transition-colors bg-slate-50 border-t-2 border-slate-200" data-brand="__OTHERS__">
+                <i class="fas fa-plus-circle text-amber-500 mr-2"></i>
+                <span class="text-amber-700 font-medium">Others (Specify custom brand)</span>
+            </div>
+        `;
+        
+        brandDropdown.innerHTML = html;
+        
+        // Add click handlers
+        brandDropdown.querySelectorAll('.brand-option').forEach(option => {
+            option.addEventListener('click', () => {
+                const selectedBrand = option.dataset.brand;
+                if (selectedBrand === '__OTHERS__') {
+                    modalBrand.value = 'Others';
+                    isOthersSelected = true;
+                    customBrandContainer.classList.remove('hidden');
+                    customBrandInput.value = '';
+                    customBrandInput.focus();
+                } else {
+                    modalBrand.value = selectedBrand;
+                    isOthersSelected = false;
+                    customBrandContainer.classList.add('hidden');
+                    customBrandInput.value = '';
+                }
+                brandDropdown.classList.add('hidden');
+            });
+        });
+    }
+    
+    function showBrandDropdown() {
+        const query = modalBrand.value;
+        const filteredBrands = filterBrands(query);
+        renderBrandDropdown(filteredBrands, query);
+        brandDropdown.classList.remove('hidden');
+    }
+    
+    function hideBrandDropdown() {
+        setTimeout(() => {
+            brandDropdown.classList.add('hidden');
+        }, 200); // Delay to allow click events to register
+    }
+    
+    // Brand input event listeners
+    modalBrand.addEventListener('focus', showBrandDropdown);
+    modalBrand.addEventListener('input', showBrandDropdown);
+    modalBrand.addEventListener('blur', hideBrandDropdown);
+    
+    // Keyboard navigation for dropdown
+    modalBrand.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            brandDropdown.classList.add('hidden');
+        }
+    });
+    
+    // Get the actual brand value (considering "Others" selection)
+    function getActualBrandValue() {
+        if (isOthersSelected && customBrandInput.value.trim()) {
+            return customBrandInput.value.trim();
+        }
+        return modalBrand.value.trim();
+    }
+    
     // Grouped view elements
     const groupedTbody = document.getElementById('groupedTbody');
     const groupedEmpty = document.getElementById('groupedEmpty');
@@ -61,6 +207,10 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             const items = await res.json();
             currentItems = items;
+            
+            // Update available brands from inventory (custom brands will appear here)
+            updateAvailableBrands(items);
+            
             render(items);
         } catch (e) {
             console.error('Failed to fetch inventory', e);
@@ -177,6 +327,12 @@ document.addEventListener('DOMContentLoaded', () => {
         modalModel.value = '';
         modalSerial.value = '';
         
+        // Reset brand autocomplete state
+        isOthersSelected = false;
+        customBrandContainer.classList.add('hidden');
+        customBrandInput.value = '';
+        brandDropdown.classList.add('hidden');
+        
         // Enable all fields
         modalBrand.disabled = false;
         modalModel.disabled = false;
@@ -199,6 +355,12 @@ document.addEventListener('DOMContentLoaded', () => {
         modalModel.value = '';
         modalSerial.value = '';
         
+        // Reset brand autocomplete state
+        isOthersSelected = false;
+        customBrandContainer.classList.add('hidden');
+        customBrandInput.value = '';
+        brandDropdown.classList.add('hidden');
+        
         // Re-enable all fields
         modalBrand.disabled = false;
         modalModel.disabled = false;
@@ -208,6 +370,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function addItem() {
         try {
+            // Get the actual brand value (considering "Others" selection)
+            const brandValue = getActualBrandValue();
+            
+            // Validate brand
+            if (!brandValue) {
+                alert('Please select or enter a brand name');
+                return;
+            }
+            
+            // If Others selected but no custom brand entered
+            if (isOthersSelected && !customBrandInput.value.trim()) {
+                alert('Please specify the custom brand name');
+                customBrandInput.focus();
+                return;
+            }
+            
             const token = localStorage.getItem('token');
             const quantity = 1; // Single printer unit
             const res = await fetch('/api/inventory-items', {
@@ -217,7 +395,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
-                    brand: modalBrand.value,
+                    brand: brandValue,
                     model: modalModel.value,
                     serial_number: modalSerial.value,
                     quantity: quantity

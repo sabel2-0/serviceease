@@ -1,3 +1,15 @@
+// Static printer brands list
+const STATIC_PRINTER_BRANDS = [
+    'HP', 'Canon', 'Epson', 'Brother', 'Lexmark', 'Xerox', 'Ricoh', 'Kyocera',
+    'Samsung', 'Dell', 'Konica Minolta', 'Sharp', 'Panasonic', 'OKI', 'Toshiba',
+    'Fuji Xerox', 'Zebra', 'Kodak', 'Dymo', 'Pantum', 'Sindoh', 'Riso', 
+    'Star Micronics', 'Citizen', 'TSC', 'Honeywell', 'SATO', 'Datamax', 
+    'Intermec', 'Printronix', 'Evolis', 'Magicard', 'Fargo', 'Entrust'
+];
+
+// Dynamic brands list
+let availableBrands = [...STATIC_PRINTER_BRANDS];
+
 class InventoryPartsManager {
     constructor() {
         this.parts = [];
@@ -7,6 +19,7 @@ class InventoryPartsManager {
         this.sortField = 'name';
         this.sortDirection = 'asc';
         this.editingPart = null;
+        this.isOthersSelected = false;
         
         this.init();
     }
@@ -14,6 +27,7 @@ class InventoryPartsManager {
     async init() {
         try {
             this.setupEventListeners();
+            this.setupBrandAutocomplete();
             this.showLoading(true);
             await this.loadParts();
             this.showLoading(false);
@@ -52,6 +66,10 @@ class InventoryPartsManager {
 
         document.getElementById('categoryFilter')?.addEventListener('change', (e) => {
             this.handleCategoryFilter(e.target.value);
+        });
+
+        document.getElementById('itemTypeFilter')?.addEventListener('change', (e) => {
+            this.handleItemTypeFilter(e.target.value);
         });
 
         document.getElementById('stockFilter')?.addEventListener('change', (e) => {
@@ -106,6 +124,148 @@ class InventoryPartsManager {
         });
     }
 
+    // ========== Brand Autocomplete Functions ==========
+    
+    setupBrandAutocomplete() {
+        const brandInput = document.getElementById('partBrand');
+        const brandDropdown = document.getElementById('brandDropdown');
+        const customBrandContainer = document.getElementById('customBrandContainer');
+        const customBrandInput = document.getElementById('customBrandInput');
+        
+        if (!brandInput || !brandDropdown) return;
+        
+        brandInput.addEventListener('focus', () => this.showBrandDropdown());
+        brandInput.addEventListener('input', () => this.showBrandDropdown());
+        brandInput.addEventListener('blur', () => this.hideBrandDropdown());
+        
+        brandInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                brandDropdown.classList.add('hidden');
+            }
+        });
+    }
+    
+    updateAvailableBrands() {
+        const partBrands = this.parts
+            .map(part => part.brand)
+            .filter(brand => brand && brand.trim());
+        
+        // Merge and deduplicate
+        const allBrands = [...STATIC_PRINTER_BRANDS, ...partBrands];
+        const uniqueBrandsMap = new Map();
+        
+        allBrands.forEach(brand => {
+            const lowerBrand = brand.toLowerCase().trim();
+            if (!uniqueBrandsMap.has(lowerBrand)) {
+                uniqueBrandsMap.set(lowerBrand, brand.trim());
+            }
+        });
+        
+        availableBrands = Array.from(uniqueBrandsMap.values()).sort((a, b) => 
+            a.toLowerCase().localeCompare(b.toLowerCase())
+        );
+    }
+    
+    filterBrands(query) {
+        const lowerQuery = query.toLowerCase().trim();
+        if (!lowerQuery) return availableBrands;
+        return availableBrands.filter(brand => 
+            brand.toLowerCase().includes(lowerQuery)
+        );
+    }
+    
+    isCustomBrand(brand) {
+        return !STATIC_PRINTER_BRANDS.some(
+            staticBrand => staticBrand.toLowerCase() === brand.toLowerCase()
+        );
+    }
+    
+    renderBrandDropdown(brands, query) {
+        const brandDropdown = document.getElementById('brandDropdown');
+        const lowerQuery = query.toLowerCase().trim();
+        let html = '';
+        
+        brands.forEach(brand => {
+            const highlighted = lowerQuery 
+                ? brand.replace(new RegExp(`(${this.escapeHtml(lowerQuery)})`, 'gi'), '<strong class="text-blue-600">$1</strong>')
+                : brand;
+            
+            const isCustom = this.isCustomBrand(brand);
+            const customBadge = isCustom 
+                ? '<span class="ml-2 text-xs bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">Added</span>' 
+                : '';
+            const iconClass = isCustom ? 'text-emerald-500' : 'text-slate-400';
+            
+            html += `
+                <div class="brand-option px-3 py-2 hover:bg-blue-50 cursor-pointer transition-colors border-b border-slate-100 last:border-0 text-sm" data-brand="${this.escapeHtml(brand)}">
+                    <i class="fas fa-print ${iconClass} mr-2"></i>${highlighted}${customBadge}
+                </div>
+            `;
+        });
+        
+        // Always show "Others" option at the bottom
+        html += `
+            <div class="brand-option px-3 py-2 hover:bg-amber-50 cursor-pointer transition-colors bg-slate-50 border-t border-slate-200 text-sm" data-brand="__OTHERS__">
+                <i class="fas fa-plus-circle text-amber-500 mr-2"></i>
+                <span class="text-amber-700 font-medium">Others (Specify brand)</span>
+            </div>
+        `;
+        
+        brandDropdown.innerHTML = html;
+        
+        // Add click handlers
+        brandDropdown.querySelectorAll('.brand-option').forEach(option => {
+            option.addEventListener('click', () => {
+                const selectedBrand = option.dataset.brand;
+                const brandInput = document.getElementById('partBrand');
+                const customBrandContainer = document.getElementById('customBrandContainer');
+                const customBrandInput = document.getElementById('customBrandInput');
+                
+                if (selectedBrand === '__OTHERS__') {
+                    brandInput.value = 'Others';
+                    this.isOthersSelected = true;
+                    customBrandContainer.classList.remove('hidden');
+                    customBrandInput.value = '';
+                    customBrandInput.focus();
+                } else {
+                    brandInput.value = selectedBrand;
+                    this.isOthersSelected = false;
+                    customBrandContainer.classList.add('hidden');
+                    customBrandInput.value = '';
+                }
+                brandDropdown.classList.add('hidden');
+            });
+        });
+    }
+    
+    showBrandDropdown() {
+        const brandInput = document.getElementById('partBrand');
+        const brandDropdown = document.getElementById('brandDropdown');
+        if (!brandInput || !brandDropdown) return;
+        
+        const query = brandInput.value;
+        const filteredBrands = this.filterBrands(query);
+        this.renderBrandDropdown(filteredBrands, query);
+        brandDropdown.classList.remove('hidden');
+    }
+    
+    hideBrandDropdown() {
+        setTimeout(() => {
+            const brandDropdown = document.getElementById('brandDropdown');
+            if (brandDropdown) brandDropdown.classList.add('hidden');
+        }, 200);
+    }
+    
+    getActualBrandValue() {
+        const brandInput = document.getElementById('partBrand');
+        const customBrandInput = document.getElementById('customBrandInput');
+        
+        if (this.isOthersSelected && customBrandInput && customBrandInput.value.trim()) {
+            return customBrandInput.value.trim();
+        }
+        return brandInput ? brandInput.value.trim() : '';
+    }
+
     async loadParts() {
         try {
             const response = await fetch('/api/parts');
@@ -122,6 +282,7 @@ class InventoryPartsManager {
             }
             this.parts = Array.isArray(rows) ? rows : [];
             this.filteredParts = Array.isArray(this.parts) ? [...this.parts] : [];
+            this.updateAvailableBrands(); // Update brands after loading
             this.renderParts();
             this.updateStatistics();
             this.showSuccess(`Loaded ${this.parts.length} printer parts`);
@@ -153,7 +314,7 @@ class InventoryPartsManager {
         if (paginatedParts.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="7" class="px-6 py-12 text-center">
+                    <td colspan="8" class="px-6 py-12 text-center">
                         <div class="flex flex-col items-center gap-4">
                             <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center">
                                 <i class="fas fa-search text-slate-400 text-xl"></i>
@@ -177,9 +338,11 @@ class InventoryPartsManager {
                     <div class="flex items-center">
                         <div>
                             <div class="text-sm font-medium text-slate-900">${this.escapeHtml(part.name)}</div>
-                            ${part.item_type ? `<div class="text-xs text-slate-400 mt-0.5">${part.item_type === 'consumable' ? 'Consumable' : 'Printer Part'}</div>` : ''}
                         </div>
                     </div>
+                </td>
+                <td class="px-4 py-4 whitespace-nowrap">
+                    ${this.getTypeBadge(part.item_type)}
                 </td>
                 <td class="px-4 py-4 whitespace-nowrap">
                     ${this.getCategoryBadge(part.category)}
@@ -265,7 +428,13 @@ class InventoryPartsManager {
                     </div>
                 </div>
                 
-                <div class="grid grid-cols-2 gap-4 mb-3">
+                <div class="grid grid-cols-3 gap-3 mb-3">
+                    <div>
+                        <span class="text-xs font-medium text-slate-500 uppercase tracking-wide">Type</span>
+                        <div class="mt-1">
+                            ${this.getTypeBadge(part.item_type)}
+                        </div>
+                    </div>
                     <div>
                         <span class="text-xs font-medium text-slate-500 uppercase tracking-wide">Category</span>
                         <div class="mt-1">
@@ -351,10 +520,15 @@ class InventoryPartsManager {
         this.applyFilters();
     }
 
+    handleItemTypeFilter(itemType) {
+        this.applyFilters();
+    }
+
     applyFilters() {
         const searchTerm = document.getElementById('searchParts')?.value.toLowerCase().trim() || '';
         const categoryFilter = document.getElementById('categoryFilter')?.value || '';
         const stockFilter = document.getElementById('stockFilter')?.value || '';
+        const itemTypeFilter = document.getElementById('itemTypeFilter')?.value || '';
 
         this.filteredParts = this.parts.filter(part => {
             // Search filter
@@ -365,6 +539,9 @@ class InventoryPartsManager {
 
             // Category filter
             const matchesCategory = !categoryFilter || part.category === categoryFilter;
+
+            // Item Type filter
+            const matchesItemType = !itemTypeFilter || part.item_type === itemTypeFilter;
 
             // Stock filter
             let matchesStock = true;
@@ -385,7 +562,7 @@ class InventoryPartsManager {
                 }
             }
 
-            return matchesSearch && matchesCategory && matchesStock;
+            return matchesSearch && matchesCategory && matchesItemType && matchesStock;
         });
 
         this.currentPage = 1;
@@ -594,7 +771,7 @@ class InventoryPartsManager {
         
         const formData = {
             name: document.getElementById('partName')?.value.trim() || '',
-            brand: document.getElementById('partBrand')?.value.trim() || '',
+            brand: this.getActualBrandValue(), // Use the actual brand value (handles "Others" custom brand)
             category: category,
             item_type: itemType,
             quantity: parseInt(document.getElementById('partStock')?.value) || 0,
@@ -740,6 +917,13 @@ class InventoryPartsManager {
     resetForm() {
         document.getElementById('partForm')?.reset();
         
+        // Reset brand autocomplete state
+        this.isOthersSelected = false;
+        const customBrandContainer = document.getElementById('customBrandContainer');
+        const customBrandInput = document.getElementById('customBrandInput');
+        if (customBrandContainer) customBrandContainer.classList.add('hidden');
+        if (customBrandInput) customBrandInput.value = '';
+        
         // Reset custom color dropdown
         const colorSelectedText = document.getElementById('colorSelectedText');
         const colorOptions = document.querySelectorAll('#colorDropdownMenu [data-value]');
@@ -756,15 +940,17 @@ class InventoryPartsManager {
     }
 
     updateModalForAdd() {
-        document.getElementById('modalTitle').textContent = 'Add New Item';
-        document.getElementById('modalIcon').className = 'fas fa-plus-circle text-white text-xl';
-        document.getElementById('submitText').textContent = 'Save Item';
+        const modalTitle = document.getElementById('modalTitle');
+        const submitText = document.getElementById('submitText');
+        if (modalTitle) modalTitle.textContent = 'Add New Item';
+        if (submitText) submitText.textContent = 'Add Item';
     }
 
     updateModalForEdit() {
-        document.getElementById('modalTitle').textContent = 'Edit Item';
-        document.getElementById('modalIcon').className = 'fas fa-edit text-white text-xl';
-        document.getElementById('submitText').textContent = 'Update Item';
+        const modalTitle = document.getElementById('modalTitle');
+        const submitText = document.getElementById('submitText');
+        if (modalTitle) modalTitle.textContent = 'Edit Item';
+        if (submitText) submitText.textContent = 'Update';
     }
 
     showModal() {
@@ -900,6 +1086,20 @@ class InventoryPartsManager {
     formatCategory(category) {
         if (!category) return 'Other';
         return category.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+    }
+
+    getTypeBadge(itemType) {
+        if (itemType === 'consumable') {
+            return `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <i class="fas fa-fill-drip text-emerald-500"></i>
+                Consumable
+            </span>`;
+        } else {
+            return `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                <i class="fas fa-cogs text-blue-500"></i>
+                Part
+            </span>`;
+        }
     }
 
     getCategoryBadge(category) {

@@ -3,6 +3,19 @@
 let currentTab = 'all';
 let allRequests = [];
 
+// Common printer brands list (static fallback)
+const STATIC_PRINTER_BRANDS = [
+    'HP', 'Canon', 'Epson', 'Brother', 'Lexmark', 'Xerox', 'Ricoh', 'Kyocera',
+    'Samsung', 'Dell', 'Konica Minolta', 'Sharp', 'Panasonic', 'OKI', 'Toshiba',
+    'Fuji Xerox', 'Zebra', 'Kodak', 'Dymo', 'Pantum', 'Sindoh', 'Riso', 
+    'Star Micronics', 'Citizen', 'TSC', 'Honeywell', 'SATO', 'Datamax', 
+    'Intermec', 'Printronix', 'Evolis', 'Magicard', 'Fargo', 'Entrust'
+];
+
+// Dynamic brands list (will be populated from inventory + static)
+let availableBrands = [...STATIC_PRINTER_BRANDS];
+let isOthersSelected = false;
+
 // Initialize page
 document.addEventListener('DOMContentLoaded', async () => {
     // Verify role
@@ -17,9 +30,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Load requests
     await loadRequests();
+    
+    // Load brands from inventory
+    await loadBrandsFromInventory();
 
     // Setup event listeners
     setupEventListeners();
+    
+    // Setup brand autocomplete
+    setupBrandAutocomplete();
 });
 
 // Get user role from token
@@ -68,6 +87,13 @@ async function loadSidebar() {
 function setupEventListeners() {
     // Create request button
     document.getElementById('createRequestBtn').addEventListener('click', () => {
+        // Reset brand autocomplete state when opening modal
+        isOthersSelected = false;
+        const customBrandContainer = document.getElementById('customBrandContainer');
+        const customBrandInput = document.getElementById('customBrandInput');
+        if (customBrandContainer) customBrandContainer.classList.add('hidden');
+        if (customBrandInput) customBrandInput.value = '';
+        
         document.getElementById('createRequestModal').classList.remove('hidden');
     });
 
@@ -81,6 +107,171 @@ function setupEventListeners() {
             switchTab(tab);
         });
     });
+}
+
+// ========== Brand Autocomplete Functions ==========
+
+// Load brands from inventory
+async function loadBrandsFromInventory() {
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE_URL}/inventory-items`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+            const items = await response.json();
+            updateAvailableBrands(items);
+        }
+    } catch (error) {
+        console.error('Error loading brands from inventory:', error);
+    }
+}
+
+// Merge static brands with brands from inventory
+function updateAvailableBrands(inventoryItems) {
+    const inventoryBrands = inventoryItems
+        .map(item => item.brand)
+        .filter(brand => brand && brand.trim());
+    
+    // Merge and deduplicate (case-insensitive)
+    const allBrands = [...STATIC_PRINTER_BRANDS, ...inventoryBrands];
+    const uniqueBrandsMap = new Map();
+    
+    allBrands.forEach(brand => {
+        const lowerBrand = brand.toLowerCase().trim();
+        if (!uniqueBrandsMap.has(lowerBrand)) {
+            uniqueBrandsMap.set(lowerBrand, brand.trim());
+        }
+    });
+    
+    // Sort alphabetically
+    availableBrands = Array.from(uniqueBrandsMap.values()).sort((a, b) => 
+        a.toLowerCase().localeCompare(b.toLowerCase())
+    );
+}
+
+// Check if a brand is from static list or custom added
+function isCustomBrand(brand) {
+    return !STATIC_PRINTER_BRANDS.some(
+        staticBrand => staticBrand.toLowerCase() === brand.toLowerCase()
+    );
+}
+
+// Filter brands based on search query
+function filterBrands(query) {
+    const lowerQuery = query.toLowerCase().trim();
+    if (!lowerQuery) return availableBrands;
+    return availableBrands.filter(brand => 
+        brand.toLowerCase().includes(lowerQuery)
+    );
+}
+
+// Escape HTML to prevent XSS
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+// Setup brand autocomplete functionality
+function setupBrandAutocomplete() {
+    const printerBrand = document.getElementById('printerBrand');
+    const brandDropdown = document.getElementById('brandDropdown');
+    const customBrandContainer = document.getElementById('customBrandContainer');
+    const customBrandInput = document.getElementById('customBrandInput');
+    
+    if (!printerBrand || !brandDropdown) return;
+    
+    function renderBrandDropdown(brands, query) {
+        const lowerQuery = query.toLowerCase().trim();
+        let html = '';
+        
+        brands.forEach(brand => {
+            const highlighted = lowerQuery 
+                ? brand.replace(new RegExp(`(${escapeHtml(lowerQuery)})`, 'gi'), '<strong class="text-blue-600">$1</strong>')
+                : brand;
+            
+            const isCustom = isCustomBrand(brand);
+            const customBadge = isCustom 
+                ? '<span class="ml-2 text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">Added</span>' 
+                : '';
+            const iconClass = isCustom ? 'text-emerald-500' : 'text-slate-400';
+            
+            html += `
+                <div class="brand-option px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors border-b border-slate-100 last:border-0" data-brand="${escapeHtml(brand)}">
+                    <i class="fas fa-print ${iconClass} mr-2"></i>${highlighted}${customBadge}
+                </div>
+            `;
+        });
+        
+        // Always show "Others" option at the bottom
+        html += `
+            <div class="brand-option px-4 py-3 hover:bg-amber-50 cursor-pointer transition-colors bg-slate-50 border-t-2 border-slate-200" data-brand="__OTHERS__">
+                <i class="fas fa-plus-circle text-amber-500 mr-2"></i>
+                <span class="text-amber-700 font-medium">Others (Specify custom brand)</span>
+            </div>
+        `;
+        
+        brandDropdown.innerHTML = html;
+        
+        // Add click handlers
+        brandDropdown.querySelectorAll('.brand-option').forEach(option => {
+            option.addEventListener('click', () => {
+                const selectedBrand = option.dataset.brand;
+                if (selectedBrand === '__OTHERS__') {
+                    printerBrand.value = 'Others';
+                    isOthersSelected = true;
+                    customBrandContainer.classList.remove('hidden');
+                    customBrandInput.value = '';
+                    customBrandInput.focus();
+                } else {
+                    printerBrand.value = selectedBrand;
+                    isOthersSelected = false;
+                    customBrandContainer.classList.add('hidden');
+                    customBrandInput.value = '';
+                }
+                brandDropdown.classList.add('hidden');
+            });
+        });
+    }
+    
+    function showBrandDropdown() {
+        const query = printerBrand.value;
+        const filteredBrands = filterBrands(query);
+        renderBrandDropdown(filteredBrands, query);
+        brandDropdown.classList.remove('hidden');
+    }
+    
+    function hideBrandDropdown() {
+        setTimeout(() => {
+            brandDropdown.classList.add('hidden');
+        }, 200);
+    }
+    
+    // Event listeners
+    printerBrand.addEventListener('focus', showBrandDropdown);
+    printerBrand.addEventListener('input', showBrandDropdown);
+    printerBrand.addEventListener('blur', hideBrandDropdown);
+    printerBrand.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            brandDropdown.classList.add('hidden');
+        }
+    });
+}
+
+// Get the actual brand value (considering "Others" selection)
+function getActualBrandValue() {
+    const printerBrand = document.getElementById('printerBrand');
+    const customBrandInput = document.getElementById('customBrandInput');
+    
+    if (isOthersSelected && customBrandInput && customBrandInput.value.trim()) {
+        return customBrandInput.value.trim();
+    }
+    return printerBrand.value.trim();
 }
 
 // Switch tabs
@@ -466,13 +657,29 @@ async function viewRequestDetails(requestId) {
 async function handleCreateRequest(e) {
     e.preventDefault();
 
+    // Get the actual brand value (considering "Others" selection)
+    const brandValue = getActualBrandValue();
+    
+    // Validate brand
+    if (!brandValue) {
+        showError('Please select or enter a brand name');
+        return;
+    }
+    
+    // If Others selected but no custom brand entered
+    if (isOthersSelected && !document.getElementById('customBrandInput').value.trim()) {
+        showError('Please specify the custom brand name');
+        document.getElementById('customBrandInput').focus();
+        return;
+    }
+
     const submitBtn = document.getElementById('submitBtn');
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Creating...';
 
     const requestData = {
         walk_in_customer_name: document.getElementById('customerName').value.trim(),
-        printer_brand: document.getElementById('printerBrand').value.trim(),
+        printer_brand: brandValue,
         priority: document.getElementById('priority').value,
         issue: document.getElementById('issueDescription').value.trim()
     };
@@ -651,6 +858,16 @@ async function rejectRequest(requestId, notes) {
 function closeCreateModal() {
     document.getElementById('createRequestModal').classList.add('hidden');
     document.getElementById('createRequestForm').reset();
+    
+    // Reset brand autocomplete state
+    isOthersSelected = false;
+    const customBrandContainer = document.getElementById('customBrandContainer');
+    const customBrandInput = document.getElementById('customBrandInput');
+    const brandDropdown = document.getElementById('brandDropdown');
+    
+    if (customBrandContainer) customBrandContainer.classList.add('hidden');
+    if (customBrandInput) customBrandInput.value = '';
+    if (brandDropdown) brandDropdown.classList.add('hidden');
 }
 
 function closeDetailsModal() {

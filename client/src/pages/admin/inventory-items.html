@@ -117,7 +117,17 @@
             <div class="p-6 space-y-5">
                 <div class="space-y-2">
                     <label for="modalBrand" class="block text-sm font-semibold text-slate-700">Brand</label>
-                    <input id="modalBrand" class="w-full border-2 border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200" placeholder="e.g., HP, Canon, Epson">
+                    <div class="relative">
+                        <input id="modalBrand" autocomplete="off" class="w-full border-2 border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200" placeholder="Search or type brand name...">
+                        <div id="brandDropdown" class="hidden absolute z-50 w-full mt-1 bg-white border-2 border-slate-200 rounded-xl shadow-xl max-h-60 overflow-y-auto">
+                            <!-- Brand suggestions will be populated here -->
+                        </div>
+                    </div>
+                    <!-- Custom brand input (shown when "Others" is selected) -->
+                    <div id="customBrandContainer" class="hidden mt-2">
+                        <input id="customBrandInput" class="w-full border-2 border-amber-300 bg-amber-50 rounded-xl px-4 py-3 text-slate-900 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all duration-200" placeholder="Specify custom brand name...">
+                        <p class="text-xs text-amber-600 mt-1"><i class="fas fa-info-circle mr-1"></i>Enter the brand name not found in the list</p>
+                    </div>
                 </div>
                 <div class="space-y-2">
                     <label for="modalModel" class="block text-sm font-semibold text-slate-700">Model</label>

@@ -12,6 +12,7 @@ router.get('/', async (req, res) => {
                 name,
                 brand,
                 category,
+                item_type,
                 quantity,
                 minimum_stock,
                 status,
@@ -21,6 +22,7 @@ router.get('/', async (req, res) => {
                 unit,
                 page_yield,
                 ink_volume,
+                toner_weight,
                 color
             FROM printer_items
             ORDER BY created_at DESC
@@ -43,7 +45,7 @@ router.get('/', async (req, res) => {
 
                 // Retry select
                 const [rows2] = await db.query(`
-                    SELECT id, name, brand, category, quantity, minimum_stock, status, created_at, updated_at, is_universal, unit, page_yield, ink_volume, color
+                    SELECT id, name, brand, category, item_type, quantity, minimum_stock, status, created_at, updated_at, is_universal, unit, page_yield, ink_volume, toner_weight, color
                     FROM printer_items
                     ORDER BY created_at DESC
                 `);
@@ -204,7 +206,7 @@ router.get('/debug', async (req, res) => {
         const [countRows] = await db.query('SELECT COUNT(*) as cnt FROM printer_items');
         const count = countRows && countRows[0] ? Number(countRows[0].cnt) : 0;
         const [sampleRows] = await db.query(
-            `SELECT id, name, brand, category, quantity, minimum_stock, status, created_at
+            `SELECT id, name, brand, category, item_type, quantity, minimum_stock, status, created_at
              FROM printer_items
              ORDER BY created_at DESC
              LIMIT 20`
@@ -215,6 +217,38 @@ router.get('/debug', async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch parts debug info', message: error.message });
     }
 });
+
+// Fix item_type based on category (one-time fix endpoint)
+router.post('/fix-item-types', fixItemTypes);
+router.get('/fix-item-types', fixItemTypes);
+
+async function fixItemTypes(req, res) {
+    try {
+        const consumableCategories = ['ink', 'ink-bottle', 'toner', 'drum-cartridge', 'maintenance-box', 'other-consumable'];
+        const partCategories = ['printhead', 'drum', 'fuser', 'roller', 'transfer-belt', 'maintenance-unit', 'power-board', 'mainboard', 'other'];
+        
+        // Update consumables
+        const [consumableResult] = await db.query(
+            'UPDATE printer_items SET item_type = ? WHERE category IN (?)',
+            ['consumable', consumableCategories]
+        );
+        
+        // Update parts
+        const [partResult] = await db.query(
+            'UPDATE printer_items SET item_type = ? WHERE category IN (?)',
+            ['printer_part', partCategories]
+        );
+        
+        res.json({ 
+            success: true, 
+            consumablesUpdated: consumableResult.affectedRows,
+            partsUpdated: partResult.affectedRows
+        });
+    } catch (error) {
+        console.error('Error fixing item types:', error);
+        res.status(500).json({ error: 'Failed to fix item types', message: error.message });
+    }
+}
 
 module.exports = router;
 

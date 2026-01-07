@@ -282,16 +282,39 @@
                         </div>
                         
                         <div class="flex flex-col sm:flex-row gap-3">
+                            <!-- Item Type Filter -->
+                            <div class="relative flex-1">
+                                <select id="itemTypeFilter" class="appearance-none bg-white border border-slate-300 rounded-lg px-4 py-3 pr-10 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+                                    <option value="">All Types</option>
+                                    <option value="printer_part">Parts</option>
+                                    <option value="consumable">Consumables</option>
+                                </select>
+                                <i class="fas fa-layer-group absolute right-3 top-4 text-slate-400 pointer-events-none"></i>
+                            </div>
+                            
                             <!-- Category Filter -->
                             <div class="relative flex-1">
                                 <select id="categoryFilter" class="appearance-none bg-white border border-slate-300 rounded-lg px-4 py-3 pr-10 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
                                     <option value="">All Categories</option>
-                                    <option value="toner">Toner</option>
-                                    <option value="ink">Printer Ink</option>
-                                    <option value="drum">Drum</option>
-                                    <option value="fuser">Fuser</option>
-                                    <option value="roller">Roller</option>
-                                    <option value="other">Other</option>
+                                    <optgroup label="Parts">
+                                        <option value="printhead">Printhead</option>
+                                        <option value="drum">Drum Unit</option>
+                                        <option value="fuser">Fuser Assembly</option>
+                                        <option value="roller">Paper Roller</option>
+                                        <option value="transfer-belt">Transfer Belt</option>
+                                        <option value="maintenance-unit">Maintenance Unit</option>
+                                        <option value="power-board">Power Supply Board</option>
+                                        <option value="mainboard">Mainboard</option>
+                                        <option value="other">Other Component</option>
+                                    </optgroup>
+                                    <optgroup label="Consumables">
+                                        <option value="ink">Ink Cartridge</option>
+                                        <option value="ink-bottle">Ink Bottle</option>
+                                        <option value="toner">Toner Cartridge</option>
+                                        <option value="drum-cartridge">Drum Cartridge</option>
+                                        <option value="maintenance-box">Maintenance Box</option>
+                                        <option value="other-consumable">Other Consumable</option>
+                                    </optgroup>
                                 </select>
                                 <i class="fas fa-chevron-down absolute right-3 top-4 text-slate-400 pointer-events-none"></i>
                             </div>
@@ -332,6 +355,12 @@
                                     <th class="px-4 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider cursor-pointer hover:bg-slate-200 transition-colors" data-sort="name">
                                         <div class="flex items-center gap-2">
                                             <span>Item Name</span>
+                                            <i class="fas fa-sort text-slate-400"></i>
+                                        </div>
+                                    </th>
+                                    <th class="px-4 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider cursor-pointer hover:bg-slate-200 transition-colors" data-sort="item_type">
+                                        <div class="flex items-center gap-2">
+                                            <span>Type</span>
                                             <i class="fas fa-sort text-slate-400"></i>
                                         </div>
                                     </th>
@@ -392,110 +421,64 @@
                     </div>
                 </div>
 
-                <!-- Enhanced Add/Edit Part Modal with Progressive Disclosure -->
+                <!-- Add/Edit Part Modal -->
                 <div id="partModal" class="hidden fixed inset-0 flex items-center justify-center z-50 p-4 opacity-0 transition-all duration-300" style="overflow-y: auto;">
-                    <div class="absolute inset-0 bg-gray-900 bg-opacity-90"></div>
-                    <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl transform transition-all duration-300 scale-95 border border-white/20 my-8 z-10" style="position: relative; z-index: 51;">
-                        <!-- Enhanced Header with Gradient -->
-                        <div class="bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-600 p-5 rounded-t-2xl relative overflow-hidden">
-                            <div class="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20"></div>
-                            <div class="relative flex justify-between items-center">
-                                <div class="flex items-center gap-3">
-                                    <div class="p-2 bg-white/20 backdrop-blur-sm rounded-lg">
-                                        <i id="modalIcon" class="fas fa-plus-circle text-white text-lg"></i>
-                                    </div>
-                                    <div>
-                                        <h3 id="modalTitle" class="text-xl font-bold text-white">Add New Item</h3>
-                                        <p class="text-blue-100 text-sm">Choose what you're adding</p>
-                                    </div>
-                                </div>
-                                <button id="closeModal" class="text-white/80 hover:text-white hover:bg-white/20 p-2 rounded-lg transition-all duration-200">
-                                    <i class="fas fa-times"></i>
+                    <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"></div>
+                    <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-xl transform transition-all duration-300 scale-95 my-8 z-10" style="height: 580px;">
+                        <!-- Header -->
+                        <div class="px-5 pt-5 pb-3 border-b border-slate-100">
+                            <div class="flex justify-between items-center">
+                                <h3 id="modalTitle" class="text-lg font-bold text-slate-900">Add New Item</h3>
+                                <button id="closeModal" class="text-slate-400 hover:text-slate-600 hover:bg-slate-100 w-8 h-8 rounded-full flex items-center justify-center transition-all">
+                                    <i class="fas fa-times text-sm"></i>
                                 </button>
                             </div>
+                            <i id="modalIcon" class="hidden"></i>
                         </div>
                         
-                        <form id="partForm" class="p-6 space-y-6 min-h-[500px] max-h-[75vh] overflow-y-auto pb-8">
-                            <!-- Hidden field to store selected item type -->
+                        <form id="partForm" class="px-5 pb-5 flex flex-col" style="height: calc(100% - 60px);">
                             <input type="hidden" id="selectedItemTypeValue" name="selectedItemTypeValue" value="">
                             
-                            <!-- Step 1: Item Type Selection - Show First -->
-                            <div id="itemTypeSelectionSection" class="space-y-4">
-                                <div class="text-center mb-6">
-                                    <h4 class="text-lg font-bold text-slate-800 mb-2">What are you adding?</h4>
-                                    <p class="text-sm text-slate-600">Choose the type of item you want to add to inventory</p>
-                                </div>
-                                
-                                <div id="itemTypeCards" class="grid grid-cols-2 gap-4">
-                                    <label class="cursor-pointer group">
+                            <!-- Scrollable Content Area -->
+                            <div class="flex-1 overflow-y-auto py-4 space-y-4">
+                            
+                            <!-- Step 1: Item Type Selection -->
+                            <div id="itemTypeSelectionSection">
+                                <div id="itemTypeCards" class="flex gap-2">
+                                    <label class="flex-1 cursor-pointer">
                                         <input type="radio" name="itemType" value="part" class="hidden peer">
-                                        <div class="relative flex flex-col items-center justify-center border-2 border-slate-200 rounded-xl p-4 transition-all duration-300 bg-white group-hover:border-blue-400 peer-checked:border-blue-600 peer-checked:bg-gradient-to-br peer-checked:from-blue-50 peer-checked:to-blue-100/50 shadow-sm peer-checked:shadow-md hover:shadow-sm">
-                                            <div class="absolute top-2 right-2 opacity-0 peer-checked:opacity-100 transition-opacity">
-                                                <div class="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center">
-                                                    <i class="fas fa-check text-white text-xs"></i>
-                                                </div>
-                                            </div>
-                                            <div class="w-12 h-12 flex items-center justify-center rounded-xl bg-blue-100 mb-3 group-hover:bg-blue-200 transition-colors">
-                                                <i class="fas fa-cogs text-blue-600 text-2xl"></i>
-                                            </div>
-                                            <span class="font-bold text-slate-800 text-base mb-1">Printer Item</span>
-                                            <span class="text-xs text-slate-500 text-center leading-tight">Hardware component</span>
+                                        <div class="text-center py-3 px-2 rounded-xl border-2 border-slate-200 transition-all peer-checked:border-blue-500 peer-checked:bg-blue-50 hover:border-slate-300">
+                                            <i class="fas fa-cogs text-slate-400 peer-checked:text-blue-500 mb-1"></i>
+                                            <span class="font-medium text-slate-700 text-xs block">Part</span>
                                         </div>
                                     </label>
-                                    <label class="cursor-pointer group">
+                                    <label class="flex-1 cursor-pointer">
                                         <input type="radio" name="itemType" value="consumable" class="hidden peer">
-                                        <div class="relative flex flex-col items-center justify-center border-2 border-slate-200 rounded-xl p-4 transition-all duration-300 bg-white group-hover:border-purple-400 peer-checked:border-purple-600 peer-checked:bg-gradient-to-br peer-checked:from-purple-50 peer-checked:to-purple-100/50 shadow-sm peer-checked:shadow-md hover:shadow-sm">
-                                            <div class="absolute top-2 right-2 opacity-0 peer-checked:opacity-100 transition-opacity">
-                                                <div class="w-5 h-5 bg-purple-600 rounded-full flex items-center justify-center">
-                                                    <i class="fas fa-check text-white text-xs"></i>
-                                                </div>
-                                            </div>
-                                            <div class="w-12 h-12 flex items-center justify-center rounded-xl bg-purple-100 mb-3 group-hover:bg-purple-200 transition-colors">
-                                                <i class="fas fa-tint text-purple-600 text-2xl"></i>
-                                            </div>
-                                            <span class="font-bold text-slate-800 text-base mb-1">Consumable</span>
-                                            <span class="text-xs text-slate-500 text-center leading-tight">Ink, toner, supplies</span>
+                                        <div class="text-center py-3 px-2 rounded-xl border-2 border-slate-200 transition-all peer-checked:border-blue-500 peer-checked:bg-blue-50 hover:border-slate-300">
+                                            <i class="fas fa-fill-drip text-slate-400 peer-checked:text-blue-500 mb-1"></i>
+                                            <span class="font-medium text-slate-700 text-xs block">Consumable</span>
                                         </div>
                                     </label>
                                 </div>
                             </div>
 
-                            <!-- Step 2: Item Details - Hidden Initially -->
-                            <div id="itemDetailsSection" class="space-y-4 pt-4 border-t border-slate-200 hidden transition-all duration-500">
-                                <div class="text-center mb-4">
-                                    <h4 class="text-lg font-bold text-slate-800 mb-1">Item Details</h4>
-                                    <p class="text-sm text-slate-600">Provide information about your <span id="selectedItemType">item</span></p>
-                                </div>
-                                
-                                <!-- Horizontal Layout: Main Form + Additional Details -->
-                                <div id="formContainer" class="flex flex-col lg:flex-row gap-4">
-                                    <!-- Left Side: Main Form Fields -->
-                                    <div id="mainFormFields" class="flex-1 space-y-3">
-                                        <div class="relative group">
-                                            <label class="flex items-center text-sm font-semibold text-slate-700 mb-3">
-                                                <div class="w-8 h-8 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center mr-3">
-                                                    <i class="fas fa-tag text-blue-600"></i>
-                                                </div>
-                                                <span>Item Name</span>
-                                                <span class="text-red-500 ml-1">*</span>
-                                            </label>
+                            <!-- Step 2: Item Details -->
+                            <div id="itemDetailsSection" class="space-y-4 hidden">
+                                <span id="selectedItemType" class="hidden"></span>
+                                <div id="formContainer">
+                                    <div id="mainFormFields" class="space-y-4">
+                                        <div>
+                                            <label class="text-xs font-semibold text-slate-600 mb-1.5 block">ITEM NAME <span class="text-red-400">*</span></label>
                                             <input type="text" id="partName" name="partName" required 
-                                                placeholder="e.g., HP 26A Black LaserJet Toner Cartridge"
-                                                class="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white placeholder-slate-400">
+                                                placeholder="e.g., HP 26A Toner"
+                                                class="w-full px-3 py-2.5 rounded-lg border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none text-sm">
                                         </div>
                                         
-                                        <div class="relative group">
-                                            <label class="flex items-center text-sm font-semibold text-slate-700 mb-3">
-                                                <div class="w-8 h-8 bg-gradient-to-br from-purple-100 to-purple-200 rounded-lg flex items-center justify-center mr-3">
-                                                    <i class="fas fa-th-large text-purple-600"></i>
-                                                </div>
-                                                <span>Category</span>
-                                                <span class="text-red-500 ml-1">*</span>
-                                            </label>
+                                        <div>
+                                            <label class="text-xs font-semibold text-slate-600 mb-1.5 block">CATEGORY <span class="text-red-400">*</span></label>
                                             <select id="partCategory" name="partCategory" required 
-                                                class="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all duration-200 appearance-none bg-white cursor-pointer">
-                                                <option value="">Select a category...</option>
-                                                <!-- Parts options will be dynamically populated -->
+                                                class="w-full px-3 py-2.5 rounded-lg border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none appearance-none bg-white text-sm">
+                                                <option value="">Select category</option>
                                                 <option value="printhead" data-type="part">Printhead</option>
                                                 <option value="drum" data-type="part">Drum Unit</option>
                                                 <option value="fuser" data-type="part">Fuser Assembly</option>
@@ -505,202 +488,121 @@
                                                 <option value="power-board" data-type="part">Power Supply Board</option>
                                                 <option value="mainboard" data-type="part">Mainboard</option>
                                                 <option value="other" data-type="part">Other Component</option>
-                                                <!-- Consumables options will be dynamically populated -->
                                                 <option value="ink" data-type="consumable">Ink Cartridge</option>
                                                 <option value="ink-bottle" data-type="consumable">Ink Bottle</option>
                                                 <option value="toner" data-type="consumable">Toner Cartridge</option>
                                                 <option value="drum-cartridge" data-type="consumable">Drum Cartridge</option>
-                                                <option value="maintenance-box" data-type="consumable">Maintenance Box / Waste Ink Pad</option>
+                                                <option value="maintenance-box" data-type="consumable">Maintenance Box</option>
                                                 <option value="other-consumable" data-type="consumable">Other Consumable</option>
                                             </select>
-                                            <div class="absolute right-3 top-12 pointer-events-none">
-                                                <i class="fas fa-chevron-down text-slate-400"></i>
+                                        </div>
+                                        
+                                        <div class="relative">
+                                            <label class="text-xs font-semibold text-slate-600 mb-1.5 block">BRAND</label>
+                                            <input type="text" id="partBrand" name="partBrand" autocomplete="off"
+                                                placeholder="Search or type brand"
+                                                class="w-full px-3 py-2.5 rounded-lg border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none text-sm">
+                                            <div id="brandDropdown" class="hidden absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-40 overflow-y-auto"></div>
+                                            <div id="customBrandContainer" class="hidden mt-2">
+                                                <input type="text" id="customBrandInput" 
+                                                    class="w-full px-3 py-2.5 rounded-lg border-2 border-dashed border-orange-300 bg-orange-50 focus:outline-none text-sm"
+                                                    placeholder="Enter custom brand">
                                             </div>
                                         </div>
                                         
-                                        <div class="relative group">
-                                            <label class="flex items-center text-sm font-semibold text-slate-700 mb-3">
-                                                <div class="w-8 h-8 bg-gradient-to-br from-orange-100 to-orange-200 rounded-lg flex items-center justify-center mr-3">
-                                                    <i class="fas fa-building text-orange-600"></i>
-                                                </div>
-                                                <span>Brand</span>
-                                            </label>
-                                            <input type="text" id="partBrand" name="partBrand" 
-                                                placeholder="e.g., HP, Canon, Epson, Brother"
-                                                class="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all duration-200 bg-white placeholder-slate-400">
+                                        <div>
+                                            <label class="text-xs font-semibold text-slate-600 mb-1.5 block">STOCK <span class="text-red-400">*</span></label>
+                                            <input type="number" id="partStock" name="partStock" required min="0" 
+                                                placeholder="0"
+                                                class="w-full px-3 py-2.5 rounded-lg border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none text-sm">
                                         </div>
                                         
-                                        <div class="relative group">
-                                            <label class="flex items-center text-sm font-semibold text-slate-700 mb-3">
-                                                <div class="w-8 h-8 bg-gradient-to-br from-green-100 to-green-200 rounded-lg flex items-center justify-center mr-3">
-                                                    <i class="fas fa-warehouse text-green-600"></i>
+                                        <!-- Universal Toggle -->
+                                        <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                                            <label class="flex items-start gap-3 cursor-pointer">
+                                                <div class="relative flex items-center pt-0.5">
+                                                    <input type="checkbox" id="partUniversal" name="partUniversal" 
+                                                        class="sr-only peer">
+                                                    <div class="w-9 h-5 bg-slate-300 rounded-full peer peer-checked:bg-blue-500 transition-colors"></div>
+                                                    <div class="absolute left-0.5 top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform peer-checked:translate-x-4"></div>
                                                 </div>
-                                                <span>Initial Stock Quantity</span>
-                                                <span class="text-red-500 ml-1">*</span>
+                                                <div class="flex-1">
+                                                    <span class="text-sm font-medium text-slate-700 block">Universal Item</span>
+                                                    <span class="text-xs text-slate-500 mt-0.5 block">Compatible with multiple printer brands and models</span>
+                                                </div>
                                             </label>
-                                            <div class="relative">
-                                                <input type="number" id="partStock" name="partStock" required min="0" 
-                                                    placeholder="Enter starting quantity"
-                                                    class="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/20 transition-all duration-200 bg-white placeholder-slate-400 pr-12">
-                                                <div class="absolute right-3 top-3 text-slate-400 text-sm">
-                                                    units
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="relative group">
-                                            <label class="flex items-center text-sm font-semibold text-slate-700 mb-3">
-                                                <div class="w-8 h-8 bg-gradient-to-br from-indigo-100 to-indigo-200 rounded-lg flex items-center justify-center mr-3">
-                                                    <i class="fas fa-globe text-indigo-600"></i>
-                                                </div>
-                                                <span>Universal Part</span>
-                                            </label>
-                                            <div class="flex items-center gap-3 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg border-2 border-indigo-200">
-                                                <input type="checkbox" id="partUniversal" name="partUniversal" 
-                                                    class="w-5 h-5 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 focus:ring-2 cursor-pointer">
-                                                <label for="partUniversal" class="text-sm text-slate-700 cursor-pointer">
-                                                    <span class="font-semibold">Compatible with all printer brands</span>
-                                                    <span class="text-slate-500 block text-xs mt-1">Check this if the part works with any printer brand</span>
-                                                </label>
-                                            </div>
                                         </div>
                                     </div>
                                     
-                                    <!-- Right Side: Additional Details Section -->
-                                    <div id="additionalDetailsSection" class="flex-1 hidden transition-all duration-500">
-                                        <div class="bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 rounded-xl p-4 border-2 border-blue-200">
-                                            <div class="space-y-3 pb-4">
-                                                <!-- Color Selection for Ink -->
-                                                <div id="colorField" class="hidden mb-6">
-                                                    <label class="flex items-center text-sm font-semibold text-slate-700 mb-2">
-                                                        <div class="w-6 h-6 bg-gradient-to-br from-red-100 to-blue-100 rounded mr-2">
-                                                            <i class="fas fa-palette text-purple-600 text-xs mt-1 ml-1"></i>
-                                                        </div>
-                                                        <span>Color</span>
-                                                    </label>
-                                                    <!-- Hidden select for form submission -->
-                                                    <select id="inkColor" name="inkColor" class="hidden">
-                                                        <option value="">Select color...</option>
-                                                        <option value="black">Black</option>
-                                                        <option value="cyan">Cyan</option>
-                                                        <option value="magenta">Magenta</option>
-                                                        <option value="yellow">Yellow</option>
-                                                        <option value="photo-black">Photo Black</option>
-                                                        <option value="light-cyan">Light Cyan</option>
-                                                        <option value="light-magenta">Light Magenta</option>
-                                                        <option value="gray">Gray</option>
-                                                        <option value="light-gray">Light Gray</option>
-                                                        <option value="tri-color">Tri-Color (CMY)</option>
-                                                        <option value="orange">Orange</option>
-                                                        <option value="green">Green</option>
-                                                        <option value="blue">Blue</option>
-                                                        <option value="red">Red</option>
-                                                        <option value="other">Other</option>
-                                                    </select>
-                                                    <!-- Custom dropdown UI -->
-                                                    <div class="relative">
-                                                        <button type="button" id="colorDropdownBtn" 
-                                                            class="w-full px-3 py-3 rounded-lg border-2 border-slate-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white cursor-pointer text-sm text-left flex items-center justify-between">
-                                                            <span id="colorSelectedText" class="text-slate-400">Select color...</span>
-                                                            <i class="fas fa-chevron-down text-slate-400 transition-transform" id="colorChevron"></i>
-                                                        </button>
-                                                        <!-- Dropdown menu - always opens downward -->
-                                                        <div id="colorDropdownMenu" class="hidden absolute top-full left-0 right-0 mt-1 bg-white border-2 border-slate-200 rounded-lg shadow-lg max-h-60 overflow-y-auto z-50">
-                                                            <div class="py-1">
-                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm text-slate-400" data-value="">Select color...</div>
-                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="black">Black</div>
-                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="cyan"> Cyan</div>
-                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="magenta">Magenta</div>
-                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="yellow"> Yellow</div>
-                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="photo-black">Photo Black</div>
-                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="light-cyan">Light Cyan</div>
-                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="light-magenta"> Light Magenta</div>
-                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="gray">Gray</div>
-                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="light-gray">Light Gray</div>
-                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="tri-color"> Tri-Color (CMY)</div>
-                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="orange"> Orange</div>
-                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="green"> Green</div>
-                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="blue"> Blue</div>
-                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="red"> Red</div>
-                                                                <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-value="other"> Other</div>
-                                                            </div>
+                                    <!-- Additional Details Section -->
+                                    <div id="additionalDetailsSection" class="mt-4 p-3 bg-slate-50 rounded-lg hidden">
+                                        <div class="space-y-3">
+                                            <div id="colorField" class="hidden">
+                                                <label class="text-xs font-semibold text-slate-600 mb-1.5 block">COLOR</label>
+                                                <select id="inkColor" name="inkColor" class="hidden">
+                                                    <option value="">Select</option>
+                                                    <option value="black">Black</option>
+                                                    <option value="cyan">Cyan</option>
+                                                    <option value="magenta">Magenta</option>
+                                                    <option value="yellow">Yellow</option>
+                                                    <option value="tri-color">Tri-Color</option>
+                                                    <option value="other">Other</option>
+                                                </select>
+                                                <div class="relative">
+                                                    <button type="button" id="colorDropdownBtn" 
+                                                        class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm text-left flex items-center justify-between">
+                                                        <span id="colorSelectedText" class="text-slate-500">Select color</span>
+                                                        <i class="fas fa-chevron-down text-slate-400 text-xs" id="colorChevron"></i>
+                                                    </button>
+                                                    <div id="colorDropdownMenu" class="hidden absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-40 overflow-y-auto z-50">
+                                                        <div class="py-1 text-sm">
+                                                            <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-slate-400" data-value="">Select</div>
+                                                            <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer" data-value="black">Black</div>
+                                                            <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer" data-value="cyan">Cyan</div>
+                                                            <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer" data-value="magenta">Magenta</div>
+                                                            <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer" data-value="yellow">Yellow</div>
+                                                            <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer" data-value="tri-color">Tri-Color</div>
+                                                            <div class="px-3 py-2 hover:bg-blue-50 cursor-pointer" data-value="other">Other</div>
                                                         </div>
                                                     </div>
                                                 </div>
-                                                
-                                                <!-- Volume for Ink (both bottles and cartridges) -->
-                                                <div id="volumeField" class="hidden">
-                                                    <label class="flex items-center text-sm font-semibold text-slate-700 mb-2">
-                                                        <div class="w-6 h-6 bg-gradient-to-br from-blue-100 to-green-100 rounded mr-2">
-                                                            <i class="fas fa-flask text-blue-600 text-xs mt-1 ml-1"></i>
-                                                        </div>
-                                                        <span id="volumeLabel">Ink Volume</span>
-                                                    </label>
-                                                    <div class="relative">
-                                                        <input type="number" id="inkVolume" name="inkVolume" min="1" max="1000" step="0.1"
-                                                            placeholder="e.g., 100"
-                                                            class="w-full px-3 py-3 rounded-lg border-2 border-slate-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white placeholder-slate-400 pr-10 text-sm">
-                                                        <div class="absolute right-3 top-3 text-slate-400 text-xs">
-                                                            ml
-                                                        </div>
-                                                        <div class="text-xs text-slate-500 mt-1 ml-1" id="volumeHint">Bottles: 10-500ml, Cartridges: 5-50ml</div>
-                                                    </div>
-                                                </div>
-                                                
-                                                <!-- Weight for Toner Cartridges -->
-                                                <div id="tonerWeightField" class="hidden">
-                                                    <label class="flex items-center text-sm font-semibold text-slate-700 mb-2">
-                                                        <div class="w-6 h-6 bg-gradient-to-br from-gray-100 to-slate-100 rounded mr-2">
-                                                            <i class="fas fa-weight text-slate-600 text-xs mt-1 ml-1"></i>
-                                                        </div>
-                                                        <span>Toner Weight</span>
-                                                    </label>
-                                                    <div class="relative">
-                                                        <input type="number" id="tonerWeight" name="tonerWeight" min="10" max="5000" step="1"
-                                                            placeholder="e.g., 1000"
-                                                            class="w-full px-3 py-3 rounded-lg border-2 border-slate-200 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-500/20 transition-all duration-200 bg-white placeholder-slate-400 pr-12 text-sm">
-                                                        <div class="absolute right-3 top-3 text-slate-400 text-xs">
-                                                            grams
-                                                        </div>
-                                                        <div class="text-xs text-slate-500 mt-1 ml-1">Typical range: 50-3000g</div>
-                                                    </div>
-                                                </div>
-                                                
-                                                <!-- Page Yield for Cartridges -->
-                                                <div id="pageYieldField" class="hidden">
-                                                    <label class="flex items-center text-sm font-semibold text-slate-700 mb-2">
-                                                        <div class="w-6 h-6 bg-gradient-to-br from-yellow-100 to-orange-100 rounded mr-2">
-                                                            <i class="fas fa-file-alt text-orange-600 text-xs mt-1 ml-1"></i>
-                                                        </div>
-                                                        <span>Page Yield (approx.)</span>
-                                                    </label>
-                                                    <div class="relative">
-                                                        <input type="number" id="pageYield" name="pageYield" min="100" max="50000"
-                                                            placeholder="e.g., 2000"
-                                                            class="w-full px-3 py-3 rounded-lg border-2 border-slate-200 focus:border-yellow-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 transition-all duration-200 bg-white placeholder-slate-400 pr-14 text-sm">
-                                                        <div class="absolute right-3 top-3 text-slate-400 text-xs">
-                                                            pages
-                                                        </div>
-                                                        <div class="text-xs text-slate-500 mt-1 ml-1">Typical range: 200-30,000 pages</div>
-                                                    </div>
-                                                </div>
+                                            </div>
+                                            
+                                            <div id="volumeField" class="hidden">
+                                                <label class="text-xs font-semibold text-slate-600 mb-1.5 block" id="volumeLabel">VOLUME (ml)</label>
+                                                <input type="number" id="inkVolume" name="inkVolume" min="1" max="1000" step="0.1"
+                                                    placeholder="e.g., 100"
+                                                    class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:border-blue-500 focus:outline-none text-sm">
+                                            </div>
+                                            
+                                            <div id="tonerWeightField" class="hidden">
+                                                <label class="text-xs font-semibold text-slate-600 mb-1.5 block">TONER WEIGHT (g)</label>
+                                                <input type="number" id="tonerWeight" name="tonerWeight" min="10" max="5000" step="1"
+                                                    placeholder="e.g., 1000"
+                                                    class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:border-blue-500 focus:outline-none text-sm">
+                                            </div>
+                                            
+                                            <div id="pageYieldField" class="hidden">
+                                                <label class="text-xs font-semibold text-slate-600 mb-1.5 block">PAGE YIELD</label>
+                                                <input type="number" id="pageYield" name="pageYield" min="100" max="50000"
+                                                    placeholder="e.g., 2000"
+                                                    class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:border-blue-500 focus:outline-none text-sm">
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
+                            </div>
                             
-                            <!-- Action Buttons - Also Hidden Initially -->
-                            <div id="actionButtonsSection" class="flex gap-4 pt-6 border-t border-slate-200 hidden">
+                            <!-- Action Buttons - Fixed at bottom -->
+                            <div id="actionButtonsSection" class="flex gap-2 pt-4 mt-auto border-t border-slate-100 hidden">
                                 <button type="button" id="cancelBtn" 
-                                    class="flex-1 px-6 py-3 border-2 border-slate-300 rounded-lg text-slate-700 font-semibold hover:bg-slate-50 hover:border-slate-400 transition-all duration-200 flex items-center justify-center gap-2">
-                                    <i class="fas fa-times"></i>
+                                    class="flex-1 px-4 py-2.5 border border-slate-300 rounded-lg text-slate-600 text-sm font-medium hover:bg-slate-50 transition-colors">
                                     Cancel
                                 </button>
                                 <button type="submit" id="submitBtn"
-                                    class="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2">
-                                    <i class="fas fa-save"></i>
-                                    <span id="submitText">Save Item</span>
+                                    class="flex-1 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                                    <span id="submitText">Add Item</span>
                                 </button>
                             </div>
                         </form>
@@ -709,10 +611,10 @@
 
                 <!-- Loading Overlay -->
                 <div id="loadingOverlay" class="hidden fixed inset-0 flex items-center justify-center z-50">
-                    <div class="absolute inset-0 bg-gray-900 bg-opacity-90"></div>
-                    <div class="relative bg-white rounded-2xl p-8 shadow-2xl flex flex-col items-center gap-4 z-10">
-                        <div class="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-                        <p class="text-slate-700 font-medium">Processing...</p>
+                    <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"></div>
+                    <div class="relative bg-white rounded-2xl p-6 shadow-xl flex flex-col items-center gap-3 z-10">
+                        <div class="w-10 h-10 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
+                        <p class="text-slate-600 text-sm">Processing...</p>
                     </div>
                 </div>
             </div>

@@ -120,7 +120,7 @@ def prepare_transactions(raw_data):
     
     return transaction_list, transaction_details
 
-def run_apriori(transactions, min_support=0.1, min_confidence=0.5):
+def run_apriori(transactions, min_support=0.5, min_confidence=0.5):
     """Run Apriori algorithm"""
     
     if len(transactions) == 0:
@@ -204,7 +204,7 @@ def format_itemsets_for_ui(itemsets):
     formatted.sort(key=lambda x: x['support'], reverse=True)
     return formatted
 
-def get_recommendations_for_printer(printer_brand, printer_model, min_support=0.1, min_confidence=0.5):
+def get_recommendations_for_printer(printer_brand, printer_model, min_support=0.5, min_confidence=0.5):
     """Get part recommendations for specific printer"""
     
     print(f"[INFO] Analyzing {printer_brand} {printer_model}", file=sys.stderr)
