@@ -423,6 +423,43 @@
                                 </div>
                             </div>
 
+                            <!-- Certificate of Employment Upload -->
+                            <div class="mt-6">
+                                <div class="mb-4">
+                                    <h3 class="text-lg font-medium text-gray-900">Certificate of Employment</h3>
+                                    <p class="text-xs text-gray-500">Required document to verify your affiliation with the institution</p>
+                                </div>
+                                <div class="upload-container group" id="employmentCertContainer">
+                                    <input type="file" id="employment-cert-upload" name="employmentCert" accept="image/*,.pdf" class="hidden" />
+                                    <label for="employment-cert-upload" class="block w-full cursor-pointer">
+                                        <div class="aspect-w-16 aspect-h-9">
+                                            <div class="upload-dropzone w-full h-full border-2 border-dashed border transition-all duration-200 group-hover:border-green-500 flex flex-col items-center justify-center p-6">
+                                                <div id="employment-cert-preview" class="hidden w-full h-full">
+                                                    <img src="" alt="Certificate Preview" class="w-full h-full object-contain border">
+                                                </div>
+                                                <div id="employment-cert-placeholder" class="text-center">
+                                                    <i class="fas fa-file-certificate text-4xl text-gray-400 mb-3"></i>
+                                                    <p class="text-sm font-medium text-gray-900">Certificate of Employment</p>
+                                                    <p class="text-xs text-gray-500 mt-1">Upload a clear photo or scan of your COE</p>
+                                                    <div class="mt-4 flex justify-center gap-4">
+                                                        <button type="button" data-action="open-upload" data-target="employment-cert-upload" class="px-4 py-2 bg-green-50 text-green-600 border text-sm hover:bg-green-100 transition-colors">
+                                                            <i class="fas fa-upload mr-2"></i>Upload Certificate
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </label>
+                                    <p class="field-error mt-2 text-sm text-red-600 hidden"></p>
+                                </div>
+                                <div class="mt-2 bg-yellow-50 border border-yellow-200 rounded p-3">
+                                    <p class="text-xs text-yellow-800">
+                                        <i class="fas fa-info-circle mr-1"></i>
+                                        The Certificate of Employment must be recent (within 3 months) and clearly show your name, position, and institution.
+                                    </p>
+                                </div>
+                            </div>
+
                             <div class="flex justify-end mt-6">
                                 <button type="button" id="clearUploadsBtn" class="px-4 py-2 bg-white text-gray-700 border text-sm rounded-md hover:bg-gray-50 transition-colors">
                                     <i class="fas fa-times mr-2"></i>Clear All Photos
@@ -447,6 +484,10 @@
                                     <li class="flex items-center">
                                         <i class="fas fa-check text-green-500 mr-2"></i>
                                         For selfie, hold your ID next to your face
+                                    </li>
+                                    <li class="flex items-center">
+                                        <i class="fas fa-check text-green-500 mr-2"></i>
+                                        Certificate of Employment must be recent (within 3 months)
                                     </li>
                                 </ul>
                             </div>
@@ -654,32 +695,29 @@
                 // Only send verification code if email is available
                 try {
                     sendCodeBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Sending code...';
-                    verificationCode = generateVerificationCode();
                     
-                    // Send email using EmailJS
-                    // Sending verification email
-                    const templateParams = {
-                        email: email,  // This matches the {{email}} in template
-                        passcode: verificationCode,
-                        time: new Date(Date.now() + 15 * 60000).toLocaleString(),
-                        from_name: "ServiceEase",
-                        from_email: "serviceeaseph@gmail.com"
-                    };
-
-                    const response = await emailjs.send(
-                        "service_upjalyd",
-                        "template_5js5lu3",
-                        templateParams
-                    ).then(
-                        (response) => {
-                            console.log("SUCCESS!", response.status, response.text);
-                            return response;
+                    // Get first name for personalized email
+                    const firstName = document.getElementById('firstName')?.value || 'User';
+                    
+                    // Send verification code via backend API (using Brevo)
+                    const response = await fetch('/api/send-registration-verification', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
                         },
-                        (err) => {
-                            console.log("FAILED...", err);
-                            throw err;
-                        }
-                    );
+                        body: JSON.stringify({ 
+                            email: email,
+                            firstName: firstName
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        throw new Error(data.error || 'Failed to send verification code');
+                    }
+                    
+                    console.log("SUCCESS! Verification code sent via backend");
                     
                     // Show verification input section
                     codeSentMessage.classList.remove('hidden');
@@ -700,23 +738,48 @@
                     let errorMessage = 'Error sending verification code. ';
                     if (error.message) {
                         errorMessage += error.message;
-                    } else if (error.text) {
-                        errorMessage += error.text;
                     }
                     alert(errorMessage);
                     
                     // Reset button state
                     sendCodeBtn.disabled = false;
                     sendCodeBtn.classList.remove('opacity-50');
+                    sendCodeBtn.innerHTML = 'Send Verification Code';
                 }
             }
 
-            function verifyCode() {
+            async function verifyCode() {
                 const enteredCode = Array.from(verificationInputs)
                     .map(input => input.value)
                     .join('');
 
-                if (enteredCode === verificationCode) {
+                if (enteredCode.length !== 6) {
+                    alert('Please enter the complete 6-digit code.');
+                    return;
+                }
+
+                try {
+                    const email = document.getElementById('email').value.trim();
+                    
+                    // Verify code against backend
+                    const response = await fetch('/api/verify-registration-code', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ 
+                            email: email,
+                            code: enteredCode
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        throw new Error(data.error || 'Invalid verification code');
+                    }
+                    
+                    // Code is valid
                     isEmailVerified = true;
                     emailVerifiedMessage.classList.remove('hidden');
                     verificationSection.style.display = 'none';
@@ -731,8 +794,9 @@
                     const emailInput = document.getElementById('email');
                     emailInput.disabled = true;
                     emailInput.classList.add('bg-gray-100');
-                } else {
-                    alert('Invalid verification code. Please try again.');
+                    
+                } catch (error) {
+                    alert(error.message || 'Invalid verification code. Please try again.');
                     // Clear verification inputs for retry
                     verificationInputs.forEach(input => input.value = '');
                     verificationInputs[0].focus();
@@ -1168,6 +1232,11 @@
                             container: document.getElementById('selfieContainer'),
                             message: 'Please upload a selfie with your ID'
                         },
+                        {
+                            input: document.getElementById('employment-cert-upload'),
+                            container: document.getElementById('employmentCertContainer'),
+                            message: 'Please upload your Certificate of Employment'
+                        },
                     ];
 
                     fileFields.forEach(({ input, container, message }) => {
@@ -1336,6 +1405,7 @@
             handleImageUpload('front-id-upload', 'front-preview', 'front-placeholder');
             handleImageUpload('back-id-upload', 'back-preview', 'back-placeholder');
             handleImageUpload('selfie-upload', 'selfie-preview', 'selfie-placeholder');
+            handleImageUpload('employment-cert-upload', 'employment-cert-preview', 'employment-cert-placeholder');
 
             // Handle camera capture for selfie
             const takeSelfieBtn = document.querySelector('[data-action="take-photo"]');
@@ -1469,6 +1539,7 @@
                     clearUploadField('front-id-upload', 'front-preview', 'front-placeholder');
                     clearUploadField('back-id-upload', 'back-preview', 'back-placeholder');
                     clearUploadField('selfie-upload', 'selfie-preview', 'selfie-placeholder');
+                    clearUploadField('employment-cert-upload', 'employment-cert-preview', 'employment-cert-placeholder');
                 });
             }
 

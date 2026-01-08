@@ -130,18 +130,19 @@ class User {
 
     static async saveTemporaryPhotos(userId, photoPaths) {
         try {
-            const { frontIdPhoto, backIdPhoto, selfiePhoto } = photoPaths;
+            const { frontIdPhoto, backIdPhoto, selfiePhoto, employmentCertPhoto } = photoPaths;
             
             // Insert or update temporary photos
             await db.query(
-                `INSERT INTO temp_user_photos (user_id, front_id_photo, back_id_photo, selfie_photo)
-                 VALUES (?, ?, ?, ?)
+                `INSERT INTO temp_user_photos (user_id, front_id_photo, back_id_photo, selfie_photo, employment_cert_photo)
+                 VALUES (?, ?, ?, ?, ?)
                  ON DUPLICATE KEY UPDATE 
                  front_id_photo = VALUES(front_id_photo),
                  back_id_photo = VALUES(back_id_photo),
                  selfie_photo = VALUES(selfie_photo),
+                 employment_cert_photo = VALUES(employment_cert_photo),
                  created_at = CURRENT_TIMESTAMP`,
-                [userId, frontIdPhoto, backIdPhoto, selfiePhoto]
+                [userId, frontIdPhoto, backIdPhoto, selfiePhoto, employmentCertPhoto]
             );
 
             return true;
@@ -156,7 +157,7 @@ class User {
             // Get pending users and fetch institution info from notifications.related_data
             // since institutions.user_id is only set after approval
             const [rows] = await db.query(`
-                SELECT u.*, tp.front_id_photo, tp.back_id_photo, tp.selfie_photo,
+                SELECT u.*, tp.front_id_photo, tp.back_id_photo, tp.selfie_photo, tp.employment_cert_photo,
                        n.related_data
                 FROM users u
                 LEFT JOIN temp_user_photos tp ON u.id = tp.user_id
@@ -211,7 +212,7 @@ class User {
         try {
             // First, get the photo paths/URLs to delete from Cloudinary
             const [photos] = await db.query(
-                'SELECT front_id_photo, back_id_photo, selfie_photo FROM temp_user_photos WHERE user_id = ?',
+                'SELECT front_id_photo, back_id_photo, selfie_photo, employment_cert_photo FROM temp_user_photos WHERE user_id = ?',
                 [userId]
             );
 
@@ -257,7 +258,7 @@ class User {
 
             // Delete the photos from Cloudinary if they exist
             if (photos && photos[0]) {
-                const photoFields = ['front_id_photo', 'back_id_photo', 'selfie_photo'];
+                const photoFields = ['front_id_photo', 'back_id_photo', 'selfie_photo', 'employment_cert_photo'];
                 for (const field of photoFields) {
                     if (photos[0][field]) {
                         try {
@@ -291,13 +292,13 @@ class User {
         try {
             // First, get the photo paths/URLs to delete from Cloudinary
             const [photos] = await db.query(
-                'SELECT front_id_photo, back_id_photo, selfie_photo FROM temp_user_photos WHERE user_id = ?',
+                'SELECT front_id_photo, back_id_photo, selfie_photo, employment_cert_photo FROM temp_user_photos WHERE user_id = ?',
                 [userId]
             );
 
             // Delete the photos from Cloudinary if they exist
             if (photos && photos[0]) {
-                const photoFields = ['front_id_photo', 'back_id_photo', 'selfie_photo'];
+                const photoFields = ['front_id_photo', 'back_id_photo', 'selfie_photo', 'employment_cert_photo'];
                 for (const field of photoFields) {
                     if (photos[0][field]) {
                         try {

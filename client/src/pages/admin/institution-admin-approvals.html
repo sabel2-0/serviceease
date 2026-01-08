@@ -99,10 +99,10 @@
             <!-- Secure Document Viewer Modal -->
             <div id="secureDocumentModal" class="fixed inset-0 flex items-center justify-center z-50 hidden">
                 <div class="absolute inset-0 bg-gray-900 bg-opacity-90"></div>
-                <div class="relative bg-white rounded-lg w-full max-w-4xl mx-4 z-10">
-                    <div class="border-b p-4">
+                <div class="relative bg-white rounded-lg w-full max-w-5xl mx-4 z-10 max-h-[90vh] overflow-y-auto">
+                    <div class="border-b p-4 sticky top-0 bg-white z-10">
                         <div class="flex justify-between items-center">
-                            <h3 class="text-lg font-semibold text-gray-900">Secure Document Viewer</h3>
+                            <h3 class="text-lg font-semibold text-gray-900">Verification Documents</h3>
                             <button id="closeSecureModal" class="text-gray-500 hover:text-gray-700">
                                 <i class="fas fa-times"></i>
                             </button>
@@ -115,7 +115,7 @@
                                     </div>
                                     <div class="ml-3">
                                         <p class="text-sm text-yellow-700">
-                                            You are about to view sensitive verification documents. This action will be logged.
+                                            You are viewing sensitive verification documents. This action has been logged.
                                         </p>
                                     </div>
                                 </div>
@@ -123,11 +123,11 @@
                         </div>
                     </div>
                     <div class="p-6">
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="secureDocumentContainer">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="secureDocumentContainer">
                             <!-- Documents will be inserted here -->
                         </div>
                     </div>
-                    <div class="border-t p-4 bg-gray-50">
+                    <div class="border-t p-4 bg-gray-50 sticky bottom-0">
                         <div class="flex justify-end">
                             <button id="closeSecureModalBtn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">
                                 Close Viewer

@@ -328,19 +328,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
 
                 <!-- Action Buttons -->
-                <div class="flex items-center justify-between pt-4 border-t">
-                    <button onclick="viewSecureDocuments('${user.id}', '${user.first_name}', '${user.last_name}', '${user.front_id_photo}', '${user.back_id_photo}', '${user.selfie_photo}')"
-                        class="px-4 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors">
-                        <i class="fas fa-id-card mr-2"></i>View ID
+                <div class="flex flex-col gap-3 pt-4 border-t">
+                    <button onclick="viewSecureDocuments('${user.id}', '${user.first_name}', '${user.last_name}', '${user.front_id_photo}', '${user.back_id_photo}', '${user.selfie_photo}', '${user.employment_cert_photo}')"
+                        class="w-full px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+                        <i class="fas fa-folder-open mr-2"></i>View Documents
                     </button>
                     
-                    <div class="flex space-x-2">
+                    <div class="flex gap-2">
                         <button onclick="rejectUser(${user.id})" 
-                            class="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors">
+                            class="flex-1 px-4 py-2.5 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors">
                             <i class="fas fa-times mr-1"></i>Reject
                         </button>
                         <button onclick="approveUser(${user.id})" 
-                            class="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors">
+                            class="flex-1 px-4 py-2.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors">
                             <i class="fas fa-check mr-1"></i>Approve
                         </button>
                     </div>
@@ -404,7 +404,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Global functions for button clicks
-    window.viewSecureDocuments = async function(userId, firstName, lastName, frontId, backId, selfie) {
+    window.viewSecureDocuments = async function(userId, firstName, lastName, frontId, backId, selfie, employmentCert) {
         try {
             // Show confirmation dialog first
             const confirmed = await showConfirmationDialog(
@@ -437,31 +437,56 @@ document.addEventListener('DOMContentLoaded', function() {
             // Prepare the secure document viewer
             secureDocumentContainer.innerHTML = `
                 <div class="document-preview">
-                    <h4 class="font-medium text-gray-900 mb-2">Front ID</h4>
+                    <h4 class="font-medium text-gray-900 mb-2 flex items-center">
+                        <i class="fas fa-id-card text-blue-600 mr-2"></i>
+                        Front ID
+                    </h4>
                     ${frontId && frontId !== 'null' && frontId !== 'undefined' ? 
                         `<img src="${frontId}" 
                               alt="Front ID" 
-                              class="w-full h-auto rounded-lg"
+                              class="w-full h-auto rounded-lg border cursor-pointer hover:opacity-90 transition-opacity"
+                              onclick="window.open('${frontId}', '_blank')"
                               onerror="this.parentElement.innerHTML='<div class=\\'bg-gray-100 rounded-lg p-4 text-center text-gray-500\\'>Photo not available</div>'">` : 
                     '<div class="bg-gray-100 rounded-lg p-4 text-center text-gray-500">Not provided</div>'}
                 </div>
                 <div class="document-preview">
-                    <h4 class="font-medium text-gray-900 mb-2">Back ID</h4>
+                    <h4 class="font-medium text-gray-900 mb-2 flex items-center">
+                        <i class="fas fa-id-card text-blue-600 mr-2"></i>
+                        Back ID
+                    </h4>
                     ${backId && backId !== 'null' && backId !== 'undefined' ? 
                         `<img src="${backId}" 
                               alt="Back ID" 
-                              class="w-full h-auto rounded-lg"
+                              class="w-full h-auto rounded-lg border cursor-pointer hover:opacity-90 transition-opacity"
+                              onclick="window.open('${backId}', '_blank')"
                               onerror="this.parentElement.innerHTML='<div class=\\'bg-gray-100 rounded-lg p-4 text-center text-gray-500\\'>Photo not available</div>'">` : 
                     '<div class="bg-gray-100 rounded-lg p-4 text-center text-gray-500">Not provided</div>'}
                 </div>
                 <div class="document-preview">
-                    <h4 class="font-medium text-gray-900 mb-2">Selfie with ID</h4>
+                    <h4 class="font-medium text-gray-900 mb-2 flex items-center">
+                        <i class="fas fa-camera text-purple-600 mr-2"></i>
+                        Selfie with ID
+                    </h4>
                     ${selfie && selfie !== 'null' && selfie !== 'undefined' ? 
                         `<img src="${selfie}" 
                               alt="Selfie with ID" 
-                              class="w-full h-auto rounded-lg"
+                              class="w-full h-auto rounded-lg border cursor-pointer hover:opacity-90 transition-opacity"
+                              onclick="window.open('${selfie}', '_blank')"
                               onerror="this.parentElement.innerHTML='<div class=\\'bg-gray-100 rounded-lg p-4 text-center text-gray-500\\'>Photo not available</div>'">` : 
                     '<div class="bg-gray-100 rounded-lg p-4 text-center text-gray-500">Not provided</div>'}
+                </div>
+                <div class="document-preview">
+                    <h4 class="font-medium text-gray-900 mb-2 flex items-center">
+                        <i class="fas fa-file-alt text-green-600 mr-2"></i>
+                        Certificate of Employment
+                    </h4>
+                    ${employmentCert && employmentCert !== 'null' && employmentCert !== 'undefined' ? 
+                        `<img src="${employmentCert}" 
+                              alt="Certificate of Employment" 
+                              class="w-full h-auto rounded-lg border-2 border-green-200 cursor-pointer hover:opacity-90 transition-opacity"
+                              onclick="window.open('${employmentCert}', '_blank')"
+                              onerror="this.parentElement.innerHTML='<div class=\\'bg-gray-100 rounded-lg p-4 text-center text-gray-500\\'>Photo not available</div>'">` : 
+                    '<div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center text-yellow-700"><i class="fas fa-exclamation-triangle mr-2"></i>Certificate of Employment not provided</div>'}
                 </div>
             `;
 

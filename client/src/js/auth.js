@@ -396,6 +396,7 @@ async function registerUser(formData) {
         const frontIdInput = document.getElementById('front-id-upload');
         const backIdInput = document.getElementById('back-id-upload');
         const selfieInput = document.getElementById('selfie-upload');
+        const employmentCertInput = document.getElementById('employment-cert-upload');
         
         if (frontIdInput && frontIdInput.files[0]) {
             registrationData.append('frontId', frontIdInput.files[0]);
@@ -405,6 +406,9 @@ async function registerUser(formData) {
         }
         if (selfieInput && selfieInput.files[0]) {
             registrationData.append('selfie', selfieInput.files[0]);
+        }
+        if (employmentCertInput && employmentCertInput.files[0]) {
+            registrationData.append('employmentCert', employmentCertInput.files[0]);
         }
 
         const response = await fetch('/api/register', {

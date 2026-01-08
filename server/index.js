@@ -351,7 +351,8 @@ app.post('/api/check-email', async (req, res) => {
 app.post('/api/register', upload.fields([
     { name: 'frontId', maxCount: 1 },
     { name: 'backId', maxCount: 1 },
-    { name: 'selfie', maxCount: 1 }
+    { name: 'selfie', maxCount: 1 },
+    { name: 'employmentCert', maxCount: 1 }
 ]), async (req, res) => {
     try {
         const userData = req.body;
@@ -392,7 +393,8 @@ app.post('/api/register', upload.fields([
             const photoPaths = {
                 frontIdPhoto: null,
                 backIdPhoto: null,
-                selfiePhoto: null
+                selfiePhoto: null,
+                employmentCertPhoto: null
             };
 
             try {
@@ -439,6 +441,19 @@ app.post('/api/register', upload.fields([
                     console.log('selfie uploaded:', selfieResult.secure_url);
                     // Delete local file after upload
                     fs.unlinkSync(req.files.selfie[0].path);
+                }
+
+                // Upload employment certificate to Cloudinary
+                if (req.files.employmentCert) {
+                    console.log('Uploading employment certificate to Cloudinary...');
+                    const employmentCertResult = await cloudinary.uploader.upload(req.files.employmentCert[0].path, {
+                        folder: 'serviceease',
+                        resource_type: 'image'
+                    });
+                    photoPaths.employmentCertPhoto = employmentCertResult.secure_url;
+                    console.log('employment certificate uploaded:', employmentCertResult.secure_url);
+                    // Delete local file after upload
+                    fs.unlinkSync(req.files.employmentCert[0].path);
                 }
 
                 console.log('Saving Cloudinary URLs to database:', photoPaths);
@@ -1377,6 +1392,122 @@ app.get('/api/institution_admin/dashboard-stats', authenticateinstitution_admin,
     }
 });
 
+// API endpoint to send registration verification code (no auth required - for registration)
+app.post('/api/send-registration-verification', async (req, res) => {
+    try {
+        const { email, firstName } = req.body;
+        
+        if (!email) {
+            return res.status(400).json({ error: 'Email is required' });
+        }
+
+        // Generate 6-digit verification code
+        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+        // Store the code temporarily (expires in 15 minutes)
+        // Using a simple in-memory store - in production, use Redis or database
+        if (!global.verificationCodes) {
+            global.verificationCodes = {};
+        }
+        global.verificationCodes[email] = {
+            code: verificationCode,
+            expires: Date.now() + 15 * 60 * 1000 // 15 minutes
+        };
+
+        // Clean up expired codes
+        Object.keys(global.verificationCodes).forEach(key => {
+            if (global.verificationCodes[key].expires < Date.now()) {
+                delete global.verificationCodes[key];
+            }
+        });
+
+        // Send email using Brevo
+        const sendSmtpEmail = new brevo.SendSmtpEmail();
+        sendSmtpEmail.subject = 'Email Verification Code - ServiceEase Registration';
+        sendSmtpEmail.sender = { name: 'ServiceEase', email: 'serviceeaseph@gmail.com' };
+        sendSmtpEmail.to = [{ email: email, name: firstName || 'User' }];
+        sendSmtpEmail.htmlContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <style>
+                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                    .header { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+                    .content { background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px; }
+                    .code-box { background: white; border: 2px dashed #3b82f6; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px; }
+                    .code { font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #3b82f6; }
+                    .footer { text-align: center; margin-top: 20px; color: #6b7280; font-size: 14px; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>✉️ Verify Your Email</h1>
+                    </div>
+                    <div class="content">
+                        <p>Hi ${firstName || 'there'},</p>
+                        <p>Thank you for registering as an Institution Admin with ServiceEase!</p>
+                        <p>Please use the verification code below to complete your registration:</p>
+                        <div class="code-box">
+                            <div class="code">${verificationCode}</div>
+                        </div>
+                        <p>Enter this code on the registration page to verify your email address.</p>
+                        <p style="color: #dc2626; font-weight: bold;">⏰ This code will expire in 15 minutes.</p>
+                        <p>Best regards,<br><strong>ServiceEase Team</strong></p>
+                    </div>
+                    <div class="footer">
+                        <p>ServiceEase - Printer Management System</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `;
+
+        await brevoApiInstance.sendTransacEmail(sendSmtpEmail);
+        console.log('✅ Registration verification code sent via Brevo to:', email);
+        
+        res.json({ success: true, message: 'Verification code sent successfully' });
+    } catch (error) {
+        console.error('Error sending registration verification email:', error);
+        res.status(500).json({ error: 'Failed to send verification code' });
+    }
+});
+
+// API endpoint to verify registration code
+app.post('/api/verify-registration-code', (req, res) => {
+    try {
+        const { email, code } = req.body;
+        
+        if (!email || !code) {
+            return res.status(400).json({ error: 'Email and code are required' });
+        }
+
+        const storedData = global.verificationCodes?.[email];
+        
+        if (!storedData) {
+            return res.status(400).json({ error: 'No verification code found. Please request a new one.' });
+        }
+
+        if (storedData.expires < Date.now()) {
+            delete global.verificationCodes[email];
+            return res.status(400).json({ error: 'Verification code has expired. Please request a new one.' });
+        }
+
+        if (storedData.code !== code) {
+            return res.status(400).json({ error: 'Invalid verification code.' });
+        }
+
+        // Code is valid - clean up
+        delete global.verificationCodes[email];
+        
+        res.json({ success: true, message: 'Email verified successfully' });
+    } catch (error) {
+        console.error('Error verifying registration code:', error);
+        res.status(500).json({ error: 'Failed to verify code' });
+    }
+});
+
 // API endpoint to send verification email
 app.post('/api/send-verification-email', async (req, res) => {
     try {
@@ -2302,6 +2433,7 @@ app.get('/api/institution_admins/pending', authenticateAdmin, async (req, res) =
                 tp.front_id_photo,
                 tp.back_id_photo,
                 tp.selfie_photo,
+                tp.employment_cert_photo,
                 n.related_data
             FROM users u 
             LEFT JOIN temp_user_photos tp ON tp.user_id = u.id
